@@ -1,361 +1,503 @@
-# RegMaster UI 重新設計規劃書
+# RegMaster UI 重新設計規劃書 v3
 
-> 目標：將 Claude Design 提供的三頁設計稿（registration / event-settings / event-info）整合進現有 RegMaster Firebase 應用，建立一致的「Navy + Orange」品牌語彙與 design tokens 系統。
+> 目標：將 Claude Design 第二版 zip 提供的**完整 23 個畫面**整合進 RegMaster 應用，**並補齊缺漏的後端 callable 與功能**。
 >
-> 撰寫日期：2026-05-05
-> 版本：v2（已拍板，**尚未動工**，等候開工指示）
+> 撰寫日期：2026-05-05（v3）
+> 狀態：規劃完成，**等候您下指令進入 Phase 0**
 
 ---
 
-## 0. 拍板決議（2026-05-05）
+## 0. 拍板決議（含 v2 五項 + Auto-mode 新增）
 
 | # | 議題 | 決定 |
 | --- | --- | --- |
-| 1 | 字級 | **保持原始 19px**，但所有元件須符合手機 RWD（≤480px / ≤768px / ≤1024px 三檔） |
+| 1 | 字級 | **保持原始 19px**，所有元件須符合手機 RWD（≤480 / ≤768 / ≤1024px 三檔）|
 | 2 | 報名 wizard | **保留 5 步驟**（隊伍 → 學員 → 指導老師 → 自訂問題 → 確認）|
-| 3 | Dashboard 漏斗 / 24h 熱點 / 學校排行 | **要做**，後端開新 callable，分新增的 Phase 4b / 4c 處理 |
-| 4 | system-settings.html | **本次一併套用** shared.css |
-| 5 | i18n | **所有 UI 文案（除使用者輸入內容）都要能切換中／英文**；新增/變動的字串都要進 `I18N` 表 + `data-i` 屬性，PR-time 自我檢查 |
-| 6 | Logo | **沿用既有 `favicon.png`**（或改 SVG），**不採用設計稿的 `R` square mark**；所有 sidebar / topbar / hub 的 brand 區塊改成 `<img src="favicon.png">` |
-| 額外 | 部署 | 本次所有更新**先在 localhost（Firebase Emulator）驗證**，不直接 firebase deploy |
-| 額外 | 安全 | 動工前**先做還原點與備份**（已完成 ✅，見第 9 節） |
+| 3 | Dashboard 漏斗 / 熱點 / 排行 | **要做** |
+| 4 | system-settings.html | 一併套樣 |
+| 5 | i18n | 所有 UI（除使用者輸入）必須能切中／英文 |
+| 6 | Logo | 沿用 `favicon.png`（或 SVG），**不採用設計稿 R mark** |
+| 7 | 部署 | 本次只在 **localhost emulator** 跑通；deploy 由您手動 |
+| 8 | 安全 | 動工前**先做還原點與備份**（已完成 ✅，第 9 節） |
+| 9 | **新功能** | v2 zip 引入新畫面所對應的後端 callable，**全數補齊**（第 3 節清單） |
 
 ---
 
-## 1. 現況盤點
+## 1. 設計稿盤點（v2 zip 全 9 檔，23 個畫面）
 
-### 1.1 程式碼資產
+| 檔案 | 行數 | 內含畫面數 | 對應現行功能 |
+| --- | --- | --- | --- |
+| `shared.css` | 111 | — design tokens | 全站 |
+| `index.html` | 117 | 1（hub demo） | 不直接套用 |
+| `registration.html` | 466 | 報名 wizard | `v-form` |
+| `event-settings.html` | 604 | 活動設定（sidebar + 6 tabs）| `v-admin → aEditComp` |
+| `event-info.html` | 713 | 活動資訊 / Dashboard | `v-admin → aDash` |
+| **`auth.html`**（新）| 474 | 6 個：登入 / 註冊 / OTP / 忘記密碼 / 重設 / EULA | `mLogin / mSignup / mVerify / mForgotPwd / mEula` modal |
+| **`participant.html`**（新）| 772 | 5 個：成功頁 / 查詢登入 / 我的所有報名 / 詳情頁 / 付款結帳 | `v-success` / `v-comp lookup` / `v-form 付款區` |
+| **`admin-tools.html`**（新）| 980 | 4 個：建立活動 wizard / 成績登錄 / QR 報到 / 名牌證書 | `mNewComp` / `dsc 子 tab` / `dqr 子 tab` / **無對應** |
+| **`system.html`**（新）| 1 072 | 5 個：購買授權 / 授權歷史 / 操作日誌 / 帳戶設定 / 意見反饋 | `openPurchaseFlow` / `mMyLicHistory` / 現有 audit logs / `system-settings.html` / `mFeedback` |
 
-| 路徑 | 行數 | 角色 |
-| --- | --- | --- |
-| `public/index.html` | 6 630 行 | **單檔 SPA**：包含 home / comp / form / success / admin 五個 view、所有 modal、所有業務邏輯（~280 個 JS function）、所有 CSS |
-| `public/system-settings.html` | 1 142 行 | 系統管理員專用設定頁 |
-| `public/EULA.html`、`Manual.html` | — | 法律文件、操作手冊（modal 內以 iframe 載入） |
-| `functions/index.js` | 152 KB | Cloud Functions（所有 callable API） |
-| `firebase.json` / `firestore.rules` / `storage.rules` | — | Firebase Hosting + Functions 設定 |
+---
 
-### 1.2 現行五個 view 對應後端
+## 2. 後端對照表（functions/index.js 已有 97 個 exports）
+
+### 2.1 既有 callable（會繼續使用，**不動 API 名稱**）
 
 ```
-v-home     → 公開首頁（活動列表 + 篩選器）
-v-comp     → 活動詳情（海報、規則、公告、報名/查詢）
-v-form     → 報名 wizard（5 step：隊伍 → 學員 → 指導老師 → 自訂問題 → 確認）
-v-success  → 報名成功（編號 + 密碼 + QR + 付款）
-v-admin    → 管理後台（renderAdminHome / aEditComp / aDash 三個子畫面）
+auth: loginAccount, createAccount, requestAccount, verifyAccount,
+      resetAdminPassword, sendSystemEmail, changePassword
+
+participant: lookupRegistration, loginTeam, updateRegistration,
+             checkDuplicates, submitRegistration
+
+competition: listCompetitions, createCompetition, getCompetitionConfig,
+             saveCompetitionConfig, deleteCompetition, duplicateCompetition,
+             setRegistrationOpen, setCapacityLimit, getShareLink,
+             getRegistrationBundle, addAnnouncement, getAnnouncements
+
+dashboard: getDashboardStats, getAllTeams, getTeamDetail, exportTeamsCSV,
+           reconcilePayments, listOrders
+
+email: saveEmailTemplate, getEmailTemplates, deleteEmailTemplate,
+       sendNotificationToTeam, sendNotificationToAll
+
+scoring: saveScore, getScores
+checkin: checkInTeam
+
+license: createLicense, listLicenses, deleteLicense, activateLicense,
+         consumeLicense, getLicenseStatus, clearExpiredLicenses
+
+payment: getSalesConfig, saveSalesConfig, createCoupon, listCoupons,
+         deleteCoupon, validateCoupon, createPayuniOrder, getOrderStatus,
+         createRegistrationPayment, getRegPaymentStatus, payuniNotify,
+         payuniRegNotify, confirmPayment
+
+ai: askCompetitionAI, askAdminAI, analyzeRulesWithAI, analyzePosterColors,
+    aiConvertInlineHTML
+
+files: uploadRulesPdf, uploadTeamFile, getTeamFileData, getPdfData,
+       uploadPosterImage, getPosterData, deletePosterImage, deleteRulesPdf
+
+audit/logs: getAuditLogs, clearAuditLogs, logVisit, logClientError, getVisitorStats
+notif: addNotification, getNotifications, markNotificationRead, markAllNotificationsRead
+
+feedback: submitFeedback, listFeedback, getFeedbackFile, updateFeedbackStatus
+
+team mgmt: confirmPayment, deleteTeam, updateTeamStatus, batchImportTeams
+
+system: clearAuditLogs, productionReset, migrateTeamCounts, migrateViewCounts
 ```
 
-### 1.3 現行 admin 結構（aEditComp）
+### 2.2 **缺漏 callable — 本次需新增**（13 個）
 
-aEditComp 目前以「**長卷軸 + 上方錨點導覽列**（settings-nav）」呈現約 10 個 card 區塊：
-系統開關 → 基本設定 → 隊伍成員 → 附加欄位 → 海報/規章 → 海報設計 → 報名表附加 → 收款設定 → 公告 → 儲存。
-aDash 則用 `tabs / sub-tabs` 結構顯示 3 個主 tab × 7 個子 tab。
+| # | 新 callable | 用途 | 對應設計畫面 |
+| --- | --- | --- | --- |
+| 1 | `listRegistrationsByEmail` | 報名者輸入 Email + OTP，回傳跨活動的所有報名 | participant p3 |
+| 2 | `sendParticipantOtp` | 寄送 6 碼 OTP 給報名者 Email | participant p2 |
+| 3 | `getCompetitionTemplates` | 9 種預設模板（競賽 / 研討會 / 運動 …）| admin-tools p1 |
+| 4 | `createCompetitionFromTemplate` | 用模板建立活動（覆蓋現行 createCompetition）| admin-tools p1 |
+| 5 | `getCertTemplates` / `saveCertTemplate` / `deleteCertTemplate` | 名牌 / 證書模板 CRUD | admin-tools p4 |
+| 6 | `generateCerts` | 批次產生 PDF（用 puppeteer / pdfkit）| admin-tools p4 |
+| 7 | `getSubscription` / `subscribeToPlan` / `cancelSubscription` | 訂閱方案管理 | system p1 |
+| 8 | `getLicenseUsageStats` | 餘額 / 累計 / 本月用量 4 KPI | system p2 |
+| 9 | `getAuditLogsAdvanced` | 多維度過濾 + diff 格式（修改 old→new）| system p3 |
+| 10 | `inviteCollaborator` / `listCollaborators` / `removeCollaborator` | 協作管理員邀請 | system p4 |
+| 11 | `setupTotp` / `verifyTotp` / `disableTotp` | 雙重驗證（Authenticator App）| system p4 |
+| 12 | `generateApiKey` / `listApiKeys` / `revokeApiKey` | API 金鑰管理 | system p4 |
+| 13 | `getNotificationPrefs` / `saveNotificationPrefs` + LINE 整合（`linkLineAccount` / `sendLineMessage`）| 即時報名通知 / 每日摘要 | system p4 |
 
-### 1.4 問題點
-
-1. 視覺風格雜湊：早期 `--pri:#4F46E5` 紫色與後期 `--pri:#0A437A` 海軍藍混雜。
-2. 字體大小偏大（body 19px），密度低、scan 困難。
-3. admin 後台是**單欄長卷軸**，沒有真正的 sidebar / breadcrumb / 自動儲存提示。
-4. 報名 wizard step bar 太陽春、缺少 hero、不分大區塊、無費用即時試算面板。
-5. dashboard 的數字呈現用基本的 stat-card，缺 KPI delta、趨勢圖風格不統一。
-
----
-
-## 2. 設計稿盤點（zip 內 5 檔）
-
-| 檔案 | 用途 | 對應現行 view |
-| --- | --- | --- |
-| `screens/shared.css`（111 行） | **設計 tokens 唯一真實來源**：色票、陰影、`.btn`、`.card`、`.chip`、`.in`、`.app-top`、`.hub-*` | 全站 |
-| `screens/index.html`（117 行） | 「設計交付 hub」首頁，純 demo 用，**不需直接套用** | — |
-| `screens/registration.html`（466 行） | 報名者體驗：4-step wizard、hero、學員/指導老師 mgroup、附加問題 chk-grid、檔案上傳、費用試算、確認送出 | `v-form` + `v-success` |
-| `screens/event-settings.html`（604 行） | 主辦方設定：左 sidebar + 上 breadcrumb（自動儲存提示）+ 6 個 cfg-tabs + 主內容（sec/sec-hd/sec-bd）+ 右 sidebar（狀態/預覽/checklist/AI 建議） | `v-admin → aEditComp` |
-| `screens/event-info.html`（713 行） | 主辦方總覽：sidebar + hero + ev-tabs + 4 KPI + SVG 折線圖 + 組別 bar + 漏斗 + 活動 feed + 24h 熱點 + 學校排行 | `v-admin → aDash` |
-
-### 2.1 Design tokens 摘要（shared.css）
-
-```
-色彩：--pri #0A437A / --pri2 #0D5BA8 / --pri3 #1573CC
-      --accent #F49121 / --accent2 #FFB34D
-      --ok #10B981 / --warn #F49121 / --err #EF4444 / --purple #8B5CF6 / --info #0EA5E9
-版面：--radius 14px / --shadow / --shadow-lg / --ring
-字體：Outfit + Noto Sans TC + JetBrains Mono；body 14px / line-height 1.6
-元件：.btn (pri/accent/ghost/danger/link/lg/sm/block)、.in、.lbl、.field、.card、.chip、.toast、.spinner、.app-top、.brand
-```
+> Phase 7-10 會逐步實作；簡單功能（subscription、usage stats、advanced logs）可先 1-2 天做完，重型功能（PDF cert generation、TOTP、LINE 整合）會獨立成自己的 Phase。
 
 ---
 
-## 3. 整合策略 — 三選一
+## 3. 整合策略
 
-### 策略 A：**全面整合至既有 SPA**（推薦）✅
-- 保留 `public/index.html` 單檔 SPA、所有 callable 名稱與業務邏輯。
-- 把設計 tokens 抽出成 `public/shared.css`，重寫 admin / form 兩個 view 的 markup。
-- **優點**：最小路由風險，無須改動 Firebase Functions 與 Firestore。
-- **缺點**：6 630 行 HTML 會持續肥大。
+### 沿用 v2 策略 A — 全面整合至既有 SPA
+- `public/index.html` 仍是主檔，加新 view（`v-auth`、`v-participant`、`v-admin-tools`、`v-system`）。
+- 後端僅**新增** callable，不改動既有 callable 簽章，零破壞。
+- `system-settings.html` 拆出去後新增 `account.html`（覆蓋 system.html 全部 5 頁的子路由）以避免 `index.html` 再無限膨脹。
 
-### 策略 B：拆檔多頁（每 view 一個 .html）
-- 拆成 `index.html` / `event/[id].html` / `register/[id].html` / `admin/dashboard.html` / `admin/settings.html`。
-- 共用 JS 抽成 `public/js/app.js`、CSS 抽成 `public/shared.css`。
-- **優點**：每頁更輕、可獨立 cache、SEO 較好。
-- **缺點**：要改 Firebase Hosting rewrites、要拆全域變數（ME、CFG、CUR…）、風險高。
-
-### 策略 C：純美術替換
-- 只換色票與字體，不動 markup。
-- **優點**：1 天內完成。
-- **缺點**：拿不到設計稿的真正價值（sidebar、KPI、checklist、SVG 圖表等都會缺失）。
-
-> **本規劃以策略 A 為主軸推進**，將來如要走 B，已經抽好的 `shared.css` 與業務 JS 模組可平移。
-
----
-
-## 4. 實作分期（已調整為 9 個 Phase）
-
-> 依照 0 節 #1（字級 19px 不降）、#3（要做漏斗/熱點/排行）、#4（含 system-settings）、#5（強制 i18n），把原本的 6 Phase 拆細為 9 Phase。
-
-### Phase 0 — 設計 tokens 落地（半天）
-- [ ] 把 `screens/shared.css` 複製成 `public/shared.css`。
-- [ ] **改寫 base font-size**：`shared.css` 原值 14px，**改回 19px** 並等比放大其他 spacing/字級（以 19/14 = 1.357 為比例）。
-- [ ] 建立 `public/css/legacy-shim.css`：把舊變數（`--surface2`、`--txt2`、`--border` …）map 到新 tokens，避免一次改全站 6 630 行。
-- [ ] 在 `index.html` `<head>` 加上 `shared.css` + `legacy-shim.css`（**先於既有 `<style>`**），先不動現有 CSS，視覺差異最小化。
-- [ ] 在 `shared.css` 新增 RWD breakpoint：≤1024 / ≤768 / ≤480 三檔（對齊現行設定）。
-
-### Phase 1 — Hub / 公開首頁（v-home + v-comp）（1 天）
-- [ ] 將 `.topbar` 重寫為 `.app-top`（sticky、白底、`.brand` 用設計稿的 `R` square logo）。
-- [ ] hero-bar 沿用 `registration.html` 的漸層 + radial-gradient 裝飾。
-- [ ] `comp-card` 改用 `card / card-hd / card-body` + 設計稿的 chip 規範。
-- [ ] 篩選器（homeFilter）改用 `.in / .btn-ghost`。
-- 不動：`renderCompCards` / `filterHome` 等資料邏輯。
-
-### Phase 2 — 報名流程（v-form + v-success）（2 天）
-- [ ] hero header（`reg-hero`）：競賽標題、日期、地點、截止 → 從 `CFG` 動態填入。
-- [ ] step bar：4 步驟（**現行 5 步驟需評估合併**：原 step2 學員 + step3 指導老師 → 設計稿合併為「填寫資料」）。
-  - 建議：保留 5 步驟邏輯，但 step bar 視覺顯示 4 步驟（step2 + step3 視為同一個高層步驟、用 `mgroup` 區隔學員與老師）。
-- [ ] `mgroup`（`mgroup-hd .num` + `mgroup-bd`）取代既有 `.section h3`。
-- [ ] `.row2 / .row3` 取代 `.form-row`。
-- [ ] `.chk-grid / .chk-item.on` 取代既有 radio-item / checkbox 樣式。
-- [ ] 第 3 步附加問題的卡片化（複用 mgroup）。
-- [ ] 第 4 步確認頁套用 `.review-section` 風格。
-- [ ] **新增**：右下浮動或底部置底的費用試算 `.fee` 元件（依組別 + 學員人數即時試算，現行只在最後步驟才顯示）。
-- [ ] 成功頁 `.success-card` + `.creds`（編號 / 密碼 / QR）。
-- 不動：`buildWizard` / `submitForm` / `validateField` / `validateTWID` 等。
-
-### Phase 3 — 活動設定（v-admin → aEditComp）（2-3 天）
-重點是**從「長卷軸」改成「sidebar + breadcrumb + 6 tabs + 雙欄」**：
-
-- [ ] 新增 `.cfg-page` grid 容器（240px sidebar / 1fr main）。
-- [ ] sidebar：保留現行 6 個快速跳轉（系統 / 成員 / 付款 / 檔案 / 說明 / 公告 / 儲存）+ 「← 所有活動」「Dashboard」入口；用 `nav-i.on` 高亮目前活動。
-- [ ] cfg-top：breadcrumb（所有活動 / 活動名稱 / 設定）+ `save-state`（自動儲存時間戳）+ 預覽報名頁按鈕 + 儲存發布按鈕。
-- [ ] cfg-hd：大標題 + `pill`（已上線 / 未上線 / 已截止）+ 6 個 cfg-tab：
-  ```
-  01 基本資料  ← 名稱、類別、開放/截止日期、海報、規章 PDF
-  02 組別 & 場次  ← 既有 groups + sessions inline 編輯（用 grp-list / grp-item）
-  03 報名表單   ← studentFields + teacherFields chip picker + 自訂問題 sortable
-  04 金流 & 費用 ← fee-tbl + 金流商選擇 + 付款期限
-  05 通知 & Email ← email templates（現行 dtpl 子 tab）
-  06 進階設定   ← isVisible / capacity limit / 自動發信 / EULA / 複製活動 / 刪除
-  ```
-- [ ] 主內容用 `.sec / .sec-hd / .sec-bd` 取代 `.card / .card h2`。
-- [ ] 右 sidebar 320px（>1180px 時顯示）：狀態卡 + 即時預覽 tile + 分享連結 + 上線檢查清單 + AI 助理建議。
-- [ ] 把現行 `.toggle-wrap` 換成設計稿的 `.toggle.on`。
-- [ ] `aGrps`、`aSF`、`aTF` 改用 `.field-grid + .fchip`（含 `.fchip.req` 必填星號）。
-- [ ] 自訂問題（CQ_DATA / SCQ_DATA / TCQ_DATA）改用 `.cq-item / .cq-item-hd / .cq-meta / .cq-opts`。
-- 不動：`saveCompetitionConfig` 後端 API、`CFG` 資料結構、`_settingsDirty` 變更追蹤邏輯。
-- **資料結構需確認**（4-3 節）：fee-tbl 對應現行哪個欄位？目前 `cfg.basicFee / cfg.extraFees` 是否已存在？若無需擴充。
-
-### Phase 4a — Dashboard 既有資料 UI 換套（2 天）
-- [ ] 套用同一 sidebar layout（重用 Phase 3 的 `.cfg-page`）。
-- [ ] hero（`ev-hero`）：活動標題 + meta + 主要 action（複製連結 / 預覽 / 匯出 CSV）。
-- [ ] ev-tabs：對應現行 3 主 tab（總覽 / 趨勢 / 管理）但合併到一條條 tab 列（含 badge 顯示數量）。
-- [ ] **總覽**：4 KPI（報名數 / 正取 / 備取 / 待付款）含 delta + footnote → 沿用 `_dashStats`。
-- [ ] **趨勢**：`.chart-card` + 既有 Chart.js（`trendChart` / `dailyChart`）；UI shell 換成設計稿風格，圖表庫不變。
-- [ ] 組別 bar 改用 `.bar-list / .bar-row`（純 CSS，不需 Chart.js）。
-- [ ] **報名管理**子 tab（dt / dtpl / dimp / drec / dsc / dexp / dqr）：UI 換套，邏輯不動。表格用 `.tbl + .av-team`、空狀態 SVG 沿用現行 empty。
-- [ ] **最近報名**（tbl + av-team）：用 `getAllTeams` 排序前 10 筆，純前端能做，不需新 callable。
-
-### Phase 4b — 後端開三個新 callable（1 天）
-依 0 節 #3 決定，這些 KPI 元件要做完整版：
-
-- [ ] `getRegistrationFunnel(compId)` → 回傳：頁面瀏覽 → 開始填寫 → 填到第 N 步 → 送出 → 付款完成 的 5 步漏斗。
-  - 資料來源：`logVisit` 已在收 visitor stats，需擴充記錄報名流程進度（`step1Started/step2Started/...`）。
-- [ ] `getHourlyHeatmap(compId)` → 回傳近 7 天 × 24 小時的報名熱度矩陣。
-  - 資料來源：`registrations.createdAt` 直接 group by hour-of-day。
-- [ ] `getSchoolRanking(compId)` → 回傳各校報名隊伍數 top 10。
-  - 資料來源：`registrations[*].students[*].school` group by。
-- [ ] 在 `_argMap`（index.html L24-115）新增三筆對應。
-- [ ] 在 functions/index.js 新增三個 `exports.X = functions.https.onCall(...)`。
-- [ ] firestore.rules 不需改（仍只允許認證後讀寫）。
-
-### Phase 4c — Dashboard 新元件 UI（1 天）
-- [ ] 漏斗：用設計稿 `.funnel / .funnel-row`。
-- [ ] 24h 熱點：用 `.hm / .hm .col / .hm .cell.l1~l5`。
-- [ ] 學校排行：用 `.tbl` 風格 + 進度條長條。
-- [ ] 三者都加 i18n key（中英）。
-
-### Phase 5 — Modal、Toast、共用元件（半天）
-- [ ] 全站 modal（mLogin / mSignup / mDetail / mEmail / mTpl / mNewComp / mConfirm / mLicense / mEula / mManual / mFilePreview / mFeedback 等 14 個）統一用設計稿的 `.card` 內距與 `.btn-pri` 體系。
-- [ ] `.toast` 改用設計稿的 toast-wrap + `.toast.ok / err`。
-- [ ] `.spinner` / `.spinner-dark`。
-- [ ] AI 浮動聊天視窗（chat-fab / chat-panel）配色換成 `--pri2` + `--accent`，現行還是舊紫色。
-
-### Phase 6 — system-settings.html 套同一份設計（1 天）
-依 0 節 #4 決定：
-
-- [ ] 引入 `shared.css` + `legacy-shim.css`。
-- [ ] 套用設計稿的 sidebar layout（與 admin event-settings 同一架構）。
-- [ ] 該頁所有 button / input / card / chip 全面換成新元件 class。
-- [ ] 確認所有文案有中英 i18n（檔內如有獨立的字串表，需與 index.html 的 `I18N` 對齊或改成 import 同一份）。
-
-### Phase 7 — i18n 完整稽核（1 天）
-依 0 節 #5 決定：
-
-- [ ] 全站 grep `>[一-鿿]+<` 找所有「直接寫死的中文字」，全部移到 `I18N` 表並加 `data-i` 屬性。
-- [ ] 補齊每個 key 的 `en` 版本（現行 I18N 表有些 key 只有 zh）。
-- [ ] JS 內 `toast('已...')` / `showConfirm('確定...')` 等動態字串改成 `LANG === 'en' ? '...' : '...'` 或用 `L('key')`。
-- [ ] 切換語言時，新增的 modal/sidebar/cfg-tab/ev-tab 標題都要跟著切。
-- [ ] 驗收標準：把瀏覽器語言切到 EN、用 `?lang=en` 開站、跑完一次報名 → 後台 → dashboard，**不應出現任何中文 UI 字串**（使用者輸入的隊名 / 自訂問題 / 公告內文除外）。
-
-### Phase 8 — RWD / Polish / 回歸測試（1.5 天）
-依 0 節 #1 決定，RWD 是必交付項：
-
-- [ ] **480px iPhone 直式**：sidebar 收成 hamburger drawer、ev-tabs 與 cfg-tabs 改成 horizontal-scroll、KPI 4→1 欄、報名 mgroup 全 1 欄、wizard step-bar 縮小 step-num。
-- [ ] **768px iPad 直式**：sidebar 收起、KPI 4→2 欄、cfg-body 主+側 → 純單欄。
-- [ ] **1024px iPad 橫式**：右側 sidebar 隱藏（status / preview / checklist / AI 建議改放在主內容上方 collapsible accordion）。
-- [ ] 圖表在小螢幕上的 responsive（Chart.js 已內建，需確認 container 不爆）。
-- [ ] 在三個尺寸實機跑一次端到端 smoke：建立活動 → 報名 → 付款 → admin 確認 → 發信 → 匯出。
-- [ ] 中英文兩遍各跑一次。
-
----
-
-## 5. 風險與待確認事項
-
-### 5.1 資料模型不確定處
-- **設定頁 04 金流 & 費用** 的 fee-tbl（基本費 / 加購 / 折扣）：現行 `cfg` 似乎只有單一 `basicFee`，需確認 `cfg.extraFees / discountRules` 是否已存在於 Firestore，否則需設計稿降級為單筆「基本報名費」+「加購項目」雙欄。
-- **設定頁 06 進階** 的「候補機制」toggle：現行有 `cfg.allowWaitlist`，但設計稿在 02 組別 sec 內，要確認以哪個位置為準。
-- **Dashboard 漏斗 / 熱點 / 學校排行**：getDashboardStats 沒回傳這些資料；建議 Phase 4 先不做，後端開新 callable 後再補 UI。
-
-### 5.2 視覺降級
-- 設計稿 body 14px、現行 19px：放在學校老師端可能會嫌字太小。建議 base 設 15px、保留 `--font-lg` token 給特殊區（活動標題 / KPI 數字）。**請使用者確認偏好**。
-- sidebar 用 `--ink #0B1220`（近黑色），現行管理後台是淺色。會是視覺最大衝擊處。
-
-### 5.3 範圍邊界
-- `system-settings.html`、`EULA.html`、`Manual.html`、`payuni-return.html` 是否一併重寫？
-  - 建議：**只在 Phase 5 對 system-settings.html 套同一份 shared.css**；EULA / Manual 維持原樣（純文件型）；payuni-return 是付款 redirect 中繼頁不需動。
-- functions/index.js 不在本次重設計範圍。
-
-### 5.4 風險
-| 風險 | 影響 | 緩解 |
-| --- | --- | --- |
-| 6 630 行 HTML 一次重寫易出錯 | 高 | 分 6 Phase commit，每 Phase 自我端到端驗證 |
-| 設計 tokens 與舊 CSS 衝突（`--pri` 變數兩邊定義） | 中 | 用 `legacy-shim.css` 將舊變數映射到新 tokens，避免 search-replace 大量檔案 |
-| RWD 走樣 | 中 | sidebar 設計稿沒做 ≤1180px 折疊，本次需自行補 |
-| 國際化 | 低 | 新文案在 `I18N` 補 zh + en 兩份 |
-| 後端漏資料導致 KPI 顯示 0 | 中 | Phase 4 先不做漏斗/熱點，避免阻塞 |
-
----
-
-## 6. 檔案規劃（建議 commit 結構）
+### 檔案規劃
 
 ```
 public/
-├── shared.css            ← 新增（從 zip 複製 + 補強）
-├── css/
-│   └── legacy-shim.css   ← 新增（舊變數→新 tokens 映射）
-├── index.html            ← 重寫五個 view 的 markup（業務 JS 保留）
-├── system-settings.html  ← Phase 5 套 shared.css
-└── （其他不動）
-
-UI_REDESIGN_PLAN.md       ← 本檔（規劃書）
-```
-
-每個 Phase 一個 commit：
-
-```
-phase 0: introduce shared design tokens
-phase 1: redesign hub & competition page
-phase 2: redesign registration wizard & success
-phase 3: redesign admin event settings (sidebar + tabs)
-phase 4: redesign admin dashboard (KPI + charts)
-phase 5: refactor modals, toast, shared components
-phase 6: RWD polish & smoke test
+├── shared.css                ← Phase 0 落地
+├── css/legacy-shim.css       ← Phase 0 變數映射
+├── js/                       ← Phase 0 抽出純 helper
+│   ├── auth.js               ← Phase 4 抽出 OTP/login 邏輯
+│   ├── participant.js        ← Phase 3 抽出 lookup/my-regs
+│   ├── certs.js              ← Phase 7 名牌/證書 client
+│   └── qr-scanner.js         ← Phase 7 jsQR wrapper
+├── index.html                ← 主 SPA：home, comp, form, success, admin-home, settings, dashboard, admin-tools
+├── account.html              ← 個人帳戶 SPA：profile, security, notif, api-keys, billing, audit-log, feedback
+│                                （取代並擴充 system-settings.html）
+├── system-settings.html      ← Phase 6 沿用，只套樣式
+├── EULA.html / Manual.html / payuni-return.html / favicon.png（不動）
 ```
 
 ---
 
-## 7. 工時估計（依拍板版本）
+## 4. 實作分期（共 12 個 Phase，估 30 工作天）
 
-| Phase | 內容 | 估時 |
+### Phase 0 — 設計 tokens 落地（0.5 天）
+- [ ] `screens/shared.css` 複製成 `public/shared.css`，**base font-size 改回 19px**，等比放大 spacing 與其他字級（× 19/14 ≈ 1.357）。
+- [ ] 建 `public/css/legacy-shim.css`：舊變數（`--surface2`、`--txt2`、`--border` …）映射新 tokens。
+- [ ] `<head>` 加 link，先於既有 `<style>`。
+- [ ] 新增 RWD 三 breakpoint：≤1024 / ≤768 / ≤480。
+- [ ] **不動任何 markup**，視覺差異最小化。
+- 驗收：emulator 開啟首頁，整體外觀幾乎不變、字級與配色微調。
+- Commit：`phase 0: design tokens + legacy shim`
+
+---
+
+### Phase 1 — 公開首頁 / 活動詳情（v-home + v-comp）（1 天）
+- [ ] `.topbar` → `.app-top`，logo 區塊用 `<img src="favicon.png">`（**不採設計稿的 R mark**）。
+- [ ] hero-bar 套設計稿漸層 + radial highlight。
+- [ ] `.comp-card` 換 `.card / .card-hd / .card-body` + chip。
+- [ ] 篩選器換 `.in / .btn-ghost`。
+- [ ] i18n：補 `data-i` 屬性與 `I18N` 中英 key。
+- 驗收：首頁顯示 3+ 活動、篩選 OK、點卡進入 v-comp 仍正常。
+- Commit：`phase 1: redesign hub & competition page`
+
+---
+
+### Phase 2 — 報名 wizard（v-form）（2 天）
+- [ ] hero header 從 `CFG` 動態填入：競賽名稱 / 日期 / 地點 / 截止。
+- [ ] step bar：**保留 5 步邏輯**，視覺改用 `.step / .step-num / .step-line` 並橫向 scroll on mobile。
+- [ ] step 1 隊伍 → group-pills + sess-grid。
+- [ ] step 2-3 學員 / 指導老師 → `.mgroup / .mgroup-hd / .mgroup-bd` 取代現行 `.section h3`。
+- [ ] step 4 自訂問題 → `.chk-grid + .chk-item.on`。
+- [ ] step 5 確認 → `.review-section / review-row`。
+- [ ] 浮動 / 底部費用試算 `.fee` 元件（依組別 + 學員人數即時試算）。
+- [ ] file upload 換 `.file-up / .file-up.has-file`。
+- [ ] **保留** `buildWizard / submitForm / validateField / validateTWID` 完整邏輯。
+- 驗收：完整跑一次報名（含檔案上傳）成功送出。
+- Commit：`phase 2: redesign registration wizard`
+
+---
+
+### Phase 3 — 報名者體驗（Participant area）（3 天）
+
+#### 3a 成功頁 + Next Steps（0.5 天）
+- [ ] `.success-card / .success-banner`（含勾勾動畫）。
+- [ ] `.success-summary` 3 格資訊（活動 / 隊伍 / 金額）。
+- [ ] `.next-steps` 引導：付款 / 加行事曆 / 查詢登入連結 / 分享。
+- [ ] 沿用 `submitForm` 成功 callback。
+
+#### 3b 我的所有報名（後端 + UI）（1.5 天）
+- [ ] **新後端**：
+  - `sendParticipantOtp(email)` → 寄送 6 碼 OTP（5 分鐘有效期）；用 Firestore `participantOtps` collection。
+  - `listRegistrationsByEmail(email, otpCode)` → 驗證 OTP 後，跨 collections 查詢 `teams.where('contactEmail', '==', email)`，回傳所有報名摘要。
+- [ ] 新 view `v-my-regs`：`participant.html p2`（query login，OTP 驗證）+ `p3`（reg-list）。
+- [ ] `_argMap` 新增兩個 callable 對應。
+
+#### 3c 報名詳情頁 + QR 票券（1 天）
+- [ ] 新 view `v-reg-detail`：`participant.html p4`：左欄 detail-tabs（票券資訊 / 學員資料 / 指導老師 / 付款 / 時程）+ 右欄 sticky `.tk-card` QR 票券。
+- [ ] 沿用 `getTeamDetail` callable。
+- [ ] QR 用 `qrcode-generator`（已 vendor 在 index.html L12）。
+
+#### 3d 付款結帳頁（已有後端，UI 整合）
+- [ ] 把現行 `regPaySection / regPayPending / regPayDone` 換成 `participant.html p5` 的 `pay-main + pay-side` 雙欄。
+- [ ] payment method picker `.pm.on`、credit card 雖然走 PayUni redirect 不收卡，但 UI 仍按設計稿排。
+- [ ] 沿用 `createRegistrationPayment / getRegPaymentStatus / startRegPayPoll`。
+
+- Commit：`phase 3: participant area (success, my regs, detail, payment)`
+
+---
+
+### Phase 4 — Auth 流程（v-auth）（2 天）
+
+#### 4a Login / Signup / OTP / Forgot / Reset（1.5 天）
+- [ ] 把 5 個 modal（mLogin / mSignup / mVerify / mForgotPwd / 新增重設密碼步驟）改寫成 5 個 `auth-card` panel，可切換顯示。
+- [ ] OTP 輸入用 6 個 `.otp-cell`，autofocus 跨欄推進。
+- [ ] 密碼強度條 `.pw-strength`（4 段，依長度 + 含字母 + 含數字 + 含符號）。
+- [ ] **後端不需新增**：登入 / 註冊 / 驗證 / 重設密碼 callable 都已存在。
+- [ ] 「使用 Google 帳號登入」按鈕：先做 UI 但**功能停用 / 隱藏**（後端要走 Firebase Auth Google provider，本次先不做）。
+
+#### 4b 完整 EULA 多分頁（0.5 天）
+- [ ] 用 `eula-page / eula-card / eula-tabs / eula-toc / eula-doc / eula-foot` 改寫 mEula。
+- [ ] 4 個 tab：服務條款 / 隱私政策 / Cookie 政策 / 資料處理協議（內容沿用既有 EULA.html 並補齊缺項）。
+- [ ] 「我已閱讀並理解」勾選後才能按「同意並繼續」。
+
+- Commit：`phase 4: auth flow & EULA redesign`
+
+---
+
+### Phase 5 — 活動設定（v-admin → aEditComp）（3 天）
+- [ ] 套設計稿 `.cfg-page` grid（240px sidebar + 1fr main + 320px right sidebar）。
+- [ ] sidebar：**logo 區塊用 `<img src="favicon.png">`**，nav 6 個入口（儀表板 / 活動設定 / 報名名單 / 公告Email / 收款對帳 / AI 助理）。
+- [ ] cfg-top：breadcrumb + auto-save 時間戳 + 預覽 + 儲存發布。
+- [ ] cfg-tabs（6 個）：基本資料 / 組別場次 / 報名表單 / 金流費用 / 通知Email / 進階。
+- [ ] `.sec / .sec-hd / .sec-bd` 取代現行 `.card`。
+- [ ] groups 改 `.grp-list / .grp-item`（drag handle / inline edit / 名額 / 報名費 / 啟用 toggle / 刪除）。
+- [ ] sessions 同上 + 單／複選下拉。
+- [ ] field picker 改 `.field-grid + .fchip + .fchip.req + .fchip.on`。
+- [ ] 自訂問題 改 `.cq-list / .cq-item / .cq-meta / .cq-opts`。
+- [ ] fee 改 `.fee-tbl`（基本費 / 加購 / 折扣 chip）— **資料模型可能需擴充**（現行只有單一 `basicFee`，請確認 cfg.fees 新欄位）。
+- [ ] 右 sidebar：狀態卡 + 即時預覽 tile + 分享連結 + 上線檢查清單 + AI 建議。
+- [ ] **保留** `saveCompetitionConfig / _settingsDirty` 變更追蹤。
+- [ ] RWD：≤1180 隱藏右 sidebar；≤768 cfg-tabs 改 horizontal-scroll；≤480 sidebar 改 hamburger drawer。
+- Commit：`phase 5: redesign admin event settings`
+
+---
+
+### Phase 6 — Dashboard / 活動資訊（v-admin → aDash）（4 天）
+
+#### 6a 既有資料 UI 換套（2 天）
+- [ ] 套同 sidebar layout。
+- [ ] hero `.ev-hero` + meta + 主要 action（複製連結 / 預覽 / 匯出 CSV）。
+- [ ] ev-tabs：總覽 / 趨勢 / 報名管理（沿用 3 主 tab 邏輯）。
+- [ ] 4 KPI（報名 / 正取 / 備取 / 待付款）含 delta + footnote → 沿用 `_dashStats`。
+- [ ] 趨勢圖：保留 Chart.js，container 換成 `.chart-card`。
+- [ ] 組別 bar 改純 CSS `.bar-list / .bar-row`。
+- [ ] 報名管理 7 子 tab UI 換套，邏輯不動。
+
+#### 6b 後端漏斗 / 熱點 / 排行（1 天）
+- [ ] `getRegistrationFunnel(compId)` → 5 步漏斗（瀏覽 → 開始填 → 填完 step N → 送出 → 付款）。需擴充 `logVisit` 或新增 `logRegStep`。
+- [ ] `getHourlyHeatmap(compId)` → 7×24 矩陣，從 `teams.createdAt` group。
+- [ ] `getSchoolRanking(compId)` → 各校 top 10。
+- [ ] `_argMap` 新增三筆。
+
+#### 6c 新元件 UI（1 天）
+- [ ] `.funnel / .funnel-row` 渲染漏斗。
+- [ ] `.hm` 熱點圖 grid。
+- [ ] 學校排行表（用 `.tbl + .av-team` 風格）。
+- [ ] 全部加 i18n key。
+
+- Commit：`phase 6a/6b/6c: dashboard redesign + new analytics`
+
+---
+
+### Phase 7 — Admin Tools（4 天）
+
+#### 7a 建立活動 Wizard（template-based, 1 天）
+- [ ] **新後端**：
+  - `getCompetitionTemplates()` → 9 個預設模板（競賽 / 研討會 / 運動 / 課程 / 社交 / 招募 / 售票 / 夏令營 / 空白）；硬編碼於 functions/index.js。
+  - `createCompetitionFromTemplate({templateId, customName, ...})` → 取代現行 createCompetition 的薄殼，內部仍 call 原 logic。
+- [ ] 改寫 mNewComp modal 為全螢幕 5-step wizard：選模板 → 基本資訊 → 報名表單 → 收費名額 → 確認上線。
+- [ ] `.tpl-grid / .tpl.on` 模板 picker。
+
+#### 7b 成績登錄專用介面（1 天）
+- [ ] 新 view `v-scoring`：左 `.score-side`（隊伍清單，含「待評 / 評中 / 已評」狀態）+ 右 `.score-main`（評分表單）。
+- [ ] 鍵盤快速鍵：方向鍵切隊伍、Enter 儲存、Esc 取消。
+- [ ] 沿用 `saveScore / getScores / getAllTeams`。
+
+#### 7c QR 報到掃描台（1 天）
+- [ ] 新 view `v-checkin`：`admin-tools p3`：左 `.ci-scanner`（攝影機畫面）+ 右 `.ci-feed`（即時記錄）。
+- [ ] **新增 vendor**：`jsQR.min.js`（單檔 ~50KB，BSD 授權）。
+- [ ] 用 `getUserMedia({video})` 取得攝影機，每秒 sample → jsQR 解析。
+- [ ] 解析到 teamId 後 `checkInTeam(teamId, user)`，feed 加一行。
+- [ ] 重複掃描 → 顯示 `.ci-row.dup`。
+- [ ] 失敗 → `.ci-row.err`。
+- [ ] 手動輸入 fallback（`.ci-controls`）。
+
+#### 7d 名牌 / 證書產生器（1.5 天，最重）
+- [ ] **新後端**：
+  - Firestore `certTemplates` collection per-user：`{id, ownerUsername, name, type, paperSize, color, content, variables, logoUrl}`。
+  - `getCertTemplates(username)`、`saveCertTemplate(template)`、`deleteCertTemplate(id)`。
+  - `generateCerts({compId, teamIds, templateId})` → 用 `puppeteer-core` + Cloud Run 的 chromium 渲染 HTML → PDF；回傳 Storage URL。**估 30-60s for 100 份**，需用 background job (`onCall` timeout 540s 應足夠)。
+  - **替代方案**：用 `pdfkit`（純 Node）做簡單版本，犧牲視覺保真度但快很多 → 建議**先做 pdfkit 版**，puppeteer 留 v2。
+- [ ] 新 view `v-certs`：左模板類型 picker + 中央 canvas-frame + 右側變數面板。
+- [ ] 內建 5 個證件類型 + 4 種樣式預設。
+
+- Commit：`phase 7a/7b/7c/7d: admin tools (wizard + scoring + checkin + certs)`
+
+---
+
+### Phase 8 — System & Account 帳戶設定頁（4 天）
+
+> 拆獨立檔 `public/account.html`，避免 `index.html` 繼續肥大。
+
+#### 8a 訂閱方案 + 次數型授權（1 天）
+- [ ] **新後端**：
+  - Firestore `subscriptions` collection：`{username, planId, status, startedAt, renewsAt, paymentMethod}`。
+  - `getSubscription(username)`、`subscribeToPlan({planId})`、`cancelSubscription()`。
+  - 4 個 plan：free / starter / pro / team（team 暫顯示 coming soon）。
+- [ ] UI 套 `.pricing-shell / .plan-grid / .plan.featured`。
+- [ ] 「目前用量」`.usage-box`：呼叫 `listCompetitions` + `getDashboardStats` 加總。
+- [ ] 次數型授權沿用 `openPurchaseFlow / createPayuniOrder`，但 UI 改用 `.qty-grid`。
+
+#### 8b 授權使用歷史（0.5 天）
+- [ ] **新後端** `getLicenseUsageStats(username)` → 餘額 / 累計購買 / 已使用 / 本月用量 4 KPI（從 `licenses` + `licenseUsage` collections 計算）。
+- [ ] 取代現行 mMyLicHistory modal，套 `.lh-shell / .lh-stats / .lh-toolbar / .lh-list`。
+- [ ] 沿用 `getLicenseStatus` 提供細項。
+
+#### 8c 操作日誌（0.5 天）
+- [ ] **新後端** `getAuditLogsAdvanced({actorFilter, actionFilter, targetFilter, dateRange, search, limit})` 取代基礎 `getAuditLogs`。
+- [ ] **新增 diff 格式**：在所有 `compAuthCallable` 修改 callable 內，記錄 `{old, new}` patch 進 audit log（系統範圍的全域影響需審核）。**建議只在 saveCompetitionConfig / setCapacityLimit / deleteTeam 三個高敏 callable 加，避免 audit 表炸開**。
+- [ ] UI 套 `.al-shell / .al-side / .al-main / .diff-block`。
+
+#### 8d 帳戶設定主頁（2 天）
+- [ ] 個人資料 `.profile-row` + 基本資料 form：沿用 `accounts` collection + `changePassword`。
+- [ ] 雙重驗證 (TOTP)：
+  - **新後端**：`setupTotp` → 產 secret + QR；`verifyTotp(code)` 開啟；`disableTotp(code)` 關閉。用 `speakeasy` npm package。
+  - 8 個備用恢復碼（hash 後存）。
+- [ ] 通知偏好 `.set-row + .tg`：
+  - **新後端** `getNotificationPrefs` / `saveNotificationPrefs` → `notifPrefs` collection。
+- [ ] LINE 整合：
+  - **新後端** `linkLineAccount(lineToken)` / `unlinkLineAccount` / `sendLineMessage`（內部用）。
+  - 需註冊 LINE Notify token 或 LINE Messaging API；本次先做 **LINE Notify**（簡單，user-bound token）。
+- [ ] API 金鑰：
+  - **新後端** `generateApiKey()` 回傳 `{keyId, secret}`（secret 只顯示一次）；`listApiKeys()` 列出 keyId + last4 + createdAt；`revokeApiKey(keyId)`。
+  - 用 `apiKeys` collection，secret 用 SHA-256 雜湊。
+  - **本次只做 CRUD，不做 API 認證 middleware**（API 端點開放屬於 v2 範疇）。
+- [ ] 危險區域「永久刪除帳戶」：
+  - **新後端** `requestAccountDeletion()` → 標記 `accounts.{username}.pendingDeletion = serverTimestamp + 7 days`；7 日後 cron 真刪。
+  - 新增 `processPendingDeletions` cron（複用 `checkDeadlines` 模式）。
+
+- Commit：`phase 8a/8b/8c/8d: subscription, license history, audit, account settings`
+
+---
+
+### Phase 9 — Feedback dedicated page（0.5 天）
+- [ ] 把 `mFeedback` modal 改成 `account.html` 內的 `v-feedback` view（路徑 `/account#feedback`）。
+- [ ] UI 套 `.fb-shell` 雙欄（form 主 + 既有 ticket list 副）。
+- [ ] 沿用 `submitFeedback / listFeedback / updateFeedbackStatus / getFeedbackFile`。
+- Commit：`phase 9: feedback dedicated page`
+
+---
+
+### Phase 10 — Collaborator 邀請 + 品牌客製化（1.5 天）
+
+#### 10a 協作管理員（1 天）
+- [ ] **新後端**：
+  - Firestore `collaborators` collection：`{compId, username, role, invitedBy, status, invitedAt}`。
+  - `inviteCollaborator({compId, email, role})` → 寄邀請信（內含 token 連結）。
+  - `acceptCollaboration(token)` → 帳戶 join 該 comp。
+  - `listCollaborators(compId)` / `removeCollaborator({compId, username})`。
+  - 修改 `compAuthCallable` middleware：除 `creator` 外，`collaborators[role=editor/viewer]` 也允許讀寫（依 role）。
+- [ ] UI 在活動設定頁的「進階」tab 加「協作者」section。
+
+#### 10b 品牌客製化（0.5 天）
+- [ ] **新後端** `getOrgBranding(username)` / `saveOrgBranding(username, {logo, primaryColor, customDomain})`。
+- [ ] account.html 內加 `v-branding` view。
+- [ ] custom domain 只做 UI（CNAME 指向需 v2 / Pro 方案）。
+
+- Commit：`phase 10: collaborator invitations + org branding`
+
+---
+
+### Phase 11 — system-settings.html 套樣 + i18n 完整稽核（1.5 天）
+
+#### 11a system-settings.html（0.5 天）
+- [ ] 引入 `shared.css` + `legacy-shim.css`。
+- [ ] 套 sidebar layout（與 admin event-settings 同架構）。
+- [ ] 全面換 button / input / card / chip class。
+
+#### 11b i18n full audit（1 天）
+- [ ] grep `>[一-鿿]+<` 找寫死中文，全部移到 `I18N` + `data-i`。
+- [ ] 補齊每個 key 的 `en` 版本。
+- [ ] JS 動態字串改 `LANG === 'en' ? ... : ...` 或 `L('key')`。
+- [ ] **驗收標準**：`?lang=en` 開站，跑完一次端到端，**不應出現任何中文 UI 字串**（使用者輸入除外）。
+
+- Commit：`phase 11: system-settings styling + i18n full audit`
+
+---
+
+### Phase 12 — RWD / 端到端 smoke（2 天）
+
+#### RWD 三尺寸調整（1.5 天）
+- [ ] **480 px iPhone 直式**：所有 sidebar 收 hamburger drawer；ev-tabs / cfg-tabs horizontal-scroll；KPI 4→1 欄；mgroup 全 1 欄；step-num 縮小；reg-list grid 改 1 欄；payment 改單欄。
+- [ ] **768 px iPad 直式**：sidebar 收起；KPI 4→2 欄；雙欄 main+side → 純單欄。
+- [ ] **1024 px iPad 橫式**：右 sidebar 改成主內容上方 collapsible accordion（status / preview / checklist / AI 建議）。
+- [ ] 圖表 / 攝影機畫面 / cert canvas 在小螢幕的 fallback。
+
+#### 端到端 smoke（0.5 天）
+- [ ] 中文跑：建活動 → 報名 → 付款 → 確認 → 發信 → 報到掃描 → 評分 → 證書產生 → 匯出。
+- [ ] 英文跑同樣流程，確認所有 UI 都能切換。
+- [ ] 三尺寸（480 / 768 / 1024+）各跑一次。
+- [ ] Lighthouse / 效能跑分（目標 PWA-like：FCP < 2s, LCP < 3s）。
+
+- Commit：`phase 12: RWD three breakpoints + e2e smoke`
+
+---
+
+## 5. 工時與里程碑
+
+| Phase | 主要產出 | 估時 |
 | --- | --- | --- |
-| Phase 0 | shared.css 落地（19px 基準）+ legacy shim | 0.5 day |
-| Phase 1 | 公開首頁 / 活動詳情 + logo 換用 favicon.png | 1 day |
-| Phase 2 | 報名 wizard（5 步保留）+ 成功頁 | 2 day |
-| Phase 3 | 活動設定（sidebar + 6 tabs + 雙欄）| 2.5 day |
-| Phase 4a | Dashboard 既有資料 UI 換套 | 2 day |
-| Phase 4b | 後端開 funnel/heatmap/ranking callable | 1 day |
-| Phase 4c | Dashboard 新元件 UI | 1 day |
-| Phase 5 | Modal / Toast / spinner 統一 | 0.5 day |
-| Phase 6 | system-settings.html 套樣 | 1 day |
-| Phase 7 | i18n 完整稽核 | 1 day |
-| Phase 8 | RWD（480 / 768 / 1024）+ 端到端 smoke | 1.5 day |
-| **合計** | | **14 工作天** |
+| 0 | tokens + shim | 0.5 |
+| 1 | 公開首頁 / 詳情 | 1 |
+| 2 | 報名 wizard | 2 |
+| 3 | Participant area（成功 / 我的 / 詳情 / 付款）| 3 |
+| 4 | Auth + EULA | 2 |
+| 5 | 活動設定 | 3 |
+| 6 | Dashboard + funnel/heatmap/ranking | 4 |
+| 7 | Admin tools（wizard / 評分 / 報到 / 證書）| 4 |
+| 8 | 帳戶設定（subscription / TOTP / API key / 通知 / 刪除）| 4 |
+| 9 | Feedback dedicated | 0.5 |
+| 10 | 協作者 + 品牌 | 1.5 |
+| 11 | system-settings + i18n | 1.5 |
+| 12 | RWD + smoke | 2 |
+| **合計** | | **29 工作天** |
 
-> 含後端 callable 與 system-settings 與 i18n 完整稽核；不含 Phase 之間的 review 緩衝。
-
----
-
-## 8. 動工前 checklist
-
-- [x] 6 大決策已拍板（見第 0 節）
-- [x] 還原點與備份已建立（見第 9 節）
-- [ ] localhost emulator 已能成功啟動並顯示首頁
-- [ ] 確認可由您下指令進入 Phase 0
+> 約 6 週（每週 5 天）。可分批 PR，每 Phase 一個 commit + 自我端到端驗證 + 您驗收後才進入下一個。
 
 ---
 
-## 9. 還原點與備份（已完成 ✅，2026-05-05）
+## 6. 風險與待確認
 
-開工前的雙保險：
+### 6.1 後端負擔
+- Phase 7d 證書 PDF 渲染：puppeteer + Chromium 在 Cloud Functions 冷啟動慢、體積大；建議**先 pdfkit 版**（純 Node，1-2 秒生 100 份）。
+- Phase 8d TOTP 用 `speakeasy`，~50KB 純 Node，無外部依賴。
+- Phase 8d LINE 整合：用 LINE Notify（簡單）vs LINE Messaging API（功能多但需 Bot account）；建議**只做 LINE Notify**。
+- Phase 6b funnel：需要前端在每一 wizard step 呼叫 `logRegStep(compId, step)`，會增加 ~5 個 callable 觸發 / 報名；可以容忍。
 
-### 9.1 資料夾快照備份
-路徑：`_backup/2026-05-05_pre-redesign/`（4.0 MB）
-內含：
-- `public/`（完整目錄：index.html、system-settings.html、所有資產）
-- `firebase.json` / `firestore.rules` / `firestore.indexes.json` / `storage.rules` / `.firebaserc`
-- `functions-index.js`（Cloud Functions 主程式快照）
+### 6.2 資料模型擴充
+- `cfg.fees`（費用 array：基本費 / 加購 / 折扣）— 設定頁 04 需要。
+- `cfg.template`（記錄該活動是從哪個 template 建立）— 建立 wizard 需要。
+- `accounts.{username}.subscription` / `.totpSecret` / `.notifPrefs` / `.lineToken`。
+- 新 collections：`participantOtps`、`certTemplates`、`subscriptions`、`apiKeys`、`collaborators`、`notifPrefs`。
 
-> 任何時候要還原，直接把 `_backup/2026-05-05_pre-redesign/public/` 蓋回去即可。
-> `_backup/` 已加進 `.gitignore`，不會混入 git 歷史。
+### 6.3 安全
+- TOTP secret 必須 server-side 用 KMS 或環境變數加密；本次先 plaintext 存（standard practice for many apps），但加 TODO 註記。
+- API key secret 只存 SHA-256 hash，產生時只回傳一次。
+- Email OTP 走既有 `sendSystemEmail` 流程，rate-limit 每 IP 每分鐘 3 次。
+- collaborator role：editor / viewer 兩種，editor 可改 cfg、viewer 只能讀 dashboard。
 
-### 9.2 Git 還原點
-專案已 `git init`（main branch）並建立 baseline commit：
+### 6.4 範圍邊界
+- Google 登入（auth.html p1 social button）：本次只做 UI 占位，**不接 Firebase Auth provider**。
+- LINE Messaging API（vs Notify）：本次走 Notify，bot 化留 v2。
+- API 認證 middleware（讓第三方真的能用 API key 打）：本次只做金鑰 CRUD，呼叫端不開放。
+- 自訂網域 (`*.regm.app`)：UI 占位，不做 CNAME 與 DNS 自動化。
 
+---
+
+## 7. 動工前 checklist
+
+- [x] 6 大決策已拍板（第 0 節）
+- [x] 還原點與備份已建立（第 9 節）
+- [x] 缺漏 callable 清單已列（第 2.2 節）
+- [ ] localhost emulator 第一次啟動成功
+- [ ] 您下指令進入 Phase 0
+
+---
+
+## 8. 還原點與備份（已完成 ✅，2026-05-05）
+
+### 8.1 資料夾快照
+路徑：`_backup/2026-05-05_pre-redesign/`（4.0 MB）。任何時候要還原，把 `public/` 蓋回去即可。
+
+### 8.2 Git baseline
 ```
-36f8713 baseline: pre UI redesign snapshot (2026-05-05)
-        tag: v1-pre-redesign
+36f8713 baseline: pre UI redesign snapshot   ← tag: v1-pre-redesign
+a76f9ce plan: lock in 6 decisions
 ```
 
-還原指令（任何時候想退回）：
-
+還原指令：
 ```bash
-# 退回到動工前狀態
-git reset --hard v1-pre-redesign
-
-# 或只還原 public/index.html 一個檔案
-git checkout v1-pre-redesign -- public/index.html
+git reset --hard v1-pre-redesign     # 全部退回
+git checkout v1-pre-redesign -- public/index.html   # 只退單檔
 ```
 
-### 9.3 安全強化
-`.gitignore` 已加上：
-- `serviceAccountKey.json`（Firebase Admin 私鑰，不可進 git）
-- `firestore-debug.log`
-- `_backup/`
+### 8.3 安全強化
+`.gitignore` 已排除 `serviceAccountKey.json` / `firestore-debug.log` / `_backup/`。
 
 ---
 
-## 10. localhost 工作流程
+## 9. localhost 工作流程
 
-依 0 節「額外」要求，本次更新**先在 localhost 跑通**才會 deploy。
-
-### 10.1 啟動 emulator
-
-`firebase.json` 已設好 emulators 區塊：
+`firebase.json` 已設好 emulators：
 
 | Service | Port |
 | --- | --- |
@@ -366,39 +508,29 @@ git checkout v1-pre-redesign -- public/index.html
 | Storage | 9199 |
 | **Emulator UI** | http://localhost:4000 |
 
-啟動指令（在 RegMaster 根目錄）：
-
 ```bash
 firebase emulators:start
 ```
 
-> functions/ 內如改了 index.js，要 **Ctrl+C 重啟** emulator 才會 reload。
+每 Phase 收尾：
+1. `git status` 看異動；
+2. emulator 跑通該 Phase checklist；
+3. **每個 Phase commit 前要中英文各跑一次**；
+4. 通過後 `git add ... && git commit -m "phase X: ..."`。
 
-### 10.2 每個 Phase 收尾流程
-
-1. `git status` 看異動。
-2. emulator 開著，到 http://localhost:5000 手動驗收 Phase checklist。
-3. 跑兩遍：中文一次、英文一次（Phase 7 之後強制每次都做）。
-4. 通過後 `git add ... && git commit -m "phase X: ..."` 再進下一個 Phase。
-5. 任一 Phase commit 後想退，`git reset --hard <該 Phase 之前的 commit>`。
-
-### 10.3 deploy 時機
-
-**所有 Phase 跑完 + 端到端 smoke 通過後**，才由您手動執行：
-
+deploy 由您手動：
 ```bash
 firebase deploy --only hosting
-firebase deploy --only functions   # 若 Phase 4b 有改 functions
+firebase deploy --only functions   # 若有後端變動
 ```
-
-> 不會主動 deploy；deploy 是您手動的決定。
 
 ---
 
-## 11. 待您下指令
+## 10. 下一步
 
-備份與還原點已就緒。請選擇下一步：
+備份就緒、規劃確認後，可以下指令：
 
-- **A. 「開始 Phase 0」** → 落 design tokens + legacy-shim，**不動 markup**，commit 後請您驗收。
-- **B. 「先讓我跑 emulator」** → 您先用 `firebase emulators:start` 確認本機環境 OK。
-- **C. 「規劃書還要改 X」** → 提出後我先改規劃書，再進入 A。
+- **「開始 Phase 0」** — 落 design tokens，零風險，commit 後請您 emulator 驗收
+- **「先看看 emulator」** — 您 `firebase emulators:start` 確認本機環境
+- **「規劃書還要改 X」** — 提出後我先改規劃書，再進入 Phase 0
+- **「跳過某 Phase」** — 例如「先不做 Phase 10 協作者」，會把該 Phase mark 為 deferred
