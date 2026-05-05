@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// =============================================================================
+// RegMaster — Cloud Storage Security Rules
+// =============================================================================
+// RegMaster 沒有使用 Cloud Storage。所有檔案（海報、規則 PDF、隊伍檔案）
+// 都透過 Cloud Functions 以 base64 切塊存入 Firestore 的 posterFiles 集合
+// (pfid: 引用機制)。
+//
+// 因此這裡採用與 firestore.rules 相同的策略：
+//   - 拒絕所有用戶端讀寫
+//   - Cloud Functions 使用 admin SDK，會自動繞過這些規則
+//
+// 如果未來改為使用 Cloud Storage，再回來放寬規則。
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

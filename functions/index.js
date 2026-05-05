@@ -1,0 +1,3317 @@
+/**
+ * RegMaster v5.1 — Firebase Cloud Functions (Gen2)
+ */
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { setGlobalOptions } = require("firebase-functions/v2/options");
+const admin = require("firebase-admin");
+admin.initializeApp();
+const db = admin.firestore();
+const crypto = require("crypto");
+
+/* Speed up cold start: set region + concurrency globally */
+setGlobalOptions({ region: "us-central1", concurrency: 80 });
+
+// ===== Helpers =====
+function fmtNow() {
+  return new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
+}
+function hashPwd(p) {
+  return crypto.createHash("sha256").update(p).digest("hex");
+}
+function generateId(prefix) {
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let r = "";
+  for (let i = 0; i < 6; i++) r += c[Math.floor(Math.random() * c.length)];
+  return (prefix || "X") + r;
+}
+function generatePassword() {
+  const c = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let r = "";
+  for (let i = 0; i < 8; i++) r += c[Math.floor(Math.random() * c.length)];
+  return r;
+}
+async function auditLog(user, action, target, detail) {
+  try {
+    await db.collection("auditLogs").add({
+      time: fmtNow(), user: user || "system", action, target: target || "", detail: detail || "", createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { /* silent */ }
+}
+
+const EMAIL_HOST = "https://regmaster-pro.web.app";
+const EMAIL_LOGO_URL = EMAIL_HOST + "/Emaillogo.png";
+const SYSTEM_ADMIN_EMAIL = "ceo@calculator.com.tw";
+
+function emailWrap(title, bodyHtml, footerExtra) {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f0f4f8">
+<tr><td align="center" style="padding:20px 10px">
+<table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background-color:#ffffff;border:1px solid #d1d9e0">
+
+<!-- LOGO BANNER -->
+<tr><td style="background-color:#0A437A;padding:12px 24px">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+    <td style="vertical-align:middle">
+      <a href="${EMAIL_HOST}" target="_blank" style="text-decoration:none">
+        <img src="${EMAIL_LOGO_URL}" alt="RegMaster PRO" height="40" style="display:block;border:0;height:40px" />
+      </a>
+    </td>
+  </tr></table>
+</td></tr>
+
+<!-- TITLE BAR -->
+<tr><td style="background-color:#0D5BA8;padding:18px 24px;text-align:center">
+  <h2 style="margin:0;font-size:20px;font-weight:800;color:#ffffff;font-family:'Segoe UI',Roboto,Arial,sans-serif">${title}</h2>
+</td></tr>
+
+<!-- BODY -->
+<tr><td style="padding:28px 24px;background-color:#ffffff;color:#333333;font-size:15px;line-height:1.7">
+  ${bodyHtml}
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background-color:#f1f5f9;padding:16px 24px;text-align:center;font-size:12px;color:#64748b">
+  ${footerExtra ? '<div style="margin-bottom:8px">' + footerExtra + '</div>' : ''}
+  <div>Copyright &copy; <a href="${EMAIL_HOST}" style="color:#0A437A;text-decoration:none;font-weight:600">RegMaster Pro</a></div>
+  <div style="margin-top:4px;color:#94a3b8">此為系統自動發送之信件，請勿直接回覆。</div>
+</td></tr>
+
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
+// ===== Wrap all as callable functions (Gen2 + CORS) =====
+function callable(handler) {
+  return onCall({ cors: true }, async (request) => {
+    try { return await handler(request.data || {}, request); }
+    catch (e) { throw new HttpsError("internal", e.message); }
+  });
+}
+
+// ===== Authorization: session-token based auth for sensitive operations =====
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+/**
+ * authCallable(roles, handler)
+ * - roles: array of allowed roles, e.g. ["system"], ["system","competition"]
+ * - Validates _auth.username + _auth.token from the request
+ * - Injects `authUser` (the full account doc data) into handler's second arg
+ */
+function authCallable(roles, handler) {
+  return onCall({ cors: true }, async (request) => {
+    try {
+      const data = request.data || {};
+      const auth = data._auth;
+      if (!auth || !auth.username || !auth.token) {
+        throw new HttpsError("unauthenticated", "請先登入 / Authentication required");
+      }
+      const snap = await db.collection("accounts").where("username", "==", auth.username).limit(1).get();
+      if (snap.empty) {
+        throw new HttpsError("unauthenticated", "帳號不存在");
+      }
+      const acct = snap.docs[0].data();
+      if (acct.sessionToken !== auth.token) {
+        throw new HttpsError("unauthenticated", "登入已失效，請重新登入 / Session expired");
+      }
+      if (!roles.includes(acct.role)) {
+        throw new HttpsError("permission-denied", "權限不足 / Permission denied");
+      }
+      // Strip _auth from data before passing to handler
+      const cleanData = { ...data };
+      delete cleanData._auth;
+      return await handler(cleanData, { ...request, authUser: acct });
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", e.message);
+    }
+  });
+}
+
+// ===== Competition-level auth: verifies activity ownership =====
+function compAuthCallable(handler) {
+  return authCallable(["system","competition"], async (data, request) => {
+    if (request.authUser.role === "competition") {
+      let compId = data.compId;
+      if (!compId && data.teamId) {
+        const tDoc = await db.collection("teams").doc(data.teamId).get();
+        if (tDoc.exists) compId = tDoc.data().compId;
+      }
+      if (compId) {
+        const compDoc = await db.collection("competitions").doc(compId).get();
+        if (!compDoc.exists) throw new HttpsError("not-found", "活動不存在");
+        if (compDoc.data().creator !== request.authUser.username) {
+          throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
+        }
+      }
+    }
+    return await handler(data, request);
+  });
+}
+
+// ===== Account Management =====
+exports.loginAccount = callable(async (data) => {
+  const { username, password } = data;
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const doc = snap.docs[0];
+  const acct = doc.data();
+  // Check lock
+  if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil))
+    return { success: false, message: "帳號鎖定中，請稍後再試" };
+  if (acct.passwordHash === hashPwd(password)) {
+    const sessionToken = generateSessionToken();
+    await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
+    await auditLog(username, "登入", "", "");
+    return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName, sessionToken };
+  }
+  const fails = (acct.loginFails || 0) + 1;
+  const updates = { loginFails: fails };
+  if (fails >= 5) updates.lockedUntil = new Date(Date.now() + 900000).toISOString();
+  await doc.ref.update(updates);
+  // Notify system admin on failed admin login attempts
+  if (username === "admin" || acct.role === "system") {
+    const clientInfo = data._clientInfo || {};
+    const alertHtml = emailWrap('🚨 系統管理員登入失敗警報', `
+      <p style="font-size:15px;color:#991b1b;font-weight:700">偵測到針對管理員帳號 <b>${username}</b> 的登入失敗嘗試</p>
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:16px;margin:12px 0;font-size:14px;line-height:1.8">
+        <b>失敗次數：</b>${fails} / 5<br>
+        <b>IP 位址：</b>${clientInfo.ip || '未知'}<br>
+        <b>國家/地區：</b>${clientInfo.country || '未知'} ${clientInfo.city || ''}<br>
+        <b>裝置：</b>${clientInfo.device || '未知'}<br>
+        <b>瀏覽器：</b>${clientInfo.browser || '未知'}<br>
+        <b>時間：</b>${fmtNow()}
+      </div>
+      ${fails >= 5 ? '<p style="color:#991b1b;font-weight:700">⚠️ 帳號已被鎖定 15 分鐘</p>' : ''}
+    `);
+    await db.collection("mail").add({
+      to: [SYSTEM_ADMIN_EMAIL],
+      message: { subject: "🚨 [RegMaster] 管理員登入失敗警報 — " + username + " (第" + fails + "次)", html: alertHtml, text: "管理員 " + username + " 登入失敗第" + fails + "次" }
+    });
+  }
+  if (fails >= 5) return { success: false, message: "連續錯誤" + fails + "次，鎖定15分鐘" };
+  return { success: false, message: "密碼錯誤（剩" + (5 - fails) + "次）" };
+});
+
+exports.listAccounts = authCallable(["system"], async (data) => {
+  const snap = await db.collection("accounts").get();
+  const list = [];
+  snap.docs.forEach(doc => {
+    const a = doc.data();
+    list.push({
+      username: a.username,
+      role: a.role,
+      displayName: a.displayName || "",
+      lastLogin: a.lastLogin || "",
+      lockedUntil: a.lockedUntil || "",
+      email: a.email || "",                     // 【新增】：確保回傳 Email
+      phone: a.phone || "",                     // 【新增】：確保回傳 電話
+      emailVerified: a.emailVerified || false   // 【新增】：確保回傳 驗證狀態
+    });
+  });
+  return list;
+});
+
+exports.createAccount = authCallable(["system"], async (data) => {
+  const { username, password, role, displayName } = data;
+  if (!username || !password) return { success: false, message: "必填" };
+  if (role !== "system" && role !== "competition") return { success: false, message: "角色無效" };
+  const exist = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (!exist.empty) return { success: false, message: "已存在" };
+  await db.collection("accounts").add({
+    username, passwordHash: hashPwd(password), role, displayName: displayName || username, createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
+  });
+  await auditLog("system", "建帳號", username, role);
+  return { success: true };
+});
+
+exports.deleteAccount = authCallable(["system"], async (data) => {
+  if (data.username === "admin") return { success: false, message: "無法刪除" };
+  const snap = await db.collection("accounts").where("username", "==", data.username).limit(1).get();
+  if (snap.empty) return { success: false };
+  await snap.docs[0].ref.delete();
+  return { success: true };
+});
+
+// BUG-02 FIX: changePassword requires authenticated session
+exports.changePassword = authCallable(["system","competition"], async (data, request) => {
+  const { username, oldPassword, newPassword } = data;
+  // Verify the authenticated user is changing their own password
+  if (request.authUser.username !== username && request.authUser.role !== "system") {
+    return { success: false, message: "只能修改自己的密碼" };
+  }
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const doc = snap.docs[0];
+  if (doc.data().passwordHash !== hashPwd(oldPassword)) return { success: false, message: "舊密碼錯誤" };
+  const newToken = generateSessionToken();
+  await doc.ref.update({ passwordHash: hashPwd(newPassword), sessionToken: newToken });
+  await auditLog(request.authUser.username, "修改密碼", username, "");
+  return { success: true, sessionToken: newToken };
+});
+
+// ===== Gemini Keys =====
+exports.getGeminiKeys = authCallable(["system"], async () => {
+  const doc = await db.collection("config").doc("gemini").get();
+  return doc.exists ? (doc.data().keys || []) : [];
+});
+
+exports.saveGeminiKeys = authCallable(["system"], async (data) => {
+  await db.collection("config").doc("gemini").set({ keys: data.keys || [], keyIdx: 0 }, { merge: true });
+  return { success: true };
+});
+
+async function getNextGeminiKey() {
+  const doc = await db.collection("config").doc("gemini").get();
+  if (!doc.exists) return null;
+  const d = doc.data();
+  const keys = d.keys || [];
+  if (!keys.length) return null;
+  let idx = d.keyIdx || 0;
+  if (idx >= keys.length) idx = 0;
+  return { key: keys[idx], idx };
+}
+
+async function rotateGeminiKey() {
+  const doc = await db.collection("config").doc("gemini").get();
+  if (!doc.exists) return;
+  const d = doc.data();
+  const keys = d.keys || [];
+  let idx = (d.keyIdx || 0) + 1;
+  if (idx >= keys.length) idx = 0;
+  await doc.ref.update({ keyIdx: idx });
+}
+
+// ===== Notifications =====
+async function getNotificationsInternal(role, username) {
+  let compSnap;
+  if (role === "system") compSnap = await db.collection("competitions").get();
+  else compSnap = await db.collection("competitions").where("creator", "==", username).get();
+  const compMap = {};
+  compSnap.docs.forEach(d => { compMap[d.id] = d.data().name || ""; });
+  const nSnap = await db.collection("notifications").limit(200).get();
+  const results = nSnap.docs.filter(d => compMap[d.data().compId]).map(d => {
+    const n = d.data();
+    return { id: d.id, compId: n.compId, compName: compMap[n.compId] || "", question: n.question || "", time: n.time || "", read: n.read === true };
+  });
+  results.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+  return results.slice(0, 50);
+}
+
+// BUG-04 FIX: addNotification validates compId exists
+exports.addNotification = callable(async (data) => {
+  if (!data.compId) return { success: false, message: "missing compId" };
+  const compDoc = await db.collection("competitions").doc(data.compId).get();
+  if (!compDoc.exists) return { success: false, message: "活動不存在" };
+  await db.collection("notifications").add({
+    notifId: generateId("N"), compId: data.compId, question: (data.question || "").substring(0, 500), time: fmtNow(), read: false
+  });
+  return { success: true };
+});
+
+// BUG-03 FIX: getNotifications requires authenticated session, uses auth user identity
+exports.getNotifications = authCallable(["system","competition"], async (data, request) => {
+  return await getNotificationsInternal(request.authUser.role, request.authUser.username);
+});
+
+// BUG-03 FIX: markNotificationRead requires authenticated session
+exports.markNotificationRead = authCallable(["system","competition"], async (data) => {
+  if (!data.nid) return { success: false };
+  const snap = await db.collection("notifications").where("notifId", "==", data.nid).limit(1).get();
+  if (snap.empty) {
+    // Try by doc ID
+    try { await db.collection("notifications").doc(data.nid).update({ read: true }); return { success: true }; }
+    catch (e) { return { success: false }; }
+  }
+  await snap.docs[0].ref.update({ read: true });
+  return { success: true };
+});
+
+// BUG-03 FIX: markAllNotificationsRead requires authenticated session, uses auth user identity
+exports.markAllNotificationsRead = authCallable(["system","competition"], async (data, request) => {
+  const notifs = await getNotificationsInternal(request.authUser.role, request.authUser.username);
+  const unread = (notifs || []).filter(n => !n.read);
+  /* Safe batching: max 400 per batch to stay under Firestore 500 limit */
+  for (let i = 0; i < unread.length; i += 400) {
+    const batch = db.batch();
+    unread.slice(i, i + 400).forEach(n => {
+      try { batch.update(db.collection("notifications").doc(n.id), { read: true }); } catch(e){}
+    });
+    await batch.commit();
+  }
+  return { success: true };
+});
+
+// ===== Audit Logs =====
+/* Feature 3: 前端錯誤自動記錄到操作日誌 (標記 Alarm) */
+exports.logClientError = callable(async (data) => {
+  const action = (data.action || data.arg0 || "frontend_error");
+  const detail = (data.detail || data.arg1 || "").substring(0, 500);
+  await auditLog("⚠️ Alarm", action, "client", detail);
+  return { success: true };
+});
+
+exports.getAuditLogs = authCallable(["system","competition"], async (data) => {
+  const limit = data.limit || 100;
+  const snap = await db.collection("auditLogs").orderBy("createdAt", "desc").limit(limit).get();
+  return snap.docs.map(d => {
+    const l = d.data();
+    return { time: l.time || "", user: l.user || "", action: l.action || "", target: l.target || "", detail: (l.detail || "").substring(0, 120) };
+  });
+});
+
+// ===== Competition CRUD =====
+async function getCompStats(compId) {
+  const snap = await db.collection("teams").where("compId", "==", compId).get();
+  let total = 0, accepted = 0, waitlist = 0;
+  const sessionAccepted = {};
+  const sessionWaitlist = {};
+  snap.docs.forEach(d => {
+    const t = d.data();
+    const st = t.status || "";
+    if (st === "已取消") return;
+    total++;
+    const isAcc = st === "正取";
+    const isWL = st.startsWith("備取");
+    if (isAcc) accepted++;
+    if (isWL) waitlist++;
+    // Per-session counts
+    (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
+      if (isAcc) sessionAccepted[idx] = (sessionAccepted[idx] || 0) + 1;
+      if (isWL) sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
+    });
+  });
+  return { total, accepted, waitlist, sessionAccepted, sessionWaitlist };
+}
+
+/** Check if per-session quota mode is active */
+function isPerSessionQuota(cfg) {
+  return cfg.sessionSelectMode === "multi" && Array.isArray(cfg.sessions) && cfg.sessions.length >= 2;
+}
+
+exports.listCompetitionsPublic = callable(async () => {
+  const compSnap = await db.collection("competitions").get();
+  const results = [];
+  for (const doc of compSnap.docs) {
+    const r = doc.data();
+    if (r.isVisible === false) continue;
+    const cfg = r.config || {};
+    results.push({
+      compId: doc.id, name: r.name || "", category: r.category || cfg.category || "", isOpen: r.isOpen === true,
+      deadline: r.deadline || "", maxTeams: r.maxTeams || 0, teamCount: r.teamCount || 0,
+      themeColors: r.themeColors || "", posterUrl: cfg.posterUrl || "",
+      openDate: cfg.openDate || "", competitionDate: cfg.competitionDate || "", sessions: cfg.sessions || []
+    });
+  }
+  return results;
+});
+
+exports.listCompetitions = authCallable(["system","competition"], async (data, request) => {
+  const role = request.authUser.role;
+  const username = request.authUser.username;
+  let snap;
+  if (role === "competition") snap = await db.collection("competitions").where("creator", "==", username).get();
+  else snap = await db.collection("competitions").get();
+  const results = [];
+  for (const doc of snap.docs) {
+    const r = doc.data();
+    results.push({
+      compId: doc.id, name: r.name || "", createdAt: r.createdAt || "", isOpen: r.isOpen === true,
+      deadline: r.deadline || "", maxTeams: r.maxTeams || 0, creator: r.creator || "",
+      teamCount: r.teamCount || 0, viewCount: r.viewCount || 0, hasRules: !!r.rulesPdfId, themeColors: r.themeColors || "",
+      maxCapacityLimit: r.maxCapacityLimit !== undefined ? r.maxCapacityLimit : 300,
+      capacityLimitUnlocked: r.capacityLimitUnlocked === true
+    });
+  }
+  return results;
+});
+
+exports.createCompetition = authCallable(["system","competition"], async (data, request) => {
+  const { name, category, eventType } = data;
+  const creator = request.authUser.username;
+  const compId = generateId("C");
+
+  let mCount = 1, tCount = 0;
+  if (eventType === 'single_coach') { mCount = 1; tCount = 1; }
+  else if (eventType === 'single_no_coach') { mCount = 1; tCount = 0; }
+  else if (eventType === 'team_coach') { mCount = 2; tCount = 1; }
+  else if (eventType === 'team_no_coach') { mCount = 2; tCount = 0; }
+
+  const cfg = {
+    competitionName: name, category: category || '研討會', eventType: eventType || 'single_no_coach',
+    isVisible: false,
+    groups: [], requireTeamNameCN: false, requireTeamNameEN: false,
+    memberCount: mCount, studentFields: ["chineseName"], teacherCount: tCount, teacherFields: ["chineseName"],
+    // 【新增】：預設的附加選項與自訂問題空陣列
+    dietaryOptions: ["豬肉", "牛肉", "雞肉", "海鮮", "全素"], 
+    tshirtOptions: ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    customQuestions: [],
+    paymentMethods: [], bankInfo: {}, creditCardLink: "", description: "", posterUrl: "",
+    requireFileUpload: false, fileUploadLevel: "required", fileUploadDescription: "", sessionSelectMode: "single", openDate: "", competitionDate: ""
+  };
+  
+  await db.collection("competitions").doc(compId).set({
+    name, category: category || '研討會', config: cfg, createdAt: fmtNow(), 
+    isOpen: false, isVisible: false, deadline: "", maxTeams: 0,
+    creator: creator || "", rulesPdfId: "", rulesText: "", themeColors: "",
+    teamCount: 0,
+    maxCapacityLimit: 300, capacityLimitUnlocked: false
+  });
+  
+  await auditLog(creator, "建立活動", compId, name);
+  return { success: true, compId };
+});
+
+/* In-memory cache for config (5 min TTL) */
+const _cache = {};
+/* Cache disabled — Cloud Functions run on multiple instances, 
+   cDel on instance A doesn't clear instance B's cache, causing stale reads */
+function cGet(k) { return null; }
+function cSet(k, d) { }
+function cDel(k) { }
+
+exports.getCompetitionConfig = compAuthCallable(async (data) => {
+  const cached = cGet("cfg_" + data.compId);
+  if (cached) return cached;
+  const doc = await db.collection("competitions").doc(data.compId).get();
+  if (!doc.exists) return null;
+  const r = doc.data();
+  const cfg = r.config || {};
+  cfg.compId = doc.id;
+  cfg.competitionName = cfg.competitionName || r.name || "";
+  cfg.isOpen = r.isOpen === true;
+  cfg.isVisible = cfg.isVisible !== undefined ? !!cfg.isVisible : (r.isVisible !== false);
+  cfg.deadline = r.deadline || "";
+  cfg.maxTeams = r.maxTeams || 0;
+  cfg.creator = r.creator || "";
+  cfg.rulesPdfId = r.rulesPdfId || "";
+  cfg.pdfDocId = r.pdfDocId || "";
+  cfg.rulesText = r.rulesText || "";
+  cfg.themeColors = r.themeColors || "";
+  cfg.maxCapacityLimit = r.maxCapacityLimit !== undefined ? r.maxCapacityLimit : 300;
+  cfg.capacityLimitUnlocked = r.capacityLimitUnlocked === true;
+  cSet("cfg_" + data.compId, cfg);
+  return cfg;
+});
+
+exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
+  const { compId, config } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "找不到" };
+  
+  // ===== Capacity limit validation =====
+  const compData = doc.data();
+  const capLimit = compData.maxCapacityLimit !== undefined ? compData.maxCapacityLimit : 300;
+  const capUnlocked = compData.capacityLimitUnlocked === true;
+  
+  if (!capUnlocked && capLimit > 0) {
+    const sessMode = config.sessionSelectMode || "single";
+    const sessions = config.sessions || [];
+    const sessCount = sessions.length;
+    
+    if (sessMode === "multi" && sessCount >= 2) {
+      // Multi-select + multiple sessions: sum all session maxTeams
+      let totalMax = 0;
+      sessions.forEach(s => { totalMax += parseInt(s.maxTeams) || 0; });
+      if (totalMax > capLimit) {
+        return { success: false, message: "所有梯次報名組數加總 (" + totalMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
+      }
+    } else {
+      // Single-select or single session: check global maxTeams or per-session max
+      if (sessCount >= 2) {
+        // Single-select with multiple sessions: check each session max
+        for (let i = 0; i < sessions.length; i++) {
+          const sMax = parseInt(sessions[i].maxTeams) || 0;
+          if (sMax > capLimit) {
+            return { success: false, message: "梯次 " + (i + 1) + " 的最大報名數 (" + sMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
+          }
+        }
+      }
+      const globalMax = parseInt(config.maxTeams) || 0;
+      if (globalMax > capLimit) {
+        return { success: false, message: "最大報名數 (" + globalMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
+      }
+    }
+  }
+  
+  const jk = ["competitionName", "category", "eventType", "isVisible", "groups", "requireTeamNameCN", "requireTeamNameEN", "memberCount",
+    "studentFields", "teacherCount", "teacherFields", "dietaryOptions", "dietaryRestrictionOptions", "tshirtOptions", "customQuestions", "studentCustomQuestions", "teacherCustomQuestions", "paymentMethods", "bankInfo", "creditCardLink",
+    "description", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
+    "competitionDate", "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
+    "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel"];
+    
+  const jc = {};
+  /* Filter undefined values — Firestore rejects undefined */
+  jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
+  
+  await ref.update({
+    name: config.competitionName || "", category: config.category || "", config: jc, 
+    isOpen: config.isOpen === true, isVisible: !!config.isVisible, 
+    deadline: config.deadline || "", maxTeams: config.maxTeams || 0
+  });
+  
+  await auditLog(request.authUser.username, "儲存設定", compId, "");
+  cDel("cfg_" + compId);
+  return { success: true, message: "儲存成功！" };
+});
+
+exports.setRegistrationOpen = compAuthCallable(async (data) => {
+  await db.collection("competitions").doc(data.compId).update({ isOpen: data.isOpen });
+  return { success: true, isOpen: data.isOpen };
+});
+
+// ===== System Admin: Set capacity limit per competition =====
+exports.setCapacityLimit = authCallable(["system"], async (data) => {
+  const { compId, maxCapacityLimit, capacityLimitUnlocked } = data;
+  if (!compId) return { success: false, message: "缺少 compId" };
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+  
+  const updates = {};
+  if (maxCapacityLimit !== undefined) {
+    const val = parseInt(maxCapacityLimit);
+    if (isNaN(val) || val < 1) return { success: false, message: "最大人數必須為正整數" };
+    updates.maxCapacityLimit = val;
+  }
+  if (capacityLimitUnlocked !== undefined) {
+    updates.capacityLimitUnlocked = !!capacityLimitUnlocked;
+  }
+  
+  await ref.update(updates);
+  return { success: true };
+});
+
+exports.deleteCompetition = compAuthCallable(async (data) => {
+  const compId = data.compId;
+  
+  /* Clean up teamFiles chunks first (they reference parentId=teamId, not compId) */
+  const tfSnap = await db.collection("teamFiles").where("compId", "==", compId).get();
+  for (const tfDoc of tfSnap.docs) {
+    const chunks = await db.collection("teamFiles").where("parentId", "==", tfDoc.id).get();
+    if (!chunks.empty) {
+      const cb = db.batch();
+      chunks.docs.forEach(d => cb.delete(d.ref));
+      await cb.commit();
+    }
+  }
+  
+  const collections = [
+    { col: "teams", field: "compId" }, { col: "members", field: "compId" },
+    { col: "announcements", field: "compId" }, { col: "emailTemplates", field: "compId" },
+    { col: "payments", field: "compId" }, { col: "notifications", field: "compId" },
+    { col: "scores", field: "compId" }, { col: "emailLogs", field: "compId" },
+    { col: "pdfFiles", field: "compId" }, { col: "posterFiles", field: "compId" },
+    { col: "teamFiles", field: "compId" }, { col: "regPayments", field: "compId" }
+  ];
+  for (const c of collections) {
+    const snap = await db.collection(c.col).where(c.field, "==", compId).get();
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const batch = db.batch();
+      snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  await db.collection("competitions").doc(compId).delete();
+  await auditLog("system", "刪除競賽", compId, "");
+  return { success: true };
+});
+
+exports.getRegistrationBundle = callable(async (data) => {
+  const doc = await db.collection("competitions").doc(data.compId).get();
+  if (!doc.exists) return { error: "找不到此競賽" };
+  const r = doc.data();
+  const cfg = r.config || {};
+  cfg.compId = doc.id;
+  cfg.competitionName = cfg.competitionName || r.name || "";
+  cfg.isOpen = r.isOpen === true;
+  cfg.deadline = r.deadline || "";
+  cfg.maxTeams = r.maxTeams || 0;
+  cfg.rulesPdfId = r.rulesPdfId || "";
+  cfg.themeColors = r.themeColors || "";
+  // Strip sensitive keys before returning to public client
+  ['payuniMerID','payuniHashKey','payuniHashIV','payuniMode'].forEach(k => delete cfg[k]);
+  const stats = await getCompStats(data.compId);
+  const annSnap = await db.collection("announcements").where("compId", "==", data.compId).get();
+  const announcements = annSnap.docs.map(d => {
+    const a = d.data();
+    return { date: a.date || "", title: a.title || "", content: a.content || "" };
+  }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  return {
+    config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
+    sessionAccepted: stats.sessionAccepted || {},
+    sessionWaitlist: stats.sessionWaitlist || {},
+    rulesPdfUrl: cfg.rulesPdfId || "",
+    pdfDocId: r.pdfDocId || "",
+    themeColors: cfg.themeColors || ""
+  };
+});
+
+exports.getShareLink = callable(async (data) => {
+  return "https://regmaster-pro.web.app/?comp=" + data.compId;
+});
+
+// ===== Announcements =====
+async function getAnnouncementsInternal(compId) {
+  const snap = await db.collection("announcements").where("compId", "==", compId).get();
+  return snap.docs.map(d => {
+    const a = d.data();
+    return { date: a.date || "", title: a.title || "", content: a.content || "", docId: d.id };
+  }).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+exports.addAnnouncement = compAuthCallable(async (data) => {
+  await db.collection("announcements").add({ compId: data.compId, date: data.date, title: data.title, content: data.content || "" });
+  return { success: true };
+});
+
+exports.getAnnouncements = callable(async (data) => {
+  return await getAnnouncementsInternal(data.compId);
+});
+
+exports.deleteAnnouncement = compAuthCallable(async (data) => {
+  const { compId, docId } = data;
+  if (!docId) return { success: false, message: "missing docId" };
+  // Verify the announcement belongs to this competition
+  const annDoc = await db.collection("announcements").doc(docId).get();
+  if (!annDoc.exists || annDoc.data().compId !== compId) return { success: false, message: "公告不存在" };
+  await db.collection("announcements").doc(docId).delete();
+  return { success: true };
+});
+
+// ===== Registration =====
+exports.submitRegistration = callable(async (data) => {
+  const { compId, fd } = data;
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return { success: false, message: "找不到競賽" };
+  const comp = compDoc.data();
+  const cfg = comp.config || {};
+  if (!comp.isOpen) return { success: false, message: "報名未開放" };
+  if (comp.deadline && new Date() >= new Date(comp.deadline)) return { success: false, message: "已截止" };
+  
+  const teamId = generateId("T");
+  const pwd = generatePassword();
+  const perSession = isPerSessionQuota(cfg);
+
+  // === BUG-01 FIX: Use Firestore Transaction to prevent race condition ===
+  // Atomically read all teams, check quota, and write new team inside one transaction
+  let status, wn;
+  try {
+    const result = await db.runTransaction(async (tx) => {
+      // CRITICAL: Read competition doc INSIDE transaction to include it in the read set.
+      // Without this, two concurrent transactions both increment teamCount without conflict,
+      // because tx.update() is write-only and doesn't trigger retry on contention.
+      const compRef = db.collection("competitions").doc(compId);
+      const compSnapInTx = await tx.get(compRef);
+      const compInTx = compSnapInTx.data() || comp;
+      const cfgInTx = compInTx.config || cfg;
+
+      // Read all teams for this competition within the transaction
+      const tSnap = await tx.get(db.collection("teams").where("compId", "==", compId));
+      let accepted = 0, waitlist = 0;
+      const sessionAccepted = {}, sessionWaitlist = {};
+      tSnap.docs.forEach(d => {
+        const t = d.data();
+        const st = t.status || "";
+        if (st === "已取消") return;
+        const isAcc = st === "正取";
+        const isWL = st.startsWith("備取");
+        if (isAcc) accepted++;
+        if (isWL) waitlist++;
+        (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
+          if (isAcc) sessionAccepted[idx] = (sessionAccepted[idx] || 0) + 1;
+          if (isWL) sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
+        });
+      });
+
+      let txStatus = "正取", txWn = 0;
+      if (perSession) {
+        const selectedSessions = fd.selectedSessions || [fd.selectedSession || 0];
+        const sessions = cfgInTx.sessions || [];
+        for (const sIdx of selectedSessions) {
+          const s = sessions[sIdx];
+          if (!s) continue;
+          const sMax = parseInt(s.maxTeams) || 0;
+          if (sMax <= 0) continue;
+          const sAcc = sessionAccepted[sIdx] || 0;
+          if (sAcc >= sMax) {
+            if (s.allowWaitlist === false) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 名額已滿，不接受新報名");
+            const sWait = sessionWaitlist[sIdx] || 0;
+            txWn = sWait + 1;
+            txStatus = "備取" + txWn;
+          }
+        }
+      } else {
+        const maxT = compInTx.maxTeams || 0;
+        if (maxT > 0 && accepted >= maxT) {
+          if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:報名已額滿，不接受新報名");
+          txWn = waitlist + 1;
+          txStatus = "備取" + txWn;
+        }
+      }
+
+      // Write team doc inside transaction
+      const teamRef = db.collection("teams").doc(teamId);
+      tx.set(teamRef, {
+        teamId, compId, registrationTime: fmtNow(), group: fd.group || "",
+        teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
+        status: txStatus, paymentStatus: "待確認", paymentMethod: fd.paymentMethod || "",
+        remitterName: fd.remitterName || "", remitterBank: fd.remitterBank || "",
+        remitterAccount: fd.remitterAccount || "", note: "", password: pwd,
+        waitlistNum: txWn, creditCardOrderNo: fd.creditCardOrderNo || "", fileUrl: "",
+        selectedSessions: fd.selectedSessions || [fd.selectedSession || 0],
+        customAnswers: fd.customAnswers || {}
+      });
+
+      // Increment teamCount atomically (reuse compRef already in transaction read set)
+      tx.update(compRef, { teamCount: admin.firestore.FieldValue.increment(1) });
+
+      return { status: txStatus, wn: txWn };
+    });
+    status = result.status;
+    wn = result.wn;
+  } catch (e) {
+    // Handle quota-exceeded errors thrown inside transaction
+    if (e.message && e.message.startsWith("QUOTA:")) {
+      return { success: false, message: e.message.substring(6) };
+    }
+    throw e;
+  }
+
+  // Write members outside transaction (not quota-sensitive)
+  const members = [];
+  (fd.students || []).forEach((s, i) => { members.push({ teamId, compId, role: "學生", seq: i + 1, ...s }); });
+  (fd.teachers || []).forEach((t, i) => { members.push({ teamId, compId, role: "教練", seq: i + 1, ...t }); });
+  const memBatch = db.batch();
+  members.forEach(m => memBatch.set(db.collection("members").doc(), m));
+  await memBatch.commit();
+  
+  await auditLog("", "報名", teamId, cfg.competitionName || "");
+
+  // 【信件排版優化】：專業版樣式 + QR Code 產生
+  if (cfg.autoEmailNotification !== false) {
+    const emailList = [...new Set(members.map(m => m.email).filter(e => e))];
+    if (emailList.length > 0) {
+      const subject = `[RegMaster] 報名成功通知 - ${cfg.competitionName || ''}`;
+      const qrUrl = `https://quickchart.io/qr?text=${teamId}&size=150`;
+      const activityUrl = `${EMAIL_HOST}/?comp=${compId}`;
+      const calStart = (cfg.sessions && cfg.sessions[0] && cfg.sessions[0].startDate) ? new Date(cfg.sessions[0].startDate) : null;
+      const calEnd = calStart ? (cfg.sessions[0].endDate ? new Date(cfg.sessions[0].endDate) : new Date(calStart.getTime() + 28800000)) : null;
+      const calFmt = (dt) => dt ? dt.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z' : '';
+      const calUrl = calStart ? `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(cfg.competitionName||'')}&dates=${calFmt(calStart)}/${calFmt(calEnd)}` : '';
+      const bodyHtml = `
+        <p style="font-size:16px;line-height:1.6;margin-top:0">您好，您已成功報名 <b>${cfg.competitionName || ''}</b>。</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin:20px 0">
+          <p style="margin:0 0 12px;font-size:15px;color:#64748b">隊伍編號 <span style="display:block;font-size:22px;color:#0A437A;font-weight:900;font-family:monospace;letter-spacing:1px;margin-top:4px">${teamId}</span></p>
+          <p style="margin:0 0 12px;font-size:15px;color:#64748b">登入密碼 <span style="display:block;font-size:20px;color:#d97706;font-weight:800;font-family:monospace;letter-spacing:2px;margin-top:4px">${pwd}</span></p>
+          <p style="margin:0;font-size:15px;color:#64748b">報名狀態 <span style="display:block;margin-top:6px"><span style="background:#ecfdf5;border:1px solid #10b981;color:#10b981;padding:4px 12px;border-radius:6px;font-weight:bold;font-size:14px">${status}</span></span></p>
+        </div>
+        <div style="text-align:center;margin:20px 0">
+          <p style="font-size:14px;color:#64748b;font-weight:bold;margin-bottom:12px">憑此 QR Code 進行報到或查詢：</p>
+          <img src="${qrUrl}" alt="QR Code" width="140" height="140" style="border:1px solid #cbd5e1;border-radius:8px;padding:6px;background:#fff">
+        </div>
+        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto"><tr>
+          <td style="background-color:#0A437A;padding:12px 24px;text-align:center">
+            <a href="${activityUrl}" target="_blank" style="color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;font-family:'Segoe UI',Arial,sans-serif">🔙 返回活動</a>
+          </td>
+          <td width="10"></td>
+          ${calUrl ? `<td style="background-color:#10b981;padding:12px 24px;text-align:center"><a href="${calUrl}" target="_blank" style="color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;font-family:'Segoe UI',Arial,sans-serif">📅 加入行事曆</a></td>` : ''}
+        </tr></table>
+        <p style="font-size:14px;color:#ef4444;font-weight:bold;background-color:#fef2f2;padding:12px;margin-bottom:0">⚠️ 請妥善保管您的隊伍編號與密碼，日後登入修改資料需使用此憑證。</p>`;
+      const htmlBody = emailWrap('🎉 報名成功通知', bodyHtml);
+      await db.collection("mail").add({ to: emailList, message: { subject: subject, html: htmlBody, text: `報名成功！您的隊伍編號：${teamId}，密碼：${pwd}` } });
+    }
+  }
+  return { success: true, teamId, password: pwd, status };
+});
+
+
+// ===== 新增：帳號申請與驗證信功能 =====
+exports.requestAccount = callable(async (data) => {
+  const { username, password, displayName, email, phone } = data;
+  if (!username || !password || !email || !displayName) return { success: false, message: "必填欄位請填寫完整" };
+  
+  // 檢查是否已被註冊
+  const existUser = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (!existUser.empty) return { success: false, message: "此帳號已被註冊" };
+  
+  const existEmail = await db.collection("accounts").where("email", "==", email).limit(1).get();
+  if (!existEmail.empty) return { success: false, message: "此 Email 已被註冊過" };
+
+  // 產生 6 位數 OTP 驗證碼
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // 寫入暫存區 (15分鐘後過期)
+  await db.collection("accountRequests").doc(username).set({
+    username, passwordHash: hashPwd(password), displayName, email, phone, otp,
+    expiresAt: new Date(Date.now() + 15 * 60000).getTime() 
+  });
+
+  // 發送驗證信
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background: #0A437A; padding: 20px; text-align: center; color: white;"><h2 style="margin: 0;">RegMaster 帳號驗證碼</h2></div>
+      <div style="padding: 30px 20px; text-align: center;">
+        <p style="font-size: 16px;">您好 <b>${displayName}</b>，您的註冊驗證碼為：</p>
+        <div style="font-size: 32px; font-weight: 900; color: #F49121; letter-spacing: 4px; margin: 20px 0; background: #FFF7ED; padding: 15px; border-radius: 8px;">${otp}</div>
+        <p style="font-size: 14px; color: #ef4444;">請於 15 分鐘內在系統中輸入以完成開通。</p>
+      </div>
+    </div>
+  `;
+  await db.collection("mail").add({
+    to: [email],
+    message: { subject: "[RegMaster] 帳號申請驗證碼", html: htmlBody, text: `您的驗證碼為: ${otp}` }
+  });
+
+  return { success: true };
+});
+
+// ===== 新增：忘記密碼與重置 =====
+exports.resetAdminPassword = callable(async (data) => {
+  const { email } = data;
+  if (!email) return { success: false, message: "請輸入 Email" };
+  const genericMsg = "若此 Email 已註冊，新密碼將寄送至信箱";
+  
+  const snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
+  if (snap.empty) return { success: true, message: genericMsg }; // Don't reveal account existence
+  
+  const doc = snap.docs[0];
+  const user = doc.data();
+  
+  // Rate limit: 15 min cooldown per account
+  const lastReset = user.lastPasswordReset || 0;
+  if (Date.now() - lastReset < 900000) return { success: false, message: "請等待 15 分鐘後再試" };
+  
+  const newPwd = generatePassword();
+  await doc.ref.update({ passwordHash: hashPwd(newPwd), lastPasswordReset: Date.now() });
+  
+  const htmlBody = `
+    <div style="font-family:sans-serif;padding:20px;border:1px solid #e2e8f0;border-radius:10px;max-width:500px;margin:0 auto;">
+      <h2 style="color:#0A437A;">🔐 RegMaster 密碼重置通知</h2>
+      <p>您好 <b>${user.displayName || user.username}</b>，</p>
+      <p>您的密碼已重置，新密碼為：</p>
+      <div style="background:#FFF7ED;padding:15px;border-radius:8px;font-size:24px;font-weight:900;color:#F49121;text-align:center;letter-spacing:2px;margin:20px 0;">
+        ${newPwd}
+      </div>
+      <p style="color:#ef4444;font-size:14px;">請使用此新密碼登入，並建議您登入後盡快前往修改密碼。</p>
+    </div>
+  `;
+  
+  await db.collection("mail").add({
+    to: [email],
+    message: { subject: "[RegMaster] 系統密碼重置通知", html: htmlBody, text: `新密碼為: ${newPwd}` }
+  });
+  return { success: true, message: genericMsg };
+});
+
+// ===== 新增：系統管理員寄發單獨信件給活動管理員 =====
+exports.sendSystemEmail = authCallable(["system"], async (data, request) => {
+  const { targetEmail, subject, content } = data;
+  const htmlBody = `
+    <div style="font-family:sans-serif;padding:20px;border:1px solid #e2e8f0;border-radius:10px;max-width:600px;">
+      <div style="background:#0A437A;color:#fff;padding:15px;border-radius:8px 8px 0 0;text-align:center;">
+        <h2 style="margin:0;font-size:18px;">RegMaster 系統通知</h2>
+      </div>
+      <div style="padding:20px;background:#f8fafc;color:#333;line-height:1.6;">
+        ${content.replace(/\n/g, '<br>')}
+      </div>
+    </div>
+  `;
+  await db.collection("mail").add({
+    to: [targetEmail],
+    message: { subject: `[RegMaster 系統通知] ${subject}`, html: htmlBody, text: content }
+  });
+  await auditLog(request.authUser.username, "發送系統信件", targetEmail, subject);
+  return { success: true };
+});
+
+
+
+exports.verifyAccount = callable(async (data) => {
+  const { username, otp } = data;
+  const doc = await db.collection("accountRequests").doc(username).get();
+  if (!doc.exists) return { success: false, message: "查無申請紀錄，或已逾期失效" };
+  
+  const reqData = doc.data();
+  if (Date.now() > reqData.expiresAt) return { success: false, message: "驗證碼已過期，請重新申請" };
+  
+  // Brute force protection: max 5 attempts
+  const attempts = reqData.otpAttempts || 0;
+  if (attempts >= 5) {
+    await doc.ref.delete();
+    return { success: false, message: "驗證嘗試過多，請重新申請帳號" };
+  }
+  
+  if (reqData.otp !== otp) {
+    await doc.ref.update({ otpAttempts: attempts + 1 });
+    const remaining = 4 - attempts;
+    return { success: false, message: "驗證碼輸入錯誤（剩餘 " + remaining + " 次機會）" };
+  }
+
+  // 1. 正式建立帳號
+  await db.collection("accounts").add({
+    username: reqData.username, passwordHash: reqData.passwordHash, role: "competition",
+    displayName: reqData.displayName, email: reqData.email, phone: reqData.phone || "",
+    emailVerified: true, // 【新增此行】：標記此帳號已通過 Email OTP 驗證
+    createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
+  });
+
+  // 2. 自動產出一組免費的「單次活動授權碼」
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "RM";
+  for (let i = 0; i < 4; i++) {
+    code += "-";
+    for (let j = 0; j < 4; j++) code += c[Math.floor(Math.random() * c.length)];
+  }
+  await db.collection("licenses").doc(code).set({
+    code, type: "count", maxCount: 1, usedCount: 0, years: 0,
+    activatedBy: "", activatedAt: "", expiresAt: "", status: "未啟用", createdAt: fmtNow()
+  });
+
+  // 3. 發送歡迎信與免費授權碼
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background: #10b981; padding: 20px; text-align: center; color: white;"><h2 style="margin: 0;">🎉 歡迎加入 RegMaster</h2></div>
+      <div style="padding: 30px 20px;">
+        <p style="font-size: 16px;">您好 <b>${reqData.displayName}</b>，您的帳號已成功開通！</p>
+        <p style="font-size: 16px;">為了讓您體驗平台的強大功能，我們贈送您一組免費的「單次活動授權碼」：</p>
+        <div style="padding: 15px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; font-size: 18px; font-family: monospace; font-weight: bold; color: #0A437A; text-align: center; letter-spacing: 2px; margin: 20px 0;">
+          ${code}
+        </div>
+        <p style="font-size: 14px; color: #64748b;">💡 提示：請登入系統後，於首頁點擊「輸入授權碼」進行啟用，即可開始建立您的第一場活動！</p>
+      </div>
+    </div>
+  `;
+  await db.collection("mail").add({
+    to: [reqData.email],
+    message: { subject: "🎉 [RegMaster] 帳號開通成功與專屬授權碼", html: htmlBody, text: `授權碼: ${code}` }
+  });
+
+  // 4. 清除暫存
+  await doc.ref.delete();
+
+  return { success: true };
+});
+
+exports.loginTeam = callable(async (data) => {
+  const { compId, teamId, password } = data;
+  const doc = await db.collection("teams").doc(teamId).get();
+  if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "找不到" };
+  if (doc.data().password !== password) return { success: false, message: "密碼錯誤" };
+  const team = doc.data();
+  const { password: _, ...safeTeam } = team;
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const students = [], teachers = [];
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    if (m.role === "學生") students.push(m);
+    else teachers.push(m);
+  });
+  return { success: true, team: safeTeam, students, teachers };
+});
+
+exports.updateRegistration = callable(async (data) => {
+  const { compId, teamId, pwd, fd } = data;
+  const doc = await db.collection("teams").doc(teamId).get();
+  if (!doc.exists || doc.data().compId !== compId || doc.data().password !== pwd) return { success: false, message: "驗證失敗" };
+  
+  await doc.ref.update({
+    group: fd.group || "", teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
+    paymentMethod: fd.paymentMethod || "", remitterName: fd.remitterName || "",
+    remitterBank: fd.remitterBank || "", remitterAccount: fd.remitterAccount || "",
+    creditCardOrderNo: fd.creditCardOrderNo || "",
+    selectedSession: fd.selectedSession || 0,
+    selectedSessions: fd.selectedSessions || [fd.selectedSession || 0],
+    customAnswers: fd.customAnswers || {}
+  });
+  
+  // NEW-01 FIX: Use single batch for atomic member delete + recreate
+  const oldMembers = await db.collection("members").where("teamId", "==", teamId).get();
+  const members = [];
+  (fd.students || []).forEach((s, i) => members.push({ teamId, compId, role: "學生", seq: i + 1, ...s }));
+  (fd.teachers || []).forEach((t, i) => members.push({ teamId, compId, role: "教練", seq: i + 1, ...t }));
+  const atomicBatch = db.batch();
+  oldMembers.docs.forEach(d => atomicBatch.delete(d.ref));
+  members.forEach(m => atomicBatch.set(db.collection("members").doc(), m));
+  await atomicBatch.commit();
+  return { success: true, message: "更新成功" };
+});
+
+exports.lookupRegistration = callable(async (data) => {
+  const { compId, keyword } = data;
+  const kw = (keyword || "").trim().toUpperCase();
+  if (!kw) return { found: false };
+  /* Lookup by registration ID (teamId) only */
+  const doc = await db.collection("teams").doc(kw).get();
+  if (doc.exists && doc.data().compId === compId) {
+    const t = doc.data();
+    let displayStatus = t.status;
+    if ((t.status === "正取" || (t.status || "").startsWith("備取")) && !(t.paymentStatus || "").includes("已確認"))
+      displayStatus = t.status + " (等待確認中)";
+    return { found: true, teamId: t.teamId, group: t.group, teamNameCN: t.teamNameCN, teamNameEN: t.teamNameEN, status: displayStatus, paymentStatus: t.paymentStatus || "" };
+  }
+  return { found: false };
+});
+
+exports.checkDuplicates = callable(async (data) => {
+  const { compId, teamNameCN, idNumbers, passports, editTeamId } = data;
+  const errors = [];
+  if (teamNameCN) {
+    const snap = await db.collection("teams").where("compId", "==", compId).get();
+    for (const d of snap.docs) {
+      const t = d.data();
+      if (editTeamId && t.teamId === editTeamId) continue;
+      if (t.status === "已取消") continue;
+      if ((t.teamNameCN || "").trim() === teamNameCN.trim()) {
+        errors.push("中文隊名「" + teamNameCN + "」已被使用");
+        break;
+      }
+    }
+  }
+  if ((idNumbers && idNumbers.length) || (passports && passports.length)) {
+    // Parallelize: teams and members queries are independent
+    const [tSnap, mSnap] = await Promise.all([
+      db.collection("teams").where("compId", "==", compId).get(),
+      db.collection("members").where("compId", "==", compId).get()
+    ]);
+    const validTeams = new Set();
+    tSnap.docs.forEach(d => {
+      const t = d.data();
+      if (editTeamId && t.teamId === editTeamId) return;
+      if (t.status === "已取消") return;
+      validTeams.add(t.teamId);
+    });
+    mSnap.docs.forEach(d => {
+      const m = d.data();
+      if (!validTeams.has(m.teamId) || m.role !== "學生") return;
+      const existId = (m.idNumber || "").trim().toUpperCase();
+      const existPP = (m.passport || "").trim().toUpperCase();
+      if (existId && idNumbers) {
+        idNumbers.forEach(id => {
+          if (id && id.toUpperCase() === existId) errors.push("身分證「" + id + "」已被其他隊伍使用");
+        });
+      }
+      if (existPP && passports) {
+        passports.forEach(pp => {
+          if (pp && pp.toUpperCase() === existPP) errors.push("護照「" + pp + "」已被其他隊伍使用");
+        });
+      }
+    });
+  }
+  return { success: errors.length === 0, errors };
+});
+
+// ===== Dashboard =====
+exports.getDashboardStats = compAuthCallable(async (data) => {
+  const compId = data.compId;
+  const [compDoc, tSnap] = await Promise.all([
+    db.collection("competitions").doc(compId).get(),
+    db.collection("teams").where("compId", "==", compId).get()
+  ]);
+  const cfg = compDoc.exists ? (compDoc.data().config || {}) : {};
+  let total = 0, accepted = 0, waitlist = 0, payWait = 0;
+  const dailyMap = {}, groupMap = {}, sessionMap = {};
+  const sessionAccMap = {}, sessionWLMap = {};
+  /* Per-group detailed: { groupName: { total, accepted, waitlist, payWait } } */
+  const groupDetail = {};
+  tSnap.docs.forEach(d => {
+    const t = d.data();
+    if (t.status === "已取消") return;
+    total++;
+    const isAccepted = t.status === "正取";
+    const isWaitlist = (t.status || "").startsWith("備取");
+    const isPayWait = !(t.paymentStatus || "").includes("已確認");
+    if (isAccepted) accepted++;
+    if (isWaitlist) waitlist++;
+    if (isPayWait) payWait++;
+    const day = (t.registrationTime || "").substring(0, 10);
+    if (day) dailyMap[day] = (dailyMap[day] || 0) + 1;
+    const grp = t.group || "未分組";
+    groupMap[grp] = (groupMap[grp] || 0) + 1;
+    if (!groupDetail[grp]) groupDetail[grp] = { total: 0, accepted: 0, waitlist: 0, payWait: 0 };
+    groupDetail[grp].total++;
+    if (isAccepted) groupDetail[grp].accepted++;
+    if (isWaitlist) groupDetail[grp].waitlist++;
+    if (isPayWait) groupDetail[grp].payWait++;
+    /* Session count + per-session accepted/waitlist */
+    (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
+      sessionMap[idx] = (sessionMap[idx] || 0) + 1;
+      if (isAccepted) sessionAccMap[idx] = (sessionAccMap[idx] || 0) + 1;
+      if (isWaitlist) sessionWLMap[idx] = (sessionWLMap[idx] || 0) + 1;
+    });
+    /* Per-group daily for trend comparison */
+    if (day) {
+      if (!groupDetail[grp].daily) groupDetail[grp].daily = {};
+      groupDetail[grp].daily[day] = (groupDetail[grp].daily[day] || 0) + 1;
+    }
+  });
+  const dailyTrend = Object.keys(dailyMap).sort().map(d => ({ date: d, count: dailyMap[d] }));
+  const groupStats = Object.keys(groupMap).map(g => ({ name: g, count: groupMap[g] }));
+  const sessionStats = Object.keys(sessionMap).map(k => ({ idx: parseInt(k), count: sessionMap[k], accepted: sessionAccMap[k] || 0, waitlist: sessionWLMap[k] || 0 }));
+  /* Gender stats from members */
+  const genderMap = {};
+  const hasGender = (cfg.studentFields || []).includes("gender");
+  if (hasGender) {
+    const mSnap = await db.collection("members").where("compId", "==", compId).get();
+    mSnap.docs.forEach(d => {
+      const m = d.data();
+      if (m.role === "學生" && m.gender) genderMap[m.gender] = (genderMap[m.gender] || 0) + 1;
+    });
+  }
+  const genderStats = Object.keys(genderMap).map(g => ({ name: g, count: genderMap[g] }));
+  return { totalTeams: total, accepted, waitlist, payWait, dailyTrend, groupStats, groupDetail, sessionStats, genderStats,
+    hasWaitlist: cfg.allowWaitlist !== false, hasPayment: (cfg.paymentMethods || []).length > 0, hasGender };
+});
+
+exports.getAllTeams = compAuthCallable(async (data) => {
+  const [snap, mSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", data.compId).get(),
+    db.collection("members").where("compId", "==", data.compId).get()
+  ]);
+  const membersByTeam = {};
+  mSnap.docs.forEach(d => {
+    const m = d.data();
+    if (!membersByTeam[m.teamId]) membersByTeam[m.teamId] = { studentNames: [], teacherNames: [] };
+    if (m.role === "學生") membersByTeam[m.teamId].studentNames.push(m.chineseName || m.englishName || "");
+    else membersByTeam[m.teamId].teacherNames.push(m.chineseName || m.englishName || "");
+  });
+  return snap.docs.map(d => {
+    const t = d.data();
+    const mInfo = membersByTeam[t.teamId] || { studentNames: [], teacherNames: [] };
+    return {
+      teamId: t.teamId, registrationTime: t.registrationTime || "", group: t.group,
+      teamNameCN: t.teamNameCN, teamNameEN: t.teamNameEN, status: t.status,
+      paymentStatus: t.paymentStatus, paymentMethod: t.paymentMethod,
+      remitterName: t.remitterName, remitterBank: t.remitterBank, remitterAccount: t.remitterAccount,
+      creditCardOrderNo: t.creditCardOrderNo || "", fileUrl: t.fileUrl || "",
+      checkedIn: !!t.checkedIn, checkedInAt: t.checkedInAt || "",
+      selectedSession: t.selectedSession || 0,
+      selectedSessions: t.selectedSessions || [t.selectedSession || 0],
+      studentNames: mInfo.studentNames,
+      teacherNames: mInfo.teacherNames
+    };
+  });
+});
+
+exports.getTeamDetail = compAuthCallable(async (data) => {
+  const doc = await db.collection("teams").doc(data.teamId).get();
+  if (!doc.exists) return null;
+  const t = doc.data();
+  const { password: _, ...safeT } = t;
+  const memSnap = await db.collection("members").where("teamId", "==", data.teamId).get();
+  const students = [], teachers = [];
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    // 【新增】：讀出 dietary, tshirt, accommodation
+    const member = {
+      chineseName: m.chineseName || "", englishName: m.englishName || "", school: m.school || "",
+      grade: m.grade || "", jobTitle: m.jobTitle || "", nationality: m.nationality || "",
+      idNumber: m.idNumber || "", passport: m.passport || "", birthday: m.birthday || "",
+      gender: m.gender || "", organization: m.organization || "",
+      phone: m.phone || "", email: m.email || "",
+      postalCode: m.postalCode || "", address: m.address || "",
+      dietary: m.dietary || "", dietaryRestriction: m.dietaryRestriction || "",
+      tshirt: m.tshirt || "", accommodation: m.accommodation || "",
+      customAnswers: m.customAnswers || {}
+    };
+    if (m.role === "學生") students.push(member);
+    else teachers.push(member);
+  });
+  return { ...safeT, students, teachers };
+});
+
+exports.confirmPayment = compAuthCallable(async (data, request) => {
+  const { teamId } = data;
+  await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 " + fmtNow() });
+  await auditLog(request.authUser.username, "確認付款", teamId, "");
+  return { success: true };
+});
+
+exports.deleteTeam = compAuthCallable(async (data, request) => {
+  const teamId = data.teamId;
+  const teamDoc = await db.collection("teams").doc(teamId).get();
+  if (!teamDoc.exists) return { success: false, message: "隊伍不存在" };
+  const compId = teamDoc.data().compId;
+  
+  /* Clean up team uploaded file + chunks */
+  const tfDoc = await db.collection("teamFiles").doc(teamId).get();
+  if (tfDoc.exists) {
+    const chunks = await db.collection("teamFiles").where("parentId", "==", teamId).get();
+    const fb = db.batch();
+    chunks.docs.forEach(d => fb.delete(d.ref));
+    fb.delete(tfDoc.ref);
+    await fb.commit();
+  }
+  
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const batch = db.batch();
+  memSnap.docs.forEach(d => batch.delete(d.ref));
+  batch.delete(db.collection("teams").doc(teamId));
+  await batch.commit();
+  // Only decrement teamCount if team was NOT already cancelled
+  // (cancelled teams already had their count decremented by updateTeamStatus)
+  const teamStatus = teamDoc.data().status || "";
+  if (compId && teamStatus !== "已取消") {
+    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(-1) });
+  }
+  await auditLog(request.authUser.username, "刪除隊伍", teamId, "");
+  return { success: true };
+});
+
+exports.reconcilePayments = compAuthCallable(async (data, request) => {
+  const { compId, accountSuffix } = data;
+  // BUG-12 FIX: Validate accountSuffix minimum length to prevent accidental mass-confirmation
+  if (!accountSuffix || accountSuffix.length < 3) {
+    return { success: false, message: "帳號後碼至少需輸入 3 碼以上" };
+  }
+  const snap = await db.collection("teams").where("compId", "==", compId).get();
+  let matched = 0;
+  for (const d of snap.docs) {
+    const t = d.data();
+    if ((t.remitterAccount || "").endsWith(accountSuffix) && !(t.paymentStatus || "").includes("已確認")) {
+      await d.ref.update({ paymentStatus: "已確認 " + fmtNow() });
+      matched++;
+    }
+  }
+  if (matched > 0) await auditLog(request.authUser.username, "匯款對帳", compId, "後碼:" + accountSuffix + " 匹配:" + matched);
+  return { success: matched > 0, message: "匹配 " + matched + " 筆" };
+});
+
+exports.exportTeamsCSV = compAuthCallable(async (data) => {
+  const compId = data.compId;
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const cfg = compDoc.exists ? (compDoc.data().config || {}) : {};
+  const cqs = cfg.customQuestions || [];
+  const scqs = cfg.studentCustomQuestions || [];
+  const tcqs = cfg.teacherCustomQuestions || [];
+  const sFields = cfg.studentFields || [];
+  const tFields = cfg.teacherFields || [];
+  const mCount = cfg.memberCount || 1;
+  const tCount = cfg.teacherCount || 0;
+  const sessions = cfg.sessions || [];
+  
+  let headers = ["ID", "組別", "中文隊名", "英文隊名", "狀態", "付款狀態", "付款方式", "匯款人", "銀行", "帳號後五碼", "信用卡訂單號", "檔案連結", "報名時間"];
+  if (sessions.length > 1) headers.push("參加梯次");
+  
+  // 學員欄位 × 人數 + SCQ
+  for (let i = 1; i <= mCount; i++) {
+    sFields.forEach(f => { headers.push(`學員${i}_${f}`); });
+    scqs.forEach(sq => { headers.push(`學員${i}_${sq.q}`); });
+  }
+  // 教練欄位 × 人數 + TCQ
+  for (let i = 1; i <= tCount; i++) {
+    tFields.forEach(f => { headers.push(`指導者${i}_${f}`); });
+    tcqs.forEach(tq => { headers.push(`指導者${i}_${tq.q}`); });
+  }
+  // 通用自訂問題
+  cqs.forEach(cq => { headers.push(cq.q); });
+  
+  let csv = "\ufeff" + headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",") + "\n";
+  
+  const [tSnap, mSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("members").where("compId", "==", compId).get()
+  ]);
+  
+  const membersByTeam = {};
+  mSnap.docs.forEach(d => {
+    const m = d.data();
+    if (!membersByTeam[m.teamId]) membersByTeam[m.teamId] = { students: [], teachers: [] };
+    if (m.role === "學生") membersByTeam[m.teamId].students.push(m);
+    else membersByTeam[m.teamId].teachers.push(m);
+  });
+  Object.keys(membersByTeam).forEach(tid => {
+    membersByTeam[tid].students.sort((a, b) => a.seq - b.seq);
+    membersByTeam[tid].teachers.sort((a, b) => a.seq - b.seq);
+  });
+  
+  tSnap.docs.forEach(d => {
+    const t = d.data();
+    let row = [
+      t.teamId, t.group, t.teamNameCN, t.teamNameEN,
+      t.status, t.paymentStatus, t.paymentMethod || "",
+      t.remitterName || "", t.remitterBank || "", t.remitterAccount || "",
+      t.creditCardOrderNo || "", t.fileUrl || "", t.registrationTime || ""
+    ];
+    // 梯次
+    if (sessions.length > 1) {
+      const ss = t.selectedSessions || [t.selectedSession || 0];
+      row.push(ss.map(idx => "梯次" + (idx + 1)).join("、"));
+    }
+    // 學員
+    const tm = membersByTeam[t.teamId] || { students: [], teachers: [] };
+    for (let i = 0; i < mCount; i++) {
+      const m = tm.students[i] || {};
+      sFields.forEach(f => { row.push(m[f] || ""); });
+      const mca = m.customAnswers || {};
+      scqs.forEach(sq => { row.push(mca[sq.q] || ""); });
+    }
+    // 教練
+    for (let i = 0; i < tCount; i++) {
+      const m = tm.teachers[i] || {};
+      tFields.forEach(f => { row.push(m[f] || ""); });
+      const mca = m.customAnswers || {};
+      tcqs.forEach(tq => { row.push(mca[tq.q] || ""); });
+    }
+    // 通用自訂問題
+    const ans = t.customAnswers || {};
+    cqs.forEach((cq, idx) => {
+      let val = ans['cq_' + idx] || "";
+      if (Array.isArray(val)) val = val.join("、");
+      row.push(val);
+    });
+    
+    csv += row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(",") + "\n";
+  });
+  
+  return csv;
+});
+
+// ===== Email Templates =====
+exports.saveEmailTemplate = compAuthCallable(async (data) => {
+  const { compId, name, subject, body } = data;
+  const snap = await db.collection("emailTemplates").where("compId", "==", compId).where("name", "==", name).limit(1).get();
+  if (!snap.empty) {
+    await snap.docs[0].ref.update({ subject, body, createdAt: fmtNow() });
+    return { success: true, message: "已更新" };
+  }
+  await db.collection("emailTemplates").add({ compId, name, subject, body, createdAt: fmtNow() });
+  return { success: true, message: "已儲存" };
+});
+
+exports.getEmailTemplates = compAuthCallable(async (data) => {
+  const snap = await db.collection("emailTemplates").where("compId", "==", data.compId).get();
+  return snap.docs.map(d => {
+    const t = d.data();
+    return { name: t.name, subject: t.subject, body: t.body, createdAt: t.createdAt || "" };
+  });
+});
+
+exports.deleteEmailTemplate = compAuthCallable(async (data) => {
+  const snap = await db.collection("emailTemplates").where("compId", "==", data.compId).where("name", "==", data.name).limit(1).get();
+  if (snap.empty) return { success: false };
+  await snap.docs[0].ref.delete();
+  return { success: true };
+});
+
+// ==========================================
+// 寄信功能 (單一隊伍 / 全部隊伍) - 支援變數替換
+// ==========================================
+exports.sendNotificationToTeam = compAuthCallable(async (data, request) => {
+  const { compId, teamId, subject, body } = data;
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  
+  const emails = memSnap.docs.map(d => d.data().email).filter(e => e);
+  if (emails.length === 0) return { success: false, message: "該隊伍沒有填寫 Email" };
+
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  const t = tDoc.exists ? tDoc.data() : {};
+  const cDoc = await db.collection("competitions").doc(compId).get();
+  const compName = cDoc.exists ? (cDoc.data().name || "") : "";
+
+  // 執行變數替換
+  const fSubj = subject.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, teamId)
+    .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
+  const fBody = body.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, teamId)
+    .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
+
+  const htmlContent = emailWrap('📨 ' + fSubj, `<div style="font-size:15px;line-height:1.8">${fBody.replace(/\n/g, '<br>')}</div>`,
+    `<a href="${EMAIL_HOST}/?comp=${compId}" style="color:#0A437A;font-weight:600">🔙 返回活動頁面</a>`);
+
+  await db.collection("mail").add({
+    to: emails,
+    message: { subject: fSubj, text: fBody, html: htmlContent }
+  });
+  
+  await auditLog(request.authUser.username, "發信給隊伍", teamId, subject);
+  return { success: true, message: "已加入發送佇列" };
+});
+
+exports.sendNotificationToAll = compAuthCallable(async (data, request) => {
+  const { compId, subject, body } = data;
+  const [tSnap, mSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("members").where("compId", "==", compId).get()
+  ]);
+  
+  const teamEmails = {};
+  mSnap.docs.forEach(d => {
+    const m = d.data();
+    if (m.email) {
+      if (!teamEmails[m.teamId]) teamEmails[m.teamId] = new Set();
+      teamEmails[m.teamId].add(m.email);
+    }
+  });
+
+  const cDoc = await db.collection("competitions").doc(compId).get();
+  const compName = cDoc.exists ? (cDoc.data().name || "") : "";
+
+  let count = 0;
+  const mailDocs = [];
+  for (const doc of tSnap.docs) {
+    const t = doc.data();
+    const emails = teamEmails[t.teamId] ? Array.from(teamEmails[t.teamId]) : [];
+    if (emails.length === 0) continue;
+
+    // 針對每個隊伍執行獨立變數替換
+    const fSubj = subject.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, t.teamId)
+      .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
+    const fBody = body.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, t.teamId)
+      .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
+
+    const htmlAll = emailWrap('📨 ' + fSubj, `<div style="font-size:15px;line-height:1.8">${fBody.replace(/\n/g, '<br>')}</div>`,
+      `<a href="${EMAIL_HOST}/?comp=${compId}" style="color:#0A437A;font-weight:600">🔙 返回活動頁面</a>`);
+
+    mailDocs.push({ to: emails, message: { subject: fSubj, text: fBody, html: htmlAll } });
+    count++;
+  }
+  
+  // Batch write mail documents (400 per batch)
+  for (let i = 0; i < mailDocs.length; i += 400) {
+    const batch = db.batch();
+    mailDocs.slice(i, i + 400).forEach(m => batch.set(db.collection("mail").doc(), m));
+    await batch.commit();
+  }
+  
+  await auditLog(request.authUser.username, "群發通知", compId, subject);
+  return { success: true, message: "群發已排程 (共 " + count + " 隊)" };
+});
+
+// ===== Scores =====
+exports.saveScore = compAuthCallable(async (data) => {
+  const { compId, teamId, item, score, rank, comment, user } = data;
+  const snap = await db.collection("scores").where("compId", "==", compId).where("teamId", "==", teamId).where("item", "==", item).limit(1).get();
+  if (!snap.empty) {
+    await snap.docs[0].ref.update({ score, rank: rank || "", comment: comment || "", user, time: fmtNow() });
+  } else {
+    await db.collection("scores").add({ compId, teamId, item, score, rank: rank || "", comment: comment || "", user, time: fmtNow() });
+  }
+  return { success: true };
+});
+
+exports.getScores = compAuthCallable(async (data) => {
+  const snap = await db.collection("scores").where("compId", "==", data.compId).get();
+  return snap.docs.map(d => {
+    const s = d.data();
+    return { teamId: s.teamId, item: s.item, score: s.score, rank: s.rank, comment: s.comment, user: s.user, time: s.time };
+  });
+});
+
+// ===== License System =====
+exports.createLicense = authCallable(["system"], async (data) => {
+  const { type, count, years } = data;
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "RM";
+  for (let i = 0; i < 4; i++) {
+    code += "-";
+    for (let j = 0; j < 4; j++) code += c[Math.floor(Math.random() * c.length)];
+  }
+  await db.collection("licenses").doc(code).set({
+    code, type, maxCount: type === "count" ? (count || 1) : 0, usedCount: 0,
+    years: type === "subscription" ? (years || 1) : 0,
+    activatedBy: "", activatedAt: "", expiresAt: "", status: "未啟用", createdAt: fmtNow()
+  });
+  await auditLog("system", "建立授權碼", code, type);
+  return { success: true, code };
+});
+
+exports.listLicenses = authCallable(["system"], async () => {
+  const snap = await db.collection("licenses").get();
+  const now = Date.now();
+  return snap.docs.map(d => {
+    const l = d.data();
+    /* Compute real status based on actual data, not just stored status string */
+    let computedStatus = l.status || "未啟用";
+    if (l.activatedBy) {
+      // 已啟用的授權碼，根據實際使用情況判斷是否已失效
+      if (l.type === "count" && l.maxCount > 0 && l.usedCount >= l.maxCount) {
+        // 次數型：已用完次數 → 已失效
+        computedStatus = "已失效";
+      } else if (l.type === "subscription" && l.expiresAt && String(l.expiresAt).trim() !== "") {
+        // 訂閱型：已超過到期日 → 已失效
+        if (new Date(l.expiresAt).getTime() < now) computedStatus = "已失效";
+        else computedStatus = "已啟用";
+      } else if (computedStatus !== "已失效") {
+        // 其他已啟用的情況（包含 status 為 "已用盡" 等非標準值），正規化為 "已啟用"
+        computedStatus = "已啟用";
+      }
+    } else {
+      computedStatus = "未啟用";
+    }
+    return { ...l, computedStatus };
+  });
+});
+
+exports.clearExpiredLicenses = authCallable(["system"], async () => {
+  const snap = await db.collection("licenses").get();
+  const now = Date.now();
+  let count = 0;
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = db.batch();
+    let batchCount = 0;
+    snap.docs.slice(i, i + 400).forEach(d => {
+      const l = d.data();
+      let expired = false;
+      if (l.type === "count" && l.activatedBy && l.maxCount > 0 && l.usedCount >= l.maxCount) expired = true;
+      if (l.type === "subscription" && l.activatedBy && l.expiresAt && new Date(l.expiresAt).getTime() < now) expired = true;
+      if (l.status === "已失效" || l.status === "已過期" || l.status === "已用盡") expired = true;
+      if (expired) { batch.delete(d.ref); batchCount++; }
+    });
+    if (batchCount > 0) { await batch.commit(); count += batchCount; }
+  }
+  return { success: true, count };
+});
+
+exports.deleteLicense = authCallable(["system"], async (data) => {
+  await db.collection("licenses").doc(data.code).delete();
+  await auditLog("system", "刪除授權碼", data.code, "");
+  return { success: true };
+});
+
+// BUG-05 FIX: getLicenseStatus requires authenticated session, verifies identity
+exports.getLicenseStatus = authCallable(["system","competition"], async (data, request) => {
+  // Only allow querying own license status (system admin can query any)
+  const targetUser = (request.authUser.role === "system" && data.username) ? data.username : request.authUser.username;
+  const snap = await db.collection("licenses").where("activatedBy", "==", targetUser).get();
+      
+  let subValid = false;
+  let maxExpiresAt = 0;
+  let hasLifetime = false; // 【修正】：加入永久授權的防呆標記
+  let totalRem = 0;
+  const history = [];
+
+  snap.docs.forEach(doc => {
+    const l = doc.data();
+    const type = (l.type || "").toLowerCase();
+    const isSub = type === "subscription" || (!type && l.years > 0);
+    const isCount = type === "count" || (!type && l.maxCount > 0);
+
+    // 判斷是否為「永久授權」
+    const isLifetimeSub = isSub && (!l.expiresAt || l.expiresAt === ""); // 移除 "undefined" 字串判定
+    // 【自動維護機制】：過濾並更新已過期的訂閱 (永久授權免疫)
+    if (isSub && !isLifetimeSub && l.status === "已啟用") {
+      const expTime = new Date(l.expiresAt).getTime();
+      if (!isNaN(expTime) && expTime < Date.now()) {
+        l.status = "已過期";
+        doc.ref.update({ status: "已過期" }); // 背景更新狀態
+      }
+    }
+
+    // 【自動維護機制】：過濾並更新已用盡的次數
+    if (isCount && l.status === "已啟用") {
+      const rem = (parseInt(l.maxCount) || 0) - (parseInt(l.usedCount) || 0);
+      if (rem <= 0) {
+        l.status = "已用盡";
+        doc.ref.update({ status: "已用盡" }); // 背景更新狀態
+      }
+    }
+
+    // 寫入歷史紀錄陣列
+    history.push({
+      code: l.code,
+      type: isSub ? "期限訂閱" : "次數額度",
+      quota: isSub ? `${l.years || 1} 年` : `${l.maxCount || 1} 次`,
+      usedCount: isCount ? (l.usedCount || 0) : "-",
+      activatedAt: l.activatedAt || "-",
+      expiresAt: isLifetimeSub ? "永久" : (isSub && l.expiresAt ? String(l.expiresAt).substring(0, 10) : "-"),
+      status: l.status
+    });
+
+    // 【機制 3】：計算訂閱最晚到期日與永久狀態
+    if (isSub && l.status === "已啟用") {
+      if (isLifetimeSub) {
+        hasLifetime = true;
+        subValid = true; // 擁有永久授權，絕對有效
+      } else {
+        const t = new Date(l.expiresAt).getTime();
+        if (!isNaN(t) && t > maxExpiresAt) maxExpiresAt = t;
+      }
+    }
+
+    // 【機制 2】：加總所有有效的次數額度
+    if (isCount && l.status === "已啟用") {
+      totalRem += ((parseInt(l.maxCount) || 0) - (parseInt(l.usedCount) || 0));
+    }
+  });
+
+  // 檢查一般期限訂閱是否有效
+  if (!hasLifetime && maxExpiresAt > Date.now()) {
+      subValid = true;
+  }
+
+  let msg = "";
+  if (subValid) {
+     let subExpMsg = "永久";
+     // 如果不是永久授權，才去格式化最晚到期日
+     if (!hasLifetime && maxExpiresAt > 0) {
+         const d = new Date(maxExpiresAt);
+         subExpMsg = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+     }
+     msg = "訂閱方案 (至 " + subExpMsg + ")";
+     if (totalRem > 0) msg += `，另備有 ${totalRem} 次額度`;
+  } else {
+     if (totalRem > 0) msg = `次數方案 (總剩餘 ${totalRem} 次)`;
+     else msg = "授權已過期或用盡";
+  }
+
+  // 依照啟用時間排序歷史紀錄 (新的在上面)
+  history.sort((a, b) => (b.activatedAt || "").localeCompare(a.activatedAt || ""));
+
+  return { hasValid: subValid || totalRem > 0, message: msg, history };
+});
+
+// ===== 2. 啟用授權碼 (時間累加機制) =====
+exports.activateLicense = authCallable(["system","competition"], async (data, request) => {
+  const { code } = data;
+  const username = request.authUser.username;
+  const ref = db.collection("licenses").doc(code);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "無效的授權碼" };
+  
+  const lic = doc.data();
+  if (lic.status !== "未啟用") return { success: false, message: "此授權碼已被使用或失效" };
+  
+  const type = (lic.type || "").toLowerCase();
+  const isSub = type === "subscription" || (!type && lic.years > 0);
+  
+  let returnedExpDate = null; // 【修正】：將變數宣告在 if 區塊外，讓最底下的 return 可以讀取
+  
+  if (isSub) {
+    // 【機制 3】：找出該帳號目前「最晚」的有效到期日
+    const userLicSnap = await db.collection("licenses")
+      .where("activatedBy", "==", username)
+      .where("type", "==", "subscription")
+      .where("status", "==", "已啟用")
+      .get();
+      
+    let maxExpTime = Date.now();
+    userLicSnap.docs.forEach(d => {
+       const e = d.data().expiresAt;
+       if (e) {
+         const t = new Date(e).getTime();
+         if (!isNaN(t) && t > maxExpTime) maxExpTime = t;
+       }
+    });
+    
+    // 從最晚的到期日 (或現在) 往後加上新的年限
+    const addYears = parseFloat(lic.years) || 1;
+    const newExpDate = new Date(maxExpTime);
+    newExpDate.setFullYear(newExpDate.getFullYear() + addYears);
+    
+    await ref.update({ 
+      activatedBy: username, status: "已啟用", activatedAt: fmtNow(), 
+      expiresAt: newExpDate.toISOString() 
+    });
+    
+    returnedExpDate = newExpDate.toISOString().substring(0, 10); // 【修正】：將算好的日期存出來
+  } else {
+    // 次數型直接啟用
+    await ref.update({ activatedBy: username, status: "已啟用", activatedAt: fmtNow() });
+  }
+  
+  return { 
+    success: true, 
+    type: isSub ? "subscription" : "count", 
+    expiresAt: returnedExpDate // 【修正】：安全地回傳變數
+  };
+});
+
+// ===== 3. 扣除授權次數 (優先權判定與低餘額提醒) =====
+exports.consumeLicense = authCallable(["system","competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const userDoc = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (userDoc.empty) return { success: false, message: "無效帳號" };
+  const userEmail = (userDoc.docs[0].data() || {}).email || "";
+
+  const snap = await db.collection("licenses")
+      .where("activatedBy", "==", username)
+      .where("status", "==", "已啟用")
+      .get();
+  
+  let hasValidSub = false;
+  let activeCountLicenses = [];
+  let totalRem = 0; // 計算總剩餘次數
+
+  snap.docs.forEach(doc => {
+    const l = doc.data();
+    const type = (l.type || "").toLowerCase();
+    const isSub = type === "subscription" || (!type && l.years > 0);
+    const isCount = type === "count" || (!type && l.maxCount > 0);
+    
+    if (isSub) {
+      // 【修正】：加入永久授權的防呆，否則永久授權會被系統誤判為已過期而扣除次數！
+      const isLifetimeSub = (!l.expiresAt || String(l.expiresAt).trim() === "undefined" || l.expiresAt === "");
+      if (isLifetimeSub || new Date(l.expiresAt).getTime() > Date.now()) {
+        hasValidSub = true;
+      }
+    } else if (isCount) {
+      const maxC = parseInt(l.maxCount) || 0;
+      const usedC = parseInt(l.usedCount) || 0;
+      if (usedC < maxC) {
+         activeCountLicenses.push({ id: doc.id, ref: doc.ref, usedCount: usedC, maxCount: maxC });
+         totalRem += (maxC - usedC);
+      }
+    }
+  });
+  
+  if (hasValidSub) return { success: true, message: "使用訂閱授權，不扣除次數" };
+  
+  if (activeCountLicenses.length > 0) {
+     const target = activeCountLicenses[0]; 
+     const newUsedCount = target.usedCount + 1;
+     
+     await target.ref.update({ 
+         usedCount: newUsedCount,
+         status: newUsedCount >= target.maxCount ? "已用盡" : "已啟用"
+     });
+     
+     // 扣除後剩餘 1 次的推播通知
+     const remainingAfterDeduct = totalRem - 1;
+     if (remainingAfterDeduct === 1 && userEmail) {
+        const htmlBody = `<p>提醒您，您的帳號剩餘最後 <b>1</b> 次建檔額度。請及早準備新的授權碼以確保服務不中斷。</p>`;
+        await db.collection("mail").add({
+          to: [userEmail], message: { subject: "⚠️ [RegMaster] 授權次數即將用罄提醒", html: htmlBody, text: "授權次數剩餘最後 1 次" }
+        });
+     }
+     
+     return { success: true };
+  }
+  return { success: false, message: "沒有可用額度，請購買新授權" };
+});
+
+// ===== AI (Gemini) =====
+exports.askCompetitionAI = callable(async (data) => {
+  const { compId, question } = data;
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return { answer: "找不到競賽" };
+  const comp = compDoc.data();
+  const cfg = comp.config || {};
+  const rules = comp.rulesText || "";
+  const desc = cfg.description || "";
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { answer: "AI 未設定" };
+  /* Build comprehensive context from rules, description, and config */
+  let ctx = "活動規則/規章：\n" + rules.substring(0, 4000);
+  if (desc) ctx += "\n\n活動說明：\n" + desc.replace(/<[^>]*>/g, ' ').substring(0, 2000);
+  ctx += "\n\n活動名稱：" + (cfg.competitionName || comp.name || "");
+  if (cfg.sessions && cfg.sessions.length) { ctx += "\n活動梯次："; cfg.sessions.forEach(function(s, i) { ctx += "\n梯次" + (i+1) + "：" + (s.startDate || "") + " ~ " + (s.endDate || ""); }); }
+  if (comp.deadline) ctx += "\n報名截止：" + comp.deadline;
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: ctx + "\n問題：" + question + "\n請依照問題的語言回答。簡潔明瞭。" }] }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
+      })
+    });
+    const json = await res.json();
+    let answer = "";
+    try {
+      json.candidates[0].content.parts.forEach(p => { if (p.text) answer += p.text; });
+    } catch (e) { answer = "AI 無法回答"; }
+    if (!answer || answer.includes("找不到") || answer.includes("沒有提到")) {
+      await db.collection("notifications").add({ notifId: generateId("N"), compId, question, time: fmtNow(), read: false });
+    }
+    return { answer };
+  } catch (e) {
+    await rotateGeminiKey();
+    return { answer: "AI 暫時無法使用：" + e.message };
+  }
+});
+
+// ===== Admin AI Assistant (with Manual RAG) =====
+let _manualCache = { text: "", sections: [], ts: 0 };
+
+async function loadManualSections() {
+  const now = Date.now();
+  if (_manualCache.sections.length > 0 && (now - _manualCache.ts) < 3600000) return _manualCache.sections;
+  try {
+    const res = await fetch("https://regmaster-pro.web.app/Manual.html");
+    const html = await res.text();
+    const plain = html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/?(p|div|li|tr|h[1-6])[^>]*>/gi, "\n")
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    const chunks = [];
+    const lines = plain.split("\n");
+    let chunk = "", heading = "總覽";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) { if (chunk) chunk += "\n"; continue; }
+      const isHeading = /^[一二三四五六七八九十\d]{1,3}[.、)）]/.test(trimmed) || /^(步驟|功能|設定|說明|注意|備註)/.test(trimmed);
+      if (isHeading && chunk.length > 80) {
+        chunks.push({ heading, content: chunk.trim() });
+        chunk = ""; heading = trimmed.substring(0, 40);
+      }
+      chunk += trimmed + "\n";
+      if (chunk.length > 600) {
+        chunks.push({ heading, content: chunk.trim() });
+        chunk = ""; heading = trimmed.substring(0, 40);
+      }
+    }
+    if (chunk.trim()) chunks.push({ heading, content: chunk.trim() });
+    _manualCache = { text: plain, sections: chunks, ts: now };
+    return chunks;
+  } catch (e) {
+    return _manualCache.sections;
+  }
+}
+
+function ragSearch(sections, question, topK) {
+  const q = question.toLowerCase();
+  const keywords = q.replace(/[？?！!，,。.、\s]+/g, " ").split(" ").filter(w => w.length >= 2);
+  if (keywords.length === 0) return sections.slice(0, topK).map(s => s.content).join("\n\n");
+  const scored = sections.map(s => {
+    const t = (s.heading + " " + s.content).toLowerCase();
+    let score = 0;
+    keywords.forEach(kw => {
+      const idx = t.indexOf(kw);
+      if (idx !== -1) { score += 10; if (s.heading.toLowerCase().includes(kw)) score += 5; }
+      const parts = t.split(kw);
+      score += (parts.length - 1) * 3;
+    });
+    return { section: s, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const results = scored.filter(s => s.score > 0).slice(0, topK);
+  if (results.length === 0) return sections.slice(0, topK).map(s => s.content).join("\n\n");
+  return results.map(r => r.section.content).join("\n\n");
+}
+
+exports.askAdminAI = compAuthCallable(async (data) => {
+  const { question, compId } = data;
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { answer: "AI 未設定" };
+
+  const sections = await loadManualSections();
+  const ragContext = ragSearch(sections, question, 5);
+
+  let ctx = "你是 RegMaster 線上報名平台的系統設定 AI 助理。\n";
+  ctx += "回覆規則：\n";
+  ctx += "1. 嚴格禁止使用任何 Markdown 符號，包含 # * ** ` ``` - > 等\n";
+  ctx += "2. 用純文字回答，段落之間用空行分隔\n";
+  ctx += "3. 需要列點時使用「數字加頓號」格式，例如：1、 2、 3、\n";
+  ctx += "4. 需要強調時用「」括起來，不要用星號或粗體\n";
+  ctx += "5. 回答簡潔明瞭，具系統化結構\n";
+  ctx += "6. 依照問題的語言回答\n\n";
+
+  ctx += "=== 操作手冊參考內容 ===\n" + ragContext + "\n\n";
+
+  ctx += "=== RegMaster 功能總覽 ===\n";
+  ctx += "RegMaster 是專業線上報名平台，核心功能包含：\n";
+  ctx += "1、活動管理：建立活動、設定組別、梯次（單選/複選）、報名截止日、最大報名數\n";
+  ctx += "2、報名表設定：學生/教練欄位、自訂問題、便當/T-shirt選項\n";
+  ctx += "3、金流整合：銀行轉帳、信用卡、現金、PAYUNi線上金流\n";
+  ctx += "4、檔案上傳：海報圖片、規則PDF、報名時要求上傳PDF（必填/選填）\n";
+  ctx += "5、通知系統：自動Email通知、公告功能\n";
+  ctx += "6、AI 助理：報名者AI助理（回答活動問題）、管理者AI助理（回答設定問題）\n";
+  ctx += "7、授權管理：授權碼系統、到期提醒\n";
+  ctx += "8、帳號管理：系統管理員可建立活動管理員帳號\n";
+  ctx += "9、報到系統：QR Code報到\n";
+  ctx += "10、成績管理：成績輸入與發布\n\n";
+  ctx += "=== 常見設定說明 ===\n";
+  ctx += "活動梯次：可設定多個梯次，2個以上時可選擇「單選」或「複選」模式\n";
+  ctx += "檔案上傳要求：勾選後可設為「必填」或「選填」\n";
+  ctx += "最大報名數：設為0表示不限制\n";
+  ctx += "開放時間：可設定「即日起」或指定日期\n";
+  ctx += "AI 助理開關：控制報名者是否能使用AI助理\n";
+  ctx += "自動Email通知：報名成功後自動寄信\n";
+  ctx += "PAYUNi金流：需填入商店代號、HashKey、HashIV\n";
+  ctx += "組別年齡限制：可對每個組別設定年齡或出生日期限制\n";
+
+  if (compId) {
+    try {
+      const compDoc = await db.collection("competitions").doc(compId).get();
+      if (compDoc.exists) {
+        const comp = compDoc.data();
+        const cfg = comp.config || {};
+        ctx += "\n=== 目前活動設定 ===\n";
+        ctx += "活動名稱：" + (cfg.competitionName || comp.name || "") + "\n";
+        ctx += "狀態：" + (comp.isOpen ? "開放報名" : "未開放") + "\n";
+        ctx += "組別：" + (cfg.groups || []).join("、") + "\n";
+        ctx += "梯次數：" + ((cfg.sessions || []).length) + "\n";
+        ctx += "梯次模式：" + (cfg.sessionSelectMode === "multi" ? "複選" : "單選") + "\n";
+        ctx += "最大報名數：" + (comp.maxTeams || "不限") + "\n";
+        ctx += "檔案上傳：" + (cfg.requireFileUpload ? ("啟用，" + (cfg.fileUploadLevel === "optional" ? "選填" : "必填")) : "未啟用") + "\n";
+        ctx += "付款方式：" + (cfg.paymentMethods || []).join("、") + "\n";
+        if (comp.deadline) ctx += "截止日：" + comp.deadline + "\n";
+        if (cfg.openDate) ctx += "開放日：" + cfg.openDate + "\n";
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: ctx + "\n管理員問題：" + question }] }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
+      })
+    });
+    const json = await res.json();
+    let answer = "";
+    try { json.candidates[0].content.parts.forEach(p => { if (p.text) answer += p.text; }); } catch(e) { answer = "AI 無法回答"; }
+    answer = answer.replace(/#{1,6}\s?/g, "").replace(/\*{1,3}([^*]+)\*{1,3}/g, "「$1」").replace(/`{1,3}([^`]*)`{1,3}/g, "$1").replace(/^[-•]\s/gm, "").replace(/^>\s?/gm, "");
+    return { answer };
+  } catch(e) {
+    await rotateGeminiKey();
+    return { answer: "AI 暫時無法使用：" + e.message };
+  }
+});
+
+
+// ===== Missing Functions: PDF Upload, AI Analysis, Batch Import =====
+exports.uploadRulesPdf = compAuthCallable(async (data, request) => {
+  const { compId, base64Data, fileName } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "not found" };
+  
+  try {
+    const oldData = doc.data();
+    /* Delete old PDF + chunks */
+    if (oldData.pdfDocId) {
+      try {
+        const oldChunks = await db.collection("pdfFiles").where("parentId", "==", oldData.pdfDocId).get();
+        const batch = db.batch();
+        oldChunks.docs.forEach(d => batch.delete(d.ref));
+        batch.delete(db.collection("pdfFiles").doc(oldData.pdfDocId));
+        await batch.commit();
+      } catch(e) {}
+    }
+    
+    /* Extract text from PDF for AI assistant */
+    let extractedText = "";
+    try {
+      const pdfParse = require("pdf-parse");
+      const pdfBuffer = Buffer.from(base64Data, "base64");
+      const parsed = await pdfParse(pdfBuffer);
+      extractedText = (parsed.text || "").substring(0, 10000).trim();
+    } catch(pe) {
+      extractedText = "(PDF text extraction failed: " + pe.message + ")";
+    }
+    
+    /* Split base64 into chunks (each < 800KB to stay under Firestore 1MB limit) */
+    const CHUNK_SIZE = 800000;
+    const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
+    const pdfRef = db.collection("pdfFiles").doc();
+    
+    /* Store first chunk + metadata in main doc */
+    await pdfRef.set({
+      compId, fileName, mimeType: "application/pdf",
+      data: base64Data.substring(0, CHUNK_SIZE),
+      totalChunks, totalSize: base64Data.length,
+      createdAt: fmtNow()
+    });
+    
+    /* Store remaining chunks */
+    for (let i = 1; i < totalChunks; i++) {
+      await db.collection("pdfFiles").doc(pdfRef.id + "_chunk" + i).set({
+        parentId: pdfRef.id,
+        chunkIndex: i,
+        data: base64Data.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
+      });
+    }
+    
+    const viewUrl = "pfpdf:" + pdfRef.id;
+    const textPreview = extractedText.length > 50 ? extractedText.substring(0, 50) + "..." : extractedText;
+    await ref.update({ rulesPdfId: viewUrl, pdfDocId: pdfRef.id, rulesText: extractedText });
+    await auditLog(request.authUser.username, "upload rules", compId, fileName + " (" + Math.round(base64Data.length * 3/4/1024) + "KB, " + totalChunks + " chunks, text: " + extractedText.length + " chars)");
+    
+    return { success: true, fileId: pdfRef.id, viewUrl: "pfpdf:" + pdfRef.id, textExtracted: extractedText.length };
+  } catch (e) {
+    return { success: false, message: "上傳失敗: " + e.message };
+  }
+});
+
+/* Fetch PDF from pdfFiles for viewing */
+exports.getPdfData = callable(async (data) => {
+  const { docId } = data;
+  if (!docId) return { success: false };
+  const pDoc = await db.collection("pdfFiles").doc(docId).get();
+  if (!pDoc.exists) return { success: false };
+  const p = pDoc.data();
+  
+  /* Reassemble chunks if multi-chunk PDF */
+  let fullData = p.data || "";
+  const totalChunks = p.totalChunks || 1;
+  if (totalChunks > 1) {
+    for (let i = 1; i < totalChunks; i++) {
+      const chunkDoc = await db.collection("pdfFiles").doc(docId + "_chunk" + i).get();
+      if (chunkDoc.exists) fullData += chunkDoc.data().data || "";
+    }
+  }
+  
+  return { success: true, dataUri: "data:application/pdf;base64," + fullData, fileName: p.fileName || "rules.pdf" };
+});
+
+
+exports.uploadTeamFile = callable(async (data) => {
+  const { compId, teamId, base64Data, fileName } = data;
+  try {
+    /* Delete old chunks */
+    const oldChunks = await db.collection("teamFiles").where("parentId", "==", teamId).get();
+    if (!oldChunks.empty) {
+      const batch = db.batch();
+      oldChunks.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+    
+    const CHUNK_SIZE = 800000;
+    const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
+    const fileRef = db.collection("teamFiles").doc(teamId);
+    await fileRef.set({
+      compId, teamId, fileName, mimeType: "application/pdf",
+      data: base64Data.substring(0, CHUNK_SIZE),
+      totalChunks, totalSize: base64Data.length,
+      createdAt: fmtNow()
+    });
+    for (let i = 1; i < totalChunks; i++) {
+      await db.collection("teamFiles").doc(teamId + "_chunk" + i).set({
+        parentId: teamId,
+        chunkIndex: i,
+        data: base64Data.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
+      });
+    }
+    const fileUrl = "pftf:" + teamId;
+    await db.collection("teams").doc(teamId).update({ fileUrl });
+    return { success: true, url: fileUrl };
+  } catch(e) {
+    return { success: false, message: "上傳失敗: " + e.message };
+  }
+});
+
+/* Fetch team uploaded file from teamFiles collection */
+exports.getTeamFileData = compAuthCallable(async (data) => {
+  const { teamId } = data;
+  if (!teamId) return { success: false };
+  const pDoc = await db.collection("teamFiles").doc(teamId).get();
+  if (!pDoc.exists) return { success: false };
+  const p = pDoc.data();
+  let fullData = p.data || "";
+  const totalChunks = p.totalChunks || 1;
+  if (totalChunks > 1) {
+    for (let i = 1; i < totalChunks; i++) {
+      const chunkDoc = await db.collection("teamFiles").doc(teamId + "_chunk" + i).get();
+      if (chunkDoc.exists) fullData += chunkDoc.data().data || "";
+    }
+  }
+  return { success: true, dataUri: "data:application/pdf;base64," + fullData, fileName: p.fileName || "upload.pdf" };
+});
+
+
+exports.analyzeRulesWithAI = compAuthCallable(async (data) => {
+  const { compId } = data;
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return { success: false, message: "not found" };
+  
+  const comp = compDoc.data();
+  const rules = comp.rulesText || "";
+  if (!rules || rules.length < 20) return { success: false, message: "please upload rules PDF first" };
+  
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { success: false, message: "AI not configured" };
+  
+  let rawResponseText = ""; // 用來儲存原始回應，方便 Debug
+  
+  try {
+    // 【修改重點 1】：換回您 GAS 版精準的中文 Prompt，特別指定 yyyy-MM-ddTHH:mm 格式，並加入新版需要的欄位
+    let prompt = '你是競賽報名系統的助理。根據以下競賽規則內容，分析並提取資訊。請嚴格以JSON格式回覆（不要markdown）：\n';
+    prompt += '{"competitionName":"競賽名稱","openDate":"開放報名日期時間(yyyy-MM-ddTHH:mm格式)","deadline":"報名截止日期時間(yyyy-MM-ddTHH:mm格式)","competitionDate":"比賽日期時間(yyyy-MM-ddTHH:mm格式)","memberCount":學生人數(數字),"teacherCount":老師人數(數字),"maxTeams":最大組數(數字),"groups":["組別1","組別2"],"paymentInfo":"付款相關資訊","description":"<h3>競賽簡介</h3>HTML格式內容"}\n\n';
+    prompt += '競賽規則全文：\n' + rules.substring(0, 8000);
+
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.1 }
+      })
+    });
+    
+    const json = await res.json();
+    rawResponseText = JSON.stringify(json, null, 2); // 備份完整的 API 回應
+    
+    // API 回傳非 200 狀態碼
+    if (!res.ok) {
+      await rotateGeminiKey();
+      return { success: false, message: 'API 錯誤 (' + res.status + ')', debug: rawResponseText };
+    }
+    
+    let text = "";
+    try { 
+      json.candidates[0].content.parts.forEach(p => { if (p.text) text += p.text; }); 
+    } catch(e) {
+      return { success: false, message: "AI 回應結構異常", debug: rawResponseText };
+    }
+    
+    // 【修改重點 2】：使用正則表達式擷取 JSON，並加入嚴謹的 Try-Catch 解析
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    
+    if (!jsonMatch) {
+      return { success: false, message: "AI 未回傳有效 JSON", debug: "AI 文字：\n" + text };
+    }
+    
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return { success: true, data: parsed };
+    } catch (je) {
+      return { success: false, message: "JSON 解析失敗", debug: "擷取到的字串：\n" + jsonMatch[0] };
+    }
+    
+  } catch (e) {
+    await rotateGeminiKey();
+    return { success: false, message: "系統錯誤: " + e.message, debug: rawResponseText };
+  }
+});
+
+
+exports.analyzePosterColors = compAuthCallable(async (data) => {
+  const { compId, posterUrl } = data;
+  
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { success: false, message: "請先設定 Gemini API Key" };
+  
+  try {
+    let base64Data = "";
+    let mimeType = "image/png";
+    
+    // Try stored poster first
+    const compDoc = await db.collection("competitions").doc(compId).get();
+    const compData = compDoc.exists ? compDoc.data() : {};
+    if (compData.posterDocId) {
+      const posterDoc = await db.collection("posterFiles").doc(compData.posterDocId).get();
+      if (posterDoc.exists) {
+        base64Data = posterDoc.data().data || "";
+        mimeType = posterDoc.data().mimeType || "image/png";
+      }
+    }
+    
+    // Fallback: data URL (extract base64)
+    if (!base64Data && posterUrl && posterUrl.startsWith("data:")) {
+      const parts = posterUrl.split(",");
+      if (parts.length > 1) {
+        base64Data = parts[1];
+        mimeType = (parts[0].match(/data:([^;]+)/) || [])[1] || "image/png";
+      }
+    }
+    
+    // Fallback: regular URL download
+    if (!base64Data && posterUrl && posterUrl.startsWith("http")) {
+      const imgResp = await fetch(posterUrl);
+      if (!imgResp.ok) return { success: false, message: "無法下載海報圖片" };
+      const arrayBuffer = await imgResp.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      if (buffer.length > 10000000) return { success: false, message: "圖片超過 10MB" };
+      base64Data = buffer.toString("base64");
+      mimeType = imgResp.headers.get("content-type") || "image/jpeg";
+    }
+    
+    if (!base64Data) return { success: false, message: "請先上傳海報圖片" };
+
+    const prompt = '分析這張海報的主要配色。嚴格規定只能回傳JSON物件，不要包含Markdown格式。必須包含這5個Hex顏色欄位：{"primary":"#xxxxxx", "secondary":"#xxxxxx", "accent":"#xxxxxx", "background":"#xxxxxx", "text":"#xxxxxx"}';
+
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ 
+          parts: [
+            { inlineData: { mimeType: mimeType, data: base64Data } },
+            { text: prompt }
+          ] 
+        }],
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.1 }
+      })
+    });
+    
+    const json = await res.json();
+    let text = "";
+    try { 
+      json.candidates[0].content.parts.forEach(p => { if (p.text) text += p.text; }); 
+    } catch(e) {}
+    
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { success: false, message: "AI 回傳格式錯誤", debug: text };
+    
+    const colors = JSON.parse(jsonMatch[0]);
+    
+    // 【修改重點】：改為 JSON 物件並轉為字串儲存
+    const themeObj = {
+      primary: colors.primary || "#0A437A",
+      secondary: colors.secondary || "#0D5BA8",
+      accent: colors.accent || "#F49121",
+      background: colors.background || "#F8FAFC",
+      text: colors.text || "#1E293B"
+    };
+    
+    // 轉為 JSON 字串存入資料庫
+    await db.collection("competitions").doc(compId).update({ themeColors: JSON.stringify(themeObj) });
+    
+    return { success: true, colors: colors };    
+    
+  } catch (e) {
+    await rotateGeminiKey();
+    return { success: false, message: e.message };
+  }
+});
+
+
+exports.batchImportTeams = compAuthCallable(async (data) => {
+  const { compId, csvText } = data;
+  const lines = (csvText || "").trim().split("\n").filter(l => l.trim());
+  if (!lines.length) return { success: false, message: "empty" };
+  
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const comp = compDoc.data();
+  const cfg = comp ? comp.config || {} : {};
+  const stats = await getCompStats(compId);
+  
+  let imported = 0, errors = [];
+  const perSession = isPerSessionQuota(cfg);
+  
+  // Track current counts for incremental quota checking
+  let currentAccepted = stats.accepted || 0;
+  let currentWaitlist = stats.waitlist || 0;
+  // Per-session tracking
+  const curSessAccepted = { ...(stats.sessionAccepted || {}) };
+  const curSessWaitlist = { ...(stats.sessionWaitlist || {}) };
+  
+  for (const line of lines) {
+    const cols = line.split(",").map(c => c.trim());
+    if (cols.length < 2) { errors.push("format error: " + line.substring(0, 30)); continue; }
+    
+    const teamId = generateId("T");
+    const pwd = generatePassword();
+    
+    let status = "正取";
+    let wn = 0;
+    
+    // Parse selected sessions from CSV if sessions > 1
+    let teamSessions = [0];
+    const sessions = cfg.sessions || [];
+    let extraColOffset = 0;
+    if (sessions.length > 1) {
+      // Session column comes after group(col0), teamNameCN(col1), optionally teamNameEN(col2)
+      let sColIdx = cfg.requireTeamNameCN ? 1 : 1;
+      if (cfg.requireTeamNameEN) sColIdx++;
+      sColIdx++; // After group col
+      const sVal = (cols[sColIdx] || "").trim();
+      if (sVal) {
+        teamSessions = sVal.split(/[;；,、]/).map(v => parseInt(v.trim()) - 1).filter(v => !isNaN(v) && v >= 0);
+        if (!teamSessions.length) teamSessions = [0];
+      }
+      extraColOffset = 1; // account for session column in CSV
+    }
+    
+    if (perSession) {
+      // Per-session quota check
+      for (const sIdx of teamSessions) {
+        const s = sessions[sIdx];
+        if (!s) continue;
+        const sMax = parseInt(s.maxTeams) || 0;
+        if (sMax <= 0) continue;
+        const sAcc = curSessAccepted[sIdx] || 0;
+        if (sAcc >= sMax) {
+          if (s.allowWaitlist === false) { status = "FULL"; break; }
+          const sWait = curSessWaitlist[sIdx] || 0;
+          wn = sWait + 1;
+          status = "備取" + wn;
+        }
+      }
+      if (status === "FULL") { errors.push("session full"); continue; }
+    } else {
+      const maxT = comp.maxTeams || 0;
+      if (maxT > 0 && currentAccepted >= maxT) {
+        if (cfg.allowWaitlist === false) { errors.push("full"); continue; }
+        currentWaitlist++;
+        wn = currentWaitlist;
+        status = "備取" + wn;
+      } else {
+        currentAccepted++;
+      }
+    }
+    
+    // Update per-session counters
+    if (perSession) {
+      for (const sIdx of teamSessions) {
+        if (status === "正取") curSessAccepted[sIdx] = (curSessAccepted[sIdx] || 0) + 1;
+        else curSessWaitlist[sIdx] = (curSessWaitlist[sIdx] || 0) + 1;
+      }
+    }
+    
+    // 【修正】：將正確的 waitlistNum (wn) 寫入資料庫，取代原本寫死的 0
+    await db.collection("teams").doc(teamId).set({
+      teamId, compId, registrationTime: fmtNow(), group: cols[0] || "",
+      teamNameCN: cols[1] || "", teamNameEN: "", status, paymentStatus: "pending",
+      paymentMethod: "", remitterName: "", remitterBank: "", remitterAccount: "",
+      note: "batch import", password: pwd, waitlistNum: wn, creditCardOrderNo: "", fileUrl: "",
+      selectedSessions: teamSessions, customAnswers: {}
+    });
+    
+    let colIdx = 2; 
+    for (let i = 0; i < (cfg.memberCount || 1); i++) {
+      let studentData = { teamId, compId, role: "學生", seq: i + 1 };
+      (cfg.studentFields || []).forEach((f) => { studentData[f] = cols[colIdx] || ""; colIdx++; });
+      await db.collection("members").add(studentData);
+    }
+    for (let i = 0; i < (cfg.teacherCount || 0); i++) {
+      let teacherData = { teamId, compId, role: "教練", seq: i + 1 };
+      (cfg.teacherFields || []).forEach((f) => { teacherData[f] = cols[colIdx] || ""; colIdx++; });
+      await db.collection("members").add(teacherData);
+    }
+    imported++;
+  }
+  // Update teamCount counter
+  if (imported > 0) {
+    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(imported) });
+  }
+  return { success: true, message: "imported " + imported + " teams" + (errors.length ? ", errors: " + errors.length : "") };
+});
+
+exports.updateTeamStatus = compAuthCallable(async (data, request) => {
+  const { teamId, newStatus } = data;
+  
+  const teamDoc = await db.collection("teams").doc(teamId).get();
+  if (!teamDoc.exists) return { success: false, message: "Team not found" };
+  const team = teamDoc.data();
+  const oldStatus = team.status || "";
+  const compId = team.compId;
+  
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const comp = compDoc.exists ? compDoc.data() : {};
+  const compName = comp.name || "競賽活動";
+  const cfg = comp.config || {};
+
+  await db.collection("teams").doc(teamId).update({ status: newStatus });
+  await auditLog(request.authUser.username, "status change", teamId, oldStatus + " → " + newStatus);
+  
+  // MISS-02: Adjust teamCount when status changes to/from "已取消"
+  if (oldStatus !== "已取消" && newStatus === "已取消" && compId) {
+    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(-1) });
+  } else if (oldStatus === "已取消" && newStatus !== "已取消" && compId) {
+    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(1) });
+  }
+  
+  // ==========================================
+  // 【修改】：狀態更新自動發信邏輯 (加入開關判斷)
+  // ==========================================
+  if (cfg.autoEmailNotification !== false) {
+    const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+    const emailList = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
+    
+    if (emailList.length > 0) {
+      const subject = `[RegMaster] 隊伍狀態更新通知 - ${compName}`;
+      const statusBody = `
+        <p style="font-size:16px;line-height:1.6;margin-top:0">您好，您在 <b>${compName}</b> 的隊伍狀態已更新。</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin:20px 0;text-align:center">
+          <p style="margin:0 0 8px;font-size:14px;color:#64748b">隊伍編號</p>
+          <p style="margin:0 0 16px;font-size:20px;color:#0A437A;font-weight:900;font-family:monospace">${teamId}</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#64748b">最新狀態</p>
+          <span style="background:#ecfdf5;border:1px solid #10b981;color:#10b981;padding:6px 18px;border-radius:8px;font-weight:bold;font-size:16px">${newStatus}</span>
+        </div>
+        <p style="font-size:14px;color:#475569">若有任何問題，請隨時留意活動頁面的最新公告。</p>`;
+      const htmlBody = emailWrap('🔔 隊伍狀態已更新', statusBody,
+        `<a href="${EMAIL_HOST}/?comp=${compId}" style="color:#0A437A;font-weight:600">🔙 返回活動頁面</a>`);
+      
+      await db.collection("mail").add({
+        to: emailList,
+        message: { subject: subject, html: htmlBody, text: `您在${compName}的隊伍(${teamId})狀態已更新為：${newStatus}` }
+      });
+    }
+  }
+  
+  return { success: true };
+});
+
+// ===== Clear Audit Logs =====
+exports.clearAuditLogs = authCallable(["system"], async () => {
+  let totalDeleted = 0;
+  const batchSize = 400;
+  let hasMore = true;
+  while (hasMore) {
+    const snap = await db.collection("auditLogs").limit(batchSize).get();
+    if (snap.empty) { hasMore = false; break; }
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    totalDeleted += snap.docs.length;
+    if (snap.docs.length < batchSize) hasMore = false;
+  }
+  return { success: true, deleted: totalDeleted };
+});
+
+// ===== Upload Poster Image =====
+exports.uploadPosterImage = compAuthCallable(async (data, request) => {
+  const { compId, base64Data, fileName, mimeType } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "not found" };
+  const oldData = doc.data();
+  if (oldData.posterDocId) {
+    try { await db.collection("posterFiles").doc(oldData.posterDocId).delete(); } catch(e) {}
+  }
+  /* Store full base64 in posterFiles (Firestore 1MB doc limit ≈ 900KB base64 safe) */
+  const posterRef = db.collection("posterFiles").doc();
+  const storedData = base64Data.substring(0, 900000);
+  await posterRef.set({
+    compId, fileName, mimeType: mimeType || "image/png",
+    data: storedData, createdAt: fmtNow()
+  });
+  /* Config stores a small reference, NOT a huge data URI */
+  const posterUrl = "pfid:" + posterRef.id;
+  const cfg = oldData.config || {};
+  cfg.posterUrl = posterUrl;
+  await ref.update({ posterDocId: posterRef.id, config: cfg });
+  await auditLog(request.authUser.username, "upload poster", compId, fileName);
+  /* Return full data URI for immediate display */
+  const fullUrl = "data:" + (mimeType || "image/png") + ";base64," + storedData;
+  return { success: true, posterDocId: posterRef.id, posterUrl: fullUrl };
+});
+
+/* Fetch full poster image from posterFiles */
+exports.getPosterData = callable(async (data) => {
+  const { compId } = data;
+  const doc = await db.collection("competitions").doc(compId).get();
+  if (!doc.exists) return { success: false };
+  const posterDocId = doc.data().posterDocId;
+  if (!posterDocId) return { success: false };
+  const pDoc = await db.collection("posterFiles").doc(posterDocId).get();
+  if (!pDoc.exists) return { success: false };
+  const p = pDoc.data();
+  return { success: true, dataUri: "data:" + (p.mimeType || "image/png") + ";base64," + (p.data || "") };
+});
+
+// ===== Delete Poster Image =====
+exports.deletePosterImage = compAuthCallable(async (data, request) => {
+  const { compId } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+
+  const oldData = doc.data();
+  const posterDocId = oldData.posterDocId;
+
+  /* Delete poster document from posterFiles collection */
+  if (posterDocId) {
+    try { await db.collection("posterFiles").doc(posterDocId).delete(); } catch(e) {}
+  }
+
+  /* Clear poster references in competition document */
+  const cfg = oldData.config || {};
+  cfg.posterUrl = "";
+  await ref.update({ posterDocId: "", config: cfg });
+
+  await auditLog(request.authUser.username, "delete poster", compId, "posterDocId: " + (posterDocId || ""));
+  return { success: true };
+});
+
+// ===== Delete Rules PDF =====
+exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
+  const { compId } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+
+  const oldData = doc.data();
+  const pdfDocId = oldData.pdfDocId;
+
+  /* Delete PDF main doc + all chunks from pdfFiles collection */
+  if (pdfDocId) {
+    try {
+      const chunks = await db.collection("pdfFiles").where("parentId", "==", pdfDocId).get();
+      const batch = db.batch();
+      chunks.docs.forEach(d => batch.delete(d.ref));
+      batch.delete(db.collection("pdfFiles").doc(pdfDocId));
+      await batch.commit();
+    } catch(e) {}
+  }
+
+  /* Clear PDF references and extracted text in competition document */
+  await ref.update({ rulesPdfId: "", pdfDocId: "", rulesText: "" });
+
+  await auditLog(request.authUser.username, "delete rules pdf", compId, "pdfDocId: " + (pdfDocId || ""));
+  return { success: true };
+});
+
+// ===== Duplicate Competition =====
+exports.duplicateCompetition = compAuthCallable(async (data, request) => {
+  const { compId, newName } = data;
+  const creator = request.authUser.username;
+  const src = await db.collection("competitions").doc(compId).get();
+  if (!src.exists) return { success: false, message: "not found" };
+  const srcData = src.data();
+  const cfg = JSON.parse(JSON.stringify(srcData.config || {}));
+  cfg.isOpen = false;
+  const newId = "C" + Date.now() + Math.floor(Math.random() * 1000);
+  await db.collection("competitions").doc(newId).set({
+    name: newName || ((srcData.name || "") + " (副本)"),
+    category: srcData.category || "", config: cfg,
+    isOpen: false, isVisible: false,
+    deadline: "", maxTeams: srcData.maxTeams || 0,
+    creator: creator || srcData.creator || "",
+    rulesPdfId: "", rulesText: srcData.rulesText || "",
+    themeColors: srcData.themeColors || "", createdAt: fmtNow(),
+    teamCount: 0
+  });
+  const annSnap = await db.collection("announcements").where("compId", "==", compId).get();
+  for (const d of annSnap.docs) { await db.collection("announcements").add({ ...d.data(), compId: newId }); }
+  await auditLog(creator || "", "複製活動", newId, "from " + compId);
+  return { success: true, compId: newId };
+});
+
+// ===== QR Code Check-in =====
+exports.checkInTeam = compAuthCallable(async (data, request) => {
+  const { teamId } = data;
+  if (!teamId) return { success: false, message: "missing teamId" };
+  const ref = db.collection("teams").doc(teamId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "找不到此報名編號 / Registration ID not found" };
+  const t = doc.data();
+  if (t.checkedIn) return { success: false, message: "已報到 / Already checked in", alreadyCheckedIn: true, time: t.checkedInAt || "" };
+  await ref.update({ checkedIn: true, checkedInAt: fmtNow(), checkedInBy: request.authUser.username });
+  await auditLog(request.authUser.username, "check-in", teamId, t.teamNameCN || "");
+  /* Fetch member names for display */
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const students = [], teachers = [];
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    const name = m.chineseName || m.englishName || "";
+    if (m.role === "學生") students.push(name);
+    else teachers.push(name);
+  });
+  return {
+    success: true, teamId: t.teamId, teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
+    group: t.group || "", students, teachers,
+    message: "報到成功 / Check-in successful"
+  };
+});
+
+// ===== PAYUNi Payment Integration =====
+const { onRequest } = require("firebase-functions/v2/https");
+
+function payuniEncrypt(params, key, iv) {
+  const qs = Object.entries(params).map(([k,v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v)).join("&");
+  const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(key, "utf8"), Buffer.from(iv, "utf8"));
+  let enc = cipher.update(qs, "utf8", "base64");
+  enc += cipher.final("base64");
+  const tag = cipher.getAuthTag().toString("base64");
+  return Buffer.from(enc + ":::" + tag, "utf8").toString("hex");
+}
+function payuniDecrypt(hexStr, key, iv) {
+  const raw = Buffer.from(hexStr, "hex").toString("utf8");
+  const [encData, tagB64] = raw.split(":::");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(key, "utf8"), Buffer.from(iv, "utf8"));
+  decipher.setAuthTag(Buffer.from(tagB64, "base64"));
+  let dec = decipher.update(encData, "base64", "utf8");
+  dec += decipher.final("utf8");
+  const result = {};
+  new URLSearchParams(dec).forEach((v, k) => { result[k] = v; });
+  return result;
+}
+function payuniHash(encStr, key, iv) {
+  return crypto.createHash("sha256").update(key + encStr + iv).digest("hex").toUpperCase();
+}
+
+// --- Sales Config ---
+exports.getSalesConfig = authCallable(["system","competition"], async (data, request) => {
+  const doc = await db.collection("config").doc("sales").get();
+  const cfg = doc.exists ? doc.data() : { singlePrice: 500, yearlyPrice: 3000, taxRate: 5, bulkDiscounts: [], payuniMerID: "", payuniHashKey: "", payuniHashIV: "", payuniMode: "t" };
+  if (request.authUser.role === "competition") {
+    return { singlePrice: cfg.singlePrice, yearlyPrice: cfg.yearlyPrice, taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || [] };
+  }
+  return cfg;
+});
+exports.saveSalesConfig = authCallable(["system"], async (data) => {
+  await db.collection("config").doc("sales").set(data.config, { merge: true });
+  return { success: true };
+});
+
+// --- Coupon CRUD ---
+exports.createCoupon = authCallable(["system"], async (data) => {
+  const { code, type, value, maxUses, expiresAt } = data;
+  if (!code || !type) return { success: false, message: "missing fields" };
+  const id = "CPN" + Date.now();
+  await db.collection("coupons").doc(id).set({ code: code.toUpperCase(), type, value: Number(value) || 0, maxUses: Number(maxUses) || 0, usedCount: 0, expiresAt: expiresAt || "", active: true, createdAt: fmtNow() });
+  return { success: true, id };
+});
+exports.listCoupons = authCallable(["system"], async () => {
+  const snap = await db.collection("coupons").get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+});
+exports.deleteCoupon = authCallable(["system"], async (data) => {
+  await db.collection("coupons").doc(data.id).delete();
+  return { success: true };
+});
+exports.validateCoupon = callable(async (data) => {
+  const { code } = data;
+  const snap = await db.collection("coupons").where("code", "==", (code || "").toUpperCase()).where("active", "==", true).limit(1).get();
+  if (snap.empty) return { success: false, message: "無效優惠券" };
+  const c = snap.docs[0].data();
+  if (c.maxUses > 0 && c.usedCount >= c.maxUses) return { success: false, message: "優惠券已用完" };
+  if (c.expiresAt && new Date(c.expiresAt) < new Date()) return { success: false, message: "優惠券已過期" };
+  return { success: true, coupon: { type: c.type, value: c.value, code: c.code } };
+});
+
+// --- Order + PAYUNi ---
+exports.createPayuniOrder = callable(async (data) => {
+  const { items, couponCode, username } = data;
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const sales = salesDoc.exists ? salesDoc.data() : {};
+  if (!sales.payuniMerID || !sales.payuniHashKey) return { success: false, message: "金流尚未設定" };
+  
+  /* Calculate price */
+  let subtotal = 0;
+  const orderItems = [];
+  for (const item of (items || [])) {
+    const qty = Math.min(Math.max(1, item.qty || 1), item.type === "count" ? 10 : 5);
+    const unitPrice = item.type === "count" ? (sales.singlePrice || 500) : (sales.yearlyPrice || 3000);
+    let disc = 1;
+    for (const bd of (sales.bulkDiscounts || [])) {
+      if (qty >= bd.qty) disc = Math.min(disc, bd.discount);
+    }
+    const sub = Math.round(qty * unitPrice * disc);
+    orderItems.push({ type: item.type, qty, unitPrice, discount: disc, subtotal: sub });
+    subtotal += sub;
+  }
+  /* Coupon */
+  let couponDiscount = 0;
+  if (couponCode) {
+    const cSnap = await db.collection("coupons").where("code", "==", couponCode.toUpperCase()).where("active", "==", true).limit(1).get();
+    if (!cSnap.empty) {
+      const c = cSnap.docs[0].data();
+      if ((!c.maxUses || c.usedCount < c.maxUses) && (!c.expiresAt || new Date(c.expiresAt) >= new Date())) {
+        if (c.type === "percent") couponDiscount = Math.round(subtotal * c.value / 100);
+        else couponDiscount = Math.min(c.value, subtotal);
+      }
+    }
+  }
+  const taxRate = (sales.taxRate || 5) / 100;
+  const afterDiscount = subtotal - couponDiscount;
+  const tax = Math.round(afterDiscount * taxRate);
+  const total = afterDiscount + tax;
+  if (total < 1) return { success: false, message: "金額不正確" };
+  
+  const orderId = "RM" + Date.now() + Math.floor(Math.random() * 100);
+  await db.collection("orders").doc(orderId).set({
+    orderId, username, items: orderItems, subtotal, couponCode: couponCode || "", couponDiscount,
+    taxRate: sales.taxRate || 5, tax, total, status: "pending", createdAt: fmtNow(), paidAt: ""
+  });
+  
+  /* Build PAYUNi parameters */
+  const hostUrl = "https://regmaster-pro.web.app";
+  const encryptInfo = {
+    MerID: sales.payuniMerID,
+    MerTradeNo: orderId,
+    TradeAmt: String(total),
+    Timestamp: String(Math.floor(Date.now() / 1000)),
+    ProdDesc: "RegMaster " + orderItems.map(i => i.type === "count" ? "次數x" + i.qty : "訂閱x" + i.qty + "年").join("+"),
+    ReturnURL: hostUrl + "/payuni-return.html",
+    NotifyURL: "https://us-central1-regmaster-pro.cloudfunctions.net/payuniNotify",
+    TradeType: "1"
+  };
+  const encStr = payuniEncrypt(encryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+  const hashStr = payuniHash(encStr, sales.payuniHashKey, sales.payuniHashIV);
+  const prefix = sales.payuniMode === "t" ? "https://sandbox-" : "https://";
+  
+  return {
+    success: true, orderId, total,
+    payuni: { action: prefix + "api.payuni.com.tw/api/upp", MerID: sales.payuniMerID, Version: "1.0", EncryptInfo: encStr, HashInfo: hashStr }
+  };
+});
+
+/* PAYUNi Notify (server-to-server callback) */
+exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  try {
+    const salesDoc = await db.collection("config").doc("sales").get();
+    const sales = salesDoc.exists ? salesDoc.data() : {};
+    if (!sales.payuniHashKey) { res.status(400).send("not configured"); return; }
+    
+    const { EncryptInfo, HashInfo } = req.body;
+    const chk = payuniHash(EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+    if (chk !== HashInfo) { res.status(400).send("hash mismatch"); return; }
+    
+    const info = payuniDecrypt(EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+    const orderId = info.MerTradeNo;
+    const tradeStatus = info.Status;
+    
+    const orderRef = db.collection("orders").doc(orderId);
+    const orderDoc = await orderRef.get();
+    if (!orderDoc.exists) { res.status(404).send("order not found"); return; }
+    const order = orderDoc.data();
+    
+    if (tradeStatus === "SUCCESS" && order.status !== "paid") {
+      /* Generate license codes */
+      const codes = [];
+      const codeDetails = [];
+      for (const item of (order.items || [])) {
+        const code = "RM-" + [1,2,3,4].map(() => {
+          const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+          return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join("");
+        }).join("-");
+        
+        const licType = item.type === "count" ? "count" : "subscription";
+        const licData = {
+          code, type: licType, status: "未啟用",
+          maxCount: item.type === "count" ? item.qty : 0,
+          usedCount: 0,
+          years: item.type === "subscription" ? item.qty : 0,
+          durationMonths: item.type === "subscription" ? item.qty * 12 : 0,
+          createdAt: fmtNow(), activatedBy: "", activatedAt: "",
+          orderId, purchasedBy: order.username
+        };
+        await db.collection("licenses").doc(code).set(licData);
+        codes.push(code);
+        codeDetails.push({ code, type: licType, desc: item.type === "count" ? item.qty + " 次" : item.qty + " 年" });
+      }
+      await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: info.TradeNo || "", licenseCodes: codes });
+      
+      /* Use coupon */
+      if (order.couponCode) {
+        const cSnap = await db.collection("coupons").where("code", "==", order.couponCode).limit(1).get();
+        if (!cSnap.empty) await cSnap.docs[0].ref.update({ usedCount: admin.firestore.FieldValue.increment(1) });
+      }
+      
+      /* Send email to purchaser */
+      if (order.username) {
+        const userSnap = await db.collection("accounts").where("username", "==", order.username).limit(1).get();
+        if (!userSnap.empty) {
+          const userEmail = (userSnap.docs[0].data().email) || "";
+          if (userEmail) {
+            let codesHtml = codeDetails.map(d =>
+              `<div style="background:#E8F0F8;padding:14px 18px;border-radius:10px;margin:8px 0;font-family:monospace;font-size:18px;font-weight:700;color:#0A437A;letter-spacing:1px;text-align:center">${d.code}<br><span style="font-size:13px;font-weight:400;color:#475569">${d.type === "count" ? "次數授權 " + d.desc : "訂閱授權 " + d.desc}</span></div>`
+            ).join("");
+            const emailHtml = `
+              <div style="font-family:'Noto Sans TC',sans-serif;max-width:540px;margin:0 auto">
+                <div style="background:linear-gradient(135deg,#062845,#0A437A);padding:24px;border-radius:14px 14px 0 0;text-align:center">
+                  <h1 style="color:#fff;font-size:22px;margin:0">🎉 購買成功！</h1>
+                  <p style="color:rgba(255,255,255,.6);font-size:13px;margin:4px 0 0">RegMaster 授權碼已產生</p>
+                </div>
+                <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px">
+                  <p style="font-size:15px;color:#1e293b">感謝您的購買！以下是您的授權碼：</p>
+                  ${codesHtml}
+                  <p style="font-size:14px;color:#475569;margin-top:16px">請登入 <a href="https://regmaster-pro.web.app" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「🔑 管理授權碼」輸入上述代碼即可啟用。</p>
+                  <p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">訂單編號：${orderId}<br>付款金額：NT$${order.total}</p>
+                </div>
+              </div>`;
+            await db.collection("mail").add({
+              to: [userEmail],
+              message: { subject: "🎉 [RegMaster] 授權碼購買成功通知 — 訂單 " + orderId, html: emailHtml, text: "您的授權碼：" + codes.join(", ") }
+            });
+          }
+        }
+      }
+      await auditLog("system", "payment_success", orderId, codes.join(","));
+    }
+    res.status(200).send("OK");
+  } catch (e) {
+    console.error("payuniNotify error:", e);
+    res.status(500).send("error");
+  }
+});
+
+exports.getOrderStatus = callable(async (data) => {
+  const { orderId } = data;
+  if (!orderId) return { status: "unknown" };
+  const doc = await db.collection("orders").doc(orderId).get();
+  if (!doc.exists) return { status: "unknown" };
+  const o = doc.data();
+  return { status: o.status || "pending", licenseCodes: o.licenseCodes || [], total: o.total || 0 };
+});
+
+// ===== Production Reset: Clear all data except config + system admin =====
+exports.productionReset = authCallable(["system"], async (data) => {
+  const { confirmCode } = data;
+  if (confirmCode !== "RESET-PRODUCTION-2026") return { success: false, message: "確認碼錯誤" };
+  
+  const collectionsToWipe = [
+    "competitions", "teams", "members", "announcements", "emailTemplates",
+    "emailLogs", "payments", "notifications", "scores", "posterFiles",
+    "pdfFiles", "auditLogs", "licenses", "orders", "coupons", "mail",
+    "accountRequests", "regPayments", "feedback", "feedbackFiles", "visitors"
+  ];
+  
+  let totalDeleted = 0;
+  for (const col of collectionsToWipe) {
+    const snap = await db.collection(col).get();
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const batch = db.batch();
+      snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      totalDeleted += Math.min(400, snap.docs.length - i);
+    }
+  }
+  
+  /* Delete non-system accounts — batched to stay under Firestore 500 limit */
+  const acctSnap = await db.collection("accounts").get();
+  const toDelete = acctSnap.docs.filter(d => d.data().role !== "system");
+  for (let i = 0; i < toDelete.length; i += 400) {
+    const batch = db.batch();
+    toDelete.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+  const acctDeleted = toDelete.length;
+  totalDeleted += acctDeleted;
+  
+  await auditLog("system", "production_reset", "", "deleted " + totalDeleted + " docs");
+  return { success: true, message: "清除完成！共刪除 " + totalDeleted + " 筆資料。保留了系統設定與管理員帳號。" };
+});
+
+// ===== PAYUNi Registration Payment (活動管理者自己的金流) =====
+exports.createRegistrationPayment = callable(async (data) => {
+  const { compId, teamId } = data;
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return { success: false, message: "找不到活動" };
+  const cfg = compDoc.data().config || {};
+  if (!cfg.payuniEnabled || !cfg.payuniMerID || !cfg.payuniHashKey) return { success: false, message: "此活動未啟用線上付款" };
+
+  const teamDoc = await db.collection("teams").doc(teamId).get();
+  if (!teamDoc.exists) return { success: false, message: "找不到報名資料" };
+  const team = teamDoc.data();
+
+  const fee = cfg.registrationFee || 0;
+  if (fee < 1) return { success: false, message: "報名費金額不正確" };
+
+  const orderId = "RG" + Date.now() + Math.floor(Math.random() * 100);
+  await db.collection("regPayments").doc(orderId).set({
+    orderId, compId, teamId, amount: fee,
+    teamNameCN: team.teamNameCN || "", teamNameEN: team.teamNameEN || "",
+    status: "pending", createdAt: fmtNow()
+  });
+
+  const hostUrl = "https://regmaster-pro.web.app";
+  const encryptInfo = {
+    MerID: cfg.payuniMerID,
+    MerTradeNo: orderId,
+    TradeAmt: String(fee),
+    Timestamp: String(Math.floor(Date.now() / 1000)),
+    ProdDesc: (cfg.competitionName || "RegMaster").substring(0, 40) + " " + teamId,
+    ReturnURL: hostUrl + "/payuni-return.html",
+    NotifyURL: "https://us-central1-regmaster-pro.cloudfunctions.net/payuniRegNotify",
+    TradeType: "1"
+  };
+  const encStr = payuniEncrypt(encryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
+  const hashStr = payuniHash(encStr, cfg.payuniHashKey, cfg.payuniHashIV);
+  const prefix = cfg.payuniMode === "t" ? "https://sandbox-" : "https://";
+
+  return {
+    success: true, orderId,
+    payuni: { action: prefix + "api.payuni.com.tw/api/upp", MerID: cfg.payuniMerID, Version: "1.0", EncryptInfo: encStr, HashInfo: hashStr }
+  };
+});
+
+exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  try {
+    const { EncryptInfo, HashInfo } = req.body;
+    let matched = null;
+    
+    /* Try to find order by iterating - the MerTradeNo is in the encrypted data */
+    const compSnap = await db.collection("competitions").get();
+    for (const comp of compSnap.docs) {
+      const cfg = (comp.data().config || {});
+      if (!cfg.payuniEnabled || !cfg.payuniHashKey) continue;
+      const chk = payuniHash(EncryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
+      if (chk === HashInfo) {
+        try {
+          const info = payuniDecrypt(EncryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
+          matched = { info, cfg, compId: comp.id };
+        } catch(e) { continue; }
+        break;
+      }
+    }
+    if (!matched) { res.status(400).send("hash mismatch"); return; }
+
+    const { info, compId } = matched;
+    const orderId = info.MerTradeNo;
+    const tradeStatus = info.Status;
+
+    const orderRef = db.collection("regPayments").doc(orderId);
+    const orderDoc = await orderRef.get();
+    if (!orderDoc.exists) { res.status(404).send("order not found"); return; }
+    const order = orderDoc.data();
+
+    if (tradeStatus === "SUCCESS" && order.status !== "paid") {
+      await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: info.TradeNo || "" });
+      /* Auto-confirm team payment */
+      await db.collection("teams").doc(order.teamId).update({
+        paymentStatus: "已確認 (線上付款) " + fmtNow(),
+        paymentMethod: "onlinePayment",
+        regPaymentId: orderId
+      });
+      await auditLog("system", "線上付款成功", order.teamId, "PAYUNi " + orderId);
+
+      /* Send confirmation email */
+      const compDoc = await db.collection("competitions").doc(compId).get();
+      const compCfg = compDoc.exists ? (compDoc.data().config || {}) : {};
+      if (compCfg.autoEmailNotification !== false) {
+        const memSnap = await db.collection("members").where("teamId", "==", order.teamId).get();
+        const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
+        if (emails.length) {
+          await db.collection("mail").add({
+            to: emails,
+            message: {
+              subject: `[RegMaster] 付款成功通知 - ${compCfg.competitionName || ""}`,
+              html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px">
+                <h2 style="color:#065f46">✅ 付款成功！</h2>
+                <p>您的報名編號 <b>${order.teamId}</b> 已完成線上付款。</p>
+                <p>活動：${compCfg.competitionName || ""}</p>
+                <p>金額：NT$${order.amount}</p>
+                <p style="color:#475569;font-size:13px;margin-top:20px">此為系統自動通知，請勿直接回覆。</p></div>`,
+              text: `付款成功！報名編號 ${order.teamId}，金額 NT$${order.amount}`
+            }
+          });
+        }
+      }
+    }
+    res.status(200).send("OK");
+  } catch (e) {
+    console.error("payuniRegNotify error:", e);
+    res.status(500).send("error");
+  }
+});
+
+exports.getRegPaymentStatus = callable(async (data) => {
+  const { orderId } = data;
+  if (!orderId) return { status: "unknown" };
+  const doc = await db.collection("regPayments").doc(orderId).get();
+  if (!doc.exists) return { status: "unknown" };
+  return { status: doc.data().status || "pending" };
+});
+
+// ===== Scheduled Tasks (converted to callable — trigger via Cloud Scheduler HTTP or manually) =====
+exports.checkDeadlines = callable(async () => {
+  const snap = await db.collection("competitions").get();
+  const now = new Date();
+  for (const doc of snap.docs) {
+    const r = doc.data();
+    const cfg = r.config || {};
+    // Auto close if deadline passed
+    if (r.isOpen && r.deadline && now >= new Date(r.deadline)) {
+      await doc.ref.update({ isOpen: false });
+      await db.collection("announcements").add({ compId: doc.id, date: now.toISOString().substring(0, 10), title: "📌 報名已截止", content: "" });
+    }
+    // Auto open if openDate reached
+    if (!r.isOpen && cfg.openDate && now >= new Date(cfg.openDate)) {
+      const dl = r.deadline ? new Date(r.deadline) : null;
+      if (!dl || now < dl) await doc.ref.update({ isOpen: true });
+    }
+  }
+  return { success: true };
+});
+
+exports.checkLicenseExpirations = callable(async () => {
+  const snap = await db.collection("licenses").where("status", "==", "已啟用").where("type", "==", "subscription").get();
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  
+  for (const doc of snap.docs) {
+    const lic = doc.data();
+    if (!lic.expiresAt || !lic.activatedBy) continue;
+    
+    const expDate = new Date(lic.expiresAt).getTime();
+    const daysLeft = Math.floor((expDate - now) / dayMs);
+    
+    let notifyType = null;
+    if (daysLeft <= 0 && !lic.notifiedExpired) notifyType = "expired";
+    else if (daysLeft <= 30 && daysLeft > 0 && !lic.notified1M) notifyType = "1M";
+    else if (daysLeft <= 90 && daysLeft > 30 && !lic.notified3M) notifyType = "3M";
+    
+    if (notifyType) {
+      const userSnap = await db.collection("accounts").where("username", "==", lic.activatedBy).limit(1).get();
+      if (!userSnap.empty) {
+        const userEmail = userSnap.docs[0].data().email;
+        if (userEmail) {
+          let subject = "", htmlBody = "";
+          if (notifyType === "expired") {
+            subject = "🚨 [RegMaster] 授權已到期通知";
+            htmlBody = `<p>您的訂閱授權 (${lic.code}) <b>已經到期</b>。請更新授權碼以繼續建立活動。</p>`;
+            await doc.ref.update({ notifiedExpired: true, status: "已失效" });
+          } else if (notifyType === "1M") {
+            subject = "⏳ [RegMaster] 授權即將於 1 個月後到期";
+            htmlBody = `<p>您的訂閱授權 (${lic.code}) 將於約 <b>1 個月後</b>到期，請及早安排續約確保服務不中斷。</p>`;
+            await doc.ref.update({ notified1M: true });
+          } else if (notifyType === "3M") {
+            subject = "📅 [RegMaster] 授權即將於 3 個月後到期";
+            htmlBody = `<p>您的訂閱授權 (${lic.code}) 將於約 <b>3 個月後</b>到期，特此提醒。</p>`;
+            await doc.ref.update({ notified3M: true });
+          }
+          await db.collection("mail").add({ to: [userEmail], message: { subject, html: htmlBody, text: subject } });
+        }
+      }
+    }
+  }
+  return { success: true };
+});
+// ===== Feedback System =====
+exports.submitFeedback = authCallable(["system","competition"], async (data, request) => {
+  const { category, subject, description, stepsToReproduce, pageUrl, attachmentBase64, attachmentName, clientInfo } = data;
+  if (!category || !subject || !description) return { success: false, message: "必填欄位未填寫完整" };
+
+  const username = request.authUser.username;
+  const userEmail = request.authUser.email || "";
+
+  // Store attachment if provided (max 2MB)
+  let attachmentId = "";
+  let attachmentMime = "";
+  if (attachmentBase64 && attachmentBase64.length > 0 && attachmentBase64.length <= 2800000) {
+    const attRef = db.collection("feedbackFiles").doc();
+    // Detect mime type from base64 header or file extension
+    const ext = ((attachmentName || "").split(".").pop() || "").toLowerCase();
+    const mimeMap = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", pdf: "application/pdf" };
+    attachmentMime = mimeMap[ext] || "application/octet-stream";
+    await attRef.set({ data: attachmentBase64, fileName: (attachmentName || "attachment").substring(0, 100), mimeType: attachmentMime, createdAt: fmtNow() });
+    attachmentId = attRef.id;
+  }
+
+  const feedbackDoc = {
+    category, subject: (subject || "").substring(0, 200),
+    description: (description || "").substring(0, 5000),
+    stepsToReproduce: (stepsToReproduce || "").substring(0, 2000),
+    pageUrl: (pageUrl || "").substring(0, 500),
+    attachmentId, attachmentName: attachmentId ? (attachmentName || "").substring(0, 100) : "", attachmentMime,
+    username, email: userEmail,
+    device: (clientInfo && clientInfo.device) || "", browser: (clientInfo && clientInfo.browser) || "",
+    os: (clientInfo && clientInfo.os) || "", ip: (clientInfo && clientInfo.ip) || "",
+    country: (clientInfo && clientInfo.country) || "", city: (clientInfo && clientInfo.city) || "",
+    status: "新建", createdAt: fmtNow(),
+    createdAtTS: admin.firestore.FieldValue.serverTimestamp()
+  };
+  await db.collection("feedback").add(feedbackDoc);
+
+  // Send email to system admin
+  const catLabels = { bug: "🐞 系統異常", feature: "💡 功能建議", ux: "🎨 介面體驗", question: "❓ 一般提問", billing: "💳 帳號付費", other: "💬 其他" };
+  const catLabel = catLabels[category] || category;
+  const emailBody = `
+    <p style="font-size:16px;font-weight:700;margin-top:0">📮 收到新的意見回饋</p>
+    <div style="background:var(--surface2,#f8fafc);border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:12px 0;font-size:14px;line-height:1.8">
+      <b>類別：</b>${catLabel}<br>
+      <b>主旨：</b>${(subject || "").replace(/</g, "&lt;")}<br>
+      <b>提交者：</b>${username} (${userEmail})<br>
+      <b>裝置：</b>${feedbackDoc.device} / ${feedbackDoc.os}<br>
+      <b>瀏覽器：</b>${feedbackDoc.browser}<br>
+      <b>IP：</b>${feedbackDoc.ip} (${feedbackDoc.country} ${feedbackDoc.city})<br>
+      <b>頁面：</b>${feedbackDoc.pageUrl || "-"}<br>
+      <b>時間：</b>${fmtNow()}
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin:12px 0">
+      <b>詳細描述：</b><br>
+      <div style="margin-top:8px;white-space:pre-wrap;font-size:14px;color:#333">${(description || "").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>
+      ${stepsToReproduce ? '<div style="margin-top:12px;border-top:1px solid #e2e8f0;padding-top:12px"><b>重現步驟：</b><br><div style="margin-top:4px;white-space:pre-wrap;font-size:14px;color:#333">' + stepsToReproduce.replace(/</g, "&lt;").replace(/\n/g, "<br>") + '</div></div>' : ''}
+    </div>
+    ${attachmentId ? '<div style="margin:12px 0;padding:12px;background:#f1f5f9;border-radius:8px"><b>📎 附件：</b> ' + (attachmentName || "file").replace(/</g, "&lt;") + '（請至 系統設定 → 意見回饋 查看附件）</div>' : ''}
+  `;
+  const htmlEmail = emailWrap('📮 意見回饋 — ' + (subject || "").substring(0, 50), emailBody);
+  await db.collection("mail").add({
+    to: [SYSTEM_ADMIN_EMAIL],
+    message: { subject: "[RegMaster 意見回饋] " + catLabel + " — " + (subject || "").substring(0, 50), html: htmlEmail, text: "來自 " + username + " 的意見回饋: " + subject }
+  });
+
+  await auditLog(username, "意見回饋", category, subject);
+  return { success: true, message: "感謝您的回饋！系統管理員將盡快處理。" };
+});
+
+exports.listFeedback = authCallable(["system"], async () => {
+  const snap = await db.collection("feedback").orderBy("createdAtTS", "desc").limit(200).get();
+  return snap.docs.map(d => {
+    const f = d.data();
+    return {
+      id: d.id, category: f.category || "", subject: f.subject || "", description: f.description || "",
+      stepsToReproduce: f.stepsToReproduce || "", pageUrl: f.pageUrl || "",
+      username: f.username || "", email: f.email || "",
+      device: f.device || "", browser: f.browser || "", os: f.os || "",
+      ip: f.ip || "", country: f.country || "", city: f.city || "",
+      status: f.status || "新建", createdAt: f.createdAt || "",
+      attachmentId: f.attachmentId || "", attachmentName: f.attachmentName || "", attachmentMime: f.attachmentMime || ""
+    };
+  });
+});
+
+exports.getFeedbackFile = authCallable(["system"], async (data) => {
+  const { fileId } = data;
+  if (!fileId) return { success: false };
+  const doc = await db.collection("feedbackFiles").doc(fileId).get();
+  if (!doc.exists) return { success: false, message: "檔案不存在" };
+  const f = doc.data();
+  return { success: true, dataUri: "data:" + (f.mimeType || "application/octet-stream") + ";base64," + (f.data || ""), fileName: f.fileName || "file" };
+});
+
+exports.updateFeedbackStatus = authCallable(["system"], async (data) => {
+  const { feedbackId, status } = data;
+  if (!feedbackId || !status) return { success: false };
+  await db.collection("feedback").doc(feedbackId).update({ status });
+  return { success: true };
+});
+
+// ===== Financial & Visitor Analytics =====
+exports.listOrders = authCallable(["system"], async (data) => {
+  const dateFrom = data.dateFrom || "";
+  const dateTo = data.dateTo || "";
+  const [orderSnap, acctSnap] = await Promise.all([
+    db.collection("orders").get(),
+    db.collection("accounts").get()
+  ]);
+  const emailMap = {};
+  acctSnap.docs.forEach(d => { const a = d.data(); emailMap[a.username] = a.email || ""; });
+  const results = [];
+  for (const doc of orderSnap.docs) {
+    const o = doc.data();
+    const oDate = (o.createdAt || "").substring(0, 10);
+    if (dateFrom && oDate < dateFrom) continue;
+    if (dateTo && oDate > dateTo) continue;
+    results.push({
+      orderId: o.orderId || doc.id, username: o.username || "", email: emailMap[o.username] || "",
+      items: o.items || [], total: o.total || 0, status: o.status || "",
+      createdAt: o.createdAt || "", paidAt: o.paidAt || "",
+      couponCode: o.couponCode || "", couponDiscount: o.couponDiscount || 0
+    });
+  }
+  results.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  return results;
+});
+
+exports.logVisit = callable(async (data) => {
+  const { ip, country, city, device, page, compId } = data;
+  const today = new Date().toISOString().substring(0, 10);
+  const safeIP = (ip || "").substring(0, 45);
+  const safePage = (page || "/").substring(0, 200);
+  // Dedup: same IP + page + date only records once
+  if (safeIP) {
+    const exists = await db.collection("visitors")
+      .where("ip", "==", safeIP).where("date", "==", today).where("page", "==", safePage)
+      .limit(1).get();
+    if (!exists.empty) return { success: true };
+  }
+  // Rate limit: max 50 visitor records per IP per day
+  if (safeIP) {
+    const todayCount = await db.collection("visitors")
+      .where("ip", "==", safeIP).where("date", "==", today)
+      .limit(50).get();
+    if (todayCount.size >= 50) return { success: true };
+  }
+  // Validate compId: only store if format is clean AND competition actually exists
+  let safeCompId = "";
+  if (compId) {
+    const rawId = String(compId).substring(0, 30);
+    if (/^[A-Za-z0-9_-]+$/.test(rawId)) {
+      const compDoc = await db.collection("competitions").doc(rawId).get();
+      if (compDoc.exists) safeCompId = rawId;
+    }
+  }
+  await db.collection("visitors").add({
+    ip: safeIP,
+    country: (country || "").substring(0, 50),
+    city: (city || "").substring(0, 50),
+    device: (device || "").substring(0, 100),
+    page: safePage,
+    compId: safeCompId,
+    date: today,
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  // Increment viewCount on the competition doc (non-fatal on failure)
+  if (safeCompId) {
+    try {
+      await db.collection("competitions").doc(safeCompId).update({
+        viewCount: admin.firestore.FieldValue.increment(1)
+      });
+    } catch (_e) { /* ignore - competition may have been deleted */ }
+  }
+  return { success: true };
+});
+
+exports.getVisitorStats = authCallable(["system"], async (data) => {
+  const dateFrom = data.dateFrom || "";
+  const dateTo = data.dateTo || "";
+  const snap = await db.collection("visitors").orderBy("createdAt", "desc").limit(5000).get();
+  const byDate = {}, byCountry = {}, byIP = {}, byComp = {};
+  const uniqueByDate = {};
+  snap.docs.forEach(d => {
+    const v = d.data();
+    const date = v.date || "";
+    // Date filter
+    if (dateFrom && date < dateFrom) return;
+    if (dateTo && date > dateTo) return;
+    const ip = v.ip || "unknown";
+    const country = v.country || "Unknown";
+    const compId = v.compId || "";
+    // Daily device count (unique IPs per day)
+    if (date) {
+      byDate[date] = (byDate[date] || 0) + 1;
+      if (!uniqueByDate[date]) uniqueByDate[date] = new Set();
+      uniqueByDate[date].add(ip);
+    }
+    // Country stats
+    byCountry[country] = (byCountry[country] || 0) + 1;
+    // IP list
+    if (!byIP[ip]) byIP[ip] = { count: 0, country, city: v.city || "", lastDate: date };
+    byIP[ip].count++;
+    if (date > byIP[ip].lastDate) byIP[ip].lastDate = date;
+    // Activity ranking
+    if (compId) byComp[compId] = (byComp[compId] || 0) + 1;
+  });
+  // Format daily unique
+  const dailyUnique = {};
+  Object.keys(uniqueByDate).forEach(d => { dailyUnique[d] = uniqueByDate[d].size; });
+  // Get comp names for ranking (only include existing competitions)
+  const compRanking = [];
+  const compIds = Object.keys(byComp);
+  const compDocs = await Promise.all(compIds.map(cid => db.collection("competitions").doc(cid).get()));
+  compIds.forEach((cid, i) => {
+    const cdoc = compDocs[i];
+    if (!cdoc || !cdoc.exists) return;
+    const name = cdoc.data().name || cid;
+    compRanking.push({ compId: cid, name, visits: byComp[cid] });
+  });
+  compRanking.sort((a, b) => b.visits - a.visits);
+  // IP list (top 100)
+  const ipList = Object.entries(byIP).map(([ip, d]) => ({ ip, ...d })).sort((a, b) => b.count - a.count).slice(0, 100);
+  return { byDate, dailyUnique, byCountry, ipList, compRanking, totalVisits: snap.docs.length };
+});
+
+// ===== One-time Migration: sync teamCount counters for existing data =====
+exports.migrateTeamCounts = authCallable(["system"], async () => {
+  const compSnap = await db.collection("competitions").get();
+  const teamSnap = await db.collection("teams").get();
+  const tc = {};
+  teamSnap.docs.forEach(d => {
+    const cid = d.data().compId;
+    const st = d.data().status || "";
+    if (st !== "已取消") tc[cid] = (tc[cid] || 0) + 1;
+  });
+  let updated = 0;
+  for (const doc of compSnap.docs) {
+    const count = tc[doc.id] || 0;
+    if ((doc.data().teamCount || 0) !== count) {
+      await doc.ref.update({ teamCount: count });
+      updated++;
+    }
+  }
+  return { success: true, message: "Updated " + updated + " competitions" };
+});
+
+// ===== One-time Migration: backfill viewCount counters from visitors collection =====
+exports.migrateViewCounts = authCallable(["system"], async () => {
+  const compSnap = await db.collection("competitions").get();
+  const visitorSnap = await db.collection("visitors").get();
+  const vc = {};
+  visitorSnap.docs.forEach(d => {
+    const cid = d.data().compId;
+    if (cid) vc[cid] = (vc[cid] || 0) + 1;
+  });
+  let updated = 0;
+  for (const doc of compSnap.docs) {
+    const count = vc[doc.id] || 0;
+    if ((doc.data().viewCount || 0) !== count) {
+      await doc.ref.update({ viewCount: count });
+      updated++;
+    }
+  }
+  return { success: true, message: "Updated " + updated + " competitions with viewCount" };
+});

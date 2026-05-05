@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RegMaster — 系統設定</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script>
+var _fn = firebase.functions();
+var _argMap = {
+  getSalesConfig:[],
+  saveSalesConfig:["config"],
+  createCoupon:["code","type","value","maxUses","expiresAt"],
+  listCoupons:[],
+  deleteCoupon:["id"],
+  listAccounts:[],
+  createAccount:["username","password","role","displayName"],
+  deleteAccount:["username"],
+  sendSystemEmail:["targetEmail","subject","content","user"],
+  getGeminiKeys:[],
+  saveGeminiKeys:["keys"],
+  getAuditLogs:["limit"],
+  clearAuditLogs:[],
+  createLicense:["type","count","years"],
+  deleteLicense:["code"],
+  listLicenses:[],
+  clearExpiredLicenses:[],
+  productionReset:["confirmCode"],
+  listOrders:[],
+  getVisitorStats:[],
+  listFeedback:[],
+  updateFeedbackStatus:["feedbackId","status"],
+  getFeedbackFile:["fileId"]
+};
+var ME = null;
+function _callFn(name, args) {
+  var map = _argMap[name]; var payload = {};
+  if (map && map.length > 0) { for (var i = 0; i < map.length; i++) payload[map[i]] = args[i]; }
+  else if (args.length === 1 && typeof args[0] === "object") payload = args[0];
+  else if (args.length > 0) { for (var j = 0; j < args.length; j++) payload["arg" + j] = args[j]; }
+  if (ME && ME.sessionToken) payload._auth = { username: ME.username, token: ME.sessionToken };
+  return _fn.httpsCallable(name)(payload).then(function(r) { return r.data; });
+}
+var google = {script:{run:null}};
+(function(){
+  function makeRunner(){
+    var _ok=null,_fail=null;
+    var handler={get:function(t,p){
+      if(p==="withSuccessHandler") return function(cb){_ok=cb;return new Proxy({},handler)};
+      if(p==="withFailureHandler") return function(cb){_fail=cb;return new Proxy({},handler)};
+      return function(){
+        var a=[];for(var i=0;i<arguments.length;i++)a.push(arguments[i]);
+        var ok=_ok,fail=_fail;
+        _callFn(p,a).then(function(r){if(ok)ok(r)}).catch(function(e){
+          var msg=(e&&e.message)||'';
+          if(msg.indexOf('登入已失效')!==-1||msg.indexOf('Session expired')!==-1||msg.indexOf('Authentication required')!==-1){
+            try{loading(false)}catch(x){}
+            toast('登入已過期，請重新登入','error');
+            setTimeout(function(){window.location.href='/'},1500);
+            return;
+          }
+          if(fail)fail(e);else{console.error("CF error:",p,e);try{loading(false)}catch(x){}try{toast(msg||"Error: "+p,"error")}catch(x){}}
+        });
+      };
+    }};
+    return new Proxy({},handler);
+  }
+  google.script.run=new Proxy({},{get:function(t,p){
+    if(p==="withSuccessHandler"){var r=makeRunner();return function(cb){return r.withSuccessHandler(cb)};}
+    if(p==="withFailureHandler"){var r2=makeRunner();return function(cb){return r2.withFailureHandler(cb)};}
+    return function(){var a=[];for(var i=0;i<arguments.length;i++)a.push(arguments[i]);_callFn(p,a).catch(function(e){console.error(p,e)})};
+  }});
+})();
+</script>
+
+<style>
+:root{--pri:#0A437A;--pri2:#0D5BA8;--pri-bg:#E8F0F8;--bg:#f1f5f9;--surface:#fff;--surface2:#f8fafc;--txt:#0f172a;--txt2:#475569;--txt3:#94a3b8;--border:#e2e8f0;--ok:#10b981;--ok-bg:#ecfdf5;--err:#ef4444;--err-bg:#fef2f2;--warn:#F49121;--warn-bg:#FFF7ED;--accent:#F49121;--radius:16px;--shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit','Noto Sans TC',sans-serif;background:var(--bg);color:var(--txt);line-height:1.75;font-size:17px;min-height:100vh}
+::selection{background:var(--pri);color:#fff}
+.topbar{background:linear-gradient(135deg,#062845,#0A437A,#0D5BA8);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 4px 20px rgba(30,27,75,.25)}
+.topbar .logo{color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;text-decoration:none}
+.topbar .logo .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.logo-tagline{font-size:9px;color:rgba(255,255,255,.4);font-weight:400;display:block;line-height:1;margin-top:-2px}
+.logo-ver{font-size:8px;padding:1px 5px;background:rgba(244,145,33,.8);color:#fff;border-radius:4px;font-weight:700;margin-left:4px;vertical-align:middle}
+.topbar .right{display:flex;align-items:center;gap:6px}
+.topbar .right button{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.2s}
+.topbar .right button:hover{background:rgba(255,255,255,.2)}
+.container{max-width:100%;margin:0 auto;padding:20px 28px 80px;width:100%}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 28px;margin-bottom:18px;border:1px solid var(--border);animation:fadeIn .3s ease both}
+.card h2{font-size:20px;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:2.5px solid var(--pri-bg);color:var(--pri)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-weight:600;font-size:14px;color:var(--txt2);margin-bottom:5px}
+.form-group label .req{color:var(--err)}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:15px;font-family:inherit;transition:.2s;background:var(--surface2)}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(10,67,122,.08);background:#fff}
+.form-group textarea{resize:vertical;min-height:90px}
+.form-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.btn{padding:10px 20px;border:none;border-radius:11px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--pri);color:#fff;box-shadow:0 2px 8px rgba(10,67,122,.2)}.btn-primary:hover{background:var(--pri2)}
+.btn-success{background:var(--ok);color:#fff}.btn-danger{background:var(--err);color:#fff}
+.btn-outline{background:transparent;border:1.5px solid var(--pri);color:var(--pri)}.btn-outline:hover{background:var(--pri-bg)}
+.btn-ghost{background:transparent;color:var(--txt2);padding:8px 12px}.btn-ghost:hover{background:var(--surface2)}
+.btn-full{width:100%;justify-content:center;padding:13px;font-size:16px}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:8px}
+.badge{display:inline-block;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:700}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-warn{background:var(--warn-bg);color:#b45309}.b-err{background:var(--err-bg);color:var(--err)}.b-info{background:var(--pri-bg);color:var(--pri)}
+.dtable{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+.dtable th{background:var(--surface2);padding:10px 12px;text-align:left;font-weight:600;color:var(--txt3);font-size:12px;border-bottom:2px solid var(--border);white-space:nowrap}
+.dtable td{padding:10px 12px;border-bottom:1px solid var(--surface2);vertical-align:middle}
+.dtable tr:hover td{background:var(--surface2)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.empty{text-align:center;padding:36px;color:var(--txt3)}
+/* Tabs */
+.sys-tabs{display:flex;gap:2px;background:var(--surface);border-radius:14px 14px 0 0;padding:4px;border:1px solid var(--border);border-bottom:none;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sys-tabs::-webkit-scrollbar{display:none}
+.sys-tab{padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;border-radius:10px;white-space:nowrap;color:var(--txt3);transition:.2s;display:flex;align-items:center;gap:5px}
+.sys-tab:hover{background:var(--surface2)}
+.sys-tab.on{background:var(--pri);color:#fff}
+.sys-body{background:var(--surface);border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow);padding:24px;border:1px solid var(--border);border-top:none;min-height:260px}
+.sys-panel{display:none}.sys-panel.on{display:block;animation:fadeIn .25s ease}
+/* Loader */
+.loader-bg{display:none;position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(2px)}
+.loader-box{text-align:center}
+.loader-bar-track{width:200px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px auto 0}
+.loader-bar-fill{height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));border-radius:3px;width:0%;transition:width .2s}
+.loader-pct{font-size:12px;color:var(--txt3);margin-top:4px;font-weight:600}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);padding:12px 22px;border-radius:12px;font-size:15px;font-weight:600;z-index:9999;opacity:0;transition:.3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.toast.success{background:#065f46;color:#d1fae5}.toast.error{background:#991b1b;color:#fee2e2}.toast.info{background:var(--pri);color:#fff}.toast.warn{background:#92400e;color:#fef3c7}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;display:none;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(2px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);padding:0;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.15);animation:fadeIn .2s ease}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+.mh h3{font-size:17px;font-weight:700}
+.mb{padding:20px}
+@media(max-width:640px){
+  .container{padding:12px 10px 60px}
+  .card{padding:16px 14px}
+  .sys-tab{padding:8px 10px;font-size:11px;gap:3px}
+  .sys-body{padding:14px 10px}
+  .dtable{font-size:11px}
+  .dtable th,.dtable td{padding:6px 5px}
+  .form-row{grid-template-columns:1fr}
+  .topbar{padding:0 12px;height:48px}
+  .topbar .logo{font-size:15px;gap:6px}
+  .topbar .logo img{width:26px;height:26px}
+  .logo-tagline{font-size:8px}
+  .topbar .right button{padding:5px 10px;font-size:11px;border-radius:8px}
+  .fin-summary{grid-template-columns:1fr}
+  .fin-card{padding:14px 16px}
+  h1{font-size:20px!important}
+  .btn{padding:8px 14px;font-size:13px}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  .modal{max-width:95vw;margin:8px}
+  .mh{padding:12px 14px}
+  .mb{padding:14px}
+  .mh h3{font-size:15px}
+}
+@media(max-width:400px){
+  .sys-tab{padding:6px 8px;font-size:10px}
+  .container{padding:8px 6px 60px}
+}
+/* Finance tab */
+.fin-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.fin-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;text-align:center}
+.fin-label{font-size:12px;color:var(--txt3);font-weight:600;margin-bottom:4px}
+.fin-value{font-size:24px;font-weight:900}
+/* Visitor tab */
+.vis-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.vis-tab{padding:8px 16px;font-size:13px;font-weight:600;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;color:var(--txt2);transition:.15s}
+.vis-tab:hover{background:var(--surface2)}
+.vis-tab.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.vis-sub{display:none}.vis-sub.on{display:block;animation:fadeIn .25s ease}
+.country-list{max-width:500px}
+.country-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--surface2)}
+.country-name{min-width:100px;font-weight:600;font-size:14px}
+.country-bar-bg{flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.country-bar{height:100%;background:linear-gradient(90deg,var(--pri),var(--pri2));border-radius:5px;transition:width .3s}
+.country-count{min-width:40px;text-align:right;font-weight:700;font-size:13px;color:var(--txt2)}
+/* Date filter bar */
+.date-filter-bar{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px}
+.df-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.df-row:last-child{margin-bottom:0}
+.df-preset{font-size:11px!important;padding:4px 10px!important}
+/* Feedback list */
+.fb-list{display:flex;flex-direction:column;gap:10px}
+.fb-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;transition:.15s}
+.fb-item:hover{box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.fb-head{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fb-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:11px;color:var(--txt3)}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <a class="logo" href="/" title="返回首頁">
+    <img src="favicon.png" alt="RegMaster" width="32" height="32" style="border-radius:6px">
+    <div>
+      <span>RegMaster</span><span class="logo-ver">PRO</span>
+      <span class="logo-tagline">System Settings</span>
+    </div>
+  </a>
+  <div class="right">
+    <button onclick="window.location.href='/'">← 返回管理首頁</button>
+  </div>
+</div>
+
+<div class="container">
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <h1 style="font-size:24px;font-weight:900;color:var(--pri)">⚙️ 系統設定</h1>
+    <span id="meLabel" style="font-size:13px;color:var(--txt3)"></span>
+  </div>
+
+  <div class="sys-tabs" id="sysTabs">
+    <div class="sys-tab on" data-tab="sales" onclick="switchTab('sales')">💰 銷售設定</div>
+    <div class="sys-tab" data-tab="accounts" onclick="switchTab('accounts')">👤 帳號管理</div>
+    <div class="sys-tab" data-tab="licenses" onclick="switchTab('licenses')">🔑 授權碼</div>
+    <div class="sys-tab" data-tab="finance" onclick="switchTab('finance')">💳 財務分析</div>
+    <div class="sys-tab" data-tab="visitors" onclick="switchTab('visitors')">📈 使用者分析</div>
+    <div class="sys-tab" data-tab="feedback" onclick="switchTab('feedback')">📮 意見回饋</div>
+    <div class="sys-tab" data-tab="aikey" onclick="switchTab('aikey')">🤖 AI Key</div>
+    <div class="sys-tab" data-tab="logs" onclick="switchTab('logs')">📋 操作日誌</div>
+    <div class="sys-tab" data-tab="reset" onclick="switchTab('reset')">🧹 清除資料</div>
+  </div>
+  <div class="sys-body">
+    <div class="sys-panel on" id="panel-sales"></div>
+    <div class="sys-panel" id="panel-accounts"></div>
+    <div class="sys-panel" id="panel-licenses"></div>
+    <div class="sys-panel" id="panel-finance"></div>
+    <div class="sys-panel" id="panel-visitors"></div>
+    <div class="sys-panel" id="panel-feedback"></div>
+    <div class="sys-panel" id="panel-aikey"></div>
+    <div class="sys-panel" id="panel-logs"></div>
+    <div class="sys-panel" id="panel-reset"></div>
+  </div>
+</div>
+
+<!-- Loader -->
+<div class="loader-bg" id="loader">
+  <div class="loader-box">
+    <div style="font-size:28px;margin-bottom:4px">⏳</div>
+    <div class="loader-bar-track"><div class="loader-bar-fill" id="loaderBar"></div></div>
+    <div class="loader-pct" id="loaderPct">0%</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Confirm Modal -->
+<div id="mConfirm" class="modal-bg" onclick="if(event.target===this)closeM('mConfirm')">
+  <div class="modal" style="max-width:440px">
+    <div class="mh">
+      <h3 id="mcTitle">確認</h3>
+      <button onclick="closeM('mConfirm')" style="font-size:18px;border:none;cursor:pointer;background:none;padding:0">✕</button>
+    </div>
+    <div class="mb">
+      <p id="mcMsg" style="font-size:15px;line-height:1.7"></p>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button class="btn btn-outline" id="mcCancel" onclick="closeM('mConfirm')">取消</button>
+        <button class="btn btn-primary" id="mcOk">確定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Email Modal -->
+<div id="mAdminEmail" class="modal-bg" onclick="if(event.target===this)closeM('mAdminEmail')">
+  <div class="modal" style="max-width:460px">
+    <div class="mh">
+      <h3>✉️ 寄發系統信件</h3>
+      <button onclick="closeM('mAdminEmail')" style="font-size:18px;border:none;cursor:pointer;background:none;padding:0">✕</button>
+    </div>
+    <div class="mb">
+      <div class="form-group"><label>收件者 Email</label><input type="text" id="sysEmailTgt" readonly style="background:#f1f5f9"></div>
+      <div class="form-group"><label>信件主旨 <span class="req">*</span></label><input type="text" id="sysEmailSubj"></div>
+      <div class="form-group"><label>信件內容 <span class="req">*</span></label><textarea id="sysEmailBody" rows="6" placeholder="請輸入要發送給該管理員的內容..."></textarea></div>
+      <button class="btn btn-primary btn-full" id="btnSysEmail" onclick="doSendSystemEmail()">送出信件</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// Core Helpers
+// ==========================================
+var LANG = 'zh';
+
+function $(id) { return document.getElementById(id); }
+
+function escHtml(s) {
+  if (!s && s !== 0) return '';
+  var d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function openM(id) { $(id).classList.add('show'); }
+function closeM(id) { $(id).classList.remove('show'); }
+
+function showConfirm(msg, onOk, title, okText) {
+  $('mcTitle').textContent = title || '確認';
+  $('mcMsg').textContent = msg;
+  $('mcOk').style.display = '';
+  $('mcOk').style.background = '';
+  $('mcOk').textContent = okText || '確定';
+  $('mcCancel').textContent = '取消';
+  $('mcOk').onclick = function() { closeM('mConfirm'); if (onOk) onOk(); };
+  openM('mConfirm');
+}
+
+var toastTimeout = null;
+function toast(m, t) {
+  var e = $('toast');
+  e.innerHTML = escHtml(m) + ' <span onclick="this.parentElement.classList.remove(\'show\')" style="margin-left:8px;cursor:pointer;opacity:.7;font-size:15px">✕</span>';
+  e.className = 'toast ' + (t || 'info') + ' show';
+  if (toastTimeout) clearTimeout(toastTimeout);
+  var dur = (t === 'error' || t === 'warn') ? 6000 : 3500;
+  toastTimeout = setTimeout(function() { e.classList.remove('show'); }, dur);
+}
+
+var _loadTimer = null;
+function loading(s) {
+  var el = $('loader'), bar = $('loaderBar'), pct = $('loaderPct');
+  if (s) {
+    if (bar) bar.style.width = '0%'; if (pct) pct.textContent = '0%';
+    el.style.display = 'flex';
+    var progress = 0; clearInterval(_loadTimer);
+    _loadTimer = setInterval(function() {
+      if (progress < 90) { progress += Math.random() * 15 + 5; if (progress > 90) progress = 90; }
+      if (bar) bar.style.width = Math.round(progress) + '%';
+      if (pct) pct.textContent = Math.round(progress) + '%';
+    }, 200);
+  } else {
+    clearInterval(_loadTimer);
+    if (bar) bar.style.width = '100%'; if (pct) pct.textContent = '100%';
+    setTimeout(function() { el.style.display = 'none'; }, 300);
+  }
+}
+
+// ==========================================
+// Cookie / Session
+// ==========================================
+function getCookie(name) {
+  var c = document.cookie.split(';');
+  for (var i = 0; i < c.length; i++) { var p = c[i].trim().split('='); if (p[0] === name) return decodeURIComponent(p[1]); }
+  return '';
+}
+
+// ==========================================
+// Tab Switching
+// ==========================================
+var _loadedTabs = {};
+
+function switchTab(id) {
+  document.querySelectorAll('.sys-tab').forEach(function(t) { t.classList.toggle('on', t.getAttribute('data-tab') === id); });
+  document.querySelectorAll('.sys-panel').forEach(function(p) { p.classList.toggle('on', p.id === 'panel-' + id); });
+  // Lazy-load content on first switch
+  if (!_loadedTabs[id]) {
+    _loadedTabs[id] = true;
+    if (id === 'sales') loadSalesTab();
+    else if (id === 'accounts') loadAccountsTab();
+    else if (id === 'licenses') loadLicensesTab();
+    else if (id === 'finance') loadFinanceTab();
+    else if (id === 'visitors') loadVisitorsTab();
+    else if (id === 'feedback') loadFeedbackTab();
+    else if (id === 'aikey') loadAIKeyTab();
+    else if (id === 'logs') loadLogsTab();
+    else if (id === 'reset') loadResetTab();
+  }
+}
+
+// ==========================================
+// TAB 1: 銷售設定
+// ==========================================
+function loadSalesTab() {
+  var panel = $('panel-sales');
+  panel.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(cfg) {
+    loading(false);
+    var s = cfg || {};
+    var h = '<div class="card" style="box-shadow:none;border:none;padding:0;margin:0"><h2>💰 定價設定</h2>';
+    h += '<div class="form-row">';
+    h += '<div class="form-group"><label>單次授權價格 (NTD)</label><input type="number" id="slPrice" value="' + (s.singlePrice || 500) + '"></div>';
+    h += '<div class="form-group"><label>單年訂閱價格 (NTD)</label><input type="number" id="slYearPrice" value="' + (s.yearlyPrice || 3000) + '"></div>';
+    h += '<div class="form-group"><label>稅率 (%)</label><input type="number" id="slTax" value="' + (s.taxRate || 5) + '" min="0" max="100"></div>';
+    h += '</div>';
+    h += '<h3 style="font-size:16px;font-weight:700;margin:16px 0 8px;color:var(--pri)">多件折扣</h3>';
+    h += '<div id="slDiscounts">';
+    (s.bulkDiscounts || []).forEach(function(d) {
+      h += '<div class="form-row" style="align-items:center;margin-bottom:6px"><div class="form-group"><label>≥ 數量</label><input type="number" class="slDiscQty" value="' + d.qty + '" min="2"></div><div class="form-group"><label>折數</label><input type="number" class="slDiscVal" value="' + d.discount + '" step="0.01" min="0.01" max="1"></div><button class="btn btn-danger btn-sm" onclick="this.closest(\'.form-row\').remove()">✕</button></div>';
+    });
+    h += '</div>';
+    h += '<button class="btn btn-outline btn-sm" onclick="addSlDiscount()" style="margin-top:4px">＋ 新增折扣</button>';
+    h += '<h3 style="font-size:16px;font-weight:700;margin:20px 0 8px;color:var(--pri)">PAYUNi 金流設定</h3>';
+    h += '<div class="form-row">';
+    h += '<div class="form-group"><label>MerID (商店代號)</label><input type="text" id="slMerID" value="' + (s.payuniMerID || '') + '"></div>';
+    h += '<div class="form-group"><label>Hash Key</label><input type="text" id="slHashKey" value="' + (s.payuniHashKey || '') + '"></div>';
+    h += '<div class="form-group"><label>Hash IV</label><input type="text" id="slHashIV" value="' + (s.payuniHashIV || '') + '"></div>';
+    h += '</div>';
+    h += '<div class="form-group" style="max-width:260px"><label>模式</label><select id="slMode"><option value="t" ' + (s.payuniMode === 't' ? 'selected' : '') + '>測試區</option><option value="" ' + (s.payuniMode !== 't' ? 'selected' : '') + '>正式區</option></select></div>';
+    h += '<button class="btn btn-primary" onclick="saveSalesConfig()" style="margin-top:12px">💾 儲存</button>';
+    h += '</div>';
+
+    /* Coupon Management */
+    h += '<hr style="border:none;border-top:1px dashed var(--border);margin:24px 0">';
+    h += '<div style="margin-top:0"><h2 style="font-size:20px;font-weight:700;color:var(--pri);margin-bottom:12px;padding-bottom:10px;border-bottom:2.5px solid var(--pri-bg)">🎟️ 優惠券管理</h2>';
+    h += '<div class="form-row" style="align-items:flex-end">';
+    h += '<div class="form-group"><label>代碼</label><input type="text" id="cpnCode" placeholder="WELCOME20" style="text-transform:uppercase"></div>';
+    h += '<div class="form-group"><label>類型</label><select id="cpnType"><option value="percent">折扣 %</option><option value="fixed">折讓金額</option></select></div>';
+    h += '<div class="form-group"><label>數值</label><input type="number" id="cpnVal" placeholder="20"></div>';
+    h += '<div class="form-group"><label>使用上限</label><input type="number" id="cpnMax" placeholder="0=無限"></div>';
+    h += '<div class="form-group"><label>到期日</label><input type="date" id="cpnExp"></div>';
+    h += '<button class="btn btn-primary btn-sm" onclick="addCoupon()">＋</button>';
+    h += '</div>';
+    h += '<div id="cpnList"></div></div>';
+
+    panel.innerHTML = h;
+    loadCoupons();
+  }).withFailureHandler(function(e) {
+    loading(false);
+    panel.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).getSalesConfig();
+}
+
+function addSlDiscount() {
+  var wrap = $('slDiscounts'); if (!wrap) return;
+  wrap.insertAdjacentHTML('beforeend', '<div class="form-row" style="align-items:center;margin-bottom:6px"><div class="form-group"><label>≥ 數量</label><input type="number" class="slDiscQty" value="3" min="2"></div><div class="form-group"><label>折數</label><input type="number" class="slDiscVal" value="0.95" step="0.01" min="0.01" max="1"></div><button class="btn btn-danger btn-sm" onclick="this.closest(\'.form-row\').remove()">✕</button></div>');
+}
+
+function saveSalesConfig() {
+  var discs = [];
+  var qs = document.querySelectorAll('.slDiscQty'), vs = document.querySelectorAll('.slDiscVal');
+  for (var i = 0; i < qs.length; i++) discs.push({ qty: parseInt(qs[i].value) || 2, discount: parseFloat(vs[i].value) || 1 });
+  var cfg = {
+    singlePrice: parseInt($('slPrice').value) || 500, yearlyPrice: parseInt($('slYearPrice').value) || 3000,
+    taxRate: parseInt($('slTax').value) || 5, bulkDiscounts: discs,
+    payuniMerID: $('slMerID').value.trim(), payuniHashKey: $('slHashKey').value.trim(),
+    payuniHashIV: $('slHashIV').value.trim(), payuniMode: $('slMode').value
+  };
+  loading(true);
+  google.script.run.withSuccessHandler(function() { loading(false); toast('儲存成功！', 'success'); }).saveSalesConfig(cfg);
+}
+
+function addCoupon() {
+  var code = ($('cpnCode').value || '').trim().toUpperCase();
+  if (!code) return toast('請輸入代碼', 'error');
+  loading(true);
+  google.script.run.withSuccessHandler(function(r) {
+    loading(false);
+    if (r.success) { toast('優惠券已建立！', 'success'); $('cpnCode').value = ''; loadCoupons(); }
+    else toast(r.message || 'Error', 'error');
+  }).createCoupon(code, $('cpnType').value, $('cpnVal').value, $('cpnMax').value, $('cpnExp').value);
+}
+
+function loadCoupons() {
+  google.script.run.withSuccessHandler(function(list) {
+    var el = $('cpnList'); if (!el) return;
+    if (!list || !list.length) { el.innerHTML = '<p style="color:var(--txt3);font-size:14px">尚無優惠券</p>'; return; }
+    var h = '<table class="dtable" style="margin-top:10px"><thead><tr><th>代碼</th><th>類型</th><th>數值</th><th>已用/上限</th><th>到期</th><th></th></tr></thead><tbody>';
+    list.forEach(function(c) {
+      h += '<tr><td class="mono"><b>' + c.code + '</b></td><td>' + (c.type === 'percent' ? '折扣%' : '折讓$') + '</td><td>' + c.value + '</td><td>' + c.usedCount + '/' + (c.maxUses || '∞') + '</td><td>' + (c.expiresAt || '-') + '</td><td><button class="btn btn-danger btn-sm" onclick="delCoupon(\'' + c.id + '\')">✕</button></td></tr>';
+    });
+    h += '</tbody></table>';
+    el.innerHTML = h;
+  }).listCoupons();
+}
+
+function delCoupon(id) {
+  showConfirm('確定刪除此優惠券？', function() {
+    google.script.run.withSuccessHandler(function() { loadCoupons(); }).deleteCoupon(id);
+  });
+}
+
+// ==========================================
+// TAB 2: 帳號管理
+// ==========================================
+function loadAccountsTab() {
+  var panel = $('panel-accounts');
+  panel.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(list) {
+    loading(false);
+    var h = '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>帳號</th><th>角色</th><th>名稱</th><th>Email</th><th>電話</th><th>操作</th></tr></thead><tbody>';
+    (list || []).forEach(function(a) {
+      var roleBadge = a.role === 'system' ? '<span class="badge b-err">系統管理員</span>' : '<span class="badge b-info">活動管理者</span>';
+      var emailDisplay = '-';
+      if (a.email) {
+        emailDisplay = escHtml(a.email);
+        emailDisplay += a.emailVerified
+          ? ' <span style="background:var(--ok-bg);color:var(--ok);font-size:11px;padding:2px 6px;border-radius:6px;font-weight:bold;border:1px solid #a7f3d0">已驗證</span>'
+          : ' <span style="background:var(--err-bg);color:var(--err);font-size:11px;padding:2px 6px;border-radius:6px;font-weight:bold;border:1px solid #fecaca">未驗證</span>';
+      }
+      h += '<tr><td>' + escHtml(a.username) + '</td><td>' + roleBadge + '</td><td>' + escHtml(a.displayName || '-') + '</td><td>' + emailDisplay + '</td><td>' + escHtml(a.phone || '-') + '</td><td>';
+      if (a.role !== 'system') h += '<button class="btn btn-outline btn-sm" onclick="openAdminEmailM(\'' + (a.email || '') + '\')" style="margin-right:6px">✉️ 寄信</button>';
+      if (a.username !== 'admin') h += '<button class="btn btn-danger btn-sm" onclick="delAcct(\'' + escHtml(a.username) + '\')">刪除</button>';
+      h += '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    panel.innerHTML = h;
+  }).withFailureHandler(function(e) {
+    loading(false);
+    panel.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).listAccounts();
+}
+
+function delAcct(u) {
+  showConfirm('確定要刪除帳號「' + u + '」？此操作不可復原。', function() {
+    google.script.run.withSuccessHandler(function() {
+      toast('帳號已刪除', 'success');
+      _loadedTabs['accounts'] = false; loadAccountsTab();
+    }).deleteAccount(u);
+  }, '⚠️ 刪除帳號');
+}
+
+function openAdminEmailM(email) {
+  if (!email || email === '-') { toast('該帳號未綁定 Email', 'error'); return; }
+  $('sysEmailTgt').value = email; $('sysEmailSubj').value = ''; $('sysEmailBody').value = '';
+  openM('mAdminEmail');
+}
+
+function doSendSystemEmail() {
+  var tgt = $('sysEmailTgt').value, subj = $('sysEmailSubj').value.trim(), body = $('sysEmailBody').value.trim();
+  if (!subj || !body) { toast('主旨與內容不可為空', 'error'); return; }
+  $('btnSysEmail').disabled = true; loading(true);
+  google.script.run.withSuccessHandler(function(r) {
+    loading(false); $('btnSysEmail').disabled = false;
+    if (r.success) { toast('信件已寄出', 'success'); closeM('mAdminEmail'); } else toast('寄信失敗', 'error');
+  }).withFailureHandler(function() {
+    loading(false); $('btnSysEmail').disabled = false; toast('發生錯誤', 'error');
+  }).sendSystemEmail(tgt, subj, body, ME ? ME.username : 'system');
+}
+
+// ==========================================
+// TAB 3: 授權碼
+// ==========================================
+function loadLicensesTab() {
+  var panel = $('panel-licenses');
+  panel.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(list) {
+    loading(false);
+    var h = '';
+    // Create form
+    h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding:14px;background:var(--surface2);border-radius:10px">';
+    h += '<select id="licType" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:14px" onchange="$(\'licCountWrap\').style.display=this.value===\'count\'?\'flex\':\'none\';$(\'licYearWrap\').style.display=this.value===\'subscription\'?\'flex\':\'none\'">';
+    h += '<option value="count">次數型</option><option value="subscription">訂閱型</option></select>';
+    h += '<div id="licCountWrap" style="display:flex;align-items:center;gap:4px"><label style="font-size:13px;white-space:nowrap">使用次數</label>';
+    h += '<input type="number" id="licCount" min="1" value="1" style="width:70px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"></div>';
+    h += '<div id="licYearWrap" style="display:none;align-items:center;gap:4px"><label style="font-size:13px;white-space:nowrap">訂閱年數</label>';
+    h += '<select id="licYears" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">';
+    h += '<option value="0.5">0.5年</option><option value="1" selected>1年</option><option value="1.5">1.5年</option><option value="2">2年</option><option value="2.5">2.5年</option><option value="3">3年</option><option value="4">4年</option><option value="5">5年</option></select></div>';
+    h += '<button class="btn btn-primary btn-sm" onclick="doCreateLic()">⚡ 生成授權碼</button></div>';
+
+    if (!list || !list.length) {
+      h += '<div class="empty"><p>尚無授權碼記錄</p></div>';
+    } else {
+      h += '<div style="margin-bottom:10px"><button class="btn btn-danger btn-sm" onclick="clearExpiredLics()">🧹 清除已失效授權碼</button></div>';
+      h += '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>授權碼</th><th>類型</th><th>額度</th><th>啟用者</th><th>狀態</th><th>到期日</th><th>操作</th></tr></thead><tbody>';
+      list.forEach(function(l) {
+        var quota = l.type === 'count' ? (l.usedCount + '/' + l.maxCount + ' 次') : ((l.years || l.durationMonths / 12 || '?') + ' 年');
+        var cs = l.computedStatus || l.status || '未啟用';
+        var st = cs === '已啟用' ? '<span class="badge b-ok">已啟用</span>' : cs === '已失效' ? '<span class="badge" style="background:var(--err-bg);color:var(--err)">已失效</span>' : '<span class="badge b-warn">未啟用</span>';
+        h += '<tr><td class="mono" style="font-size:12px">' + l.code + '</td><td>' + (l.type === 'count' ? '次數' : '訂閱') + '</td><td>' + quota + '</td><td>' + (l.activatedBy || '-') + '</td><td>' + st + '</td><td class="mono" style="font-size:11px">' + (l.expiresAt || '-') + '</td><td><button class="btn btn-danger btn-sm" onclick="doDelLic(\'' + l.code + '\')">刪除</button></td></tr>';
+      });
+      h += '</tbody></table></div>';
+    }
+    panel.innerHTML = h;
+  }).withFailureHandler(function(e) {
+    loading(false);
+    panel.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).listLicenses();
+}
+
+function doCreateLic() {
+  var t = $('licType').value;
+  var c = t === 'count' ? (parseInt($('licCount').value) || 1) : 0;
+  var y = t === 'subscription' ? (parseFloat($('licYears').value) || 1) : 0;
+  loading(true);
+  google.script.run.withSuccessHandler(function(r) {
+    loading(false);
+    if (r.success) { toast('成功生成授權碼：' + r.code, 'success'); _loadedTabs['licenses'] = false; loadLicensesTab(); }
+    else toast('生成失敗', 'error');
+  }).withFailureHandler(function(e) {
+    loading(false); toast('生成失敗：' + (e.message || ''), 'error');
+  }).createLicense(t, c, y);
+}
+
+function doDelLic(code) {
+  showConfirm('確定要刪除授權碼 ' + code + '？此操作不可復原。', function() {
+    loading(true);
+    google.script.run.withSuccessHandler(function() {
+      loading(false); toast('已刪除', 'success'); _loadedTabs['licenses'] = false; loadLicensesTab();
+    }).deleteLicense(code);
+  }, '⚠️ 刪除授權碼');
+}
+
+function clearExpiredLics() {
+  showConfirm('確定清除所有已失效的授權碼？', function() {
+    loading(true);
+    google.script.run.withSuccessHandler(function(r) {
+      loading(false);
+      if (r.success) { toast('已清除 ' + r.count + ' 筆已失效授權碼', 'success'); _loadedTabs['licenses'] = false; loadLicensesTab(); }
+    }).clearExpiredLicenses();
+  }, '🧹 清除已失效');
+}
+
+// ==========================================
+// TAB 4: AI Key
+// ==========================================
+function loadAIKeyTab() {
+  var panel = $('panel-aikey');
+  panel.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(keys) {
+    loading(false);
+    var h = '<p style="font-size:14px;color:var(--txt2);margin-bottom:12px">請輸入 Google Gemini API Key。每行一個 Key，若超過配額系統會自動輪替。</p>';
+    h += '<div class="form-group"><textarea id="gemKeys" rows="5" style="font-family:\'JetBrains Mono\',monospace;font-size:13px">' + (keys || []).join('\n') + '</textarea></div>';
+    h += '<button class="btn btn-primary" onclick="saveKeys()">💾 儲存</button>';
+    panel.innerHTML = h;
+  }).withFailureHandler(function(e) {
+    loading(false);
+    panel.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).getGeminiKeys();
+}
+
+function saveKeys() {
+  var raw = $('gemKeys').value.trim();
+  var keys = raw ? raw.split('\n').map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 10; }) : [];
+  google.script.run.withSuccessHandler(function() { toast('成功儲存 ' + keys.length + ' 個 API Keys', 'success'); }).saveGeminiKeys(keys);
+}
+
+// ==========================================
+// TAB: 財務分析
+// ==========================================
+function _dateFilterBar(prefix, onApply) {
+  var h = '<div class="date-filter-bar">';
+  h += '<div class="df-row">';
+  h += '<select id="' + prefix + 'Preset" onchange="applyDatePreset(\'' + prefix + '\');' + onApply + '" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600">';
+  h += '<option value="">自訂期間</option>';
+  h += '<option value="1">今天</option>';
+  h += '<option value="3">近 3 日</option>';
+  h += '<option value="7">近 7 日</option>';
+  h += '<option value="30">近 30 日</option>';
+  h += '<option value="90">近 90 日</option>';
+  h += '<option value="365">近一年</option>';
+  h += '<option value="all">全部期間</option>';
+  h += '</select>';
+  h += '<input type="date" id="' + prefix + 'From" style="padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px">';
+  h += '<span style="font-size:12px;color:var(--txt3)">~</span>';
+  h += '<input type="date" id="' + prefix + 'To" style="padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px">';
+  h += '<button class="btn btn-primary btn-sm" onclick="' + onApply + '">🔍 查詢</button>';
+  h += '<button class="btn btn-ghost btn-sm" onclick="$(\'' + prefix + 'From\').value=\'\';$(\'' + prefix + 'To\').value=\'\';$(\'' + prefix + 'Preset\').value=\'\';' + onApply + '">✕</button>';
+  h += '</div></div>';
+  return h;
+}
+
+function applyDatePreset(prefix) {
+  var val = $(prefix + 'Preset').value;
+  if (val === 'all') { $(prefix + 'From').value = ''; $(prefix + 'To').value = ''; return; }
+  var days = parseInt(val);
+  if (!days) { $(prefix + 'From').value = ''; $(prefix + 'To').value = ''; return; }
+  var to = new Date();
+  var from = new Date(to.getTime() - (days - 1) * 86400000);
+  $(prefix + 'From').value = from.toISOString().substring(0, 10);
+  $(prefix + 'To').value = to.toISOString().substring(0, 10);
+}
+
+function loadFinanceTab() {
+  var panel = $('panel-finance');
+  var dateFrom = $('finFrom') ? $('finFrom').value : '';
+  var dateTo = $('finTo') ? $('finTo').value : '';
+  if (!$('finFrom')) {
+    panel.innerHTML = _dateFilterBar('fin', 'loadFinanceTab()') + '<div id="finContent"><p style="color:var(--txt3)">載入中...</p></div>';
+  }
+  var content = $('finContent') || panel;
+  content.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(orders) {
+    loading(false);
+    if (!orders || !orders.length) { content.innerHTML = '<div class="empty"><p>尚無訂單記錄</p></div>'; return; }
+    var totalRevenue = 0, paidCount = 0;
+    orders.forEach(function(o) { if (o.status === 'paid') { totalRevenue += o.total || 0; paidCount++; } });
+    var h = '<div class="fin-summary">';
+    h += '<div class="fin-card"><div class="fin-label">總訂單數</div><div class="fin-value">' + orders.length + '</div></div>';
+    h += '<div class="fin-card"><div class="fin-label">已付款</div><div class="fin-value" style="color:var(--ok)">' + paidCount + '</div></div>';
+    h += '<div class="fin-card"><div class="fin-label">總營收</div><div class="fin-value" style="color:var(--pri)">NT$' + totalRevenue.toLocaleString() + '</div></div>';
+    h += '</div>';
+    h += '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>日期</th><th>使用者</th><th>Email</th><th>訂單號碼</th><th>金額</th><th>項目</th><th>狀態</th></tr></thead><tbody>';
+    orders.forEach(function(o) {
+      var itemDesc = (o.items || []).map(function(it) { return it.type === 'count' ? '次數×' + it.qty : '訂閱×' + it.qty + '年'; }).join(', ') || '-';
+      var stCls = o.status === 'paid' ? 'b-ok' : 'b-warn';
+      var stTxt = o.status === 'paid' ? '已付款' : '待付款';
+      h += '<tr><td class="mono" style="font-size:11px;white-space:nowrap">' + escHtml(o.paidAt || o.createdAt || '-') + '</td>';
+      h += '<td style="font-weight:600">' + escHtml(o.username) + '</td>';
+      h += '<td style="font-size:12px;color:var(--txt2)">' + escHtml(o.email) + '</td>';
+      h += '<td class="mono" style="font-size:11px">' + escHtml(o.orderId) + '</td>';
+      h += '<td style="font-weight:700;white-space:nowrap">NT$' + (o.total || 0).toLocaleString() + '</td>';
+      h += '<td style="font-size:13px">' + escHtml(itemDesc) + '</td>';
+      h += '<td><span class="badge ' + stCls + '">' + stTxt + '</span></td></tr>';
+    });
+    h += '</tbody></table></div>';
+    content.innerHTML = h;
+  }).withFailureHandler(function(e) {
+    loading(false); content.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).listOrders({dateFrom: dateFrom, dateTo: dateTo});
+}
+
+// ==========================================
+// TAB: 使用者分析
+// ==========================================
+function loadVisitorsTab() {
+  var panel = $('panel-visitors');
+  var today = new Date().toISOString().substring(0, 10);
+  var isFirstLoad = !$('visFrom');
+  if (isFirstLoad) {
+    panel.innerHTML = _dateFilterBar('vis', 'loadVisitorsTab()') + '<div id="visContent"><p style="color:var(--txt3)">載入中...</p></div>';
+    /* Default to today's date on first load */
+    if ($('visFrom')) $('visFrom').value = today;
+    if ($('visTo')) $('visTo').value = today;
+    if ($('visPreset')) $('visPreset').value = '';
+  }
+  var dateFrom = $('visFrom') ? $('visFrom').value : today;
+  var dateTo = $('visTo') ? $('visTo').value : today;
+  var content = $('visContent') || panel;
+  content.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(stats) {
+    loading(false);
+    if (!stats) { content.innerHTML = '<div class="empty"><p>尚無訪客資料</p></div>'; return; }
+    var h = '';
+    h += '<div class="fin-summary">';
+    h += '<div class="fin-card"><div class="fin-label">總瀏覽次數</div><div class="fin-value">' + (stats.totalVisits || 0) + '</div></div>';
+    h += '<div class="fin-card"><div class="fin-label">國家/地區數</div><div class="fin-value">' + Object.keys(stats.byCountry || {}).length + '</div></div>';
+    h += '<div class="fin-card"><div class="fin-label">不重複 IP 數</div><div class="fin-value">' + (stats.ipList || []).length + '</div></div>';
+    h += '</div>';
+    h += '<div class="vis-tabs">';
+    h += '<button class="vis-tab on" onclick="visSubTab(this,\'visDaily\')">📅 每日流量</button>';
+    h += '<button class="vis-tab" onclick="visSubTab(this,\'visCountry\')">🌍 國家/地區</button>';
+    h += '<button class="vis-tab" onclick="visSubTab(this,\'visIP\')">🔗 IP 列表</button>';
+    h += '<button class="vis-tab" onclick="visSubTab(this,\'visRank\')">🔥 活動熱度</button>';
+    h += '</div>';
+    // Daily
+    h += '<div class="vis-sub on" id="visDaily">';
+    var dates = Object.keys(stats.byDate || {}).sort();
+    if (dates.length) {
+      /* === Line Chart === */
+      h += '<div id="visDailyChart" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;overflow-x:auto"><canvas id="visChartCanvas" style="width:100%;height:260px;display:block"></canvas></div>';
+      /* === Table (reverse order for readability) === */
+      var datesDesc = dates.slice().reverse();
+      h += '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>日期</th><th>總瀏覽次數</th><th>不重複裝置數</th></tr></thead><tbody>';
+      datesDesc.forEach(function(d) { h += '<tr><td class="mono">' + d + '</td><td style="font-weight:700">' + (stats.byDate[d] || 0) + '</td><td>' + ((stats.dailyUnique || {})[d] || 0) + '</td></tr>'; });
+      h += '</tbody></table></div>';
+    } else { h += '<p class="empty">尚無資料</p>'; }
+    h += '</div>';
+    // Country
+    h += '<div class="vis-sub" id="visCountry">';
+    var countries = Object.entries(stats.byCountry || {}).sort(function(a,b) { return b[1] - a[1]; });
+    if (countries.length) {
+      var maxC = countries[0][1];
+      h += '<div class="country-list">';
+      countries.forEach(function(c) {
+        var pct = Math.round(c[1] / maxC * 100);
+        h += '<div class="country-row"><span class="country-name">' + escHtml(c[0]) + '</span><div class="country-bar-bg"><div class="country-bar" style="width:' + pct + '%"></div></div><span class="country-count">' + c[1] + '</span></div>';
+      });
+      h += '</div>';
+    } else { h += '<p class="empty">尚無資料</p>'; }
+    h += '</div>';
+    // IP
+    h += '<div class="vis-sub" id="visIP">';
+    var ips = stats.ipList || [];
+    if (ips.length) {
+      h += '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>IP</th><th>國家</th><th>城市</th><th>次數</th><th>最近日期</th></tr></thead><tbody>';
+      ips.forEach(function(ip) { h += '<tr><td class="mono" style="font-size:11px">' + escHtml(ip.ip) + '</td><td>' + escHtml(ip.country) + '</td><td>' + escHtml(ip.city) + '</td><td style="font-weight:700">' + ip.count + '</td><td class="mono" style="font-size:11px">' + escHtml(ip.lastDate) + '</td></tr>'; });
+      h += '</tbody></table></div>';
+    } else { h += '<p class="empty">尚無資料</p>'; }
+    h += '</div>';
+    // Ranking
+    h += '<div class="vis-sub" id="visRank">';
+    var ranks = stats.compRanking || [];
+    if (ranks.length) {
+      h += '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>排名</th><th>活動名稱</th><th>瀏覽次數</th></tr></thead><tbody>';
+      ranks.forEach(function(r, i) {
+        var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+        h += '<tr><td style="font-size:18px;text-align:center;width:50px">' + medal + '</td><td style="font-weight:600">' + escHtml(r.name) + '</td><td style="font-weight:700;color:var(--pri)">' + r.visits + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    } else { h += '<p class="empty">尚無活動瀏覽紀錄</p>'; }
+    h += '</div>';
+    content.innerHTML = h;
+    /* Render line chart after DOM is set */
+    if (dates.length) {
+      setTimeout(function() { _renderDailyLineChart(dates, stats.byDate || {}, stats.dailyUnique || {}); }, 50);
+    }
+  }).withFailureHandler(function(e) {
+    loading(false); content.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).getVisitorStats({dateFrom: dateFrom, dateTo: dateTo});
+}
+
+/** Render daily traffic line chart on canvas */
+function _renderDailyLineChart(dates, byDate, dailyUnique) {
+  var canvas = $('visChartCanvas');
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  var W = Math.max(Math.max(rect.width - 32, 300), dates.length * 50);
+  var H = 260;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  var visits = dates.map(function(d) { return byDate[d] || 0; });
+  var uniques = dates.map(function(d) { return dailyUnique[d] || 0; });
+  var allVals = visits.concat(uniques);
+  var maxVal = Math.max.apply(null, allVals);
+  if (maxVal === 0) maxVal = 1;
+
+  var padL = 52, padR = 20, padT = 36, padB = 56;
+  var chartW = W - padL - padR;
+  var chartH = H - padT - padB;
+
+  /* Computed style for theme-aware colors */
+  var cs = getComputedStyle(document.documentElement);
+  var txtColor = cs.getPropertyValue('--txt3').trim() || '#94a3b8';
+  var borderColor = cs.getPropertyValue('--border').trim() || '#e2e8f0';
+  var priColor = cs.getPropertyValue('--pri').trim() || '#0A437A';
+  var secColor = '#f59e0b';
+
+  /* Y-axis grid lines */
+  var ySteps = 5;
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (var i = 0; i <= ySteps; i++) {
+    var yVal = Math.round(maxVal / ySteps * i);
+    var y = padT + chartH - (chartH * i / ySteps);
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = txtColor;
+    ctx.fillText(yVal, padL - 8, y);
+  }
+
+  /* Helper: x position for data point */
+  function xPos(idx) { return padL + (dates.length === 1 ? chartW / 2 : chartW * idx / (dates.length - 1)); }
+  function yPos(val) { return padT + chartH - (chartH * val / maxVal); }
+
+  /* Draw area fill + line for visits */
+  function drawSeries(data, lineColor, fillColor) {
+    if (data.length === 0) return;
+    /* Area fill */
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(data[0]));
+    for (var j = 1; j < data.length; j++) ctx.lineTo(xPos(j), yPos(data[j]));
+    ctx.lineTo(xPos(data.length - 1), padT + chartH);
+    ctx.lineTo(xPos(0), padT + chartH);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    /* Line */
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(data[0]));
+    for (var j = 1; j < data.length; j++) ctx.lineTo(xPos(j), yPos(data[j]));
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    /* Dots */
+    data.forEach(function(v, j) {
+      ctx.beginPath();
+      ctx.arc(xPos(j), yPos(v), 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = lineColor;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+  }
+
+  drawSeries(visits, priColor, priColor + '1A');
+  drawSeries(uniques, secColor, secColor + '1A');
+
+  /* X-axis labels */
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = txtColor;
+  ctx.font = '10px system-ui, sans-serif';
+  var labelSkip = Math.max(1, Math.floor(dates.length / 15));
+  dates.forEach(function(d, j) {
+    if (j % labelSkip === 0 || j === dates.length - 1) {
+      var lbl = d.length >= 10 ? d.substring(5) : d;
+      ctx.save();
+      ctx.translate(xPos(j), padT + chartH + 6);
+      ctx.rotate(-0.5);
+      ctx.fillText(lbl, 0, 0);
+      ctx.restore();
+    }
+  });
+
+  /* Data value labels on top of dots */
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  visits.forEach(function(v, j) {
+    if (v > 0 && (dates.length <= 20 || j % labelSkip === 0)) {
+      ctx.fillStyle = priColor;
+      ctx.fillText(v, xPos(j), yPos(v) - 6);
+    }
+  });
+  uniques.forEach(function(v, j) {
+    if (v > 0 && (dates.length <= 20 || j % labelSkip === 0)) {
+      ctx.fillStyle = secColor;
+      ctx.fillText(v, xPos(j), yPos(v) - 6);
+    }
+  });
+
+  /* Legend */
+  var lgX = padL + 4, lgY = 8;
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = priColor;
+  ctx.fillRect(lgX, lgY, 14, 4);
+  ctx.fillText('總瀏覽次數', lgX + 20, lgY + 2);
+  ctx.fillStyle = secColor;
+  ctx.fillRect(lgX + 110, lgY, 14, 4);
+  ctx.fillText('不重複裝置數', lgX + 130, lgY + 2);
+}
+
+function visSubTab(btn, panelId) {
+  btn.parentElement.querySelectorAll('.vis-tab').forEach(function(t) { t.classList.remove('on'); });
+  btn.classList.add('on');
+  document.querySelectorAll('.vis-sub').forEach(function(p) { p.classList.toggle('on', p.id === panelId); });
+}
+
+// ==========================================
+// TAB: 意見回饋收件夾
+// ==========================================
+var _catLabels = { bug: '🐞 系統異常', feature: '💡 功能建議', ux: '🎨 介面體驗', question: '❓ 一般提問', billing: '💳 帳號付費', other: '💬 其他' };
+var _stLabels = { '新建': 'b-warn', '處理中': 'b-info', '已解決': 'b-ok', '已關閉': '' };
+
+function loadFeedbackTab() {
+  var panel = $('panel-feedback');
+  panel.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(list) {
+    loading(false);
+    if (!list || !list.length) { panel.innerHTML = '<div class="empty"><p>尚無意見回饋</p></div>'; return; }
+    var h = '<p style="font-size:13px;color:var(--txt3);margin-bottom:10px">共 ' + list.length + ' 筆回饋</p>';
+    h += '<div class="fb-list">';
+    list.forEach(function(f, idx) {
+      var catL = _catLabels[f.category] || f.category;
+      var stCls = _stLabels[f.status] || '';
+      h += '<div class="fb-item">';
+      h += '<div class="fb-head">';
+      h += '<span class="badge b-info" style="font-size:11px">' + catL + '</span>';
+      h += '<span class="badge ' + stCls + '" style="font-size:11px">' + escHtml(f.status) + '</span>';
+      h += '<select onchange="doUpdateFbStatus(\'' + f.id + '\',this.value)" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface)">';
+      ['新建','處理中','已解決','已關閉'].forEach(function(s) { h += '<option' + (f.status === s ? ' selected' : '') + '>' + s + '</option>'; });
+      h += '</select>';
+      if (f.attachmentId) h += '<button class="btn btn-outline btn-sm" onclick="viewFbAttachment(\'' + f.attachmentId + '\',\'' + idx + '\')" style="margin-left:auto;font-size:11px">📎 ' + escHtml(f.attachmentName || '查看附件') + '</button>';
+      h += '</div>';
+      h += '<div style="font-weight:700;font-size:15px;margin:6px 0 4px">' + escHtml(f.subject) + '</div>';
+      h += '<div style="font-size:13px;color:var(--txt2);white-space:pre-wrap;max-height:80px;overflow:hidden">' + escHtml(f.description) + '</div>';
+      if (f.stepsToReproduce) h += '<div style="font-size:12px;color:var(--txt3);margin-top:4px;border-top:1px dashed var(--border);padding-top:4px"><b>重現步驟：</b>' + escHtml(f.stepsToReproduce) + '</div>';
+      // Attachment preview area
+      if (f.attachmentId) h += '<div id="fbAtt_' + idx + '" style="margin-top:8px"></div>';
+      h += '<div class="fb-meta">';
+      h += '<span>👤 ' + escHtml(f.username) + '</span>';
+      h += '<span>📧 ' + escHtml(f.email) + '</span>';
+      h += '<span>💻 ' + escHtml(f.device + ' / ' + f.os + ' / ' + f.browser) + '</span>';
+      h += '<span>🌐 ' + escHtml(f.ip) + ' (' + escHtml(f.country + ' ' + f.city) + ')</span>';
+      h += '<span>🕐 ' + escHtml(f.createdAt) + '</span>';
+      if (f.pageUrl) h += '<span>🔗 ' + escHtml(f.pageUrl) + '</span>';
+      h += '</div></div>';
+    });
+    h += '</div>';
+    panel.innerHTML = h;
+  }).withFailureHandler(function(e) {
+    loading(false); panel.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).listFeedback();
+}
+
+function viewFbAttachment(fileId, idx) {
+  var container = $('fbAtt_' + idx);
+  if (!container) return;
+  if (container.innerHTML) { container.innerHTML = ''; return; } // Toggle off
+  container.innerHTML = '<p style="color:var(--txt3);font-size:12px">載入附件中...</p>';
+  google.script.run.withSuccessHandler(function(r) {
+    if (!r || !r.success) { container.innerHTML = '<p style="color:var(--err);font-size:12px">無法載入附件</p>'; return; }
+    if (r.dataUri.startsWith('data:image/')) {
+      container.innerHTML = '<div style="border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface2);display:inline-block;max-width:100%"><img src="' + r.dataUri + '" alt="附件" style="max-width:100%;max-height:400px;border-radius:6px;display:block"><p style="font-size:11px;color:var(--txt3);margin-top:4px">' + escHtml(r.fileName) + '</p></div>';
+    } else {
+      container.innerHTML = '<a href="' + r.dataUri + '" download="' + escHtml(r.fileName) + '" class="btn btn-outline btn-sm" style="font-size:12px">⬇️ 下載 ' + escHtml(r.fileName) + '</a>';
+    }
+  }).withFailureHandler(function() {
+    container.innerHTML = '<p style="color:var(--err);font-size:12px">載入附件失敗</p>';
+  }).getFeedbackFile(fileId);
+}
+
+function doUpdateFbStatus(id, status) {
+  google.script.run.withSuccessHandler(function() { toast('狀態已更新', 'success'); }).updateFeedbackStatus(id, status);
+}
+
+// ==========================================
+// TAB 5: 操作日誌
+// ==========================================
+var _allLogs = [];
+function loadLogsTab() {
+  var panel = $('panel-logs');
+  panel.innerHTML = '<p style="color:var(--txt3)">載入中...</p>';
+  loading(true);
+  google.script.run.withSuccessHandler(function(logs) {
+    loading(false);
+    _allLogs = logs || [];
+    var h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    h += '<input type="text" id="logFilterUser" placeholder="🔍 操作者" oninput="filterLogs()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:120px">';
+    h += '<select id="logFilterAction" onchange="filterLogs()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px"><option value="">全部動作</option></select>';
+    h += '<input type="date" id="logFilterDateFrom" onchange="filterLogs()" style="padding:7px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" title="開始日期">';
+    h += '<span style="font-size:12px;color:var(--txt3)">~</span>';
+    h += '<input type="date" id="logFilterDateTo" onchange="filterLogs()" style="padding:7px;border:1.5px solid var(--border);border-radius:8px;font-size:13px" title="結束日期">';
+    h += '<button class="btn btn-outline btn-sm" onclick="$(\'logFilterUser\').value=\'\';$(\'logFilterAction\').value=\'\';$(\'logFilterDateFrom\').value=\'\';$(\'logFilterDateTo\').value=\'\';filterLogs()">✕ 清除篩選</button>';
+    h += '</div>';
+    h += '<button class="btn btn-danger btn-sm" onclick="clearLogs()">🗑 清除紀錄</button>';
+    h += '</div>';
+    h += '<div id="logTableWrap"></div>';
+    panel.innerHTML = h;
+    var actions = {}; _allLogs.forEach(function(l) { actions[l.action] = 1; });
+    var sel = $('logFilterAction');
+    Object.keys(actions).sort().forEach(function(a) { var o = document.createElement('option'); o.value = a; o.textContent = a; sel.appendChild(o); });
+    filterLogs();
+  }).withFailureHandler(function(e) {
+    loading(false);
+    panel.innerHTML = '<p style="color:var(--err)">載入失敗：' + escHtml(e.message || '') + '</p>';
+  }).getAuditLogs(200);
+}
+
+function filterLogs() {
+  var user = ($('logFilterUser') ? $('logFilterUser').value : '').toLowerCase();
+  var action = $('logFilterAction') ? $('logFilterAction').value : '';
+  var dateFrom = $('logFilterDateFrom') ? $('logFilterDateFrom').value : '';
+  var dateTo = $('logFilterDateTo') ? $('logFilterDateTo').value : '';
+  var filtered = _allLogs.filter(function(l) {
+    if (user && !(l.user || '').toLowerCase().includes(user)) return false;
+    if (action && l.action !== action) return false;
+    var logDate = (l.time || '').substring(0, 10);
+    if (dateFrom && logDate < dateFrom) return false;
+    if (dateTo && logDate > dateTo) return false;
+    return true;
+  });
+  var wrap = $('logTableWrap'); if (!wrap) return;
+  if (!filtered.length) { wrap.innerHTML = '<p style="color:var(--txt3);text-align:center;padding:20px">無符合條件的記錄 (' + _allLogs.length + ' 筆中)</p>'; return; }
+  var h = '<p style="font-size:12px;color:var(--txt3);margin-bottom:6px">顯示 ' + filtered.length + ' / ' + _allLogs.length + ' 筆</p>';
+  h += '<div style="overflow-x:auto"><table class="dtable"><thead><tr><th>時間</th><th>操作者</th><th>動作</th><th>目標</th><th>詳細</th></tr></thead><tbody>';
+  filtered.forEach(function(l) {
+    h += '<tr><td class="mono" style="font-size:11px">' + l.time + '</td><td>' + escHtml(l.user) + '</td><td><span class="badge b-info">' + escHtml(l.action) + '</span></td><td class="mono">' + escHtml(l.target) + '</td><td style="font-size:12px;color:var(--txt2)">' + escHtml(l.detail) + '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+  wrap.innerHTML = h;
+}
+
+function clearLogs() {
+  showConfirm('確定清除所有操作日誌？此操作不可復原。', function() {
+    loading(true);
+    google.script.run.withSuccessHandler(function() {
+      loading(false); toast('操作日誌已清除', 'success'); _loadedTabs['logs'] = false; loadLogsTab();
+    }).withFailureHandler(function(e) {
+      loading(false); toast('清除失敗：' + (e.message || ''), 'error');
+    }).clearAuditLogs();
+  }, '⚠️ 清除操作日誌');
+}
+
+// ==========================================
+// TAB 6: 清除所有資料
+// ==========================================
+function loadResetTab() {
+  var panel = $('panel-reset');
+  var h = '<div style="background:var(--err-bg);border:2px solid var(--err);border-radius:12px;padding:20px;margin-bottom:14px">';
+  h += '<div style="font-size:20px;font-weight:800;color:var(--err);margin-bottom:10px">⚠️ 危險操作</div>';
+  h += '<div style="font-size:14px;color:#991b1b;line-height:1.8">此操作將<b>永久刪除</b>以下所有資料：<br>';
+  h += '• 所有活動（競賽）及其設定<br>• 所有報名隊伍與成員資料<br>• 所有授權碼與訂單<br>';
+  h += '• 所有上傳的海報與 PDF 檔案<br>• 所有通知、信件、成績、日誌<br>• 所有非系統管理員帳號</div></div>';
+  h += '<div style="font-size:14px;color:var(--txt);margin-bottom:10px"><b>保留的項目：</b>系統設定（金流/AI Key）+ 系統管理員帳號</div>';
+  h += '<div style="font-size:14px;color:var(--txt2);margin-bottom:10px">請輸入確認碼 <code style="background:var(--err-bg);padding:2px 8px;border-radius:4px;color:var(--err);font-weight:700">RESET-PRODUCTION-2026</code> 以執行：</div>';
+  h += '<input type="text" id="resetCode" placeholder="RESET-PRODUCTION-2026" style="width:100%;max-width:360px;padding:12px 16px;border:2px solid var(--err);border-radius:10px;font-family:\'JetBrains Mono\',monospace;font-size:15px;margin-bottom:12px">';
+  h += '<br><button class="btn btn-danger" onclick="doProductionReset()" style="padding:12px 24px;font-size:15px">🗑 確認清除所有資料</button>';
+  panel.innerHTML = h;
+}
+
+function doProductionReset() {
+  var code = ($('resetCode') ? $('resetCode').value : '').trim();
+  if (code !== 'RESET-PRODUCTION-2026') { toast('確認碼錯誤', 'error'); return; }
+  loading(true);
+  google.script.run.withSuccessHandler(function(r) {
+    loading(false);
+    if (r.success) toast(r.message, 'success');
+    else toast(r.message || 'Failed', 'error');
+  }).withFailureHandler(function(e) {
+    loading(false); toast(e.message || 'Error', 'error');
+  }).productionReset(code);
+}
+
+// ==========================================
+// Init: check session and load first tab
+// ==========================================
+(function init() {
+  var raw = getCookie('regmaster_session');
+  if (!raw) { toast('請先登入', 'error'); setTimeout(function() { window.location.href = '/'; }, 1200); return; }
+  try {
+    ME = JSON.parse(raw);
+    if (!ME || !ME.username || !ME.sessionToken) throw new Error('invalid');
+    if (ME.role !== 'system') { toast('僅限系統管理員', 'error'); setTimeout(function() { window.location.href = '/'; }, 1200); return; }
+    $('meLabel').textContent = '👤 ' + (ME.displayName || ME.username);
+    switchTab('sales');
+  } catch (e) {
+    toast('登入資訊異常，請重新登入', 'error');
+    setTimeout(function() { window.location.href = '/'; }, 1200);
+  }
+})();
+</script>
+
+</body>
+</html>
