@@ -1,184 +1,284 @@
-# PAYUNI API 規格 — 待補（Phase 6 動工前必填）
+# PAYUNI API 規格（從官方 PHP SDK 推導）
 
-> **狀態**：⏳ 待您另行處理（v6 plan 拍板時保留位置）
+> **狀態**：✅ **規格已就緒**（從 PAYUNi 官方 PHP SDK [PHP_SDK-main](https://github.com/payuni/PHP_SDK) 推導出 Node.js 實作）
 > **影響 Phase**：Phase 6.9（退款）+ Phase 6.10（對帳）
-> **動工前 blocker**：Phase 6 動工前需取得這兩個 API 的官方文件並填寫本檔
+> **更新**：2026-05-06
 
 ---
 
-## 1. PAYUNI Refund API（退款 API）
+## 0. 共用基礎（PHP SDK 已提供）
 
-**用途**：Phase 6.9 `processRefund` callable 內呼叫；退款核准後對 PAYUNI 發退款指令。
-
-### 1.1 來源（待填）
-
-- [ ] PAYUNI 商家後台 → 開發者文件位置：______________
-- [ ] API 端點 URL（production）：______________
-- [ ] API 端點 URL（sandbox）：______________
-- [ ] 認證方式（HashKey/HashIV / API Token / Basic Auth）：______________
-
-### 1.2 Request 參數（待填）
+### 0.1 端點 URL
 
 ```
-POST /api/?  (端點待補)
-Content-Type: application/x-www-form-urlencoded  (or application/json?)
-
-必填欄位：
-  MerID:        商店代號
-  TradeNo:      ?  (PAYUNI 原始 trade no，從 regOrders.payuniTradeNo 拿)
-  MerTradeNo:   ?  (商家自訂 order ID，從 regOrders.orderId 拿)
-  Amount:       退款金額（元，整數）
-  Timestamp:    ?  (Unix timestamp)
-  Version:      ?  (API 版本號，如 1.0)
-
-加密欄位（同 createPayuniOrder 模式）：
-  EncryptInfo:  payuniEncrypt(params, HashKey, HashIV) 加密後字串
-  HashInfo:     payuniHash(EncryptInfo, HashKey, HashIV) 雜湊
+Production: https://api.payuni.com.tw/api/{type}
+Sandbox:    https://sandbox-api.payuni.com.tw/api/{type}
 ```
 
-### 1.3 Response 結構（待填）
+### 0.2 加密格式（AES-256-GCM）
 
-```
-成功（HTTP 200 + JSON）：
+PHP SDK [PayuniApi.php:293-308](../_dev/payuni_sdk/PHP_SDK-main/src/PayuniApi.php) 顯示：
+- **加密**：`AES-256-GCM` with HashKey + HashIV
+- **格式**：`bin2hex(encrypted + ':::' + base64(authTag))`
+- **解密**：反向操作（split by `':::'`，base64 decode tag，AES decrypt）
+- **Hash 驗證**：`SHA-256(HashKey + EncryptedHex + HashIV)` 大寫
+
+### 0.3 既有實作（functions/index.js）
+
+[`functions/index.js:2598-2620`](../functions/index.js:2598) 已有 `payuniEncrypt` / `payuniDecrypt` / `payuniHash` 三個 helper，**沿用即可**。
+
+### 0.4 Common Request 格式
+
+所有 callable 都包這一層：
+```javascript
 {
-  "Status": "SUCCESS"  | "FAIL",
-  "Message": "退款成功" | "錯誤訊息",
-  "EncryptInfo": "..." (需用 payuniDecrypt 解開)
-}
-
-EncryptInfo 解密後（待 PAYUNI 文件確認）：
-{
-  "MerID": "...",
-  "TradeNo": "...",
-  "Status": "SUCCESS" | ...,
-  "RefundNo": "...",       // 退款單號
-  "RefundedAt": "..."      // 退款時間
+  MerID: <平台商號>,
+  Version: "1.0",
+  EncryptInfo: <hex string>,    // payuniEncrypt(params, key, iv)
+  HashInfo: <SHA256 hex>        // payuniHash(EncryptInfo, key, iv)
 }
 ```
 
-### 1.4 錯誤碼對應表（待填）
+POST 用 `application/x-www-form-urlencoded`（PHP SDK 確認）。
 
-| PAYUNI 錯誤碼 | 含義 | 應用層處理 |
+---
+
+## 1. PAYUNI Refund API（退款）
+
+### 1.1 用途
+Phase 6.9 `processRefund` callable 內呼叫；信用卡退款用 `trade_close` 模式。
+
+### 1.2 端點與模式
+
+| 退款類型 | endpoint type | 用途 |
 |---|---|---|
-| ? | 訂單不存在 | refund.status = 'failed' / reason = 'payuni_order_not_found' |
-| ? | 已退款（重複）| refund.status = 'refunded' / 跳過 |
-| ? | 金額超過原訂單 | requestRefund 階段擋下，到不了這 |
-| ? | 訂單超過退款時限 | refund.status = 'failed' / reason = 'payuni_refund_window_expired' |
+| **trade_close** | `trade/close` | **信用卡請退款**（最常用，本平台主要用這個）|
+| trade_cancel | `trade/cancel` | 取消授權（未請款前才用，較少用） |
+| trade_refund_icash | `trade/common/refund/icash` | iCash 退款 |
+| trade_refund_aftee | `trade/common/refund/aftee` | AFTEE 後支付退款 |
+| trade_refund_linepay | `trade/common/refund/linepay` | LINE Pay 退款 |
 
-### 1.5 注意事項（待 PAYUNI 文件確認）
+完整 URL：`https://api.payuni.com.tw/api/trade/close`
 
-- [ ] 是否支援部分退款（partial refund）？單筆訂單可退款幾次？
-- [ ] 退款後幾個工作日入帳信用卡？（要寫進 EULA / UI 給報名者看）
-- [ ] 退款是否會收手續費（PAYUNI 端）？若有，誰負擔？
-- [ ] 退款是否需要在原訂單付款後 N 天內？（180 天？）
+### 1.3 Request EncryptInfo（trade_close 退款）
 
-### 1.6 實作位置（已預留）
+PHP SDK [PayuniApi.php:111-117](../_dev/payuni_sdk/PHP_SDK-main/src/PayuniApi.php#L111) 顯示必填：
 
 ```javascript
-// functions/index.js 內預留
-async function payuniRefundCall(orderId, amount) {
-  // TODO Phase 6.9: 依 PAYUNI Refund API 文件實作
-  // - 讀 config/salesConfig 拿 platform PAYUNI 商號
-  // - 讀 regOrders/{orderId} 拿 payuniTradeNo
-  // - 構造 request、加密、送出
-  // - 解析 response、回傳 { success, refundNo, message }
-  throw new Error("payuniRefundCall not yet implemented");
+{
+  MerID: <平台商號>,
+  TradeNo: <PAYUNi 原始交易序號>,    // 從 regOrders.payuniTradeNo 拿
+  CloseType: 1,                       // 1 = 退款；2 = 取消（前未請款才用）
+  Timestamp: Math.floor(Date.now() / 1000)
+}
+```
+
+> ⚠️ **TradeAmt 不需要**：trade_close 退「整筆訂單」，金額由 PAYUNi 從 TradeNo 自動帶。
+> 部分退款需用 `trade_close` 多次切割（每次退一部分），或用其他端點視 PAYUNi 文件確認。
+
+### 1.4 Response 結構
+
+從 PHP SDK [PayuniApi.php:174-211](../_dev/payuni_sdk/PHP_SDK-main/src/PayuniApi.php#L174) `ResultProcess()`：
+
+```javascript
+{
+  Status: "SUCCESS" | "ERROR",
+  EncryptInfo: <hex>,    // 解密後是物件
+  HashInfo: <SHA256>     // 用同樣 key/iv 驗證
+}
+```
+
+EncryptInfo 解密後（依 PAYUNi 慣例）：
+```javascript
+{
+  MerID: "...",
+  TradeNo: "...",          // 原始交易序號
+  Status: "SUCCESS" | "FAIL",
+  Message: "退款成功" | "錯誤訊息",
+  // 可能有 RefundNo / RefundedAt（待 sandbox 跑通驗證）
+}
+```
+
+### 1.5 Node.js 實作（直接抄 PHP SDK 邏輯）
+
+```javascript
+// functions/index.js
+const crypto = require('crypto');
+const fetch = require('node-fetch');
+
+async function payuniRefundCall(orderId) {
+  const sales = (await db.collection("config").doc("salesConfig").get()).data();
+  if (!sales.payuniMerID || !sales.payuniHashKey) {
+    return { success: false, message: "平台金流未設定" };
+  }
+
+  // 拿 TradeNo（原始 PAYUNi 序號）
+  const orderDoc = await db.collection("regOrders").doc(orderId).get();
+  if (!orderDoc.exists) {
+    return { success: false, message: "訂單不存在" };
+  }
+  const tradeNo = orderDoc.data().payuniTradeNo;
+  if (!tradeNo) {
+    return { success: false, message: "缺少 PAYUNi 交易序號" };
+  }
+
+  const encryptInfo = {
+    MerID: sales.payuniMerID,
+    TradeNo: tradeNo,
+    CloseType: 1,                                // 退款
+    Timestamp: Math.floor(Date.now() / 1000)
+  };
+
+  const encStr = payuniEncrypt(encryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+  const hashStr = payuniHash(encStr, sales.payuniHashKey, sales.payuniHashIV);
+
+  const params = new URLSearchParams();
+  params.append("MerID", sales.payuniMerID);
+  params.append("Version", "1.0");
+  params.append("EncryptInfo", encStr);
+  params.append("HashInfo", hashStr);
+
+  try {
+    const res = await fetch("https://api.payuni.com.tw/api/trade/close", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString()
+    });
+    const json = await res.json();
+
+    // 驗 HashInfo
+    if (json.EncryptInfo && json.HashInfo) {
+      const expected = payuniHash(json.EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+      if (expected !== json.HashInfo) {
+        return { success: false, message: "PAYUNi 回應 hash 驗證失敗" };
+      }
+      const decrypted = payuniDecrypt(json.EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+      return {
+        success: decrypted.Status === "SUCCESS",
+        txId: decrypted.RefundNo || tradeNo,    // 退款交易 id
+        message: decrypted.Message || ""
+      };
+    }
+    return { success: false, message: json.Message || "PAYUNi 回應格式異常" };
+  } catch (e) {
+    return { success: false, message: "PAYUNi 連線失敗：" + e.message };
+  }
 }
 ```
 
 ---
 
-## 2. PAYUNI Query Order API（訂單查詢 API）
+## 2. PAYUNI Query Order API（對帳查詢）
 
-**用途**：Phase 6.10 `reconcilePendingOrders` cron 用；webhook 失敗時主動查 PAYUNi 訂單狀態補漏。
+### 2.1 用途
+Phase 6.10 `reconcilePendingOrders` cron 用；webhook 失敗時主動查狀態。
 
-### 2.1 來源（待填）
+### 2.2 端點
 
-- [ ] API 端點 URL（production）：______________
-- [ ] API 端點 URL（sandbox）：______________
-- [ ] 限頻（rate limit）：______________ requests/sec
+`https://api.payuni.com.tw/api/trade/query`（type = `trade_query`）
 
-### 2.2 Request 參數（待填）
+### 2.3 Request EncryptInfo
 
-```
-POST /api/trade/query?  (端點待補)
+PHP SDK [Trade.php:31-39](../_dev/payuni_sdk/PHP_SDK-main/examples/trade/Trade.php#L31)：
 
-必填：
-  MerID:        商店代號
-  MerTradeNo:   商家 order ID（regOrders.orderId）
-  Timestamp:    ?
-  Version:      ?
-
-加密：
-  EncryptInfo:  payuniEncrypt(params, HashKey, HashIV)
-  HashInfo:     payuniHash(EncryptInfo, HashKey, HashIV)
-```
-
-### 2.3 Response 結構（待填）
-
-```
+```javascript
 {
-  "Status": "SUCCESS" | "FAIL",
-  "EncryptInfo": "..."  (解密後得 trade 狀態)
+  MerID: <平台商號>,
+  MerTradeNo: <我們的 orderId>,           // regOrders.orderId
+  Timestamp: Math.floor(Date.now() / 1000)
 }
+```
+
+### 2.4 Response
 
 EncryptInfo 解密後：
+```javascript
 {
-  "MerTradeNo": "...",
-  "TradeNo": "...",            // PAYUNi 內部 trade no
-  "TradeStatus": "0" | "1" | "2" | ...,
-                                // 0 = 未付款
-                                // 1 = 已付款
-                                // 2 = 已退款
-                                // 3 = 失敗
-                                // (確切對應碼需 PAYUNi 文件確認)
-  "TradeAmount": 1000,
-  "PaidAt": "2026-05-06 12:34:56"
+  MerID: "...",
+  MerTradeNo: "...",
+  TradeNo: "...",                // PAYUNi 內部序號
+  TradeStatus: "0" | "1" | "2" | "3",
+                                  // 通常 0=未付 / 1=已付 / 2=已退 / 3=失敗
+                                  // 確切碼以 sandbox 跑出的回應為準
+  TradeAmt: 1000,
+  PaidAt: "2026-05-06 12:34:56"
 }
 ```
 
-### 2.4 限頻策略
-
-PAYUNi 通常限 5 requests/sec。Phase 6.10 cron 內已加 200ms sleep（每秒 5 筆）：
+### 2.5 Node.js 實作
 
 ```javascript
-for (const doc of snap.docs) {
-  await processOrder(doc);
-  await new Promise(r => setTimeout(r, 200));
-}
-```
-
-### 2.5 實作位置（已預留）
-
-```javascript
-// functions/index.js 內預留
 async function queryPayuniOrder(orderId) {
-  // TODO Phase 6.10: 依 PAYUNI Query Order API 文件實作
-  // - 讀 config/salesConfig 拿 platform PAYUNI 商號
-  // - 構造 query request、加密、送出
-  // - 解析 response、回傳 {
-  //     tradeStatus: "0" | "1" | "2" | "3",
-  //     tradeAmount: number,
-  //     paidAt: string | null
-  //   }
-  throw new Error("queryPayuniOrder not yet implemented");
+  const sales = (await db.collection("config").doc("salesConfig").get()).data();
+  const encryptInfo = {
+    MerID: sales.payuniMerID,
+    MerTradeNo: orderId,
+    Timestamp: Math.floor(Date.now() / 1000)
+  };
+  const encStr = payuniEncrypt(encryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+  const hashStr = payuniHash(encStr, sales.payuniHashKey, sales.payuniHashIV);
+
+  const params = new URLSearchParams();
+  params.append("MerID", sales.payuniMerID);
+  params.append("Version", "1.0");
+  params.append("EncryptInfo", encStr);
+  params.append("HashInfo", hashStr);
+
+  try {
+    const res = await fetch("https://api.payuni.com.tw/api/trade/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString()
+    });
+    const json = await res.json();
+
+    if (json.EncryptInfo && json.HashInfo) {
+      const expected = payuniHash(json.EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+      if (expected !== json.HashInfo) return null;
+      const decrypted = payuniDecrypt(json.EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+      return {
+        tradeStatus: decrypted.TradeStatus,
+        tradeNo: decrypted.TradeNo,
+        tradeAmt: parseInt(decrypted.TradeAmt),
+        paidAt: decrypted.PaidAt
+      };
+    }
+    return null;
+  } catch (e) {
+    console.error("queryPayuniOrder error:", e);
+    return null;
+  }
 }
 ```
 
 ---
 
-## 3. 取得 API 規格的途徑
+## 3. 動工前仍需確認（業務面，N5）
 
-1. **PAYUNi 商家後台**（https://www.payuni.com.tw/）登入後：
-   - 選單「開發人員 → API 文件」或「技術文件下載」
-2. **聯繫 PAYUNi 客服**：02-7706-2099
-3. **專屬業務窗口**：簽約時應提供完整 API 文件 PDF
+雖然 API 規格已從 SDK 取得，仍有 5 項業務細節需要與 PAYUNi 業務窗口確認：
 
-## 4. 完成 checklist（取得規格後）
+- [ ] **單一商號代收多商家**：PAYUNi 商號是否容許「子商家」概念？商家描述是否支援動態變更（讓對帳單顯示活動名稱而非「廣天國際」）？
+- [ ] **統一發票 B2C 開立規則**：平台收 1000 元，發票該對誰開（報名者 / 主辦方）？平台手續費（30 元）開給主辦方？其餘 970 元由主辦方自開？
+- [ ] **月交易量上限**：平台統收後合併交易量是否超出既有商號等級？需升級嗎？
+- [ ] **Refund 退款窗口**：trade_close 是否限訂單後 30/90/180 天？逾期需人工處理？
+- [ ] **Webhook 重送機制**：PAYUNi 自己會重送幾次？間隔？影響 reconcile cron 設計（重送頻率高→ cron 可拉長間隔）
 
-- [ ] 取得 PAYUNI Refund API 完整規格 PDF
-- [ ] 取得 PAYUNI Query Order API 完整規格 PDF
-- [ ] 填妥本檔 §1.1-1.5、§2.1-2.4
-- [ ] 在 `functions/index.js` 實作 `payuniRefundCall` 與 `queryPayuniOrder`
-- [ ] dev 環境用 sandbox 跑通 1 筆退款 + 1 筆對帳
-- [ ] 記錄實際呼叫範例（request / response）回本檔附錄供日後維護
+## 4. 動工 checklist（v7 更新）
+
+- [x] PAYUNi PHP SDK 已取得（`/c/Users/rockj/Desktop/payuni_sdk/PHP_SDK-main/`）
+- [x] Refund API endpoint + 參數規格已寫入本檔
+- [x] Query Order API endpoint + 參數規格已寫入本檔
+- [x] `payuniRefundCall` Node.js 實作草稿完成
+- [x] `queryPayuniOrder` Node.js 實作草稿完成
+- [ ] 取得 PAYUNi 平台 sandbox merchant ID + HashKey / HashIV
+- [ ] 取得 PAYUNi production merchant ID（Kuang-Tien）
+- [ ] 與 PAYUNi 業務確認 §3 的 5 項業務細節
+- [ ] sandbox 跑通 1 筆完整退款（Phase 11.3 final checklist）
+- [ ] sandbox 跑通 1 筆對帳查詢（同上）
+
+## 5. 副本
+
+PHP SDK 副本保存：[`/c/Users/rockj/Desktop/payuni_sdk/PHP_SDK-main/`](../../../../Desktop/payuni_sdk/PHP_SDK-main/)
+- `src/PayuniApi.php` — 加解密 + curl 邏輯
+- `examples/trade/Trade.php` — trade_query / trade_close / trade_cancel / trade_refund_* 範例
+- `README.md` — 模式對照表

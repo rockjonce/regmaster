@@ -6,10 +6,13 @@
 
 | 檔案 | 大小 | 用途 |
 |---|---|---|
-| `NotoSansTC-Regular.subset.ttf` | ~5.3 MB | 證書內文 |
-| `NotoSansTC-Bold.subset.ttf` | ~5.3 MB | 證書標題 / 強調 |
+| `NotoSansTC-Regular.subset.ttf` | ~6.7 MB | 證書內文 |
+| `NotoSansTC-Bold.subset.ttf` | ~6.7 MB | 證書標題 / 強調 |
 
-合計約 10.6 MB（原始檔 33 MB → subset 後 10.6 MB，縮 67%）。
+合計約 13.4 MB（原始檔 33 MB → subset 後 13.4 MB，縮 60%）。
+
+**v7 update**：新增 CJK Extension A（U+3400-4DBF, ~6,500 字）涵蓋台灣罕用人名字（如「喆」「淼」「彧」「珺」）。
+原本 v6 只含 U+4E00-9FFF（CJK 基本區），約 2-3% 的台灣姓名會出現方塊。
 
 ## 授權
 
@@ -32,6 +35,7 @@ U+25A0-25FF   Geometric Shapes
 U+3000-303F   CJK Symbols and Punctuation（、。「」等）
 U+3100-312F   Bopomofo（注音符號 ㄅㄆㄇ）
 U+31A0-31BF   Bopomofo Extended
+U+3400-4DBF   CJK Unified Ideographs Extension A（罕用字，台灣人名常見）
 U+4E00-9FFF   CJK Unified Ideographs（中日韓統一漢字基本區，包含繁簡）
 U+FF00-FFEF   Halfwidth and Fullwidth Forms（全形 ＡＢＣ）
 ```

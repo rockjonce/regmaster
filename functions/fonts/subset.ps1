@@ -25,7 +25,9 @@ Invoke-WebRequest -Uri $urlBold -OutFile "NotoSansTC-Bold.ttf"
 
 # Step 2: subset
 Write-Host "[2/3] Subset Regular..." -ForegroundColor Cyan
-$ranges = "U+0020-007F,U+00A0-00FF,U+2000-206F,U+2070-209F,U+2100-214F,U+2190-21FF,U+25A0-25FF,U+3000-303F,U+3100-312F,U+31A0-31BF,U+4E00-9FFF,U+FF00-FFEF"
+$ranges = "U+0020-007F,U+00A0-00FF,U+2000-206F,U+2070-209F,U+2100-214F,U+2190-21FF,U+25A0-25FF,U+3000-303F,U+3100-312F,U+31A0-31BF,U+3400-4DBF,U+4E00-9FFF,U+FF00-FFEF"
+# Note: U+3400-4DBF (CJK Extension A) added for rare Taiwanese name characters (e.g. 喆/淼/彧/珺)
+# Without Extension A, ~2-3% of Taiwan names would render as tofu (□)
 
 & $pyftsubset NotoSansTC-Regular.ttf `
   --output-file=NotoSansTC-Regular.subset.ttf `

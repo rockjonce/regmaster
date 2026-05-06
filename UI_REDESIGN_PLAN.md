@@ -1,13 +1,37 @@
-# RegMaster v2 升級計畫書 — v6（嚴格審閱版）
+# RegMaster v2 升級計畫書 — v7（PAYUNi SDK + N1-N16 修正）
 
-> **版本**：v6（整合 v5 + P0/P1/P2 全部修正）
+> **版本**：v7（v6 + PAYUNi PHP SDK 解鎖 + N1-N16 嚴審修正）
 > **日期**：2026-05-06
 > **公司**：Kuang-Tien International CO., Ltd.
 > **策略**：Localhost-first emulator 全程開發 → 一次性 production 上線
 
 ---
 
-## 0. v6 與 v5 差異一覽
+## v7 與 v6 差異（N1-N16 + SDK 解鎖）
+
+| # | 級別 | 項目 | v6 狀態 | v7 修正 |
+|---|---|---|---|---|
+| **SDK** | 🟢 解鎖 | PAYUNi Refund / Query API 規格 | TODO 待取得 | **PHP SDK 已提供完整規格**，trade_close / trade_query 兩個端點直接抄 |
+| N1 | 🔴 嚴重 | grep diff 邏輯誤抓 helper / 通用 obj literal | 過於寬鬆 | grep `=\s*(callable\|authCallable\|compAuthCallable)` + `sed` 限制 _argMap 範圍 |
+| N2 | 🔴 嚴重 | processRefund 缺冪等性 → 雙退風險 | 無 | 補 `payuniRefundTxId` 檢查 + 失敗重試走 query 確認 |
+| N3 | 🟡 重要 | 字型 subset 漏 CJK Extension A | 含 4E00-9FFF 但漏 3400-4DBF | **已重產**：subset 加 U+3400-4DBF（Regular/Bold 各 6.7 MB）|
+| N4 | 🟡 重要 | generateApiKey race（同 P0-3 pattern）| 仍是 read-then-write | 改用 transaction + counter（accounts.apiKeyCount）|
+| N5 | 🟡 重要 | PAYUNi 業務面確認（5 項）| 缺 | §12 checklist 補 5 項：子商家 / 發票 / 交易量上限 / 退款窗口 / webhook 重送 |
+| N6 | 🟡 重要 | getNextPayoutDate dead code + 撥款日當天 UX | day < 1 永遠假 | 修邏輯 + 加 `isToday` flag |
+| N7 | 🟢 小幅 | sanitize 用 curl 不穩 | curl REST | 改 `_dev/sanitize.js` 用 firebase-admin SDK |
+| N8 | 🟢 小幅 | DR「倒回 dev project」說法不準 | emulator export ≠ gcloud import | 改寫「再 import 進新 emulator 驗證」 |
+| N9 | 🟢 小幅 | email rate limit code 不完整 | 寫「同樣形式」 | 補完整程式碼 |
+| N10 | 🟡 重要 | 敏感操作 audit log 沒統一規範 | 散落 | §Phase 7 結尾新增「必呼 auditLog 的 8 個 callable 清單」 |
+| N11 | 🟡 重要 | Cert HTML template 沒 escape | 直接插值 | 補 `escHtml` helper + 強制使用 |
+| N12 | 🟢 小幅 | Functions deploy size 確認 | 缺 | §Phase 4c.4 補 `gcloud functions describe` 檢查 |
+| N13 | 🟢 小幅 | reconcile 50 筆滿載告警 | 缺 | §Phase 6.10 補 alert |
+| N14 | 🟡 重要 | my.html 沒 refund 狀態顯示 | 缺 | §Phase 3 加：getMyRegistrationDetail 回傳 refundStatus |
+| N15 | 🟡 重要 | IP rate limit 沒考慮代理 | 用 rawRequest.ip | 改 `x-forwarded-for[0]` |
+| N16 | 🟡 重要 | 上線後 cron 真有跑驗證 | 缺 | §11.5 D+1 / D+7 補 cron 觸發確認項 |
+
+---
+
+## 0. v6 與 v5 差異一覽（沿用作歷史）
 
 | # | 級別 | 項目 | v5 狀態 | v6 修正 |
 |---|---|---|---|---|
@@ -187,30 +211,41 @@ firebase use dev
 firebase emulators:start --import=./_gcs_export --export-on-exit=./_emu_data
 ```
 
-**Import 後立刻在 emulator UI Firestore tab 覆寫** `config/salesConfig`：
-```
-payuniMerID:    "S_SANDBOX_MERCHANT_ID"   (PAYUNi sandbox)
-payuniHashKey:  "...sandbox key..."
-payuniHashIV:   "...sandbox iv..."
-```
+**Import 後立刻覆寫** `config/salesConfig` 為 sandbox 商號（**N7 修正：用 firebase-admin SDK 不用 curl**）：
 
-或寫成 dev 自動腳本 [`_dev/sanitize-imported-data.sh`](_dev/sanitize-imported-data.sh)：
-```bash
-#!/bin/bash
-# emulator REST API 直接覆寫
-curl -X PATCH "http://localhost:8085/v1/projects/regmaster-pro-dev/databases/(default)/documents/config/salesConfig" \
-  -H "Content-Type: application/json" \
-  -d '{"fields":{"payuniMerID":{"stringValue":"S_SANDBOX_ID"},...}}'
+[`_dev/sanitize.js`](_dev/sanitize.js)：
+```javascript
+// 跑：FIRESTORE_EMULATOR_HOST=localhost:8085 node _dev/sanitize.js
+// （emulator host env 自動 detect 切到 emulator，不會打到 production）
+const admin = require('firebase-admin');
+admin.initializeApp({ projectId: 'regmaster-pro-dev' });
+const db = admin.firestore();
+
+(async () => {
+  await db.collection('config').doc('salesConfig').update({
+    payuniMerID:   'S_SANDBOX_MERCHANT_ID',   // dev 用 sandbox
+    payuniHashKey: 'SANDBOX_HASH_KEY_32_CHARS_HERE___',
+    payuniHashIV:  'SANDBOX_HASH_IV_16_CHARS',
+    // 確認 plan-based commission（dev 也用 production 同樣費率測）
+    commissionRates: { free: 0.03, starter: 0.01, pro: 0.005, team: 0.003 },
+    payoutMinimum: 1000,
+    payoutSchedule: { fixedDates: [1, 15], allowManualPayout: true }
+  });
+  console.log('Sanitized salesConfig with sandbox credentials');
+  process.exit(0);
+})();
 ```
 
 寫進 [`_test/disaster-recovery.md`](_test/disaster-recovery.md) 為 import 後**強制例行步驟**。
 
-**Backup-restore 演練**：
+**Backup-restore 演練（N8 修正：emulator export ≠ gcloud import 格式）**：
 1. dev project export → cp → emulator import 一次
 2. **Sanitize PAYUNi credentials**（必做）
 3. emulator 中操作幾筆資料
-4. `firebase emulators:export` 倒回 dev project
-5. 確認資料完好
+4. `firebase emulators:export ./_emu_snapshot1` 匯出 emulator 資料
+5. **不能直接** `gcloud firestore import` 倒回 live project（格式不相容）
+6. 改驗證方式：**重新啟動 emulator 並 import `./_emu_snapshot1`** → 確認資料完好可重現
+7. 演練「import → emulator 跑 → emulator export → 再 import」這個閉環，作為災難復原 SOP
 
 #### 0.6 design tokens
 - 新增 [`public/shared.css`](public/shared.css)（zip + base font 19px + spacing × 1.357）
@@ -320,9 +355,49 @@ async function checkOtpRateLimit(email, ip) {
 }
 ```
 
-**Email-based rate limit** 同樣改 transaction 形式（key 用 `otp_email_<email>`，window 60s 限 1 次）。
+**Email-based rate limit（N9 補完整 code）**：
 
-> ⚠️ Cloud Functions callable 取 IP：v2 用 `request.rawRequest.ip`；v1 用 `context.rawRequest.ip`。functions/index.js 大多 v2 → 用 `request.rawRequest.ip`。
+```javascript
+async function checkOtpEmailRateLimit(email) {
+  const emailKey = "otp_email_" + email.toLowerCase().replace(/[^\w@.]/g, "_");
+  const ref = db.collection("rateLimits").doc(emailKey);
+
+  return await db.runTransaction(async (t) => {
+    const doc = await t.get(ref);
+    const now = Date.now();
+
+    if (doc.exists) {
+      const d = doc.data();
+      if (now - d.windowStart < 60000) {
+        // 仍在 window 內：1 次/60秒
+        return { ok: false, msg: "請求過於頻繁，請 60 秒後再試" };
+      }
+    }
+    // window 已過或第一次
+    t.set(ref, { count: 1, windowStart: now, lastSeen: now });
+    return { ok: true };
+  });
+}
+
+// 同時檢查兩個（email + IP），任一超限就擋
+async function checkOtpRateLimit(email, ip) {
+  const ipCheck = await checkOtpIpRateLimit(ip);
+  if (!ipCheck.ok) return ipCheck;
+  const emailCheck = await checkOtpEmailRateLimit(email);
+  if (!emailCheck.ok) return emailCheck;
+  return { ok: true };
+}
+```
+
+> ⚠️ **取 IP（N15 修正）**：Cloud Functions 後面有 GCP load balancer，`request.rawRequest.ip` 是 LB IP。**真實 IP 在 `x-forwarded-for` header 第一個**：
+> ```javascript
+> function getRealIp(request) {
+>   const xff = request.rawRequest.headers['x-forwarded-for'];
+>   if (xff) return xff.split(',')[0].trim();
+>   return request.rawRequest.ip;
+> }
+> ```
+> v1 callable 對應 `context.rawRequest.headers[...]`。functions/index.js 大多 v2。
 
 **Firestore TTL policy 設定**（emulator 不支援，需在 Production Firebase Console 手動）：
 1. Firestore → TTL → Add policy
@@ -368,6 +443,39 @@ my.html 詳情頁加說明卡：
 ```
 
 報名者**不能在 V2 自助發起退款**；以避免身份冒用爭議。
+
+#### 3.y 退款狀態顯示（**N14 新增**）
+
+`getMyRegistrationDetail` 回傳資料**包含 refund 狀態**（讓報名者看到主辦方是否已處理退款）：
+
+```javascript
+exports.getMyRegistrationDetail = callable(async ({ teamId, otpToken }) => {
+  // ... 既有 team detail 取得邏輯 ...
+
+  // N14: 加入 refund 狀態
+  const refundSnap = await db.collection("refundRequests")
+    .where("teamId", "==", teamId)
+    .orderBy("createdAt", "desc")
+    .limit(5).get();
+  const refunds = refundSnap.docs.map(d => ({
+    refundId: d.id,
+    amount: d.data().amount,
+    status: d.data().status,
+    requestedAt: d.data().createdAt,
+    refundedAt: d.data().refundedAt
+  }));
+
+  return { ...teamDetail, refunds };
+});
+```
+
+UI 顯示對應狀態文案（中英）：
+- `requested` → 「已提出退款申請，等候主辦方審核」
+- `approved` → 「主辦方已同意退款，等候平台處理」
+- `processing` → 「退款處理中（PAYUNi 退款進行）」
+- `refunded` → 「✅ 已退款 NT$X，3-14 工作日內入帳」
+- `rejected` → 「退款申請被拒絕」(reason)
+- `failed` → 「退款失敗，請聯繫主辦方」
 
 新 callable（4 個）：`requestParticipantOtp` / `getMyRegistrations` / `getMyRegistrationDetail` / `resendRegistrationEmail`
 
@@ -436,35 +544,62 @@ exports.saveBatchScores = compAuthCallable(async ({ compId, teamId, scores, user
 
 新 npm：`pdfkit` / `archiver` / `puppeteer-core` / `@sparticuz/chromium`
 
-**字型方案（P0-4，選項一：打包）**：
+**字型方案（P0-4 + N3 修正：含 CJK Extension A）**：
 
+✅ **已完成**（2026-05-06）：
 ```
 functions/
 ├── fonts/
-│   ├── NotoSansTC-Regular.ttf   (~12 MB，subset 後 ~3 MB)
-│   ├── NotoSansTC-Bold.ttf
-│   └── README.md                 (字型來源 + 授權)
-└── certificates/
-    ├── badge-template.html        (puppeteer 用)
+│   ├── NotoSansTC-Regular.subset.ttf   6.7 MB（v7：含 Ext A）
+│   ├── NotoSansTC-Bold.subset.ttf      6.7 MB（v7：含 Ext A）
+│   ├── README.md                        OFL 授權 + 使用範例
+│   └── subset.ps1                       重產腳本
+└── certificates/                         Phase 4c 新建
+    ├── badge-template.html              (puppeteer 用)
     └── cert-template.html
 ```
 
-從 [Google Fonts Noto Sans TC](https://fonts.google.com/noto/specimen/Noto+Sans+TC) 下載 ttf（OFL 授權，可商用）。
+從 [Noto Sans CJK TC GitHub](https://github.com/notofonts/noto-cjk) 下載 OTF（OFL 授權，可商用）。
 
-**Subset 縮小**（避免 functions image 增加 30+ MB）：
+**Subset 範圍（N3 修正：加 U+3400-4DBF Extension A）**：
 ```bash
-# pyftsubset 從 fonttools；只保留中文常用 + Latin
-pyftsubset NotoSansTC-Regular.ttf \
-  --output-file=NotoSansTC-Regular.subset.ttf \
-  --unicodes="U+0020-007F,U+4E00-9FFF,U+3000-303F,U+FF00-FFEF" \
-  --layout-features='*' --no-hinting
+$ranges = "U+0020-007F,U+00A0-00FF,U+2000-206F,U+2070-209F,U+2100-214F,U+2190-21FF,U+25A0-25FF,U+3000-303F,U+3100-312F,U+31A0-31BF,U+3400-4DBF,U+4E00-9FFF,U+FF00-FFEF"
+#                                                                                                                          ^^^^^^^^^^^ N3 新增
 ```
 
-**HTML template 內 inline @font-face**：
+**為何加 Extension A**：v6 subset 只含 U+4E00-9FFF（CJK 基本區），台灣罕用人名字（喆 / 淼 / 彧 / 珺）落在 U+3400-4DBF Extension A 區。沒加會讓 ~2-3% 證書姓名出現方塊。
+
+**Size trade-off**：
+- 完整 ttf：16.4 MB / 17.0 MB（共 33 MB）→ 100% 字符蓋率但 deploy size 大
+- v6 subset（無 Ext A）：5.3 MB × 2 = 10.6 MB → 漏 6500 字
+- **v7 subset（含 Ext A）：6.7 MB × 2 = 13.4 MB** → 99% 蓋率，多 3 MB 換 6500 字 ✅
+
+**重產**：
+```powershell
+cd functions/fonts
+.\subset.ps1     # 自動下載 + subset + 清理（pyftsubset 已裝）
+```
+
+**動工前 checklist 補項**（N3）：
+- [ ] 確認 `python -m pip install --user fonttools brotli` 已裝
+- [ ] pyftsubset 在 `C:\Users\rockj\AppData\Roaming\Python\Python314\Scripts\pyftsubset.exe`
+
+**HTML template 內 inline @font-face + escape user data（N11 修正）**：
+
 ```javascript
 const fs = require('fs');
 const fontRegular = fs.readFileSync('./fonts/NotoSansTC-Regular.subset.ttf').toString('base64');
 const fontBold = fs.readFileSync('./fonts/NotoSansTC-Bold.subset.ttf').toString('base64');
+
+// N11: 必須 escape 所有 organizer / participant 提供的字串
+function escHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function buildCertHtml(data) {
   return `<!DOCTYPE html>
@@ -483,15 +618,16 @@ function buildCertHtml(data) {
   }
   body { font-family: 'Noto Sans TC', serif; }
   .recipient { font-size: 32px; font-weight: 700; }
-  /* ... 其他樣式 ... */
 </style></head>
 <body>
   <h1>獲 獎 證 書</h1>
-  <div class="recipient">${data.recipientName}</div>
-  <p>於 ${data.eventName} 獲得 ${data.rankZh}，特此證明。</p>
+  <div class="recipient">${escHtml(data.recipientName)}</div>
+  <p>於 ${escHtml(data.eventName)} 獲得 ${escHtml(data.rankZh)}，特此證明。</p>
 </body></html>`;
 }
 ```
+
+> **不 escape 的後果**：organizer 自填活動名稱 `<script>alert(1)</script>` 或 recipient 隊名含 `<` 字元 → puppeteer 渲染崩或 HTML 注入。雖然證書是 server-side render，無 client XSS，但渲染失敗等於印不出證書。
 
 > 預期 functions image 增加 ~6-8 MB（subset 後 2 個 ttf）。Cold start 影響可控。
 
@@ -499,7 +635,7 @@ function buildCertHtml(data) {
 
 5 個新 callable：`getCertTemplates` / `saveCertTemplate` / `deleteCertTemplate` / `generateBadges` / `generateCertificates`
 
-##### 4c.4 Functions image 隔離
+##### 4c.4 Functions image 隔離 + size 確認（N12 補強）
 
 `generateCertificates` 含 chromium 280MB，會拖累 cold start。建議拆獨立 runtime：
 
@@ -512,7 +648,23 @@ functions/
 │   └── fonts/, certificates/
 ```
 
-deploy 時 `firebase deploy --only functions:certs`（如果 firebase 支援多 entry）；否則沿用單一 entry 但接受 cold start 影響。**建議第一版仍走單一 entry，視效能再拆**。
+deploy 時 `firebase deploy --only functions:certs`；**第一版仍走單一 entry**，視效能再拆。
+
+**N12：deploy 後 size 確認**：
+
+Cloud Functions Gen2 deploy 限制 **100 MB compressed source code**。加 puppeteer + chromium + 字型 + speakeasy 後，需驗證沒爆：
+
+```bash
+# Phase 4c 完成後跑一次
+firebase deploy --only functions:generateCertificates --debug 2>&1 | grep -i "size\|compressed"
+
+# 或 deploy 完用 gcloud 查
+gcloud functions describe generateCertificates --gen2 --region=us-central1 --format="value(buildConfig.source.storageSource.object)"
+gcloud storage ls -l gs://gcf-v2-sources-PROJECTNUMBER-us-central1/...
+# 比對 size 是否 < 100MB
+```
+
+> 預估：chromium 280MB（npm 解壓後）→ deploy compressed 約 80MB；加上字型 13.4MB compressed 5MB；其他 deps 5MB → **約 90MB**，剩 10MB 緩衝。若超出需立刻拆獨立 entry。
 
 **修改檔案**：
 - [`public/index.html`](public/index.html) — **_argMap + 11 行**：
@@ -587,26 +739,38 @@ deploy 時 `firebase deploy --only functions:certs`（如果 firebase 支援多 
 > 同 v5
 
 #### 6.5 主辦方「我的撥款」UX（1 天）
-> 同 v5 + 月底 corner case helper（**P2-2 修正**）：
+> 同 v5 + 月底 corner case helper（**N6 修正：dead code + isToday**）：
 
 ```javascript
 function getNextPayoutDate() {
   const now = new Date();
   const day = now.getDate();
-  const candidate = day < 1 ? 1 : (day < 15 ? 15 : null);
+  const hour = now.getHours();
+
+  // 撥款 cron 在 10:00 跑
+  // 今天若是 1 / 15 號且 cron 還沒跑 → isToday: true
+  if (day === 1 && hour < 10) {
+    return { date: now, daysUntil: 0, isToday: true };
+  }
+  if (day === 15 && hour < 10) {
+    return { date: now, daysUntil: 0, isToday: true };
+  }
+
+  // 一般情況：下次未來的撥款日
   let next;
-  if (candidate === 1) {
-    next = new Date(now.getFullYear(), now.getMonth(), 1);
-  } else if (candidate === 15) {
+  if (day < 15) {
     next = new Date(now.getFullYear(), now.getMonth(), 15);
   } else {
-    // > 15 號，下次是下月 1 號
     next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   }
   const daysUntil = Math.ceil((next - now) / (1000 * 60 * 60 * 24));
-  return { date: next, daysUntil };
+  return { date: next, daysUntil, isToday: false };
 }
 ```
+
+**UI 顯示**：
+- `isToday: true` → 橘色 pill「**今天就是撥款日（cron 將於 10:00 執行）**」
+- 一般情況 → 「下次撥款：MM-DD（N 天後）」
 
 #### 6.6 system「PAYUNI 商家設定」tab（0.5 天）
 > 同 v5
@@ -646,32 +810,75 @@ match /competitions/{compId} {
 }
 ```
 
-**`processRefund` 用 transaction（P1-1）**：
+**`processRefund` 冪等性 + transaction（P1-1 + N2 修正）**：
+
+冪等性的關鍵：先存 `payuniRefundTxId`，重試時用 txId 查 PAYUNi 確認狀態，避免雙退。
+
 ```javascript
 exports.processRefund = authCallable(["system"], async ({ refundId }, request) => {
-  return await db.runTransaction(async (t) => {
-    const refundRef = db.collection("refundRequests").doc(refundId);
-    const refundDoc = await t.get(refundRef);
-    if (!refundDoc.exists) throw new Error("退款請求不存在");
-    const refund = refundDoc.data();
-    if (refund.status !== "approved") throw new Error("狀態錯誤");
+  const refundRef = db.collection("refundRequests").doc(refundId);
+  const refundDoc = await refundRef.get();
+  if (!refundDoc.exists) return { success: false, message: "退款請求不存在" };
+  const refund = refundDoc.data();
+  if (refund.status !== "approved" && refund.status !== "processing") {
+    return { success: false, message: "狀態錯誤：" + refund.status };
+  }
 
+  // === N2 冪等性檢查 ===
+  let refundOk = false;
+  let txId = refund.payuniRefundTxId || null;
+
+  if (txId) {
+    // 之前曾呼叫過 PAYUNi，先 query 確認狀態（避免雙退）
+    const status = await queryPayuniRefundStatus(txId);
+    if (status === "success") {
+      refundOk = true;
+    } else if (status === "pending") {
+      return { success: false, message: "PAYUNi 處理中，請稍後再試" };
+    }
+    // status === "failed" 或 query 不到 → 視同未退，重新嘗試
+  }
+
+  if (!refundOk) {
+    // 標記 processing 避免並行第二次點
+    await refundRef.update({ status: "processing",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    // 呼叫 PAYUNi Refund API（trade_close）
+    const result = await payuniRefundCall(refund.orderId);
+    if (!result.success) {
+      await refundRef.update({
+        status: "failed",
+        failureReason: result.message,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      return { success: false, message: result.message };
+    }
+
+    // 立即落 txId（事務外）以保險：即使下一步 transaction fail，重試會走冪等路徑
+    txId = result.txId;
+    await refundRef.update({ payuniRefundTxId: txId });
+    refundOk = true;
+  }
+
+  // === Transaction 更新本地狀態（PAYUNi 已確認退款）===
+  return await db.runTransaction(async (t) => {
+    const cur = await t.get(refundRef);
     const orderRef = db.collection("regOrders").doc(refund.orderId);
     const orderDoc = await t.get(orderRef);
     const order = orderDoc.data();
 
-    // P0-5 方案 C：cap 用 grossAmount（不是 netAmount）
+    // P0-5 方案 C：cap 用 grossAmount
     const newRefundedTotal = (order.refundedSoFar || 0) + refund.amount;
     if (newRefundedTotal > order.grossAmount) {
       throw new Error("退款累積超過原訂單金額");
     }
 
-    // 1. 呼叫 PAYUNI Refund API（事務外，因為是 HTTP；但失敗時 status='failed'）
-    // 2. transaction 內更新狀態與 payouts
     t.update(refundRef, {
       status: "refunded",
       refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-      payoutAdjustment: -refund.amount,   // P0-5 方案 C: 主辦方扣全額
+      payoutAdjustment: -refund.amount,        // P0-5 方案 C
+      payuniRefundTxId: txId,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     t.update(orderRef, {
@@ -679,7 +886,7 @@ exports.processRefund = authCallable(["system"], async ({ refundId }, request) =
       status: newRefundedTotal === order.grossAmount ? "refunded" : "partial_refund"
     });
 
-    // 建立負撥款記錄（抵扣下次）
+    // 負撥款記錄（抵下次）
     const adjustmentRef = db.collection("payouts").doc();
     t.set(adjustmentRef, {
       payoutId: adjustmentRef.id,
@@ -687,7 +894,7 @@ exports.processRefund = authCallable(["system"], async ({ refundId }, request) =
       compId: refund.compId,
       organizerUsername: refund.organizerUsername,
       grossAmount: -refund.amount,
-      commission: 0,                       // 退款不退 commission（P0-5 方案 C）
+      commission: 0,                            // 退款不退 commission
       netAmount: -refund.amount,
       status: "pending",
       relatedRefundId: refundId,
@@ -695,18 +902,28 @@ exports.processRefund = authCallable(["system"], async ({ refundId }, request) =
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
+    // 敏感操作 audit log（N10）
+    auditLog("refund.processed", request.authUser.username, {
+      refundId, orderId: refund.orderId, amount: refund.amount, txId
+    });
+
     return { success: true };
   });
 });
 ```
 
-實際 PAYUNI Refund API 呼叫（`payuniRefundCall(orderId, amount)` helper）會在 transaction 之前先呼叫；若 PAYUNI 退款失敗 → 直接更新 refund.status='failed' 不進 transaction。
+重點：
+- ✅ 重試 safe：兩個流程下 `processRefund` 都不會雙退
+  - 流程 A：API 成功但本地 update 失敗 → 重試走 query 路徑確認 → 本地 update
+  - 流程 B：API 失敗 → status='failed' → system 改後重試
+- ✅ `processing` 中間狀態防並行二點
+- ✅ 寫 audit log
 
 4 callable：`requestRefund` / `approveRefund` / `processRefund` / `listRefundRequests`
 
 #### 6.10 PAYUNI Notify 失敗對帳 cron（0.5 天）
 
-**P2-3 修正：limit 50 內加分批延遲**：
+**P2-3 + N13 修正：limit 50 + 分批延遲 + 滿載告警**：
 ```javascript
 exports.reconcilePendingOrders = onSchedule({
   schedule: "every 30 minutes",
@@ -725,7 +942,20 @@ exports.reconcilePendingOrders = onSchedule({
     } catch (e) {
       console.error("reconcile error", doc.id, e);
     }
-    await new Promise(r => setTimeout(r, 200));  // PAYUNI API 限頻 5/秒緩衝
+    await new Promise(r => setTimeout(r, 200));  // PAYUNi API 限頻 5/秒緩衝
+  }
+
+  // N13: 滿載告警 — 若 50 筆全跑完，可能還有更多 pending 沒處理到
+  if (snap.size === 50) {
+    await db.collection("notifications").add({
+      target: "system_admin",
+      type: "reconcile_overflow",
+      title: "PAYUNi 對帳積壓告警",
+      body: "reconcilePendingOrders 跑滿 50 筆上限；可能有更多 orders 卡 pending，建議到 system 對帳工具手動處理或加大 cron 頻率",
+      severity: "warn",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    console.warn("[reconcilePendingOrders] hit 50 limit, system admin alerted");
   }
 });
 ```
@@ -766,18 +996,60 @@ speakeasy `verify` 用 `window: 2`（P2-1 #1）
 
 #### Phase 7c — API key / 協作者 / LINE Notify（**1.5 天 + middleware 測試 0.5 天**）
 
-**API key**（**P2-8 修正：限額 5 組**）：
+**API key**（**N4 修正：transaction + counter**）：
+
+⚠️ v6 用 query+count 是 read-then-write race，與 P0-3 OTP 相同 pattern。v7 改用 counter on accounts doc：
+
 ```javascript
 exports.generateApiKey = authCallable(["competition"], async ({ name }, request) => {
-  // 先查 active key 數量
-  const snap = await db.collection("apiKeys")
-    .where("ownerUsername", "==", request.authUser.username)
-    .where("revokedAt", "==", null)
-    .get();
-  if (snap.size >= 5) {
-    return { success: false, message: "已達上限 5 組，請先 revoke 舊金鑰" };
-  }
-  // ... 產生流程
+  return await db.runTransaction(async (t) => {
+    const userRef = db.collection("accounts").doc(request.authUser.username);
+    const userDoc = await t.get(userRef);
+    const activeKeyCount = userDoc.data()?.apiKeyCount || 0;
+    if (activeKeyCount >= 5) {
+      return { success: false, message: "已達上限 5 組，請先 revoke 舊金鑰" };
+    }
+
+    // 產生 secret
+    const secret = crypto.randomBytes(32).toString("hex");
+    const secretHash = crypto.createHash("sha256").update(secret).digest("hex");
+    const last4 = secret.slice(-4);
+
+    const keyRef = db.collection("apiKeys").doc();
+    t.set(keyRef, {
+      keyId: keyRef.id,
+      ownerUsername: request.authUser.username,
+      name: name || "未命名",
+      secretHash,
+      last4,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      revokedAt: null,
+      lastUsedAt: null
+    });
+    t.update(userRef, { apiKeyCount: activeKeyCount + 1 });
+
+    auditLog("apikey.generated", request.authUser.username, { keyId: keyRef.id, name });
+    return { success: true, keyId: keyRef.id, secret };   // secret 只回一次
+  });
+});
+
+// revokeApiKey 對應減 counter
+exports.revokeApiKey = authCallable(["competition"], async ({ keyId }, request) => {
+  return await db.runTransaction(async (t) => {
+    const keyRef = db.collection("apiKeys").doc(keyId);
+    const keyDoc = await t.get(keyRef);
+    if (!keyDoc.exists || keyDoc.data().ownerUsername !== request.authUser.username) {
+      return { success: false, message: "金鑰不存在" };
+    }
+    if (keyDoc.data().revokedAt) {
+      return { success: false, message: "金鑰已撤銷" };
+    }
+    const userRef = db.collection("accounts").doc(request.authUser.username);
+    t.update(keyRef, { revokedAt: admin.firestore.FieldValue.serverTimestamp() });
+    t.update(userRef, { apiKeyCount: admin.firestore.FieldValue.increment(-1) });
+    auditLog("apikey.revoked", request.authUser.username, { keyId });
+    return { success: true };
+  });
 });
 ```
 
@@ -821,7 +1093,28 @@ describe("compAuthCallable role enforcement", () => {
 - [`firestore.rules`](firestore.rules)（userProfiles / apiKeys / collaborators / collaboratorInvites）
 - [`_test/middleware.test.js`](_test/middleware.test.js)
 
-**Commit**：`phase 7a/7b/7c: account + 2FA + backup + admin rescue + collab middleware test + LINE`
+#### Phase 7 結尾：敏感操作 audit log 統一規範（**N10 新增**）
+
+以下 callable **必呼叫** `auditLog(action, actor, details)`（既有 [`functions/index.js`](functions/index.js) audit logs 系統）：
+
+```
+generateApiKey         → action: 'apikey.generated'
+revokeApiKey           → action: 'apikey.revoked'
+inviteCollaborator     → action: 'collab.invited'
+removeCollaborator     → action: 'collab.removed'
+acceptCollaboration    → action: 'collab.accepted'
+setupTotp              → action: 'totp.setup'
+disableTotp            → action: 'totp.disabled'
+adminDisableUserTotp   → action: 'totp.admin_disabled' (HIGH severity)
+requestAccountDeletion → action: 'account.deletion_requested'
+processRefund          → action: 'refund.processed' (在 Phase 6.9，補述)
+processPayout          → action: 'payout.processed' (在 Phase 6.7，補述)
+migratePayuniToPlatform → action: 'system.payuni_migration'
+```
+
+`adminDisableUserTotp` 寫入時 `severity: 'high'`，方便日後過濾。
+
+**Commit**：`phase 7a/7b/7c: account + 2FA + backup + admin rescue + collab middleware test + LINE + audit log`
 
 ---
 
@@ -901,14 +1194,20 @@ A-E 同 v5；**F 退款流程**（部分退款 → payout 已撥 → payoutAdjus
 #### 11.3 上線前 final checklist（**P0-1 + P2-4 + P2-11 補強**）
 
 - [ ] [`public/js/emulator-config.js`](public/js/emulator-config.js) 在 `firebase.json hosting.ignore`
-- [ ] **`_argMap` 與新 callable 對應檢查（grep 比對）**：
+- [ ] **`_argMap` 與新 callable 對應檢查（grep 比對，N1 修正）**：
   ```bash
-  # 列出所有 exports.X = ...
-  grep -oP "^exports\.\w+" functions/index.js | sort -u > /tmp/exports.txt
-  # 列出 _argMap 內 keys
-  grep -oP "^\s*\w+:\[" public/index.html | sort -u > /tmp/argmap.txt
+  # 1. 只抓「真正的 callable export」（callable / authCallable / compAuthCallable）
+  #    onRequest / onSchedule 不需 argMap
+  grep -oP "exports\.\w+\s*=\s*(callable|authCallable|compAuthCallable)" functions/index.js \
+    | grep -oP "(?<=exports\.)\w+" | sort -u > /tmp/exports.txt
+
+  # 2. 只抓 _argMap 物件範圍內的 keys
+  sed -n '/var _argMap/,/^};/p' public/index.html \
+    | grep -oP "^\s*\K\w+(?=:\[)" | sort -u > /tmp/argmap.txt
+
+  # 3. 比對
   diff /tmp/exports.txt /tmp/argmap.txt
-  # 應該只有 helper / 內部 function 不在 argmap，所有 callable 都該對得起來
+  # 預期：差集應為空（payuniNotify / payuniRegNotify 是 onRequest，不會被 #1 抓到）
   ```
 - [ ] `_emu_data/` / `_gcs_export/` 在 `.gitignore`
 - [x] `serviceAccountKey.json` 在 `.gitignore`
@@ -933,10 +1232,34 @@ A-E 同 v5；**F 退款流程**（部分退款 → payout 已撥 → payoutAdjus
 
 #### 11.4 一次性部署 Runbook → 詳見第 4 節（**P0-6 重排順序**）
 
-#### 11.5 D+1 ~ D+7 觀察
-> 同 v5
+#### 11.5 D+1 ~ D+7 觀察（**N16 補強：cron 驗證**）
 
-**Commit**：`phase 11: e2e QA (incl. refund + LINE) + final checklist`
+**業務指標**：
+- `logClientError` < 2/hr
+- `submitRegistration` 成功率 > 95%
+- `loginAccount` 成功率 > 90%
+- PAYUNI callback 失敗率 < 1%
+- payout pending 件數每天清
+- refund 處理時間 < 24h
+
+**Cron 觸發驗證（N16 新增 — 必做）**：
+
+⚠️ Cloud Scheduler 設定可能漏掉，cron 沒跑沒人會發現，直到月底才爆。每次到觸發時間點都要驗證 logs：
+
+| Cron | 觸發時間 | D+N 驗證 |
+|---|---|---|
+| `reconcilePendingOrders` | every 30 min | D+1 確認 logs 有 ≥ 1 筆 |
+| `notifyUpcomingPayout` | 每天 09:00 | D+1 早上確認 logs 有跑 |
+| `runScheduledPayouts` | 1 / 15 號 10:00 | **D+ 到首個 1 / 15 號 11:00 必驗** |
+| `processPendingDeletions` | every 24 hour | D+1 logs |
+
+```bash
+firebase functions:log --only reconcilePendingOrders --tail
+gcloud scheduler jobs list --location=us-central1
+# 缺 schedule 時：firebase deploy --only functions:<cronName> 重註冊
+```
+
+**Commit**：`phase 11: e2e QA (incl. refund + LINE) + final checklist + cron verification`
 
 ---
 
@@ -1128,28 +1451,41 @@ main                  ─ v1 production
 
 ---
 
-## 12. 動工前 checklist（最終版）
+## 12. 動工前 checklist（v7 最終版）
 
+### 已完成 ✅
 - [x] 6 大決策 + PAYUNi 平台統收 + 進階功能拍板
 - [x] 手續費（plan-based）+ 撥款週期 + 最低門檻拍板
-- [x] **退款政策方案 C 拍板（P0-5）**
+- [x] 退款政策方案 C 拍板（P0-5）
 - [x] 還原點與備份建立（`_backup/2026-05-05_pre-redesign/` + tag `v1-pre-redesign`）
-- [x] `.gitignore` 強化
+- [x] `.gitignore` 強化（含 v7 字型中間產物排除）
 - [x] **EULA.html 已加金流（第五條）+ 退款（第六條）特別條款** ✅ 2026-05-06
-- [x] **Noto Sans TC subset 完成**（[`functions/fonts/`](functions/fonts/)，11 MB）✅ 2026-05-06
+- [x] **Noto Sans TC subset 完成**（含 Ext A，13.4 MB）✅ 2026-05-06
+- [x] **PAYUNi Refund API 規格已就緒**（從 PHP SDK 推導，trade_close + trade_query）✅ 2026-05-06
+- [x] **PAYUNi Query Order API 規格已就緒**（同上）✅ 2026-05-06
+- [x] fonttools / pyftsubset 已安裝
+
+### 待您準備
 - [ ] Java JDK 11+
 - [ ] gcloud CLI
 - [ ] 申請 `regmaster-pro-dev` Firebase project
 - [ ] 練習 `firebase use --add`
-- [ ] 取得 PAYUNi 平台 sandbox merchant ID
-- [ ] 確認 PAYUNi production merchant ID（Kuang-Tien）
-- [ ] **取得 PAYUNI Query Order API 規格**（Phase 6.10，placeholder 在 [`_test/payuni-api-specs.md`](_test/payuni-api-specs.md)）
-- [ ] **取得 PAYUNI Refund API 規格**（Phase 6.9，同上 placeholder）
+- [ ] 取得 PAYUNi 平台 **sandbox** merchant ID + HashKey + HashIV（dev 用）
+- [ ] 確認 PAYUNi **production** merchant ID + HashKey + HashIV（Kuang-Tien 商號）
 - [ ] 確認 Cloud Scheduler 在 production 已啟用
 - [ ] 確認 `mail` collection + Trigger Email Extension **僅在 production**（dev 不裝）
 - [ ] 確認 LINE Notify 申請流程
 - [ ] 確認 sales 業務 email：`sales@kuangtien.com.tw`
-- [ ] confirm v6 計畫，下指令進入 Phase 0
+
+### N5：與 PAYUNi 業務窗口確認的 5 項業務細節
+- [ ] **單一商號代收多商家**：PAYUNi 商號是否容許「子商家」概念？商家描述是否支援動態變更（讓對帳單顯示活動名稱）？
+- [ ] **統一發票 B2C 開立規則**：平台收 1000 元，發票該對誰開（報名者 / 主辦方）？平台手續費（30 元）開給主辦方？其餘 970 元由主辦方自開？
+- [ ] **月交易量上限**：平台統收後合併交易量是否超出既有商號等級？
+- [ ] **Refund 退款窗口**：trade_close 是否限訂單後 30/90/180 天？逾期需人工處理？
+- [ ] **Webhook 重送機制**：PAYUNi 自己會重送幾次？間隔？（影響 reconcile cron 設計）
+
+### 上線當日 + 後續驗證
+- [ ] confirm v7 計畫，下指令進入 Phase 0
 
 ---
 
@@ -1192,25 +1528,42 @@ main                  ─ v1 production
 | 10 — RWD + 跨瀏覽器 | 2 | 12 週 |
 | 11 — 最終 QA + 上線 | 4-5 | 13 週 |
 
-**估計**：**13-14 週**（solo dev，含 buffer；比 v5 多 1 週吸收 P0-3/4/7 + P1-1/3 工作量）
+**估計**：**13-14 週**（solo dev，含 buffer；v7 不再 +1 週因為 N1-N16 多為 code-level 修正而非新功能）
+
+> v7 vs v6：N1/N2/N4/N6/N9/N11 是 inline code 修正不增工；N3 字型已重產不增工；N5 是 checklist 加項不增工；N7-8/N10/N12-16 各 0.5 hr 內可完成。**淨工時 +0**。
 
 ---
 
 ## 15. 結語
 
-V6 = V5 + P0×7 + P1×5 + P2×15 修正 + 退款政策方案 C 拍板。
+V7 = V6 + N1-N16 修正 + PAYUNi PHP SDK 解鎖。
 
-**從 V5 到 V6 主要變動**：
-1. 每 phase 強制 `_argMap` 同步（漏一行就壞）
-2. 字型打包進 functions（中文證書必需）
-3. 退款方案 C 拍板（commission 不退，主辦方下次撥款扣全額）
-4. D-day deploy 順序重排（indexes 先，hosting 最後）
-5. 評分介面 saveBatchScores（避免 API spam）
-6. emulator-config.js 動態 inject（0 個 production 404）
-7. rateLimits transaction + 不重設 windowStart（修 race + sliding window bug）
-8. dev project PAYUNi 商號淨化 + 不部署 mail extension
-9. collaborator middleware 加 unit test
-10. 13 風險條目 + 15 P2 修正 + 22 動工前 checklist
+**從 V6 到 V7 主要變動**：
+
+🟢 **解鎖**：
+- PAYUNi Refund API（trade_close）+ Query API（trade_query）規格從官方 PHP SDK 完整推導；Node.js 實作 stub 已寫進 [`_test/payuni-api-specs.md`](_test/payuni-api-specs.md)
+
+🔴 **嚴重修正**：
+- N1：grep diff 邏輯改用 callable filter + sed 限制 _argMap 範圍
+- N2：processRefund 加冪等性（payuniRefundTxId + 重試走 query 確認 + processing 中介狀態防雙退）
+
+🟡 **重要修正**：
+- N3：字型 subset 加 CJK Extension A（含台灣罕用人名字 ~6500 字）
+- N4：generateApiKey 改 transaction + counter（accounts.apiKeyCount）
+- N5：補 5 項 PAYUNi 業務面確認到 checklist
+- N6：getNextPayoutDate 修 dead code + 加 isToday flag
+- N10：8+ 個敏感 callable 統一寫 audit log
+- N11：cert HTML template 強制 escHtml
+- N14：getMyRegistrationDetail 回傳 refund 狀態
+- N15：IP 取 x-forwarded-for[0]（GCP load balancer 後的真 IP）
+- N16：上線後 cron 觸發驗證流程
+
+🟢 **小幅修正**：
+- N7：sanitize 改 firebase-admin SDK 不用 curl
+- N8：DR「倒回 dev project」說法修正（emulator export ≠ gcloud import）
+- N9：email rate limit 補完整 code
+- N12：Functions deploy size 確認流程
+- N13：reconcile 50 筆滿載告警
 
 **動工順序**：
 1. **Phase 0**：基礎建設（含 DR 演練 + dev sanitize）
@@ -1220,4 +1573,4 @@ V6 = V5 + P0×7 + P1×5 + P2×15 修正 + 退款政策方案 C 拍板。
 
 **起手式**：Phase 0.1 安裝 JDK 11 + gcloud CLI + 申請 regmaster-pro-dev project。
 
-— END v6 —
+— END v7 —
