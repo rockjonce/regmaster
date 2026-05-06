@@ -17,6 +17,17 @@ firestore-debug.log
 # Local backup snapshots (do not commit binaries / favicon copies)
 _backup/
 
+# Emulator data / production snapshot import (Phase 0)
+_emu_data/
+_gcs_export/
+_gcs_final/
+
+# Font subset intermediate (original .ttf 16MB each, not for git)
+# Only commit the .subset.ttf files (~5.3MB each, used by Cloud Functions)
+functions/fonts/NotoSansTC-Regular.ttf
+functions/fonts/NotoSansTC-Bold.ttf
+functions/fonts/NotoSansCJKtc-*.otf
+
 # Uncomment this if you'd like others to create their own Firebase project.
 # For a team working on the same Firebase project(s), it is recommended to leave
 # it commented so all members can deploy to the same project(s) in .firebaserc.

@@ -1135,20 +1135,20 @@ main                  ─ v1 production
 - [x] **退款政策方案 C 拍板（P0-5）**
 - [x] 還原點與備份建立（`_backup/2026-05-05_pre-redesign/` + tag `v1-pre-redesign`）
 - [x] `.gitignore` 強化
+- [x] **EULA.html 已加金流（第五條）+ 退款（第六條）特別條款** ✅ 2026-05-06
+- [x] **Noto Sans TC subset 完成**（[`functions/fonts/`](functions/fonts/)，11 MB）✅ 2026-05-06
 - [ ] Java JDK 11+
 - [ ] gcloud CLI
 - [ ] 申請 `regmaster-pro-dev` Firebase project
 - [ ] 練習 `firebase use --add`
 - [ ] 取得 PAYUNi 平台 sandbox merchant ID
 - [ ] 確認 PAYUNi production merchant ID（Kuang-Tien）
-- [ ] **取得 PAYUNI Query Order API 規格**（Phase 6.10）
-- [ ] **取得 PAYUNI Refund API 規格**（Phase 6.9）
-- [ ] **下載 Noto Sans TC ttf + 學會 pyftsubset 縮小**（Phase 4c P0-4）
+- [ ] **取得 PAYUNI Query Order API 規格**（Phase 6.10，placeholder 在 [`_test/payuni-api-specs.md`](_test/payuni-api-specs.md)）
+- [ ] **取得 PAYUNI Refund API 規格**（Phase 6.9，同上 placeholder）
 - [ ] 確認 Cloud Scheduler 在 production 已啟用
 - [ ] 確認 `mail` collection + Trigger Email Extension **僅在 production**（dev 不裝）
 - [ ] 確認 LINE Notify 申請流程
 - [ ] 確認 sales 業務 email：`sales@kuangtien.com.tw`
-- [ ] **更新 EULA.html 加退費條款方案 C 明示**
 - [ ] confirm v6 計畫，下指令進入 Phase 0
 
 ---
