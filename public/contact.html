@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>聯絡我們 · RegMaster</title>
+<meta name="description" content="有任何問題、客製化需求、業務洽詢都歡迎聊聊。4 小時內回覆（平日）。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<!-- Firebase SDK via Hosting reserved URL -->
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+.nav { position:sticky; top:0; z-index:50; height:64px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+.nav .links { display:flex; gap:4px; margin-left:48px; flex:1; }
+.nav .links a { padding:8px 14px; font:500 13.5px/1 var(--f-tc); color:var(--ink-3); border-radius:6px; }
+.nav .links a:hover, .nav .links a.on { color:var(--ink); background:var(--surface-2); }
+.nav .actions { display:flex; gap:10px; align-items:center; }
+
+.layout { display:grid; grid-template-columns:5fr 7fr; min-height:calc(100vh - 64px); }
+.left { padding:80px 64px; background:var(--ink); color:var(--surface); position:relative; overflow:hidden; }
+.left::before { content:''; position:absolute; inset:0; background:radial-gradient(600px 400px at 100% 0%, rgba(61,107,255,.18), transparent 60%), radial-gradient(400px 400px at 0% 100%, rgba(234,88,12,.10), transparent 60%); }
+.left > * { position:relative; }
+.left .eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--blue-300); margin-bottom:18px; }
+.left h1 { font:800 56px/1.04 var(--f-display); letter-spacing:-.026em; margin-bottom:24px; }
+.left h1 em { font-style:normal; background:linear-gradient(120deg, var(--blue-300), var(--amber-300)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.left p { font:400 16px/1.6 var(--f-tc); color:rgba(255,255,255,.72); margin-bottom:40px; }
+
+.contact-list > div { padding:18px 0; border-bottom:1px solid rgba(255,255,255,.08); display:flex; gap:16px; align-items:flex-start; }
+.contact-list .ic-w { width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); display:grid; place-items:center; flex-shrink:0; }
+.contact-list .ic-w svg { width:16px; height:16px; color:var(--blue-300); }
+.contact-list h4 { font:600 14px/1.3 var(--f-display); margin-bottom:2px; }
+.contact-list p { font:400 13px/1.5 var(--f-tc); color:rgba(255,255,255,.72); margin:0; }
+.contact-list a { color:var(--blue-300); }
+
+.left .map { margin-top:32px; padding-top:32px; }
+.left .map-caption { font:500 11px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.4); margin-bottom:10px; }
+.left .map-img { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px 16px; font:400 13px/1.5 var(--f-tc); color:rgba(255,255,255,.72); }
+.left .map-img b { color:white; font-weight:600; }
+
+.right { padding:80px 64px; background:var(--bg); }
+.tabs-row { display:inline-flex; gap:4px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; margin-bottom:28px; }
+.tab-btn { padding:8px 14px; border-radius:7px; font:500 13px/1 var(--f-tc); color:var(--muted); }
+.tab-btn.on { background:var(--ink); color:var(--surface); }
+
+.right h2 { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; margin-bottom:8px; }
+.right p.sub { font:400 15px/1.5 var(--f-tc); color:var(--ink-3); margin-bottom:32px; }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; max-width:580px; }
+.field-full { grid-column:1 / -1; }
+.field { display:flex; flex-direction:column; }
+.field-radio-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.radio-card { padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer; transition:.15s; display:flex; gap:12px; align-items:flex-start; }
+.radio-card:hover { border-color:var(--ink-3); }
+.radio-card.on { border-color:var(--ink); background:var(--surface-2); box-shadow:var(--ring); }
+.radio-card .rd { width:18px; height:18px; border:1.5px solid var(--line); border-radius:50%; display:grid; place-items:center; flex-shrink:0; margin-top:2px; }
+.radio-card.on .rd { border-color:var(--ink); }
+.radio-card.on .rd::after { content:''; width:8px; height:8px; border-radius:50%; background:var(--ink); }
+.radio-card .body h5 { font:600 13px/1.3 var(--f-display); margin-bottom:2px; }
+.radio-card .body p { font:400 12px/1.4 var(--f-tc); color:var(--muted); margin:0; }
+
+.form-foot { display:flex; align-items:center; gap:12px; max-width:580px; margin-top:24px; }
+.form-foot .meta { font:400 12px/1.5 var(--f-tc); color:var(--muted); flex:1; }
+
+.right-faq { margin-top:48px; max-width:580px; }
+.right-faq h3 { font:700 16px/1.3 var(--f-display); margin-bottom:16px; }
+.right-faq details { padding:14px 0; border-bottom:1px solid var(--line-2); }
+.right-faq details:last-child { border-bottom:0; }
+.right-faq summary { display:flex; justify-content:space-between; align-items:center; font:500 14px/1.4 var(--f-tc); color:var(--ink-2); cursor:pointer; list-style:none; }
+.right-faq summary::-webkit-details-marker { display:none; }
+.right-faq summary .pl { color:var(--muted); font-family:var(--f-mono); }
+.right-faq details[open] summary .pl { color:var(--ink); transform:rotate(45deg); }
+.right-faq details p { margin-top:10px; font:400 13px/1.6 var(--f-tc); color:var(--ink-3); }
+
+.success-box { padding:24px 28px; background:var(--ok-100); border:1px solid var(--ok-500); border-radius:14px; max-width:580px; margin-top:20px; display:flex; gap:14px; align-items:flex-start; }
+.success-box .ic { width:36px; height:36px; border-radius:50%; background:var(--ok-500); color:white; display:grid; place-items:center; flex-shrink:0; font:700 18px/1 var(--f-display); }
+.success-box h4 { font:700 16px/1.3 var(--f-display); color:var(--ok-700); margin-bottom:4px; }
+.success-box p { font:400 13.5px/1.6 var(--f-tc); color:var(--ok-700); margin:0; }
+
+@media (max-width:960px) {
+  .layout { grid-template-columns:1fr; }
+  .left, .right { padding:48px 24px; }
+  .left h1 { font-size:36px; }
+  .form-grid { grid-template-columns:1fr; }
+}
+
+.theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; }
+.theme-toggle:hover { background: var(--surface-3); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="/landing.html"><span class="logo">R</span><span>RegMaster</span></a>
+  <div class="links">
+    <a href="/pricing.html">方案</a>
+    <a href="/features.html">功能</a>
+    <a href="/about.html">關於</a>
+    <a href="/contact.html" class="on">聯絡</a>
+  </div>
+  <div class="actions">
+    <button class="theme-toggle" id="themeToggle">🌗</button>
+    <button class="theme-toggle" id="langToggle">中/EN</button>
+    <a href="/login.html" class="btn btn-quiet btn-sm">登入</a>
+    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm">免費試用</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="left">
+    <div class="eyebrow">CONTACT US</div>
+    <h1>有任何問題，<br><em>都歡迎聊聊</em>。</h1>
+    <p>無論你是在比較工具、想客製化需求、或單純想抱怨報名表 —— 我們都很樂意聽。我們的團隊在台北，回信通常 4 小時內。</p>
+
+    <div class="contact-list">
+      <div>
+        <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+        <div><h4>客戶支援</h4><p><a href="mailto:hello@regmaster.tw">hello@regmaster.tw</a> · 4 小時內回覆</p></div>
+      </div>
+      <div>
+        <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div>
+        <div><h4>業務洽詢</h4><p>02-2701-0000 · 平日 09:00-18:00</p></div>
+      </div>
+      <div>
+        <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg></div>
+        <div><h4>合作 / 媒體</h4><p><a href="mailto:partners@regmaster.tw">partners@regmaster.tw</a></p></div>
+      </div>
+      <div>
+        <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>
+        <div><h4>LINE 即時客服</h4><p>@regmaster · 平日 09:00-22:00</p></div>
+      </div>
+    </div>
+
+    <div class="map">
+      <div class="map-caption">📍 OFFICE</div>
+      <div class="map-img"><b>RegMaster Inc.</b><br>106 台北市大安區忠孝東路四段 333 號 18 樓<br>近捷運忠孝復興站 2 號出口 · 步行 3 分鐘</div>
+    </div>
+  </aside>
+
+  <div class="right">
+    <div class="tabs-row">
+      <button class="tab-btn on" data-tab="general">📨 一般詢問</button>
+      <button class="tab-btn" data-tab="sales">🤝 業務 / 客製</button>
+      <button class="tab-btn" data-tab="support">🛟 客戶支援</button>
+    </div>
+
+    <h2>說說你的需求</h2>
+    <p class="sub">填完送出，我們會在 4 小時內聯繫你（平日）。</p>
+
+    <form class="form-grid" id="contactForm">
+      <div class="field">
+        <label class="label" for="cName">姓名 *</label>
+        <input class="input" id="cName" name="name" placeholder="王小明" required>
+      </div>
+      <div class="field">
+        <label class="label" for="cCompany">公司 / 機構</label>
+        <input class="input" id="cCompany" name="company" placeholder="某大學資工系">
+      </div>
+      <div class="field">
+        <label class="label" for="cEmail">電子郵件 *</label>
+        <input class="input" id="cEmail" name="email" type="email" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label class="label" for="cPhone">電話</label>
+        <input class="input" id="cPhone" name="phone" placeholder="0912-xxx-xxx">
+      </div>
+
+      <div class="field field-full">
+        <label class="label">活動規模</label>
+        <div class="field-radio-grid" id="scaleGrid">
+          <div class="radio-card" data-scale="small"><div class="rd"></div><div class="body"><h5>小型</h5><p>50 人以下</p></div></div>
+          <div class="radio-card on" data-scale="medium"><div class="rd"></div><div class="body"><h5>中型</h5><p>50–500 人</p></div></div>
+          <div class="radio-card" data-scale="large"><div class="rd"></div><div class="body"><h5>大型</h5><p>500–2,000 人</p></div></div>
+          <div class="radio-card" data-scale="xlarge"><div class="rd"></div><div class="body"><h5>超大型</h5><p>2,000+ 人</p></div></div>
+        </div>
+      </div>
+
+      <div class="field field-full">
+        <label class="label" for="cPlan">想諮詢的方案</label>
+        <select class="select" id="cPlan" name="plan">
+          <option value="pro">Pro 方案 · NT$ 1,490 / 月</option>
+          <option value="team">Team 方案 · 客製報價</option>
+          <option value="undecided">還在比較中，需要建議</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+
+      <div class="field field-full">
+        <label class="label" for="cMessage">告訴我們你的需求 *</label>
+        <textarea class="textarea" id="cMessage" name="message" rows="5" placeholder="活動類型、預計人數、希望的功能..." required></textarea>
+        <div class="help" id="charCounter">已填 0 字 · 越具體我們回得越精準</div>
+      </div>
+
+      <div class="field field-full">
+        <label class="label flex aic gap-2"><input type="checkbox" name="newsletter" checked style="width:16px;height:16px"> 同意接收 RegMaster 的產品電子報（可隨時退訂）</label>
+      </div>
+    </form>
+
+    <div class="form-foot">
+      <span class="meta">所有資料將依 <a href="/EULA.html" style="color:var(--acc)">隱私政策</a> 處理。</span>
+      <button class="btn btn-accent" id="submitBtn">送出 →</button>
+    </div>
+
+    <div class="success-box" id="successBox" style="display:none">
+      <div class="ic">✓</div>
+      <div>
+        <h4>我們收到了！</h4>
+        <p id="successMsg">已收到你的訊息，<b>4 小時內</b>會以你提供的信箱聯繫你（平日 09:00–18:00）。<br>急件可直接撥打 <b>02-2701-0000</b> 或 LINE 加 <b>@regmaster</b>。</p>
+      </div>
+    </div>
+
+    <div class="right-faq">
+      <h3>在等回覆的同時，看看這些</h3>
+      <details open><summary>需要先預約 Demo 嗎？<span class="pl">+</span></summary><p>不一定。Free / Starter / Pro 都可以直接註冊試用。Team 方案因涉及客製需求，建議先預約 30 分鐘的線上 Demo。</p></details>
+      <details><summary>學校 / 非營利有折扣嗎？<span class="pl">+</span></summary><p>有。教育單位、立案非營利組織可享 Pro 方案 30% 折扣，請以機構信箱聯繫業務索取折扣碼。</p></details>
+      <details><summary>能客製化開發嗎？<span class="pl">+</span></summary><p>Team 方案以上提供客製欄位、客製金流串接、客製 Email 範本。一般客製化專案的最低門檻為 NT$ 30 萬。</p></details>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+  document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
+  document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); location.reload(); });
+
+  // ---- Tabs (category) ----
+  var activeTab = 'general';
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.tab-btn').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      activeTab = b.dataset.tab;
+    });
+  });
+
+  // Pre-select tab from ?topic= query param
+  var topic = new URLSearchParams(location.search).get('topic') || '';
+  var topicTabMap = {
+    'sales': 'sales', 'team-plan': 'sales', 'demo': 'sales',
+    'support': 'support',
+    'careers': 'general'
+  };
+  if (topicTabMap[topic]) {
+    var btn = document.querySelector('[data-tab="' + topicTabMap[topic] + '"]');
+    if (btn) btn.click();
+  }
+  if (topic === 'careers') {
+    var msgField = document.getElementById('cMessage');
+    msgField.value = '我對 RegMaster 的職缺有興趣，想了解：\n\n（請描述您的背景與想應徵的職位）';
+    msgField.dispatchEvent(new Event('input'));
+  } else if (topic === 'demo') {
+    var msgField2 = document.getElementById('cMessage');
+    msgField2.value = '想預約一場 Demo，希望了解：\n\n';
+    msgField2.dispatchEvent(new Event('input'));
+  }
+
+  // ---- Scale radio cards ----
+  var activeScale = 'medium';
+  document.querySelectorAll('#scaleGrid .radio-card').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('#scaleGrid .radio-card').forEach(function (x) { x.classList.remove('on'); });
+      c.classList.add('on');
+      activeScale = c.dataset.scale;
+    });
+  });
+
+  // ---- Char counter ----
+  var counter = document.getElementById('charCounter');
+  document.getElementById('cMessage').addEventListener('input', function (e) {
+    counter.textContent = '已填 ' + e.target.value.length + ' 字 · 越具體我們回得越精準';
+  });
+
+  // ---- Submit handler ----
+  // NOTE: The functions/index.js `submitFeedback` callable is `authCallable` (logged-in only).
+  // For unauthenticated marketing inquiries, we use `addNotification` (public callable) as a
+  // transport, prefixing compId="_contact" so back-end can filter these out later.
+  // A dedicated public `submitContactInquiry` callable will be added in a later phase.
+  document.getElementById('submitBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    var name = document.getElementById('cName').value.trim();
+    var email = document.getElementById('cEmail').value.trim();
+    var company = document.getElementById('cCompany').value.trim();
+    var phone = document.getElementById('cPhone').value.trim();
+    var plan = document.getElementById('cPlan').value;
+    var message = document.getElementById('cMessage').value.trim();
+    var newsletter = document.querySelector('input[name="newsletter"]').checked;
+
+    if (!name) { alert('請填寫姓名'); document.getElementById('cName').focus(); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('請填寫正確的 Email'); document.getElementById('cEmail').focus(); return; }
+    if (!message) { alert('請告訴我們你的需求'); document.getElementById('cMessage').focus(); return; }
+
+    var btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = '送出中...';
+
+    // Build the inquiry payload as a single JSON string in the `question` field
+    var payload = {
+      v: 'v3-contact-form',
+      category: activeTab,
+      topic: topic || '',
+      name: name,
+      email: email,
+      company: company,
+      phone: phone,
+      scale: activeScale,
+      plan: plan,
+      newsletter: newsletter,
+      message: message,
+      ua: navigator.userAgent,
+      lang: AppState.getLang(),
+      ts: new Date().toISOString()
+    };
+
+    // Use addNotification (public callable) as transport. compId="_contact" namespace.
+    google.script.run
+      .withSuccessHandler(function () {
+        document.getElementById('contactForm').style.display = 'none';
+        document.querySelector('.form-foot').style.display = 'none';
+        document.getElementById('successBox').style.display = 'flex';
+        document.getElementById('successBox').scrollIntoView({behavior:'smooth', block:'center'});
+      })
+      .withFailureHandler(function (err) {
+        console.error('Contact submit failed:', err);
+        btn.disabled = false;
+        btn.textContent = '送出 →';
+        alert('送出失敗，請改用 hello@regmaster.tw 寄信。\n\n錯誤訊息: ' + (err && err.message || err));
+      })
+      .addNotification('_contact', JSON.stringify(payload));
+  });
+})();
+</script>
+</body>
+</html>

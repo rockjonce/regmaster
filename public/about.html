@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>關於我們 · RegMaster</title>
+<meta name="description" content="RegMaster 創立於 2023 年的台北。讓辦活動的人能專心辦活動。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<style>
+.nav { position:sticky; top:0; z-index:50; height:64px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+.nav .links { display:flex; gap:4px; margin-left:48px; flex:1; }
+.nav .links a { padding:8px 14px; font:500 13.5px/1 var(--f-tc); color:var(--ink-3); border-radius:6px; }
+.nav .links a:hover, .nav .links a.on { color:var(--ink); background:var(--surface-2); }
+.nav .actions { display:flex; gap:10px; align-items:center; }
+
+.page-hero { padding:96px 32px 64px; border-bottom:1px solid var(--hairline); position:relative; overflow:hidden; }
+.page-hero::before { content:''; position:absolute; inset:0; background-image:linear-gradient(var(--hairline) 1px,transparent 1px),linear-gradient(90deg,var(--hairline) 1px,transparent 1px); background-size:80px 80px; mask:radial-gradient(circle at 50% 30%,black,transparent 70%); -webkit-mask:radial-gradient(circle at 50% 30%,black,transparent 70%); }
+.page-hero > * { position:relative; }
+.container { max-width:1280px; margin:0 auto; }
+.page-hero .eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--acc); margin-bottom:18px; }
+.page-hero h1 { font:800 76px/1 var(--f-display); letter-spacing:-.032em; max-width:920px; margin-bottom:24px; }
+.page-hero h1 em { font-style:normal; background:linear-gradient(120deg,var(--acc),var(--amber-500)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.page-hero p { max-width:640px; font:400 19px/1.55 var(--f-tc); color:var(--ink-3); }
+
+section { padding:80px 32px; border-bottom:1px solid var(--hairline); }
+.section-head { max-width:1280px; margin:0 auto 48px; }
+.section-head .eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:14px; display:inline-flex; align-items:center; gap:8px; }
+.section-head .eyebrow::before { content:''; width:14px; height:1px; background:var(--acc); }
+.section-head h2 { font:700 48px/1.08 var(--f-display); letter-spacing:-.024em; max-width:720px; margin-bottom:14px; }
+.section-head p { color:var(--ink-3); font:400 17px/1.6 var(--f-tc); max-width:600px; }
+
+.story-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; max-width:1280px; margin:0 auto; align-items:start; }
+.story p { font:400 16.5px/1.75 var(--f-tc); color:var(--ink-2); margin-bottom:18px; }
+.story p.lead { font-size:19px; color:var(--ink); font-weight:500; }
+.story blockquote { padding:24px; background:var(--surface); border-left:3px solid var(--acc); border-radius:0 12px 12px 0; font:500 16px/1.6 var(--f-tc); color:var(--ink); margin:24px 0; }
+.story blockquote cite { display:block; margin-top:10px; font:400 13px/1 var(--f-mono); color:var(--muted); font-style:normal; }
+
+.timeline { padding:32px; background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--sh); }
+.tl-item { display:grid; grid-template-columns:90px 1fr; gap:20px; padding:18px 0; border-bottom:1px solid var(--line-2); }
+.tl-item:last-child { border-bottom:0; }
+.tl-yr { font:700 14px/1 var(--f-mono); color:var(--acc); padding-top:3px; }
+.tl-body h4 { font:700 16px/1.3 var(--f-display); margin-bottom:4px; }
+.tl-body p { font:400 13.5px/1.55 var(--f-tc); color:var(--ink-3); margin:0; }
+
+.metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:0; max-width:1280px; margin:0 auto; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface); }
+.metrics > div { padding:36px 32px; border-right:1px solid var(--line-2); }
+.metrics > div:last-child { border-right:0; }
+.metrics .num { font:800 56px/1 var(--f-display); letter-spacing:-.028em; }
+.metrics .num em { font-style:normal; color:var(--acc); }
+.metrics .lbl { font:500 12px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:14px; }
+.metrics .desc { font:400 12.5px/1.55 var(--f-tc); color:var(--ink-3); margin-top:8px; }
+
+.values { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; max-width:1280px; margin:0 auto; }
+.val { padding:32px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+.val .ic-tag { width:36px; height:36px; border-radius:9px; background:var(--ink); color:var(--surface); display:grid; place-items:center; margin-bottom:18px; font:800 16px/1 var(--f-display); }
+.val h4 { font:700 18px/1.3 var(--f-display); margin-bottom:8px; }
+.val p { font:400 14px/1.65 var(--f-tc); color:var(--ink-3); }
+
+.team-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; max-width:1280px; margin:0 auto; }
+.member { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; text-align:center; }
+.member .ph { width:80px; height:80px; border-radius:50%; margin:0 auto 14px; }
+.member h5 { font:700 15px/1.2 var(--f-display); margin-bottom:2px; }
+.member .role { font:500 11.5px/1 var(--f-mono); color:var(--muted); letter-spacing:.04em; margin-bottom:10px; }
+.member .bio { font:400 12.5px/1.55 var(--f-tc); color:var(--ink-3); }
+
+.investors { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:1280px; margin:0 auto; }
+.investors .item { height:64px; display:grid; place-items:center; font:700 14px/1 var(--f-display); letter-spacing:-.012em; color:var(--ink-2); border:1px solid var(--line-2); border-radius:10px; }
+
+.cta-strip { background:var(--ink); color:var(--surface); padding:64px 32px; text-align:center; border-bottom:0; }
+.cta-strip h2 { font:700 40px/1.2 var(--f-display); letter-spacing:-.02em; margin-bottom:10px; }
+.cta-strip p { color:rgba(255,255,255,.7); margin-bottom:28px; font:400 15px/1.5 var(--f-tc); }
+.cta-strip .btn-accent { background:var(--surface); color:var(--ink); border-color:var(--surface); }
+.cta-strip .btn-ghost { color:var(--surface); border-color:rgba(255,255,255,.18); }
+
+footer { background:var(--bg); padding:48px 32px 24px; }
+.f-foot { max-width:1280px; margin:0 auto; padding-top:24px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font:400 12.5px/1 var(--f-tc); color:var(--muted); }
+
+@media (max-width:960px) {
+  .page-hero h1 { font-size:44px; }
+  .story-grid, .metrics, .values, .team-grid, .investors { grid-template-columns:1fr; }
+  .nav .links { display:none; }
+}
+
+.theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; }
+.theme-toggle:hover { background: var(--surface-3); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="/landing.html"><span class="logo">R</span><span>RegMaster</span></a>
+  <div class="links">
+    <a href="/pricing.html">方案</a>
+    <a href="/features.html">功能</a>
+    <a href="/about.html" class="on">關於</a>
+    <a href="/contact.html">聯絡</a>
+  </div>
+  <div class="actions">
+    <button class="theme-toggle" id="themeToggle">🌗</button>
+    <button class="theme-toggle" id="langToggle">中/EN</button>
+    <a href="/login.html" class="btn btn-quiet btn-sm">登入</a>
+    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm">免費試用</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <div class="eyebrow">ABOUT REGMASTER</div>
+    <h1>讓辦活動的人，<br>能<em>專心辦活動</em>。</h1>
+    <p>RegMaster 創立於 2023 年的台北。我們相信，活動主辦方該把時間花在內容與參與者，而不是表單、Excel 與信件。</p>
+  </div>
+</section>
+
+<section>
+  <div class="story-grid">
+    <div class="story">
+      <div class="eyebrow" style="font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:14px;">OUR STORY</div>
+      <h2 style="font:700 36px/1.1 var(--f-display); letter-spacing:-.02em; margin-bottom:24px">從一場崩潰的<br>黑客松開始</h2>
+      <p class="lead">2022 年，我們其中一位共同創辦人正在籌辦一場 800 人的校園黑客松。報名表用 Google Form、繳費用 ATM 對帳、名單用 Excel、通知用群組信。活動前一週，他連續熬了 5 個晚上。</p>
+      <p>而他發現：辦活動的人，從來不缺熱忱，缺的是一個讓熱忱不被消耗的工具。Typeform 太貴、KKTIX 太僵硬、Eventbrite 不會開發票⋯⋯ 沒有一套產品，是真的為「會在台灣辦活動的人」而設計的。</p>
+      <p>於是 RegMaster 誕生了。我們花了 14 個月，跟 60 位主辦方訪談、跑了 12 個 Beta 客戶。直到今天，我們依然每週和客戶聊天，把每一個小痛點寫進 roadmap。</p>
+      <blockquote>
+        我們不是在賣 SaaS。我們是在還主辦方一個睡好覺的權利。
+        <cite>— 王立翰，RegMaster 共同創辦人</cite>
+      </blockquote>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-yr">2022.10</div><div class="tl-body"><h4>崩潰的那場黑客松</h4><p>創辦人在連續 5 個熬夜後，決定動手寫第一版。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2023.03</div><div class="tl-body"><h4>共同創辦人加入</h4><p>3 位前 Google / Dcard 工程師全職投入。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2023.07</div><div class="tl-body"><h4>Beta 上線</h4><p>12 位種子客戶開始使用，跑出第一筆收費報名。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2024.01</div><div class="tl-body"><h4>Pre-A 種子輪</h4><p>由心元資本、AppWorks 領投，完成 NT$ 2,800 萬募資。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2024.06</div><div class="tl-body"><h4>正式對外開放</h4><p>v2 上線，達 200 場次活動 / 月。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2025.04</div><div class="tl-body"><h4>AI 助理發表</h4><p>內建 Gemini 智慧客服，響應主辦方深夜的求救。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2026.05</div><div class="tl-body"><h4>v3 全面改版 / 1,840 場次</h4><p>累計 12.8 萬報名人次，年增 410%。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--surface-2)">
+  <div class="section-head">
+    <div class="eyebrow">BY THE NUMBERS</div>
+    <h2>很多數字會說謊，<br>但這些不會。</h2>
+  </div>
+  <div class="metrics">
+    <div><div class="num"><em>1,840</em>+</div><div class="lbl">場次成功舉辦</div><div class="desc">從 50 人小型工作坊到 4,000 人音樂節皆涵蓋</div></div>
+    <div><div class="num"><em>128</em>k</div><div class="lbl">累積報名人次</div><div class="desc">每月新增約 2.8 萬筆，年增 410%</div></div>
+    <div><div class="num"><em>99.97</em>%</div><div class="lbl">SLA 實際可用性</div><div class="desc">過去 12 個月平均，超越 99.9% 承諾</div></div>
+    <div><div class="num"><em>4.9</em>/5</div><div class="lbl">客戶滿意度 NPS</div><div class="desc">基於 1,200+ 主辦方真實回饋</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <div class="eyebrow">OUR VALUES</div>
+    <h2>四件事讓我們<br>晚上睡得著</h2>
+  </div>
+  <div class="values">
+    <div class="val"><div class="ic-tag">01</div><h4>客戶不是用戶</h4><p>每一通客戶電話我們都接。每週工程師會輪流值班 ✦Customer Hour，直接和主辦方對話、改 bug。</p></div>
+    <div class="val"><div class="ic-tag">02</div><h4>產品要可被推薦</h4><p>我們衡量自己的不是 MAU，是 NPS。如果產品不夠好到讓客戶主動推薦，那它還沒做完。</p></div>
+    <div class="val"><div class="ic-tag">03</div><h4>速度勝過完美</h4><p>我們每天部署。功能小步推出、即時收回饋。把完美主義留給最後 1%，不是前 99%。</p></div>
+    <div class="val"><div class="ic-tag">04</div><h4>資安沒有捷徑</h4><p>所有資料 AES-256 加密、ISO 27001 認證。客戶的個資是我們存在的基礎，不是 KPI。</p></div>
+    <div class="val"><div class="ic-tag">05</div><h4>誠實的定價</h4><p>沒有藏起來的「未公開選項」、沒有「聯絡業務才告訴你」的數字。價目表寫了什麼，就是什麼。</p></div>
+    <div class="val"><div class="ic-tag">06</div><h4>在地深耕</h4><p>我們在台北，懂統編、二聯、三聯、退費條款、勞健保。不是套用美國 SaaS 的公司。</p></div>
+  </div>
+</section>
+
+<section style="background:var(--surface-2)">
+  <div class="section-head">
+    <div class="eyebrow">TEAM</div>
+    <h2>22 個人，<br>一個共同的執念</h2>
+    <p>來自 Google、Dcard、Appier、街口、KKTIX 的工程師、設計師與業務。</p>
+  </div>
+  <div class="team-grid">
+    <div class="member"><div class="ph av-grad-2" style="width:80px;height:80px;border-radius:50%;display:grid;place-items:center;font:700 28px/1 var(--f-display);color:white">王</div><h5>王立翰</h5><div class="role">CEO · 共同創辦人</div><div class="bio">前 Dcard 產品總監。台大資工畢，連續創業者，第三家公司。</div></div>
+    <div class="member"><div class="ph av-grad-1" style="width:80px;height:80px;border-radius:50%;display:grid;place-items:center;font:700 28px/1 var(--f-display);color:white">林</div><h5>林思齊</h5><div class="role">CTO · 共同創辦人</div><div class="bio">前 Google 工程主管，11 年雲端架構經驗。喜歡跑馬拉松。</div></div>
+    <div class="member"><div class="ph av-grad-3" style="width:80px;height:80px;border-radius:50%;display:grid;place-items:center;font:700 28px/1 var(--f-display);color:white">陳</div><h5>陳美樺</h5><div class="role">Head of Design</div><div class="bio">前 Appier 設計總監，IxDA 台北會長。咖啡因依存者。</div></div>
+    <div class="member"><div class="ph av-grad-4" style="width:80px;height:80px;border-radius:50%;display:grid;place-items:center;font:700 28px/1 var(--f-display);color:white">張</div><h5>張依瑋</h5><div class="role">Head of Customer</div><div class="bio">前 KKTIX 客戶成長總監。15 年活動產業經驗。</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head" style="text-align:center; margin-left:auto; margin-right:auto">
+    <div class="eyebrow" style="display:inline-flex">BACKED BY</div>
+    <h2 style="margin-left:auto; margin-right:auto">支持我們的人，<br>跟我們一樣相信主辦方值得更好。</h2>
+  </div>
+  <div class="investors">
+    <div class="item">心元資本</div>
+    <div class="item">AppWorks</div>
+    <div class="item">中華開發創投</div>
+    <div class="item">Hive Ventures</div>
+    <div class="item">Dcard 創辦人</div>
+  </div>
+</section>
+
+<section class="cta-strip">
+  <h2>有興趣加入嗎？</h2>
+  <p>我們正在招募工程師、設計師、客戶成功經理。</p>
+  <div class="flex aic gap-3 jcc">
+    <a href="/contact.html?topic=careers" class="btn btn-accent btn-lg">看職缺</a>
+    <a href="/contact.html" class="btn btn-ghost btn-lg">或直接聊聊</a>
+  </div>
+</section>
+
+<footer>
+  <div class="f-foot">
+    <span>© 2026 RegMaster · Made with ☕ in Taipei</span>
+    <span class="mono">SOC 2 · ISO 27001 · 個資法合規</span>
+  </div>
+</footer>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+  document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
+  document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); location.reload(); });
+})();
+</script>
+</body>
+</html>

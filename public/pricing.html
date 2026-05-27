@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方案定價 · RegMaster</title>
+<meta name="description" content="RegMaster 透明定價：免費版到 Team 版。月付 / 年付彈性。所有方案皆含金流串接、Email 通知、QR 報到。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<style>
+.nav { position:sticky; top:0; z-index:50; height:64px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+.nav .links { display:flex; gap:4px; margin-left:48px; flex:1; }
+.nav .links a { padding:8px 14px; font:500 13.5px/1 var(--f-tc); color:var(--ink-3); border-radius:6px; }
+.nav .links a:hover, .nav .links a.on { color:var(--ink); background:var(--surface-2); }
+.nav .actions { display:flex; align-items:center; gap:10px; }
+
+.page-hero { padding:80px 32px 48px; text-align:center; border-bottom:1px solid var(--hairline); background: radial-gradient(800px 400px at 50% 0%, rgba(61,107,255,.06), transparent 60%); }
+.page-hero .eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--acc); margin-bottom:14px; }
+.page-hero h1 { font:800 64px/1.04 var(--f-display); letter-spacing:-.028em; margin-bottom:18px; }
+.page-hero h1 em { font-style:normal; background:linear-gradient(120deg, var(--acc), var(--amber-500)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.page-hero p { max-width:560px; margin:0 auto; font:400 17px/1.55 var(--f-tc); color:var(--ink-3); }
+
+.cycle-toggle { display:inline-flex; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; margin-top:32px; gap:0; }
+.cycle-toggle button { padding:9px 20px; border-radius:999px; font:500 13.5px/1 var(--f-tc); color:var(--muted); transition:.15s; }
+.cycle-toggle button.on { background:var(--ink); color:var(--surface); }
+.cycle-toggle .save { color:var(--ok-700); font:600 11px/1 var(--f-mono); margin-left:4px; padding:2px 6px; background:rgba(16,185,129,.12); border-radius:999px; }
+
+section { padding:64px 32px; border-bottom:1px solid var(--hairline); }
+.container { max-width:1280px; margin:0 auto; }
+
+.plans-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; max-width:1280px; margin:0 auto; }
+.plan { background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:32px; display:flex; flex-direction:column; position:relative; }
+.plan.featured { background:var(--ink); color:var(--surface); border-color:var(--ink); transform:translateY(-8px); box-shadow:var(--sh-xl); }
+.plan.featured h3, .plan.featured .price-num { color:var(--surface); }
+.plan.featured p, .plan.featured ul li { color:rgba(255,255,255,.78); }
+.plan.featured ul li::before { color:var(--blue-300); }
+.plan.featured .price-foot { color:rgba(255,255,255,.5); }
+.plan .badge-feat { position:absolute; top:-12px; left:32px; padding:5px 12px; background:var(--amber-500); color:white; font:600 11px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; border-radius:999px; }
+.plan h3 { font:700 20px/1.2 var(--f-display); margin-bottom:6px; }
+.plan p.tag { font:400 13px/1.5 var(--f-tc); color:var(--ink-3); margin-bottom:24px; min-height:40px; }
+.plan .price { display:flex; align-items:baseline; gap:4px; margin-bottom:4px; }
+.plan .price-num { font:800 44px/1 var(--f-display); letter-spacing:-.024em; }
+.plan .price-cur { font:500 14px/1 var(--f-tc); color:var(--muted); }
+.plan .price-suf { font:400 13px/1 var(--f-tc); color:var(--muted); }
+.plan .price-foot { font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-bottom:24px; min-height:18px; }
+.plan ul { list-style:none; flex:1; margin-bottom:24px; }
+.plan ul li { font:400 13.5px/1.55 var(--f-tc); color:var(--ink-2); padding:6px 0 6px 22px; position:relative; }
+.plan ul li::before { content:'✓'; position:absolute; left:0; top:6px; color:var(--ok-500); font-weight:700; }
+.plan ul li b { font-weight:600; color:inherit; }
+.plan ul li.muted { color:var(--muted-2); }
+.plan ul li.muted::before { content:'—'; color:var(--muted-2); }
+
+.cmp-table { max-width:1280px; margin:0 auto; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface); }
+.cmp-table table { width:100%; border-collapse:collapse; }
+.cmp-table thead th { padding:18px 20px; text-align:center; font:600 14px/1.2 var(--f-display); border-bottom:1px solid var(--line); border-right:1px solid var(--line-2); background:var(--surface-2); }
+.cmp-table thead th:first-child { text-align:left; font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.cmp-table thead th .pn { font:800 18px/1 var(--f-display); letter-spacing:-.014em; }
+.cmp-table thead th .pp { font:500 12px/1.4 var(--f-mono); color:var(--muted); margin-top:4px; }
+.cmp-table thead th.feat .pn { color:var(--acc); }
+.cmp-table tbody td { padding:14px 20px; border-bottom:1px solid var(--line-2); border-right:1px solid var(--line-2); text-align:center; font:400 13.5px/1.4 var(--f-tc); color:var(--ink-2); }
+.cmp-table tbody td:first-child { text-align:left; color:var(--ink-3); font-size:13px; }
+.cmp-table tbody tr.section-row td { background:var(--surface-2); font:500 11px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--muted); padding:12px 20px; }
+.cmp-table tbody td .y { color:var(--ok-700); font-weight:600; }
+.cmp-table tbody td .n { color:var(--muted-2); }
+.cmp-table tbody td b { color:var(--ink); font-weight:600; }
+
+.faq-grid { max-width:980px; margin:0 auto; border-top:1px solid var(--line); }
+.faq-item { border-bottom:1px solid var(--line); padding:22px 0; }
+.faq-item summary { display:flex; justify-content:space-between; align-items:center; font:600 16px/1.4 var(--f-display); cursor:pointer; list-style:none; }
+.faq-item summary::-webkit-details-marker { display:none; }
+.faq-item summary .plus { width:22px; height:22px; display:grid; place-items:center; border:1px solid var(--line); border-radius:6px; font:400 16px/1 var(--f-mono); color:var(--muted); transition:.2s; }
+.faq-item[open] summary .plus { transform:rotate(45deg); background:var(--ink); color:var(--surface); border-color:var(--ink); }
+.faq-item p { margin-top:12px; font:400 14px/1.65 var(--f-tc); color:var(--ink-3); max-width:720px; }
+
+.cta-strip { background:var(--ink); color:var(--surface); padding:56px 32px; text-align:center; }
+.cta-strip h2 { font:700 36px/1.2 var(--f-display); letter-spacing:-.018em; margin-bottom:10px; }
+.cta-strip p { color:rgba(255,255,255,.7); margin-bottom:24px; font:400 15px/1.5 var(--f-tc); }
+.cta-strip .btn-accent { background:var(--surface); color:var(--ink); border-color:var(--surface); }
+.cta-strip .btn-accent:hover { background:var(--blue-100); border-color:var(--blue-100); }
+.cta-strip .btn-ghost { color:var(--surface); border-color:rgba(255,255,255,.18); }
+.cta-strip .btn-ghost:hover { background:rgba(255,255,255,.08); }
+
+footer { background:var(--bg); padding:48px 32px 24px; }
+.f-inner { max-width:1280px; margin:0 auto; }
+.f-foot { display:flex; justify-content:space-between; padding-top:24px; border-top:1px solid var(--line); font:400 12.5px/1 var(--f-tc); color:var(--muted); }
+
+@media (max-width:960px) { .plans-row { grid-template-columns:1fr 1fr; } .plan.featured { transform:none; } .page-hero h1 { font-size:40px; } .cmp-table { display:none; } }
+
+.section-head { max-width:1280px; margin:0 auto 36px; text-align:center; }
+.section-head h2 { font:700 36px/1.1 var(--f-display); letter-spacing:-.018em; margin-bottom:8px; }
+.section-head p { color:var(--ink-3); font:400 15px/1.5 var(--f-tc); }
+
+.theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; }
+.theme-toggle:hover { background: var(--surface-3); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="/landing.html">
+    <span class="logo">R</span><span>RegMaster</span>
+  </a>
+  <div class="links">
+    <a href="/pricing.html" class="on">方案</a>
+    <a href="/features.html">功能</a>
+    <a href="/about.html">關於</a>
+    <a href="/contact.html">聯絡</a>
+  </div>
+  <div class="actions">
+    <button class="theme-toggle" id="themeToggle">🌗</button>
+    <button class="theme-toggle" id="langToggle">中/EN</button>
+    <a href="/login.html" class="btn btn-quiet btn-sm">登入</a>
+    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm">免費試用</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="eyebrow">PRICING</div>
+  <h1>從免費開始<br>用得越多<em>越划算</em>。</h1>
+  <p>透明定價、無隱藏費用、隨時可降級或取消。所有方案皆包含金流串接、Email 通知、QR 報到。</p>
+  <div class="cycle-toggle" id="cycleToggle">
+    <button data-cycle="m">月付</button>
+    <button class="on" data-cycle="y">年付 <span class="save">省 20%</span></button>
+  </div>
+</section>
+
+<section style="padding-top:48px">
+  <div class="plans-row">
+    <div class="plan">
+      <h3>免費版 Free</h3>
+      <p class="tag">想先試試水溫，或一年只辦 1 場小活動</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">/永久免費</span></div>
+      <div class="price-foot">無需信用卡</div>
+      <ul>
+        <li><b>1</b> 個進行中活動</li>
+        <li>每活動 <b>50</b> 筆報名</li>
+        <li>金流（手續費 <b>5%</b>）</li>
+        <li>Email 通知</li>
+        <li>基礎統計儀表板</li>
+        <li class="muted">QR 報到</li>
+        <li class="muted">AI 助理</li>
+        <li class="muted">證書 / 名牌</li>
+      </ul>
+      <a href="/signup.html?plan=free" class="btn btn-ghost btn-block">開始使用</a>
+    </div>
+
+    <div class="plan">
+      <h3>入門版 Starter</h3>
+      <p class="tag">適合單次活動、小型工作室</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num" data-price-m="590" data-price-y="472">472</span><span class="price-suf">/月</span></div>
+      <div class="price-foot" data-foot-m="月付方案" data-foot-y="年付 NT$ 5,664（月付為 NT$ 590）">年付 NT$ 5,664（月付為 NT$ 590）</div>
+      <ul>
+        <li><b>5</b> 個進行中活動</li>
+        <li>每活動 <b>500</b> 筆報名</li>
+        <li>金流（手續費 <b>1%</b>）</li>
+        <li>Email + LINE 通知</li>
+        <li><b>QR 報到</b></li>
+        <li>條件邏輯表單</li>
+        <li class="muted">AI 助理</li>
+        <li class="muted">3 位協作管理員</li>
+      </ul>
+      <a href="/signup.html?plan=starter" class="btn btn-ghost btn-block">升級 Starter</a>
+    </div>
+
+    <div class="plan featured">
+      <span class="badge-feat">Most Popular</span>
+      <h3>專業版 Pro</h3>
+      <p class="tag">學校 / 中型機構 · 完整功能 · 含 AI</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num" data-price-m="1490" data-price-y="1192">1,192</span><span class="price-suf">/月</span></div>
+      <div class="price-foot" data-foot-m="月付方案" data-foot-y="年付 NT$ 14,304（月付為 NT$ 1,490）">年付 NT$ 14,304（月付為 NT$ 1,490）</div>
+      <ul>
+        <li><b>無限</b> 進行中活動</li>
+        <li>每活動 <b>5,000</b> 筆報名</li>
+        <li>金流（手續費 <b>1%</b>，含發票）</li>
+        <li><b>AI 助理</b> 5,000 次/月</li>
+        <li>名牌 / 證書產生</li>
+        <li><b>3</b> 位協作管理員</li>
+        <li>客製化網域</li>
+        <li>API 存取</li>
+      </ul>
+      <a href="/signup.html?plan=pro" class="btn btn-accent btn-block">升級 Pro →</a>
+    </div>
+
+    <div class="plan">
+      <h3>團隊版 Team</h3>
+      <p class="tag">大型機構 / 政府單位 / 跨團隊協作</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">3,990</span><span class="price-suf">/月起</span></div>
+      <div class="price-foot">依規模客製報價</div>
+      <ul>
+        <li><b>無限</b> 活動 + 報名</li>
+        <li>金流（手續費 <b>0.6%</b>）</li>
+        <li><b>無限</b> AI 助理</li>
+        <li><b>無限</b> 管理員 + 角色權限</li>
+        <li>SSO / SAML 單一登入</li>
+        <li>SLA 99.95% 保證</li>
+        <li>專屬客戶經理</li>
+        <li>專案導入服務</li>
+      </ul>
+      <a href="/contact.html?topic=team-plan" class="btn btn-primary btn-block">聯繫業務</a>
+    </div>
+  </div>
+
+  <p class="text-c mute mt-6" style="font:400 12.5px/1.5 var(--f-tc); margin-top:32px">
+    年付方案享 20% 折扣 · 所有金額未含稅 · NT$ = 新台幣 · 接受發票申請統編
+  </p>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>逐項比較</h2>
+    <p>看清楚每一分錢買到了什麼。</p>
+  </div>
+  <div class="cmp-table container">
+    <table>
+      <thead>
+        <tr>
+          <th>功能</th>
+          <th><div class="pn">Free</div><div class="pp">$0</div></th>
+          <th><div class="pn">Starter</div><div class="pp">$472/月</div></th>
+          <th class="feat"><div class="pn">Pro</div><div class="pp">$1,192/月</div></th>
+          <th><div class="pn">Team</div><div class="pp">客製</div></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section-row"><td colspan="5">活動容量</td></tr>
+        <tr><td>進行中活動數</td><td>1</td><td>5</td><td><b>無限</b></td><td><b>無限</b></td></tr>
+        <tr><td>每活動報名上限</td><td>50</td><td>500</td><td><b>5,000</b></td><td><b>無限</b></td></tr>
+        <tr><td>歷史活動保留</td><td>3 個月</td><td>1 年</td><td><b>3 年</b></td><td><b>永久</b></td></tr>
+        <tr class="section-row"><td colspan="5">金流與發票</td></tr>
+        <tr><td>金流串接（信用卡 / ATM / 超商 / LINE Pay）</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>平台手續費（每筆）</td><td>5%</td><td>1%</td><td><b>1%</b></td><td><b>0.6%</b></td></tr>
+        <tr><td>電子發票自動寄送</td><td><span class="n">—</span></td><td>—</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>B2B 三聯發票</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr class="section-row"><td colspan="5">表單與報名</td></tr>
+        <tr><td>拖放式表單設計器</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>條件邏輯欄位</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>多階段表單</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>檔案上傳欄位</td><td>5 MB</td><td>50 MB</td><td><b>500 MB</b></td><td><b>無限</b></td></tr>
+        <tr class="section-row"><td colspan="5">報到與證書</td></tr>
+        <tr><td>QR Code 報到</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>名牌 / 證書 PDF 產生</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>批次寄送證書</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr class="section-row"><td colspan="5">AI 助理</td></tr>
+        <tr><td>智慧問答（給報名者）</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><b>5,000 次/月</b></td><td><b>無限</b></td></tr>
+        <tr><td>AI 撰寫 Email / 公告</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>AI 摘要報名動態</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr class="section-row"><td colspan="5">協作與權限</td></tr>
+        <tr><td>協作管理員</td><td>1</td><td>1</td><td><b>3</b></td><td><b>無限</b></td></tr>
+        <tr><td>角色權限管理（RBAC）</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>SSO / SAML</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>稽核日誌</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td>30 天</td><td><b>1 年</b></td></tr>
+        <tr class="section-row"><td colspan="5">支援</td></tr>
+        <tr><td>客服管道</td><td>Email</td><td>Email</td><td><b>Email + LINE</b></td><td><b>專屬經理</b></td></tr>
+        <tr><td>SLA 保證可用性</td><td>—</td><td>99%</td><td>99.5%</td><td><b>99.95%</b></td></tr>
+        <tr><td>導入訓練</td><td>—</td><td>—</td><td>2 hr 線上</td><td><b>客製</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>關於付費，你可能想問</h2>
+  </div>
+  <div class="faq-grid">
+    <details class="faq-item" open>
+      <summary>可以隨時升級或降級嗎？<span class="plus">+</span></summary>
+      <p>當然。升級立即生效，差額按比例計算；降級於下個計費週期生效，原方案功能保留至週期結束。</p>
+    </details>
+    <details class="faq-item">
+      <summary>金流的 1% 手續費怎麼計算？<span class="plus">+</span></summary>
+      <p>以報名者實際付款金額為基準，扣除後撥款至你綁定的銀行帳戶。例如報名費 NT$ 1,500，平台手續費為 NT$ 15。發卡銀行的卡費（約 1.55–2.75%）由 PayUni 直接結算，不額外向主辦方收取。</p>
+    </details>
+    <details class="faq-item">
+      <summary>有提供學校 / 非營利組織折扣嗎？<span class="plus">+</span></summary>
+      <p>有。教育單位、立案的非營利組織可享 Pro 方案 30% 折扣，請以機構信箱聯繫業務索取折扣碼。</p>
+    </details>
+    <details class="faq-item">
+      <summary>免費版會強制升級嗎？<span class="plus">+</span></summary>
+      <p>不會。免費版是真的永久免費，沒有時間限制、沒有功能解鎖倒數。只有當你超過 50 筆報名上限時，才需要升級或刪除既有資料。</p>
+    </details>
+    <details class="faq-item">
+      <summary>退費政策？<span class="plus">+</span></summary>
+      <p>所有付費方案皆享 14 天無條件退費。超過 14 天後若中途取消，將按未使用月份比例退款。年付方案的金流手續費部分不退費。</p>
+    </details>
+    <details class="faq-item">
+      <summary>能開立統編 / 三聯式發票嗎？<span class="plus">+</span></summary>
+      <p>可以。在帳務設定填寫公司資訊與統編，每月自動產生並寄送三聯式電子發票至指定信箱。</p>
+    </details>
+  </div>
+</section>
+
+<section class="cta-strip" style="border-bottom:0">
+  <h2>還在猶豫？</h2>
+  <p>免費方案就能跑完整個流程。試用看看，不滿意再聊。</p>
+  <div class="flex aic gap-3 jcc">
+    <a href="/signup.html?plan=trial" class="btn btn-accent btn-lg">免費開始</a>
+    <a href="/contact.html?topic=sales" class="btn btn-ghost btn-lg">和業務聊聊</a>
+  </div>
+</section>
+
+<footer>
+  <div class="f-inner">
+    <div class="f-foot">
+      <span>© 2026 RegMaster · Made with ☕ in Taipei</span>
+      <span class="mono">SOC 2 · ISO 27001 · 個資法合規</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark');
+  });
+  document.getElementById('langToggle').addEventListener('click', function () {
+    AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en');
+    location.reload();
+  });
+
+  // Cycle toggle (month / year) - swaps prices in-place
+  document.querySelectorAll('#cycleToggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#cycleToggle button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var cycle = b.dataset.cycle; // 'm' or 'y'
+      // Swap any element with data-price-m / data-price-y
+      document.querySelectorAll('[data-price-m]').forEach(function (el) {
+        el.textContent = (cycle === 'y' ? el.dataset.priceY : el.dataset.priceM).replace(/(\d)(?=(\d{3})+$)/g, '$1,');
+      });
+      document.querySelectorAll('[data-foot-m]').forEach(function (el) {
+        el.textContent = cycle === 'y' ? el.dataset.footY : el.dataset.footM;
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
