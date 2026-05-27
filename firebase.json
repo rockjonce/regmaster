@@ -11,6 +11,10 @@
       { "source": "/admin/events/*/checkin",       "destination": "/admin/events/checkin.html" },
       { "source": "/admin/events/*",               "destination": "/admin/events/hub.html" },
       { "source": "/admin/super",                  "destination": "/admin/super.html" },
+      {
+        "_comment": "Legacy SPA fallback during the 3-month overlap (per Q6). Any path that doesn't match a static file falls through to legacy. New v3 root is public/index.html (was landing.html).",
+        "source": "/legacy/**",                    "destination": "/legacy/index.html"
+      },
       { "source": "**",                             "destination": "/index.html" }
     ]
   },
