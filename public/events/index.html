@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>探索活動 · RegMaster</title>
+<meta name="description" content="找一場值得參加的活動。RegMaster 上有來自學校、企業、社群的數百場活動。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+.nav { position:sticky; top:0; z-index:50; height:64px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:inherit; }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+.nav .links { display:flex; gap:4px; margin-left:48px; flex:1; }
+.nav .links a { padding:8px 14px; font:500 13.5px/1 var(--f-tc); color:var(--ink-3); border-radius:6px; }
+.nav .links a:hover, .nav .links a.on { color:var(--ink); background:var(--surface-2); }
+.nav .actions { display:flex; gap:10px; align-items:center; }
+.theme-toggle { padding:6px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); font:500 12px/1 var(--f-tc); cursor:pointer; }
+
+.page-hero { padding:48px 32px 24px; background:var(--bg); border-bottom:1px solid var(--hairline); position:relative; overflow:hidden; }
+.page-hero::before { content:''; position:absolute; inset:0; background-image:linear-gradient(var(--hairline) 1px, transparent 1px),linear-gradient(90deg, var(--hairline) 1px, transparent 1px); background-size:60px 60px; mask:radial-gradient(ellipse 50% 70% at 80% 50%, black, transparent 70%); -webkit-mask:radial-gradient(ellipse 50% 70% at 80% 50%, black, transparent 70%); }
+.page-hero > * { position:relative; }
+.hero-inner { max-width:1280px; margin:0 auto; }
+.hero-eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--acc); margin-bottom:14px; }
+.hero-inner h1 { font:700 44px/1.08 var(--f-display); letter-spacing:-.022em; margin-bottom:12px; }
+.hero-inner h1 em { font-style:normal; background:linear-gradient(120deg,var(--acc),var(--amber-500)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.hero-inner p { font:400 16px/1.55 var(--f-tc); color:var(--ink-3); max-width:560px; margin-bottom:24px; }
+
+.search-bar { max-width:1280px; margin:0 auto; display:grid; grid-template-columns:1fr 200px 140px; gap:0; padding:8px; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--sh); }
+.search-bar > * { border:0; padding:14px 18px; font:400 14px/1.4 var(--f-tc); background:transparent; }
+.search-bar > *:not(:last-child) { border-right:1px solid var(--line-2); }
+.search-bar input { color:var(--ink); outline:0; }
+.search-bar input::placeholder { color:var(--muted); }
+.search-bar select { color:var(--ink-2); cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2398a2ad' d='M6 9L1 4h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; outline:0; }
+.search-bar button { background:var(--ink); color:var(--surface); border-radius:8px; font:600 13.5px/1 var(--f-tc); cursor:pointer; transition:.15s; }
+.search-bar button:hover { background:var(--ink-2); }
+
+.quick-chips { max-width:1280px; margin:24px auto 0; display:flex; flex-wrap:wrap; gap:8px; }
+.qchip { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:var(--surface); border:1px solid var(--line); border-radius:999px; font:500 13px/1 var(--f-tc); color:var(--ink-2); cursor:pointer; transition:.15s; }
+.qchip:hover { border-color:var(--ink-3); }
+.qchip.on { background:var(--ink); border-color:var(--ink); color:white; }
+.qchip .dot-c { width:8px; height:8px; border-radius:50%; }
+.qchip em { color:var(--muted); font-style:normal; font-weight:500; }
+
+.sort-row { max-width:1280px; margin:32px auto 16px; padding:0 32px; display:flex; align-items:center; }
+.sort-row .results-meta { font:500 13px/1 var(--f-tc); color:var(--ink-2); flex:1; }
+.sort-row .results-meta strong { color:var(--ink); font-weight:700; }
+.sort-row .toggles { display:flex; gap:4px; padding:3px; background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.sort-row .toggles button { padding:6px 12px; border-radius:6px; font:500 12px/1 var(--f-tc); color:var(--muted); cursor:pointer; }
+.sort-row .toggles button.on { background:var(--ink); color:var(--surface); }
+
+.shell { max-width:1280px; margin:0 auto; padding:0 32px 64px; display:grid; grid-template-columns:240px 1fr; gap:32px; }
+
+aside.filters { padding:24px 0; }
+.filter-group { padding:16px 0; border-bottom:1px solid var(--line-2); }
+.filter-group:first-of-type { padding-top:0; }
+.filter-group h5 { font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+.filter-group h5 .clear { font:400 11px/1 var(--f-tc); color:var(--muted); cursor:pointer; text-transform:none; letter-spacing:0; }
+.filter-group label { display:flex; align-items:center; gap:8px; padding:5px 0; font:400 13.5px/1.4 var(--f-tc); color:var(--ink-2); cursor:pointer; }
+.filter-group label .ck { width:16px; height:16px; border:1.5px solid var(--line); border-radius:4px; flex-shrink:0; display:grid; place-items:center; }
+.filter-group input { display:none; }
+.filter-group input:checked + .ck { background:var(--ink); border-color:var(--ink); }
+.filter-group input:checked + .ck::after { content:'✓'; color:white; font:700 11px/1 var(--f-mono); }
+.filter-group label .count { margin-left:auto; font:500 11.5px/1 var(--f-mono); color:var(--muted); }
+
+.events-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+.event-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:.2s; cursor:pointer; display:flex; flex-direction:column; text-decoration:none; color:inherit; }
+.event-card:hover { transform:translateY(-2px); box-shadow:var(--sh-md); border-color:var(--ink-3); }
+
+.ev-cover { position:relative; aspect-ratio:16/9; background:var(--ink); overflow:hidden; }
+.ev-cover.c-1 { background:linear-gradient(135deg, #3D6BFF 0%, #1F3FB8 100%); }
+.ev-cover.c-2 { background:linear-gradient(135deg, #EA580C 0%, #9A2A0E 100%); }
+.ev-cover.c-3 { background:linear-gradient(135deg, #0F172A 0%, #1E293B 100%); }
+.ev-cover.c-4 { background:linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%); }
+.ev-cover.c-5 { background:linear-gradient(135deg, #059669 0%, #064E3B 100%); }
+.ev-cover.c-6 { background:linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%); }
+.ev-cover::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px); background-size:30px 30px; opacity:.7; }
+.ev-cover .label { position:absolute; top:14px; left:14px; padding:5px 10px; background:rgba(255,255,255,.94); border-radius:6px; font:600 11px/1 var(--f-mono); letter-spacing:.05em; color:var(--ink); }
+.ev-cover .label.closed { background:rgba(0,0,0,.55); color:white; }
+.ev-cover .date-stamp { position:absolute; bottom:14px; left:14px; color:white; }
+.ev-cover .date-stamp .d { font:800 32px/1 var(--f-display); letter-spacing:-.02em; }
+.ev-cover .date-stamp .m { font:500 11px/1 var(--f-mono); letter-spacing:.1em; text-transform:uppercase; opacity:.9; margin-top:4px; }
+.ev-cover .badge-bottom { position:absolute; bottom:14px; right:14px; padding:4px 9px; background:rgba(0,0,0,.5); backdrop-filter:blur(8px); border-radius:6px; color:white; font:600 11px/1 var(--f-mono); letter-spacing:.04em; display:flex; align-items:center; gap:5px; }
+.ev-cover .badge-bottom .dot-l { width:6px; height:6px; border-radius:50%; background:#34d77a; box-shadow:0 0 0 3px rgba(52,215,122,.25); }
+.ev-cover img.poster-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .3s; }
+.ev-cover img.poster-img.loaded { opacity:1; }
+
+.ev-body { padding:18px; flex:1; display:flex; flex-direction:column; }
+.ev-tags { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.ev-tags .t { padding:3px 8px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:5px; font:500 10.5px/1.3 var(--f-tc); color:var(--ink-3); }
+.ev-tags .t.acc { background:color-mix(in srgb, var(--acc) 10%, var(--surface)); border-color:color-mix(in srgb, var(--acc) 25%, var(--line)); color:var(--acc); }
+.ev-body h3 { font:700 17px/1.3 var(--f-display); letter-spacing:-.012em; margin-bottom:10px; min-height:46px; }
+.ev-meta { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; font:400 12.5px/1.5 var(--f-tc); color:var(--ink-3); }
+.ev-meta div { display:flex; gap:8px; align-items:center; }
+.ev-meta svg { width:12px; height:12px; color:var(--muted); flex-shrink:0; }
+.ev-meta b { color:var(--ink); font-weight:600; }
+
+.ev-foot { padding-top:14px; border-top:1px solid var(--line-2); display:flex; align-items:center; gap:10px; margin-top:auto; }
+.ev-foot .price { flex:1; }
+.ev-foot .price .amt { font:700 19px/1 var(--f-display); letter-spacing:-.012em; }
+.ev-foot .progress-mini { width:90px; }
+.ev-foot .progress-mini .lbl { font:500 10.5px/1 var(--f-mono); color:var(--muted); margin-bottom:4px; display:flex; justify-content:space-between; }
+.ev-foot .progress-mini .lbl strong { color:var(--ink); font-weight:600; }
+.ev-foot .progress-mini .bar { height:4px; background:var(--surface-3); border-radius:2px; overflow:hidden; }
+.ev-foot .progress-mini .bar div { height:100%; background:var(--ink); border-radius:2px; }
+.ev-foot .progress-mini .bar.warn div { background:var(--warn-500); }
+.ev-foot .progress-mini .bar.danger div { background:var(--err-500); }
+
+.empty-state { grid-column:1/-1; padding:80px 32px; text-align:center; background:var(--surface); border:1px dashed var(--line); border-radius:18px; }
+.empty-state .ic { width:64px; height:64px; margin:0 auto 18px; border-radius:50%; background:var(--surface-2); display:grid; place-items:center; font:600 28px/1 var(--f-display); color:var(--muted); }
+.empty-state h3 { font:700 22px/1.3 var(--f-display); margin-bottom:8px; }
+.empty-state p { font:400 14px/1.6 var(--f-tc); color:var(--ink-3); }
+
+.loading-state { grid-column:1/-1; padding:60px 32px; text-align:center; color:var(--muted); font:500 14px/1.5 var(--f-mono); }
+.loading-state::before { content:''; display:inline-block; width:18px; height:18px; border:2px solid var(--line); border-top-color:var(--acc); border-radius:50%; vertical-align:-4px; margin-right:10px; animation:sp 1s linear infinite; }
+@keyframes sp { to { transform:rotate(360deg); } }
+
+@media (max-width:1100px) { .events-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:780px) { .shell { grid-template-columns:1fr; } .events-grid { grid-template-columns:1fr; } .search-bar { grid-template-columns:1fr; } .nav .links { display:none; } }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="/landing.html"><span class="logo">R</span><span>RegMaster</span></a>
+  <div class="links">
+    <a href="/events/" class="on">探索活動</a>
+    <a href="/features.html">產品</a>
+    <a href="/pricing.html">方案</a>
+    <a href="/about.html">關於</a>
+  </div>
+  <div class="actions">
+    <button class="theme-toggle" id="themeToggle">🌗</button>
+    <button class="theme-toggle" id="langToggle">中/EN</button>
+    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
+    <a href="/login.html" class="btn btn-quiet btn-sm">登入</a>
+    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm">免費試用</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">DISCOVER · 探索活動</div>
+    <h1>找一場<em>值得參加</em>的活動。</h1>
+    <p id="heroSubtitle">載入活動中⋯⋯</p>
+
+    <div class="search-bar">
+      <input id="searchInput" placeholder="🔍 試試「黑客松」「研討會」「工作坊」⋯⋯">
+      <select id="categorySelect">
+        <option value="">📂 所有類別</option>
+      </select>
+      <button id="searchBtn">搜尋</button>
+    </div>
+
+    <div class="quick-chips" id="quickChips">
+      <span class="qchip on" data-cat="">🌟 全部</span>
+      <!-- categories populated dynamically -->
+    </div>
+  </div>
+</section>
+
+<div class="sort-row">
+  <span class="results-meta" id="resultsMeta">為您找到 <strong>—</strong> 場活動</span>
+  <div class="toggles" id="sortToggles">
+    <button class="on" data-sort="popular">🔥 熱門</button>
+    <button data-sort="recent">⏰ 最近開賣</button>
+    <button data-sort="upcoming">📅 即將舉辦</button>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="filters">
+    <div class="filter-group">
+      <h5>狀態</h5>
+      <label><input type="checkbox" id="filterOpen" checked><span class="ck"></span>報名中<span class="count" id="cntOpen">—</span></label>
+      <label><input type="checkbox" id="filterUpcoming"><span class="ck"></span>即將開放<span class="count" id="cntUpcoming">—</span></label>
+      <label><input type="checkbox" id="filterClosed"><span class="ck"></span>已截止<span class="count" id="cntClosed">—</span></label>
+    </div>
+    <div class="filter-group">
+      <h5>類別</h5>
+      <div id="catFilterList"><!-- populated dynamically --></div>
+    </div>
+    <div class="filter-group">
+      <h5>規模</h5>
+      <label><input type="checkbox"><span class="ck"></span>50 人以下</label>
+      <label><input type="checkbox"><span class="ck"></span>50–500 人</label>
+      <label><input type="checkbox"><span class="ck"></span>500+ 人</label>
+    </div>
+  </aside>
+
+  <div>
+    <div class="events-grid" id="eventsGrid">
+      <div class="loading-state">正在從伺服器載入活動清單⋯⋯</div>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+  document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
+  document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); location.reload(); });
+
+  var ALL = [];
+  var FILTERED = [];
+  var STATE = {
+    q: '',
+    cat: '',
+    statusFilter: { open: true, upcoming: false, closed: false },
+    sort: 'popular'
+  };
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+
+  function parseDate(s) {
+    if (!s) return null;
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    // Try yyyy-mm-dd or yyyy/mm/dd
+    var m = String(s).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    return null;
+  }
+  function fmtMonth(d) { return ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()]; }
+
+  function comp2Status(c) {
+    var dl = parseDate(c.deadline);
+    var od = parseDate(c.openDate);
+    var now = new Date();
+    if (od && now < od) return 'upcoming';
+    if (dl && now > dl) return 'closed';
+    if (c.isOpen) return 'open';
+    return 'closed';
+  }
+
+  function pickCover(idx) {
+    return 'c-' + ((idx % 6) + 1);
+  }
+
+  function renderCard(c, idx) {
+    var dl = parseDate(c.deadline) || parseDate(c.competitionDate);
+    var status = comp2Status(c);
+    var ratio = c.maxTeams > 0 ? Math.min(1, (c.teamCount || 0) / c.maxTeams) : 0;
+    var barClass = ratio > .9 ? 'danger' : ratio > .7 ? 'warn' : '';
+    var dateLabel = '';
+    if (dl) {
+      var dn = String(dl.getDate()).padStart(2,'0');
+      var mn = fmtMonth(dl);
+      var wd = ['SUN','MON','TUE','WED','THU','FRI','SAT'][dl.getDay()];
+      dateLabel = '<div class="date-stamp"><div class="d">' + (dl.getMonth()+1).toString().padStart(2,'0') + '.' + dn + '</div><div class="m">' + wd + ' · ' + mn + '</div></div>';
+    }
+    var statusLabel = status === 'open' ? '<div class="label">🎟 報名中</div>'
+                     : status === 'upcoming' ? '<div class="label">⏰ 即將開放</div>'
+                     : '<div class="label closed">已截止</div>';
+    var teamMeta = c.maxTeams > 0
+      ? '<div class="progress-mini"><div class="lbl"><span>已報名</span><strong>' + (c.teamCount||0) + ' / ' + c.maxTeams + '</strong></div><div class="bar ' + barClass + '"><div style="width:' + (ratio*100).toFixed(0) + '%"></div></div></div>'
+      : '<div class="progress-mini"><div class="lbl"><span>已報名</span><strong>' + (c.teamCount||0) + '</strong></div></div>';
+    var posterImg = c.posterUrl ? '<img class="poster-img" src="' + escapeHtml(c.posterUrl) + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\'">' : '';
+    return '<a class="event-card" href="/events/detail.html?id=' + encodeURIComponent(c.compId) + '">' +
+      '<div class="ev-cover ' + pickCover(idx) + '">' + posterImg + statusLabel + dateLabel +
+        (status === 'open' ? '<div class="badge-bottom"><span class="dot-l"></span>' + (c.teamCount||0) + ' 已報名</div>' : '') +
+      '</div>' +
+      '<div class="ev-body">' +
+        '<div class="ev-tags">' + (c.category ? '<span class="t">' + escapeHtml(c.category) + '</span>' : '') + '</div>' +
+        '<h3>' + escapeHtml(c.name || '(未命名活動)') + '</h3>' +
+        '<div class="ev-meta">' +
+          (c.competitionDate ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><b>' + escapeHtml(c.competitionDate) + '</b></div>' : '') +
+          (c.deadline ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>截止：' + escapeHtml(c.deadline) + '</div>' : '') +
+        '</div>' +
+        '<div class="ev-foot">' +
+          '<div class="price"><div class="amt">查看詳情 →</div></div>' + teamMeta +
+        '</div>' +
+      '</div></a>';
+  }
+
+  function applyFilters() {
+    var q = STATE.q.trim().toLowerCase();
+    var cat = STATE.cat;
+    FILTERED = ALL.filter(function (c) {
+      if (q) {
+        var hay = (c.name + ' ' + c.category).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      if (cat && c.category !== cat) return false;
+      var status = comp2Status(c);
+      var any = STATE.statusFilter.open || STATE.statusFilter.upcoming || STATE.statusFilter.closed;
+      if (any) {
+        if (status === 'open' && !STATE.statusFilter.open) return false;
+        if (status === 'upcoming' && !STATE.statusFilter.upcoming) return false;
+        if (status === 'closed' && !STATE.statusFilter.closed) return false;
+      }
+      return true;
+    });
+    // Sort
+    if (STATE.sort === 'popular') FILTERED.sort(function (a, b) { return (b.teamCount || 0) - (a.teamCount || 0); });
+    else if (STATE.sort === 'recent') FILTERED.sort(function (a, b) { return (b.openDate || '').localeCompare(a.openDate || ''); });
+    else if (STATE.sort === 'upcoming') FILTERED.sort(function (a, b) { return (a.competitionDate || '9999').localeCompare(b.competitionDate || '9999'); });
+    render();
+  }
+
+  function render() {
+    var grid = document.getElementById('eventsGrid');
+    document.getElementById('resultsMeta').innerHTML = '為您找到 <strong>' + FILTERED.length + '</strong> 場活動';
+    if (FILTERED.length === 0) {
+      grid.innerHTML = '<div class="empty-state"><div class="ic">🔍</div><h3>找不到符合的活動</h3><p>試試清除篩選條件，或瀏覽其他類別。</p></div>';
+      return;
+    }
+    grid.innerHTML = FILTERED.map(renderCard).join('');
+  }
+
+  function buildCategoryFilters() {
+    var cats = {};
+    ALL.forEach(function (c) { if (c.category) cats[c.category] = (cats[c.category] || 0) + 1; });
+    // <select>
+    var sel = document.getElementById('categorySelect');
+    Object.keys(cats).sort().forEach(function (k) {
+      var opt = document.createElement('option');
+      opt.value = k; opt.textContent = k + ' (' + cats[k] + ')';
+      sel.appendChild(opt);
+    });
+    // chips
+    var chipsRow = document.getElementById('quickChips');
+    Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; }).slice(0, 8).forEach(function (k) {
+      var span = document.createElement('span');
+      span.className = 'qchip';
+      span.dataset.cat = k;
+      span.innerHTML = escapeHtml(k) + ' <em>' + cats[k] + '</em>';
+      chipsRow.appendChild(span);
+    });
+    document.querySelectorAll('.qchip').forEach(function (c) {
+      c.addEventListener('click', function () {
+        document.querySelectorAll('.qchip').forEach(function (x) { x.classList.remove('on'); });
+        c.classList.add('on');
+        STATE.cat = c.dataset.cat || '';
+        document.getElementById('categorySelect').value = STATE.cat;
+        applyFilters();
+      });
+    });
+    // sidebar filter group
+    var listEl = document.getElementById('catFilterList');
+    listEl.innerHTML = Object.keys(cats).sort().map(function (k) {
+      return '<label><input type="checkbox" data-cat="' + escapeHtml(k) + '"><span class="ck"></span>' + escapeHtml(k) + '<span class="count">' + cats[k] + '</span></label>';
+    }).join('');
+  }
+
+  function updateStatusCounts() {
+    var o = 0, u = 0, c = 0;
+    ALL.forEach(function (x) {
+      var s = comp2Status(x);
+      if (s === 'open') o++; else if (s === 'upcoming') u++; else c++;
+    });
+    document.getElementById('cntOpen').textContent = o;
+    document.getElementById('cntUpcoming').textContent = u;
+    document.getElementById('cntClosed').textContent = c;
+    document.getElementById('heroSubtitle').innerHTML = 'RegMaster 上有 <strong style="color:var(--ink); font-weight:700">' + o + '</strong> 場進行中的活動，總計 ' + ALL.length + ' 場。';
+  }
+
+  // Bind controls
+  document.getElementById('searchBtn').addEventListener('click', function () { STATE.q = document.getElementById('searchInput').value; applyFilters(); });
+  document.getElementById('searchInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
+  document.getElementById('categorySelect').addEventListener('change', function (e) {
+    STATE.cat = e.target.value;
+    document.querySelectorAll('.qchip').forEach(function (x) { x.classList.toggle('on', (x.dataset.cat || '') === STATE.cat); });
+    applyFilters();
+  });
+  document.getElementById('filterOpen').addEventListener('change', function (e) { STATE.statusFilter.open = e.target.checked; applyFilters(); });
+  document.getElementById('filterUpcoming').addEventListener('change', function (e) { STATE.statusFilter.upcoming = e.target.checked; applyFilters(); });
+  document.getElementById('filterClosed').addEventListener('change', function (e) { STATE.statusFilter.closed = e.target.checked; applyFilters(); });
+  document.querySelectorAll('#sortToggles button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#sortToggles button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      STATE.sort = b.dataset.sort;
+      applyFilters();
+    });
+  });
+
+  // Honor ?q= and ?cat= from URL
+  var qs = new URLSearchParams(location.search);
+  if (qs.get('q')) { STATE.q = qs.get('q'); document.getElementById('searchInput').value = STATE.q; }
+  if (qs.get('cat')) { STATE.cat = qs.get('cat'); }
+
+  // Load events
+  google.script.run
+    .withSuccessHandler(function (list) {
+      ALL = list || [];
+      buildCategoryFilters();
+      updateStatusCounts();
+      applyFilters();
+    })
+    .withFailureHandler(function (err) {
+      document.getElementById('eventsGrid').innerHTML =
+        '<div class="empty-state"><div class="ic">⚠️</div><h3>載入失敗</h3><p>' + escapeHtml((err && err.message) || '請稍後再試') + '</p></div>';
+    })
+    .listCompetitionsPublic();
+})();
+</script>
+</body>
+</html>

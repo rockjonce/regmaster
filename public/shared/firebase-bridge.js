@@ -138,7 +138,10 @@
     // V3 Phase 2 additions
     submitContactInquiry:[],   // takes single object arg with form fields
     getOnboardingState:["username"],
-    saveOnboardingStep:["username","step","data"]
+    saveOnboardingStep:["username","step","data"],
+
+    // V3 Phase 3 additions
+    listMyRegistrationsByEmail:["email","phone"]
   };
   window._argMap = _argMap;
 

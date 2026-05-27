@@ -6,6 +6,11 @@ const { setGlobalOptions } = require("firebase-functions/v2/options");
 const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
+// V3 Phase 3: explicit modular FieldValue import.
+// Node 24 has a regression where `admin.firestore.FieldValue` becomes undefined
+// after admin.firestore() is called. Modular import is the documented modern
+// approach and is identical to the legacy namespace on every supported Node.
+const { FieldValue } = require("firebase-admin/firestore");
 const crypto = require("crypto");
 
 /* Speed up cold start: set region + concurrency globally */
@@ -33,7 +38,7 @@ function generatePassword() {
 async function auditLog(user, action, target, detail) {
   try {
     await db.collection("auditLogs").add({
-      time: fmtNow(), user: user || "system", action, target: target || "", detail: detail || "", createdAt: admin.firestore.FieldValue.serverTimestamp()
+      time: fmtNow(), user: user || "system", action, target: target || "", detail: detail || "", createdAt: FieldValue.serverTimestamp()
     });
   } catch (e) { /* silent */ }
 }
@@ -767,7 +772,7 @@ exports.submitRegistration = callable(async (data) => {
       });
 
       // Increment teamCount atomically (reuse compRef already in transaction read set)
-      tx.update(compRef, { teamCount: admin.firestore.FieldValue.increment(1) });
+      tx.update(compRef, { teamCount: FieldValue.increment(1) });
 
       return { status: txStatus, wn: txWn };
     });
@@ -1308,7 +1313,7 @@ exports.deleteTeam = compAuthCallable(async (data, request) => {
   // (cancelled teams already had their count decremented by updateTeamStatus)
   const teamStatus = teamDoc.data().status || "";
   if (compId && teamStatus !== "已取消") {
-    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(-1) });
+    await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(-1) });
   }
   await auditLog(request.authUser.username, "刪除隊伍", teamId, "");
   return { success: true };
@@ -2425,7 +2430,7 @@ exports.batchImportTeams = compAuthCallable(async (data) => {
   }
   // Update teamCount counter
   if (imported > 0) {
-    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(imported) });
+    await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(imported) });
   }
   return { success: true, message: "imported " + imported + " teams" + (errors.length ? ", errors: " + errors.length : "") };
 });
@@ -2449,9 +2454,9 @@ exports.updateTeamStatus = compAuthCallable(async (data, request) => {
   
   // MISS-02: Adjust teamCount when status changes to/from "已取消"
   if (oldStatus !== "已取消" && newStatus === "已取消" && compId) {
-    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(-1) });
+    await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(-1) });
   } else if (oldStatus === "已取消" && newStatus !== "已取消" && compId) {
-    await db.collection("competitions").doc(compId).update({ teamCount: admin.firestore.FieldValue.increment(1) });
+    await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(1) });
   }
   
   // ==========================================
@@ -2830,7 +2835,7 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
       /* Use coupon */
       if (order.couponCode) {
         const cSnap = await db.collection("coupons").where("code", "==", order.couponCode).limit(1).get();
-        if (!cSnap.empty) await cSnap.docs[0].ref.update({ usedCount: admin.firestore.FieldValue.increment(1) });
+        if (!cSnap.empty) await cSnap.docs[0].ref.update({ usedCount: FieldValue.increment(1) });
       }
       
       /* Send email to purchaser */
@@ -3135,7 +3140,7 @@ exports.submitFeedback = authCallable(["system","competition"], async (data, req
     os: (clientInfo && clientInfo.os) || "", ip: (clientInfo && clientInfo.ip) || "",
     country: (clientInfo && clientInfo.country) || "", city: (clientInfo && clientInfo.city) || "",
     status: "新建", createdAt: fmtNow(),
-    createdAtTS: admin.firestore.FieldValue.serverTimestamp()
+    createdAtTS: FieldValue.serverTimestamp()
   };
   await db.collection("feedback").add(feedbackDoc);
 
@@ -3266,13 +3271,13 @@ exports.logVisit = callable(async (data) => {
     page: safePage,
     compId: safeCompId,
     date: today,
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: FieldValue.serverTimestamp()
   });
   // Increment viewCount on the competition doc (non-fatal on failure)
   if (safeCompId) {
     try {
       await db.collection("competitions").doc(safeCompId).update({
-        viewCount: admin.firestore.FieldValue.increment(1)
+        viewCount: FieldValue.increment(1)
       });
     } catch (_e) { /* ignore - competition may have been deleted */ }
   }
@@ -3409,7 +3414,7 @@ exports.submitContactInquiry = callable(async (data) => {
     ua: String(ua || "").slice(0, 500),
     lang: String(lang || "zh").slice(0, 10),
     status: "new",
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
     createdAtStr: fmtNow()
   });
 
@@ -3438,6 +3443,69 @@ exports.submitContactInquiry = callable(async (data) => {
   await auditLog("guest", "聯絡表單", inquiryRef.id, `${category}/${topic}`);
 
   return { success: true, inquiryId: inquiryRef.id };
+});
+
+// ===== Public: list a person's registrations across events =====
+// Looks up by email OR phone (matches members.email/members.phone). Returns
+// a list of teams the person is part of. Verification mode:
+//   - "lookup": just returns the team summary (no sensitive fields)
+//   - "withCreds": also returns the team password if the requester proves they
+//     own the email by also providing teamId + matching password (server-side
+//     re-verification of teamId+pwd pair). For Phase 3 we keep it simple:
+//     return non-sensitive summary only. Password lookup remains via legacy
+//     lookupRegistration + loginTeam.
+exports.listMyRegistrationsByEmail = callable(async (data) => {
+  const { email, phone } = data || {};
+  if (!email && !phone) return { success: false, message: "請提供 Email 或電話" };
+
+  // Find members matching email or phone
+  const membersFound = new Map(); // teamId -> member info
+  if (email) {
+    const sn = await db.collection("members").where("email", "==", String(email).trim()).get();
+    sn.docs.forEach(d => { const m = d.data(); membersFound.set(m.teamId, m); });
+  }
+  if (phone) {
+    const sn = await db.collection("members").where("phone", "==", String(phone).trim()).get();
+    sn.docs.forEach(d => { const m = d.data(); if (!membersFound.has(m.teamId)) membersFound.set(m.teamId, m); });
+  }
+
+  if (membersFound.size === 0) return { success: true, registrations: [] };
+
+  // Fetch each team + its competition (skip orphans)
+  const regs = [];
+  for (const [teamId, mem] of membersFound) {
+    const tDoc = await db.collection("teams").doc(teamId).get();
+    if (!tDoc.exists) continue;
+    const t = tDoc.data();
+    if (t.status === "已取消") continue;
+    const cDoc = await db.collection("competitions").doc(t.compId).get();
+    if (!cDoc.exists) continue;
+    const c = cDoc.data();
+    const cfg = c.config || {};
+    regs.push({
+      teamId, compId: t.compId,
+      competitionName: cfg.competitionName || c.name || "",
+      competitionDate: cfg.competitionDate || "",
+      deadline: c.deadline || "",
+      status: t.status || "",
+      paymentStatus: t.paymentStatus || "",
+      group: t.group || "",
+      teamNameCN: t.teamNameCN || "",
+      teamNameEN: t.teamNameEN || "",
+      memberName: mem.chineseName || mem.englishName || "",
+      memberRole: mem.role || "",
+      registrationTime: t.registrationTime || "",
+      posterUrl: cfg.posterUrl || "",
+      category: cfg.category || "",
+      isOpen: c.isOpen === true,
+      requiresPayment: !!(cfg.registrationFee && cfg.registrationFee > 0)
+    });
+  }
+  // Sort: upcoming first, then by date desc
+  regs.sort((a, b) => {
+    return (b.registrationTime || "").localeCompare(a.registrationTime || "");
+  });
+  return { success: true, registrations: regs };
 });
 
 // ===== Onboarding state: get + save =====

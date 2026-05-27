@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的報名 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+.nav { position:sticky; top:0; z-index:50; height:60px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:inherit; }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+.nav .links { display:flex; gap:4px; margin-left:48px; flex:1; }
+.nav .links a { padding:8px 14px; font:500 13.5px/1 var(--f-tc); color:var(--ink-3); border-radius:6px; text-decoration:none; }
+.nav .links a.on { color:var(--ink); background:var(--surface-2); }
+.nav .actions { display:flex; gap:10px; align-items:center; }
+.theme-toggle { padding:6px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); font:500 12px/1 var(--f-tc); cursor:pointer; }
+
+.hero { padding:48px 32px 32px; background:linear-gradient(180deg, var(--bg) 0%, var(--surface-2) 100%); border-bottom:1px solid var(--line); position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; inset:0; background-image:linear-gradient(var(--hairline) 1px,transparent 1px),linear-gradient(90deg,var(--hairline) 1px,transparent 1px); background-size:60px 60px; mask:radial-gradient(ellipse 50% 50% at 90% 50%, black, transparent 70%); -webkit-mask:radial-gradient(ellipse 50% 50% at 90% 50%, black, transparent 70%); }
+.hero-inner { max-width:1280px; margin:0 auto; position:relative; }
+.hero-eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--acc); margin-bottom:14px; }
+.hero h1 { font:800 40px/1.06 var(--f-display); letter-spacing:-.022em; margin-bottom:8px; }
+.hero h1 em { font-style:normal; background:linear-gradient(120deg,var(--acc),var(--amber-500)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.hero p.lead { font:400 15px/1.55 var(--f-tc); color:var(--ink-3); max-width:560px; margin-bottom:24px; }
+
+.lookup-card { max-width:560px; padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:var(--sh); }
+.lookup-card h3 { font:600 14px/1.3 var(--f-display); margin-bottom:14px; }
+.lookup-card .field-stack > * { margin-bottom:12px; }
+.lookup-card .tabs { display:inline-flex; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; margin-bottom:14px; }
+.lookup-card .tabs button { padding:7px 14px; border-radius:6px; font:500 12.5px/1 var(--f-tc); color:var(--muted); cursor:pointer; }
+.lookup-card .tabs button.on { background:var(--ink); color:var(--surface); font-weight:600; }
+.lookup-card .input { width:100%; padding:10px 14px; background:var(--surface); border:1px solid var(--line); border-radius:9px; font:400 14px/1.5 var(--f-tc); color:var(--ink); }
+.lookup-card .input:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; max-width:1280px; margin:32px auto 0; }
+.kpi-row > div { background:var(--surface); padding:18px 20px; }
+.kpi-row .lbl { font:500 11px/1 var(--f-mono); color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; }
+.kpi-row .v { font:700 24px/1 var(--f-display); letter-spacing:-.018em; }
+.kpi-row .v em { font-style:normal; font-size:13px; color:var(--muted); margin-left:5px; font-weight:500; }
+
+.shell { max-width:1280px; margin:0 auto; padding:32px; }
+.tab-row { display:flex; align-items:center; padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:24px; gap:24px; flex-wrap:wrap; }
+.tab-pills { display:flex; gap:4px; padding:3px; background:var(--surface); border:1px solid var(--line); border-radius:10px; }
+.tab-pills button { padding:8px 14px; border-radius:7px; font:500 13px/1 var(--f-tc); color:var(--muted); cursor:pointer; display:flex; gap:8px; align-items:center; }
+.tab-pills button .badge-c { padding:2px 6px; background:var(--surface-2); border-radius:4px; font:600 10px/1.4 var(--f-mono); color:var(--ink-2); }
+.tab-pills button.on { background:var(--ink); color:var(--surface); font-weight:600; }
+.tab-pills button.on .badge-c { background:rgba(255,255,255,.14); color:white; }
+
+.reg-list { display:flex; flex-direction:column; gap:14px; }
+.reg-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 24px; display:grid; grid-template-columns:90px 1fr auto; gap:20px; align-items:center; transition:.15s; }
+.reg-card:hover { border-color:var(--ink-3); box-shadow:var(--sh-sm); }
+.reg-card .date-block { text-align:center; padding:10px 0; background:var(--surface-2); border:1px solid var(--line-2); border-radius:10px; }
+.reg-card .date-block .m { font:600 10px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:6px; }
+.reg-card .date-block .d { font:800 28px/1 var(--f-display); letter-spacing:-.02em; }
+.reg-card .date-block .wd { font:500 10px/1 var(--f-mono); color:var(--muted); margin-top:4px; }
+.reg-card .body h4 { font:700 16px/1.3 var(--f-display); margin-bottom:4px; }
+.reg-card .body .meta { display:flex; gap:14px; flex-wrap:wrap; font:400 12.5px/1.4 var(--f-tc); color:var(--ink-3); margin-top:6px; }
+.reg-card .body .meta .pill { padding:2px 7px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:4px; font:500 11px/1.4 var(--f-mono); color:var(--ink-2); }
+.reg-card .body .meta .pill.ok { background:rgba(16,185,129,.1); color:var(--ok-700); border-color:rgba(16,185,129,.2); }
+.reg-card .body .meta .pill.warn { background:rgba(245,158,11,.1); color:var(--warn-700); border-color:rgba(245,158,11,.2); }
+.reg-card .body .meta .pill.err { background:rgba(239,68,68,.08); color:var(--err-700); border-color:rgba(239,68,68,.2); }
+.reg-card .actions { display:flex; gap:8px; flex-direction:column; align-items:flex-end; }
+.reg-card .actions .btn { padding:8px 14px; font:500 12.5px/1 var(--f-tc); border-radius:7px; }
+.reg-card .actions .btn-primary { background:var(--ink); color:var(--surface); }
+.reg-card .actions .teamid { font:500 11px/1 var(--f-mono); color:var(--muted); }
+
+.empty-state { padding:80px 32px; text-align:center; background:var(--surface); border:1px dashed var(--line); border-radius:18px; }
+.empty-state .ic { width:64px; height:64px; margin:0 auto 18px; border-radius:50%; background:var(--surface-2); display:grid; place-items:center; font:600 28px/1 var(--f-display); color:var(--muted); }
+.empty-state h3 { font:700 22px/1.3 var(--f-display); margin-bottom:8px; }
+.empty-state p { font:400 14px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:18px; }
+
+.alert-box { padding:12px 14px; border-radius:10px; font:400 13px/1.5 var(--f-tc); margin-bottom:14px; }
+.alert-box.err { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:var(--err-700); }
+
+.skeleton { text-align:center; padding:60px 32px; color:var(--muted); font:500 14px/1.5 var(--f-mono); }
+.skeleton::before { content:''; display:inline-block; width:18px; height:18px; border:2px solid var(--line); border-top-color:var(--acc); border-radius:50%; vertical-align:-4px; margin-right:10px; animation:sp 1s linear infinite; }
+@keyframes sp { to { transform:rotate(360deg); } }
+
+@media (max-width:760px) {
+  .nav .links { display:none; }
+  .reg-card { grid-template-columns:60px 1fr; }
+  .reg-card .actions { grid-column:1 / -1; flex-direction:row; justify-content:flex-end; }
+  .kpi-row { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="/landing.html"><span class="logo">R</span><span>RegMaster</span></a>
+  <div class="links">
+    <a href="/events/">探索活動</a>
+    <a href="/my.html" class="on">我的報名</a>
+  </div>
+  <div class="actions">
+    <button class="theme-toggle" id="themeToggle">🌗</button>
+    <a href="/login.html" class="btn btn-quiet btn-sm">主辦方登入</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">MY REGISTRATIONS · 我的報名</div>
+    <h1>所有<em>已報名活動</em>一次掌握。</h1>
+    <p class="lead">輸入您報名時使用的 Email 或電話，即可查詢跨活動的所有報名記錄。</p>
+
+    <div class="lookup-card" id="lookupCard">
+      <h3>查詢我的報名</h3>
+      <div class="tabs" id="lookupTabs">
+        <button class="on" data-mode="email">📧 用 Email</button>
+        <button data-mode="phone">📱 用電話</button>
+      </div>
+      <div class="alert-box err" id="lookupErr" style="display:none"></div>
+      <div class="field-stack">
+        <input class="input" id="lookupValue" placeholder="輸入 Email" autocomplete="email">
+        <button class="btn btn-primary btn-lg btn-block" id="lookupBtn">查詢 →</button>
+      </div>
+      <p style="font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-top:14px">
+        若需查詢隊伍密碼或修改報名資料，請至活動詳情頁使用<b>隊伍編號 + 密碼</b>登入。
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="kpi-row" id="kpiRow" style="display:none">
+  <div><div class="lbl">總報名數</div><div class="v" id="kTotal">—</div></div>
+  <div><div class="lbl">即將舉辦</div><div class="v" id="kUpcoming">—</div></div>
+  <div><div class="lbl">待付款</div><div class="v" id="kUnpaid">—</div></div>
+  <div><div class="lbl">已完成</div><div class="v" id="kPaid">—</div></div>
+</div>
+
+<div class="shell" id="resultsArea" style="display:none">
+  <div class="tab-row">
+    <div class="tab-pills" id="filterTabs">
+      <button class="on" data-f="all">全部 <span class="badge-c" id="cAll">0</span></button>
+      <button data-f="upcoming">即將舉辦 <span class="badge-c" id="cUp">0</span></button>
+      <button data-f="unpaid">待付款 <span class="badge-c" id="cUnp">0</span></button>
+      <button data-f="paid">已付款 <span class="badge-c" id="cPd">0</span></button>
+      <button data-f="past">已過期 <span class="badge-c" id="cPast">0</span></button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost btn-sm" id="changeEmail">↩ 改用其他 Email</button>
+  </div>
+
+  <div class="reg-list" id="regList"></div>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+  document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function parseDate(s) {
+    if (!s) return null;
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    var m = String(s).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    return null;
+  }
+
+  var ALL = [];
+  var STATE_FILTER = 'all';
+  var lookupMode = 'email';
+
+  document.querySelectorAll('#lookupTabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#lookupTabs button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      lookupMode = b.dataset.mode;
+      var input = document.getElementById('lookupValue');
+      input.placeholder = lookupMode === 'email' ? '輸入 Email' : '輸入電話';
+      input.type = lookupMode === 'email' ? 'email' : 'tel';
+      input.autocomplete = lookupMode === 'email' ? 'email' : 'tel';
+    });
+  });
+
+  document.getElementById('lookupValue').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('lookupBtn').click();
+  });
+
+  document.getElementById('lookupBtn').addEventListener('click', function () {
+    var box = document.getElementById('lookupErr');
+    box.style.display = 'none';
+    var v = document.getElementById('lookupValue').value.trim();
+    if (!v) { box.textContent = '請輸入 ' + (lookupMode === 'email' ? 'Email' : '電話'); box.style.display = 'block'; return; }
+    if (lookupMode === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { box.textContent = 'Email 格式不正確'; box.style.display = 'block'; return; }
+
+    var btn = this;
+    btn.disabled = true; var oldText = btn.textContent;
+    btn.textContent = '查詢中⋯⋯';
+
+    var payload = lookupMode === 'email' ? { email: v, phone: '' } : { email: '', phone: v };
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = oldText;
+        if (res && res.success) {
+          ALL = res.registrations || [];
+          render();
+        } else {
+          box.textContent = (res && res.message) || '查詢失敗';
+          box.style.display = 'block';
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false; btn.textContent = oldText;
+        box.textContent = (err && err.message) || '網路錯誤';
+        box.style.display = 'block';
+      })
+      .listMyRegistrationsByEmail(payload.email, payload.phone);
+  });
+
+  document.getElementById('changeEmail').addEventListener('click', function () {
+    document.getElementById('kpiRow').style.display = 'none';
+    document.getElementById('resultsArea').style.display = 'none';
+    document.getElementById('lookupValue').value = '';
+    document.getElementById('lookupValue').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  function classifyReg(r) {
+    var now = Date.now();
+    var dl = parseDate(r.deadline);
+    var d = parseDate(r.competitionDate);
+    var paid = String(r.paymentStatus || '').indexOf('已確認') !== -1 || String(r.paymentStatus || '').indexOf('paid') !== -1;
+    if (d && d.getTime() < now - 86400000) return 'past';
+    if (!paid && r.requiresPayment) return 'unpaid';
+    if (paid) return 'paid';
+    return 'upcoming';
+  }
+
+  function statusPill(r, cls) {
+    if (cls === 'past') return '<span class="pill">已過期</span>';
+    if (cls === 'paid') return '<span class="pill ok">✓ 已付款</span>';
+    if (cls === 'unpaid') return '<span class="pill warn">待付款</span>';
+    return '<span class="pill ok">即將舉辦</span>';
+  }
+
+  function render() {
+    document.getElementById('kpiRow').style.display = 'grid';
+    document.getElementById('resultsArea').style.display = 'block';
+    var counts = { all: ALL.length, upcoming: 0, unpaid: 0, paid: 0, past: 0 };
+    ALL.forEach(function (r) { var c = classifyReg(r); counts[c]++; });
+    document.getElementById('kTotal').innerHTML = counts.all + ' <em>筆</em>';
+    document.getElementById('kUpcoming').innerHTML = counts.upcoming + ' <em>場</em>';
+    document.getElementById('kUnpaid').innerHTML = counts.unpaid + ' <em>筆</em>';
+    document.getElementById('kPaid').innerHTML = counts.paid + ' <em>筆</em>';
+    document.getElementById('cAll').textContent = counts.all;
+    document.getElementById('cUp').textContent = counts.upcoming;
+    document.getElementById('cUnp').textContent = counts.unpaid;
+    document.getElementById('cPd').textContent = counts.paid;
+    document.getElementById('cPast').textContent = counts.past;
+    document.querySelectorAll('#filterTabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('#filterTabs button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        STATE_FILTER = b.dataset.f;
+        renderList();
+      });
+    });
+    renderList();
+  }
+
+  function renderList() {
+    var list = document.getElementById('regList');
+    var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    var monthsEN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    var weekdays = ['週日','週一','週二','週三','週四','週五','週六'];
+    var filtered = ALL.filter(function (r) {
+      if (STATE_FILTER === 'all') return true;
+      return classifyReg(r) === STATE_FILTER;
+    });
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="ic">📭</div><h3>沒有符合的報名</h3><p>切換上方的篩選分類試試。</p></div>';
+      return;
+    }
+    list.innerHTML = filtered.map(function (r) {
+      var cls = classifyReg(r);
+      var d = parseDate(r.competitionDate) || parseDate(r.deadline);
+      var date = d
+        ? '<div class="date-block"><div class="m">' + monthsEN[d.getMonth()] + '</div><div class="d">' + String(d.getDate()).padStart(2,'0') + '</div><div class="wd">' + weekdays[d.getDay()] + '</div></div>'
+        : '<div class="date-block"><div class="m">DATE</div><div class="d">—</div><div class="wd">待公告</div></div>';
+      var meta = '';
+      if (r.group) meta += '<span class="pill">組別：' + escapeHtml(r.group) + '</span>';
+      if (r.teamNameCN) meta += '<span class="pill">' + escapeHtml(r.teamNameCN) + '</span>';
+      if (r.category) meta += '<span class="pill">' + escapeHtml(r.category) + '</span>';
+      meta += statusPill(r, cls);
+
+      var actions = '<a class="btn btn-ghost" href="/events/detail.html?id=' + encodeURIComponent(r.compId) + '">活動詳情</a>';
+      if (cls === 'unpaid') {
+        actions += '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>';
+      }
+      return '<div class="reg-card">' +
+        date +
+        '<div class="body"><h4>' + escapeHtml(r.competitionName) + '</h4>' +
+          '<div class="meta">' + meta + '</div>' +
+        '</div>' +
+        '<div class="actions">' + actions + '<span class="teamid">' + escapeHtml(r.teamId) + '</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Auto-trigger if ?email= in URL (e.g. from email link)
+  var qs = new URLSearchParams(location.search);
+  if (qs.get('email')) {
+    document.getElementById('lookupValue').value = qs.get('email');
+    document.getElementById('lookupBtn').click();
+  } else if (qs.get('phone')) {
+    document.querySelector('#lookupTabs button[data-mode="phone"]').click();
+    document.getElementById('lookupValue').value = qs.get('phone');
+    document.getElementById('lookupBtn').click();
+  }
+})();
+</script>
+</body>
+</html>

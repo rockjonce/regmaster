@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>付款 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+.nav { position:sticky; top:0; z-index:50; height:60px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:inherit; }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+.nav .crumbs { display:flex; align-items:center; gap:8px; margin-left:32px; font:400 13px/1 var(--f-tc); color:var(--muted); flex:1; }
+.nav .crumbs a { color:var(--ink-3); text-decoration:none; }
+.nav .crumbs .sep { color:var(--line); }
+.nav .secure { display:flex; align-items:center; gap:6px; font:500 12px/1 var(--f-mono); color:var(--ok-700); }
+
+.shell { max-width:980px; margin:32px auto; padding:0 32px 96px; }
+.page-eyebrow { font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:12px; }
+h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; margin-bottom:8px; }
+.page-sub { font:400 15px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:32px; }
+
+.row-2 { display:grid; grid-template-columns:1fr 360px; gap:32px; }
+
+.card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; margin-bottom:16px; }
+.card h3 { font:700 16px/1.2 var(--f-display); margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--line-2); }
+
+.r-row { display:flex; padding:8px 0; font:400 13.5px/1.5 var(--f-tc); }
+.r-row .k { color:var(--muted); width:120px; flex-shrink:0; }
+.r-row .v { color:var(--ink-2); flex:1; word-break:break-word; }
+.r-row .v b { color:var(--ink); font-weight:600; }
+
+.method-grid { display:grid; gap:10px; }
+.method-card { padding:14px 16px; background:var(--surface); border:1.5px solid var(--line); border-radius:11px; cursor:pointer; transition:.15s; display:flex; gap:14px; align-items:center; }
+.method-card:hover { border-color:var(--ink-3); }
+.method-card.on { border-color:var(--ink); background:var(--surface-2); box-shadow:0 0 0 3px rgba(11,28,61,.08); }
+.method-card.disabled { opacity:.45; cursor:not-allowed; }
+.method-card .ic { width:42px; height:30px; border-radius:5px; background:var(--ink); color:white; display:grid; place-items:center; font:800 9px/1 var(--f-display); flex-shrink:0; }
+.method-card .ic.visa { background:#1A1F71; }
+.method-card .ic.atm { background:#10B981; }
+.method-card .ic.cvs { background:#EF4444; }
+.method-card .ic.line { background:#06C755; }
+.method-card .ic.manual { background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line); }
+.method-card .body { flex:1; }
+.method-card .body h5 { font:600 14px/1.3 var(--f-display); margin-bottom:2px; }
+.method-card .body p { font:400 12px/1.4 var(--f-tc); color:var(--muted); margin:0; }
+.method-card .ck { width:18px; height:18px; border:1.5px solid var(--line); border-radius:50%; flex-shrink:0; display:grid; place-items:center; }
+.method-card.on .ck { border-color:var(--ink); }
+.method-card.on .ck::after { content:''; width:9px; height:9px; border-radius:50%; background:var(--ink); }
+
+.totals { padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:14px; position:sticky; top:80px; }
+.totals h4 { font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+.totals .li { display:flex; padding:8px 0; font:400 13.5px/1.5 var(--f-tc); color:var(--ink-2); }
+.totals .li .lbl { flex:1; }
+.totals .li .v { font:600 13.5px/1 var(--f-mono); }
+.totals .li.total { margin-top:8px; padding-top:14px; border-top:1px dashed var(--line); }
+.totals .li.total .lbl { font:600 14px/1.2 var(--f-display); color:var(--ink); }
+.totals .li.total .v { font:800 24px/1 var(--f-display); color:var(--ink); letter-spacing:-.012em; }
+.totals .small-note { font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:14px; padding-top:14px; border-top:1px solid var(--line-2); }
+
+.alert-box { padding:14px 16px; border-radius:10px; font:400 13px/1.55 var(--f-tc); margin-bottom:16px; }
+.alert-box.err { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:var(--err-700); }
+.alert-box.ok { background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.2); color:var(--ok-700); }
+.alert-box.info { background:var(--acc-soft); border:1px solid rgba(61,107,255,.2); color:var(--ink-2); }
+
+.bank-info { padding:18px; background:var(--surface-2); border:1px dashed var(--line); border-radius:11px; margin-top:14px; font:400 13px/1.7 var(--f-tc); }
+.bank-info b { color:var(--ink); font-weight:600; }
+.bank-info .copyable { display:inline-flex; gap:6px; align-items:center; padding:3px 8px; background:var(--surface); border:1px solid var(--line); border-radius:5px; font-family:var(--f-mono); cursor:pointer; }
+.bank-info .copyable:hover { border-color:var(--ink-3); }
+
+.status-area { padding:32px; background:var(--surface); border:1px solid var(--line); border-radius:14px; text-align:center; margin-bottom:16px; }
+.status-area .ic-big { width:64px; height:64px; margin:0 auto 16px; border-radius:50%; display:grid; place-items:center; font:700 24px/1 var(--f-display); color:white; }
+.status-area.pending .ic-big { background:var(--amber-500); }
+.status-area.paid .ic-big { background:var(--ok-500); }
+.status-area.error .ic-big { background:var(--err-500); }
+.status-area h2 { font:700 22px/1.2 var(--f-display); margin-bottom:8px; }
+.status-area p { font:400 14px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:0; }
+
+.skeleton { text-align:center; padding:80px 32px; color:var(--muted); font:500 14px/1.5 var(--f-mono); }
+.skeleton::before { content:''; display:inline-block; width:18px; height:18px; border:2px solid var(--line); border-top-color:var(--acc); border-radius:50%; vertical-align:-4px; margin-right:10px; animation:sp 1s linear infinite; }
+@keyframes sp { to { transform:rotate(360deg); } }
+
+@media (max-width:760px) {
+  .row-2 { grid-template-columns:1fr; }
+  .totals { position:static; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="/landing.html"><span class="logo">R</span><span>RegMaster</span></a>
+  <div class="crumbs">
+    <a href="/events/">探索活動</a><span class="sep">/</span>
+    <a id="crumbDetail" href="#">活動詳情</a><span class="sep">/</span>
+    <span style="color:var(--ink)">付款</span>
+  </div>
+  <div class="secure">🔒 SSL 加密交易</div>
+</nav>
+
+<div id="loadingState" class="skeleton">載入訂單資料⋯⋯</div>
+
+<div class="shell" id="content" style="display:none">
+  <div class="page-eyebrow">CHECKOUT · 付款</div>
+  <h1 class="page-title">完成付款，正式報名</h1>
+  <p class="page-sub">您的報名已建立，請於主辦方公告的截止日期前完成付款。</p>
+
+  <div class="alert-box info" id="paidBanner" style="display:none">
+    ✓ 此筆報名已完成付款。您仍可在此頁查詢狀態或下載收據。
+  </div>
+
+  <div class="row-2">
+    <div>
+      <div class="card">
+        <h3>報名摘要</h3>
+        <div class="r-row"><span class="k">活動</span><span class="v" id="cName">—</span></div>
+        <div class="r-row"><span class="k">隊伍編號</span><span class="v" id="cTeamId" style="font-family:var(--f-mono); font-weight:600">—</span></div>
+        <div class="r-row"><span class="k">隊伍名稱</span><span class="v" id="cTeamName">—</span></div>
+        <div class="r-row"><span class="k">報名狀態</span><span class="v"><b id="cStatus">—</b></span></div>
+        <div class="r-row"><span class="k">付款狀態</span><span class="v"><b id="cPayStatus">—</b></span></div>
+      </div>
+
+      <div class="card" id="methodCard">
+        <h3>選擇付款方式</h3>
+        <div class="alert-box err" id="payErrBox" style="display:none"></div>
+
+        <div class="method-grid" id="methodGrid">
+          <!-- generated based on cfg.paymentMethods -->
+        </div>
+
+        <div id="onlinePayArea" style="display:none; margin-top:16px">
+          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:10px">點擊「前往付款」會跳到 PayUni 安全付款頁面。完成後會自動返回。</p>
+          <button class="btn btn-primary btn-lg btn-block" id="onlinePayBtn">前往 PayUni 付款 →</button>
+          <p style="font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin-top:10px; text-align:center">支援信用卡、ATM 虛擬帳號、超商代碼</p>
+        </div>
+
+        <div id="manualPayArea" style="display:none; margin-top:16px">
+          <div class="bank-info" id="bankInfoBox">
+            <!-- generated based on cfg.bankInfo -->
+          </div>
+          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-top:14px">完成轉帳後，主辦方會在 1–3 個工作天內人工核對並更新付款狀態。請耐心等候。</p>
+        </div>
+
+        <div id="creditCardArea" style="display:none; margin-top:16px">
+          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:10px">主辦方提供信用卡刷卡連結。</p>
+          <a id="ccLink" href="#" target="_blank" class="btn btn-primary btn-lg btn-block">前往信用卡頁面 →</a>
+        </div>
+      </div>
+
+      <div class="card" id="statusPollCard" style="display:none">
+        <h3>付款狀態</h3>
+        <div class="status-area pending" id="statusBox">
+          <div class="ic-big">⏳</div>
+          <h2>等候付款⋯⋯</h2>
+          <p>系統會即時偵測付款狀態。請勿關閉此頁面。</p>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="totals">
+        <h4>應付金額</h4>
+        <div class="li"><span class="lbl">基本報名費</span><span class="v" id="feeAmt">NT$ 0</span></div>
+        <div class="li total"><span class="lbl">合計</span><span class="v" id="totalAmt">NT$ 0</span></div>
+        <div class="small-note">
+          <b>下一步：</b><br>
+          1. 選擇上方的付款方式<br>
+          2. 完成付款<br>
+          3. 收到主辦方寄來的確認信
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div id="errorState" style="display:none; max-width:680px; margin:80px auto; padding:48px 32px; text-align:center; background:var(--surface); border:1px dashed var(--line); border-radius:18px;">
+  <h3 style="font:700 22px/1.3 var(--f-display); margin-bottom:8px">無法載入訂單</h3>
+  <p id="errorMsg" style="font:400 14px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:24px"></p>
+  <a href="/events/" class="btn btn-primary">回到活動列表</a>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+
+  var qs = new URLSearchParams(location.search);
+  var compId = qs.get('id') || qs.get('comp') || '';
+  var teamId = qs.get('team') || qs.get('teamId') || '';
+  var fromReturn = qs.get('return') === '1';  // payuni-return redirect indicator
+
+  if (!compId || !teamId) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorMsg').textContent = '網址缺少活動或隊伍編號。';
+    return;
+  }
+  document.getElementById('crumbDetail').href = '/events/detail.html?id=' + encodeURIComponent(compId);
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function showErr(msg) { document.getElementById('payErrBox').textContent = msg; document.getElementById('payErrBox').style.display = 'block'; }
+  function hideErr() { document.getElementById('payErrBox').style.display = 'none'; }
+
+  var CFG = null;
+  var fee = 0;
+
+  // Load comp config
+  google.script.run
+    .withSuccessHandler(function (data) {
+      if (!data || data.error) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('errorState').style.display = 'block';
+        document.getElementById('errorMsg').textContent = (data && data.error) || '找不到活動';
+        return;
+      }
+      CFG = data.config || {};
+      fee = parseInt(CFG.registrationFee || 0) || 0;
+      // Now load team detail (public lookup by teamId + comp)
+      loadTeam();
+    })
+    .withFailureHandler(function (err) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
+    })
+    .getRegistrationBundle(compId);
+
+  function loadTeam() {
+    // The legacy lookupRegistration takes (compId, keyword) where keyword can be teamId
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (!res || res.error || !res.team) {
+          document.getElementById('loadingState').style.display = 'none';
+          document.getElementById('errorState').style.display = 'block';
+          document.getElementById('errorMsg').textContent = (res && res.error) || '找不到此筆報名';
+          return;
+        }
+        render(res.team);
+      })
+      .withFailureHandler(function (err) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('errorState').style.display = 'block';
+        document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
+      })
+      .lookupRegistration(compId, teamId);
+  }
+
+  function render(team) {
+    document.title = '付款 · ' + (CFG.competitionName || '') + ' · RegMaster';
+    document.getElementById('cName').textContent = CFG.competitionName || '—';
+    document.getElementById('cTeamId').textContent = team.teamId || teamId;
+    document.getElementById('cTeamName').textContent = team.teamNameCN || team.teamNameEN || '—';
+    document.getElementById('cStatus').textContent = team.status || '正取';
+    var payStatus = team.paymentStatus || '待確認';
+    document.getElementById('cPayStatus').textContent = payStatus;
+    document.getElementById('feeAmt').textContent = 'NT$ ' + fee.toLocaleString();
+    document.getElementById('totalAmt').textContent = 'NT$ ' + fee.toLocaleString();
+
+    if (String(payStatus).indexOf('已確認') !== -1 || String(payStatus).indexOf('paid') !== -1) {
+      document.getElementById('paidBanner').style.display = 'block';
+      document.getElementById('methodCard').style.display = 'none';
+    } else {
+      buildMethods(team);
+    }
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    if (fromReturn) {
+      // We came from payuni-return; start polling for status
+      pollStatus();
+    }
+  }
+
+  function buildMethods(team) {
+    var methods = CFG.paymentMethods || [];
+    var grid = document.getElementById('methodGrid');
+    var html = '';
+    var hasPayuni = CFG.payuniEnabled && CFG.payuniMerID;
+    var hasManual = methods.indexOf('atm') !== -1 || methods.indexOf('bank') !== -1 || methods.indexOf('manual') !== -1;
+    var hasCC = !!CFG.creditCardLink;
+
+    if (hasPayuni && fee > 0) {
+      html += '<div class="method-card" data-method="payuni"><div class="ck"></div><div class="ic visa">PAY</div><div class="body"><h5>線上付款（PayUni）</h5><p>信用卡 · ATM · 超商代碼 · LINE Pay</p></div></div>';
+    }
+    if (hasManual) {
+      html += '<div class="method-card" data-method="manual"><div class="ck"></div><div class="ic atm">ATM</div><div class="body"><h5>銀行 / ATM 轉帳</h5><p>主辦方人工核對（1–3 工作天）</p></div></div>';
+    }
+    if (hasCC) {
+      html += '<div class="method-card" data-method="cc-link"><div class="ck"></div><div class="ic visa">CC</div><div class="body"><h5>信用卡刷卡連結</h5><p>跳轉至主辦方提供的金流頁</p></div></div>';
+    }
+    if (!hasPayuni && !hasManual && !hasCC) {
+      grid.innerHTML = '<p style="color:var(--muted); padding:24px 0; text-align:center">主辦方尚未設定付款方式，或本活動為免費活動。</p>';
+      return;
+    }
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.method-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        grid.querySelectorAll('.method-card').forEach(function (x) { x.classList.remove('on'); });
+        card.classList.add('on');
+        var m = card.dataset.method;
+        document.getElementById('onlinePayArea').style.display = (m === 'payuni') ? 'block' : 'none';
+        document.getElementById('manualPayArea').style.display = (m === 'manual') ? 'block' : 'none';
+        document.getElementById('creditCardArea').style.display = (m === 'cc-link') ? 'block' : 'none';
+
+        if (m === 'manual') {
+          var info = CFG.bankInfo || {};
+          var lines = [];
+          if (info.bankName) lines.push('<b>銀行：</b>' + escapeHtml(info.bankName));
+          if (info.bankCode) lines.push('<b>銀行代號：</b><span class="copyable" data-copy="' + escapeHtml(info.bankCode) + '">' + escapeHtml(info.bankCode) + ' 📋</span>');
+          if (info.accountNumber) lines.push('<b>帳號：</b><span class="copyable" data-copy="' + escapeHtml(info.accountNumber) + '">' + escapeHtml(info.accountNumber) + ' 📋</span>');
+          if (info.accountName) lines.push('<b>戶名：</b>' + escapeHtml(info.accountName));
+          lines.push('<b>金額：</b>NT$ ' + fee.toLocaleString());
+          lines.push('<b>備註填寫：</b><span class="copyable" data-copy="' + escapeHtml(team.teamId) + '">' + escapeHtml(team.teamId) + ' 📋</span>（隊伍編號）');
+          document.getElementById('bankInfoBox').innerHTML = lines.join('<br>');
+          document.querySelectorAll('.copyable').forEach(function (cb) {
+            cb.addEventListener('click', function () {
+              navigator.clipboard.writeText(cb.dataset.copy).then(function () {
+                var orig = cb.innerHTML;
+                cb.innerHTML = '✓ 已複製';
+                setTimeout(function () { cb.innerHTML = orig; }, 1200);
+              });
+            });
+          });
+        } else if (m === 'cc-link') {
+          document.getElementById('ccLink').href = CFG.creditCardLink;
+        }
+      });
+    });
+
+    document.getElementById('onlinePayBtn').addEventListener('click', function () {
+      hideErr();
+      var btn = this;
+      btn.disabled = true; btn.textContent = '產生訂單中⋯⋯';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res || !res.success) {
+            btn.disabled = false; btn.textContent = '前往 PayUni 付款 →';
+            showErr((res && res.message) || '無法產生付款訂單');
+            return;
+          }
+          // Auto-submit form to PayUni
+          var f = document.createElement('form');
+          f.method = 'POST';
+          f.action = res.payuni.action;
+          ['MerID', 'Version', 'EncryptInfo', 'HashInfo'].forEach(function (k) {
+            var inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = k; inp.value = res.payuni[k];
+            f.appendChild(inp);
+          });
+          document.body.appendChild(f);
+          // Store orderId so the return page can poll
+          try { localStorage.setItem('regmaster_last_order', res.orderId); } catch (e) {}
+          document.getElementById('statusPollCard').style.display = 'block';
+          f.submit();
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false; btn.textContent = '前往 PayUni 付款 →';
+          showErr((err && err.message) || '網路錯誤');
+        })
+        .createRegistrationPayment(compId, teamId);
+    });
+  }
+
+  function pollStatus() {
+    var orderId = '';
+    try { orderId = localStorage.getItem('regmaster_last_order') || ''; } catch (e) {}
+    if (!orderId) return;
+    document.getElementById('statusPollCard').style.display = 'block';
+    var attempts = 0;
+    function tick() {
+      attempts++;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          var box = document.getElementById('statusBox');
+          if (res && res.status === 'paid') {
+            box.classList.remove('pending'); box.classList.add('paid');
+            box.querySelector('.ic-big').textContent = '✓';
+            box.querySelector('h2').textContent = '付款成功！';
+            box.querySelector('p').textContent = '感謝您完成付款，主辦方將儘速確認。';
+            try { localStorage.removeItem('regmaster_last_order'); } catch (e) {}
+            // Refresh team status
+            setTimeout(loadTeam, 1500);
+            return;
+          }
+          if (attempts < 30) setTimeout(tick, 3000);
+          else {
+            box.classList.add('error'); box.classList.remove('pending');
+            box.querySelector('p').textContent = '若已完成付款，請稍候片刻或重新整理頁面。';
+          }
+        })
+        .withFailureHandler(function () {
+          if (attempts < 30) setTimeout(tick, 3000);
+        })
+        .getRegPaymentStatus(orderId);
+    }
+    tick();
+  }
+})();
+</script>
+</body>
+</html>
