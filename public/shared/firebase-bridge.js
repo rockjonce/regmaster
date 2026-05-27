@@ -133,7 +133,12 @@
     submitFeedback:["category","subject","description","stepsToReproduce","pageUrl","attachmentBase64","attachmentName","clientInfo"],
     listFeedback:[],
     updateFeedbackStatus:["feedbackId","status"],
-    getFeedbackFile:["fileId"]
+    getFeedbackFile:["fileId"],
+
+    // V3 Phase 2 additions
+    submitContactInquiry:[],   // takes single object arg with form fields
+    getOnboardingState:["username"],
+    saveOnboardingStep:["username","step","data"]
   };
   window._argMap = _argMap;
 

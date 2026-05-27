@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>建立帳號 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
+.left { padding:40px 56px 32px; display:flex; flex-direction:column; }
+.left .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:inherit; }
+.left .brand .logo { width:30px; height:30px; border-radius:8px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 14px/1 var(--f-display); }
+.left .center-wrap { max-width:440px; width:100%; margin:auto auto; padding:32px 0; }
+.left h1 { font:700 36px/1.1 var(--f-display); letter-spacing:-.02em; margin-bottom:8px; }
+.left .sub { font:400 15px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:28px; }
+.left .sub a { color:var(--acc); font-weight:500; }
+
+.plan-banner { padding:12px 14px; background:linear-gradient(135deg, var(--acc-soft), color-mix(in srgb, var(--amber-500) 8%, var(--surface))); border:1px solid color-mix(in srgb, var(--acc) 20%, var(--line)); border-radius:10px; margin-bottom:24px; display:flex; align-items:center; gap:10px; font:500 13px/1.4 var(--f-tc); color:var(--ink-2); }
+.plan-banner .ic { width:28px; height:28px; border-radius:7px; background:var(--acc); color:white; display:grid; place-items:center; font:700 14px/1 var(--f-display); flex-shrink:0; }
+.plan-banner b { color:var(--ink); font-weight:600; }
+
+.steps { display:flex; gap:8px; margin-bottom:24px; padding:14px; background:var(--surface-2); border-radius:12px; border:1px solid var(--line); }
+.step-i { flex:1; display:flex; gap:10px; align-items:center; }
+.step-i .n { width:24px; height:24px; border-radius:50%; background:var(--surface); border:1.5px solid var(--line); color:var(--muted); display:grid; place-items:center; font:700 12px/1 var(--f-mono); flex-shrink:0; }
+.step-i.on .n { background:var(--acc); border-color:var(--acc); color:white; }
+.step-i.done .n { background:var(--ok); border-color:var(--ok); color:white; }
+.step-i.done .n::before { content:'✓'; }
+.step-i.done .n span { display:none; }
+.step-i .l { font:500 12px/1.3 var(--f-tc); color:var(--muted); }
+.step-i.on .l { color:var(--ink); font-weight:600; }
+.steps .bar { flex:1; height:1.5px; background:var(--line); }
+.steps .bar.done { background:var(--ok); }
+
+.divider-or { display:flex; align-items:center; gap:12px; margin:18px 0; }
+.divider-or hr { flex:1; border:0; border-top:1px solid var(--line); }
+.divider-or span { font:500 11px/1 var(--f-mono); color:var(--muted); letter-spacing:.1em; }
+
+.field-stack > * { margin-bottom:14px; }
+.row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+.pwd-strength { display:flex; gap:4px; margin-top:8px; }
+.pwd-strength .seg { flex:1; height:4px; background:var(--line); border-radius:2px; transition:.3s; }
+.pwd-strength.s1 .seg:nth-child(-n+1) { background:var(--err-500); }
+.pwd-strength.s2 .seg:nth-child(-n+2) { background:var(--warn-500); }
+.pwd-strength.s3 .seg:nth-child(-n+3) { background:var(--blue-500); }
+.pwd-strength.s4 .seg { background:var(--ok); }
+
+.pwd-check { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:8px; font:400 12px/1.4 var(--f-tc); color:var(--muted); }
+.pwd-check span { display:flex; align-items:center; gap:6px; }
+.pwd-check span::before { content:'○'; font:700 10px/1 var(--f-mono); color:var(--muted); width:14px; }
+.pwd-check span.ok { color:var(--ok); }
+.pwd-check span.ok::before { content:'✓'; color:var(--ok); }
+
+.terms-row { padding:14px; background:var(--surface-2); border-radius:10px; border:1px solid var(--line); display:flex; gap:10px; align-items:flex-start; font:400 12.5px/1.55 var(--f-tc); color:var(--ink-3); }
+.terms-row input { width:16px; height:16px; flex-shrink:0; margin-top:2px; }
+.terms-row a { color:var(--acc); font-weight:500; }
+
+.alert-box { padding:12px 14px; border-radius:10px; font:400 13px/1.5 var(--f-tc); margin-bottom:14px; }
+.alert-box.err { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:var(--err-700); }
+.alert-box.ok { background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.2); color:var(--ok-700); }
+
+/* OTP step */
+.otp-row { display:flex; gap:10px; justify-content:center; margin:24px 0; }
+.otp-row input { width:48px; height:58px; text-align:center; font:700 22px/1 var(--f-mono); border:1.5px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); transition:.15s; }
+.otp-row input:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 4px rgba(61,107,255,.14); }
+.otp-row input.filled { border-color:var(--ink); background:var(--surface-2); }
+.otp-meta { text-align:center; font:400 13px/1.5 var(--f-tc); color:var(--muted); margin-bottom:18px; }
+.otp-meta a { color:var(--acc); font-weight:500; cursor:pointer; }
+.otp-meta .timer { font-family:var(--f-mono); color:var(--ink); font-weight:600; }
+
+.success-icon { width:80px; height:80px; margin:0 auto 24px; border-radius:50%; background:color-mix(in srgb, var(--ok) 15%, var(--surface)); display:grid; place-items:center; }
+.success-icon svg { width:36px; height:36px; color:var(--ok); }
+
+.foot { font:400 12px/1.5 var(--f-tc); color:var(--muted); }
+.foot a { color:var(--ink-3); }
+
+.state-pane { display:none; }
+.state-pane.on { display:block; }
+
+.right { background:var(--ink); color:white; padding:48px 56px; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+.right::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px, transparent 1px); background-size:60px 60px; mask:radial-gradient(circle at 50% 30%,black,transparent 70%); -webkit-mask:radial-gradient(circle at 50% 30%,black,transparent 70%); }
+.right::after { content:''; position:absolute; inset:0; background:radial-gradient(700px 500px at 80% 20%, rgba(61,107,255,.22), transparent 60%); }
+.right > * { position:relative; z-index:1; }
+.right h2 { font:800 44px/1.08 var(--f-display); letter-spacing:-.022em; margin:auto 0 28px; max-width:480px; }
+.right h2 em { font-style:normal; background:linear-gradient(120deg, var(--blue-300), var(--amber-300)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.benefits { display:flex; flex-direction:column; gap:16px; max-width:480px; margin-bottom:32px; }
+.benefit { display:flex; gap:14px; align-items:flex-start; padding:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:12px; backdrop-filter:blur(6px); }
+.benefit .ic-w { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg, var(--blue-500), var(--blue-700)); display:grid; place-items:center; flex-shrink:0; }
+.benefit .ic-w svg { width:18px; height:18px; color:white; }
+.benefit h5 { font:600 14px/1.3 var(--f-display); margin-bottom:2px; }
+.benefit p { font:400 12.5px/1.5 var(--f-tc); color:rgba(255,255,255,.6); }
+.right .logos { margin-top:auto; padding-top:32px; border-top:1px solid rgba(255,255,255,.08); }
+.right .logos-l { font:500 11px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-bottom:14px; }
+.right .logos-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.right .logos-grid div { padding:10px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:8px; font:600 12px/1 var(--f-display); color:rgba(255,255,255,.8); text-align:center; }
+
+@media (max-width:960px) { body { grid-template-columns:1fr; } .right { display:none; } }
+</style>
+</head>
+<body>
+
+<div class="left">
+  <a class="brand" href="/landing.html"><span class="logo">R</span>RegMaster</a>
+
+  <div class="center-wrap">
+
+    <!-- ============ STATE 1: Create account ============ -->
+    <div class="state-pane on" data-s="1">
+      <h1>建立帳號</h1>
+      <p class="sub">已經有帳號了？<a href="/login.html">直接登入 →</a></p>
+
+      <div class="plan-banner" id="planBanner" style="display:none">
+        <div class="ic">★</div>
+        <div>已選擇 <b id="planName">免費試用</b><span id="planDesc"> · 14 天無限制體驗</span></div>
+      </div>
+
+      <div class="steps">
+        <div class="step-i on" data-step="1"><div class="n"><span>1</span></div><div class="l">建立帳號</div></div>
+        <div class="bar"></div>
+        <div class="step-i" data-step="2"><div class="n"><span>2</span></div><div class="l">驗證信箱</div></div>
+        <div class="bar"></div>
+        <div class="step-i" data-step="3"><div class="n"><span>3</span></div><div class="l">完成</div></div>
+      </div>
+
+      <div class="alert-box err" id="errBox" style="display:none"></div>
+
+      <form class="field-stack" id="signupForm" autocomplete="on">
+        <div class="row-2">
+          <div>
+            <label class="label" for="suUsername">帳號名稱</label>
+            <input class="input" id="suUsername" name="username" type="text" autocomplete="username" required placeholder="例：cs_chen" pattern="[a-zA-Z0-9_]{3,30}">
+            <div class="help">3–30 字元，可用英數與底線</div>
+          </div>
+          <div>
+            <label class="label" for="suDisplay">顯示名稱</label>
+            <input class="input" id="suDisplay" name="displayName" type="text" required placeholder="陳建宏">
+          </div>
+        </div>
+
+        <div>
+          <label class="label" for="suEmail">公司 / 學校信箱</label>
+          <input class="input" id="suEmail" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
+          <div class="help">驗證信會寄到這個信箱</div>
+        </div>
+
+        <div>
+          <label class="label" for="suPhone">電話 <span style="font:400 11px/1 var(--f-mono); color:var(--muted); margin-left:4px">（選填）</span></label>
+          <input class="input" id="suPhone" name="phone" type="tel" autocomplete="tel" placeholder="0912-345-678">
+        </div>
+
+        <div>
+          <label class="label" for="suPwd">設定密碼</label>
+          <input class="input" id="suPwd" name="password" type="password" autocomplete="new-password" required placeholder="至少 10 字元">
+          <div class="pwd-strength" id="pwdStrength"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div>
+          <div class="pwd-check" id="pwdCheck">
+            <span data-check="len">至少 10 字元</span>
+            <span data-check="case">含大小寫字母</span>
+            <span data-check="num">含數字</span>
+            <span data-check="sym">含特殊符號</span>
+          </div>
+        </div>
+
+        <div class="terms-row">
+          <input type="checkbox" id="suAgree" required>
+          <div>我已閱讀並同意 <a href="/EULA.html" target="_blank">服務條款</a> 與 <a href="/EULA.html" target="_blank">隱私政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。</div>
+        </div>
+
+        <div class="terms-row" style="background:transparent">
+          <input type="checkbox" id="suNewsletter">
+          <div>我願意接收 RegMaster 的產品更新與電子報（可隨時退訂）。</div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block" id="suBtn" type="submit">建立帳號 →</button>
+      </form>
+    </div>
+
+    <!-- ============ STATE 2: Verify OTP ============ -->
+    <div class="state-pane" data-s="2">
+      <h1>檢查你的信箱</h1>
+      <p class="sub">我們寄了 6 位數驗證碼到 <b id="emailEcho">your@email.com</b><br>請於 15 分鐘內輸入完成驗證。</p>
+
+      <div class="alert-box err" id="otpErrBox" style="display:none"></div>
+
+      <div class="otp-row" id="otpRow">
+        <input maxlength="1" inputmode="numeric" autocomplete="off">
+        <input maxlength="1" inputmode="numeric" autocomplete="off">
+        <input maxlength="1" inputmode="numeric" autocomplete="off">
+        <input maxlength="1" inputmode="numeric" autocomplete="off">
+        <input maxlength="1" inputmode="numeric" autocomplete="off">
+        <input maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+
+      <div class="otp-meta">
+        驗證碼將於 <span class="timer" id="otpTimer">15:00</span> 後失效 · <a id="resendLink">重新寄送驗證信</a>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" id="verifyBtn" type="button">驗證並建立帳號</button>
+
+      <div style="text-align:center; margin-top:16px; font:400 12px/1 var(--f-tc); color:var(--muted)">
+        填錯信箱？<a href="#" id="backToStep1" style="color:var(--acc)">回上一步重填</a>
+      </div>
+    </div>
+
+    <!-- ============ STATE 3: Success ============ -->
+    <div class="state-pane" data-s="3">
+      <div class="success-icon">
+        <svg data-hero viewBox="0 0 24 24" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h1 style="text-align:center">帳號建立成功！</h1>
+      <p class="sub" style="text-align:center">您的免費試用授權碼已寄到信箱。<br>登入後即可開始建立第一場活動。</p>
+
+      <a href="/login.html?just=signup" class="btn btn-primary btn-lg btn-block">前往登入 →</a>
+
+      <div style="text-align:center; margin-top:14px; font:400 12px/1 var(--f-tc); color:var(--muted)">
+        沒收到信？檢查垃圾郵件夾，或 <a href="/contact.html?topic=support" style="color:var(--acc)">聯絡客服</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <a href="/EULA.html">服務條款</a> · <a href="/EULA.html">隱私政策</a> · <a href="/contact.html">聯絡我們</a><br>
+    © 2026 RegMaster
+  </div>
+</div>
+
+<div class="right">
+  <h2>14 天免費試用<br>無需信用卡，<em>立刻開始</em>。</h2>
+  <div class="benefits">
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div><div><h5>無使用限制</h5><p>14 天內可建立 unlimited 場活動，跑完整流程毫無保留。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M12 2v6m0 8v6m-10-10h6m4 0h6"/></svg></div><div><h5>所有功能解鎖</h5><p>AI 助理、QR 報到、多重金流、客製欄位 — 全部給你試。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div><div><h5>專人協助上手</h5><p>客戶成功經理會親自帶你跑第一場活動，免費。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div><h5>不喜歡可隨時退</h5><p>14 天結束前可一鍵刪除帳號，零留存、零追蹤。</p></div></div>
+  </div>
+  <div class="logos">
+    <div class="logos-l">已有 1,840+ 場活動使用，包含</div>
+    <div class="logos-grid">
+      <div>北科大</div><div>政大</div><div>HitCon</div><div>Modern Web</div>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+
+  // ---- Plan banner from URL ----
+  var plan = (new URLSearchParams(location.search).get('plan') || 'trial').toLowerCase();
+  var planMap = {
+    trial:   { name: '14 天免費試用',  desc: ' · 所有功能解鎖、無需信用卡' },
+    free:    { name: '免費版 Free',     desc: ' · 1 個活動 / 50 筆報名 / 永久免費' },
+    starter: { name: '入門版 Starter',  desc: ' · 14 天試用後升級' },
+    pro:     { name: '專業版 Pro',      desc: ' · 14 天試用後升級' }
+  };
+  if (planMap[plan]) {
+    document.getElementById('planName').textContent = planMap[plan].name;
+    document.getElementById('planDesc').textContent = planMap[plan].desc;
+    document.getElementById('planBanner').style.display = 'flex';
+  }
+
+  // ---- Password strength ----
+  var pwdInput = document.getElementById('suPwd');
+  var strengthBar = document.getElementById('pwdStrength');
+  var checks = document.querySelectorAll('#pwdCheck span');
+  pwdInput.addEventListener('input', function () {
+    var v = pwdInput.value;
+    var c = { len: v.length >= 10, case: /[a-z]/.test(v) && /[A-Z]/.test(v), num: /[0-9]/.test(v), sym: /[^A-Za-z0-9]/.test(v) };
+    var n = (c.len ? 1 : 0) + (c.case ? 1 : 0) + (c.num ? 1 : 0) + (c.sym ? 1 : 0);
+    strengthBar.className = 'pwd-strength s' + n;
+    checks.forEach(function (s) {
+      s.classList.toggle('ok', !!c[s.dataset.check]);
+    });
+  });
+
+  // ---- State navigation ----
+  function showState(n) {
+    document.querySelectorAll('.state-pane').forEach(function (p) { p.classList.remove('on'); });
+    document.querySelector('.state-pane[data-s="' + n + '"]').classList.add('on');
+    document.querySelectorAll('.step-i').forEach(function (s) {
+      var sn = parseInt(s.dataset.step, 10);
+      s.classList.remove('on', 'done');
+      if (sn < n) s.classList.add('done');
+      else if (sn === n) s.classList.add('on');
+    });
+    document.querySelectorAll('.steps .bar').forEach(function (b, idx) {
+      b.classList.toggle('done', n > idx + 1);
+    });
+  }
+
+  // ---- Step 1 → submit account request ----
+  var errBox = document.getElementById('errBox');
+  function showErr(msg) { errBox.textContent = msg; errBox.style.display = 'block'; }
+  function hideErr() { errBox.style.display = 'none'; }
+
+  var pendingUsername = '';
+  var pendingEmail = '';
+  var pendingPlan = plan;
+
+  document.getElementById('signupForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideErr();
+
+    var username = document.getElementById('suUsername').value.trim();
+    var displayName = document.getElementById('suDisplay').value.trim();
+    var email = document.getElementById('suEmail').value.trim();
+    var phone = document.getElementById('suPhone').value.trim();
+    var password = pwdInput.value;
+    var agree = document.getElementById('suAgree').checked;
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) { showErr('帳號名稱：3–30 字元，僅可英數與底線'); return; }
+    if (!displayName) { showErr('請填寫顯示名稱'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Email 格式不正確'); return; }
+    if (password.length < 10) { showErr('密碼至少 10 字元'); return; }
+    if (!agree) { showErr('請勾選同意服務條款'); return; }
+
+    var btn = document.getElementById('suBtn');
+    btn.disabled = true; var oldText = btn.textContent;
+    btn.textContent = '送出中...';
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          pendingUsername = username;
+          pendingEmail = email;
+          document.getElementById('emailEcho').textContent = email;
+          showState(2);
+          startOtpTimer();
+          document.querySelector('.otp-row input').focus();
+          btn.disabled = false; btn.textContent = oldText;
+        } else {
+          btn.disabled = false; btn.textContent = oldText;
+          showErr((res && res.message) || '建立失敗');
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false; btn.textContent = oldText;
+        showErr((err && err.message) || '網路錯誤');
+      })
+      .requestAccount(username, password, displayName, email, phone);
+  });
+
+  // ---- OTP input handling ----
+  var otpInputs = document.querySelectorAll('#otpRow input');
+  otpInputs.forEach(function (input, idx) {
+    input.addEventListener('input', function () {
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 1);
+      this.classList.toggle('filled', !!this.value);
+      if (this.value && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !this.value && idx > 0) otpInputs[idx - 1].focus();
+    });
+    input.addEventListener('paste', function (e) {
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+      for (var i = 0; i < pasted.length && i < otpInputs.length; i++) {
+        otpInputs[i].value = pasted[i];
+        otpInputs[i].classList.add('filled');
+      }
+      otpInputs[Math.min(pasted.length, otpInputs.length - 1)].focus();
+    });
+  });
+
+  // ---- OTP timer ----
+  var otpEndTime = 0;
+  function startOtpTimer() {
+    otpEndTime = Date.now() + 15 * 60 * 1000;
+    tickOtp();
+  }
+  function tickOtp() {
+    var remaining = Math.max(0, otpEndTime - Date.now());
+    var mm = Math.floor(remaining / 60000), ss = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('otpTimer').textContent =
+      (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+    if (remaining > 0) setTimeout(tickOtp, 1000);
+  }
+
+  // ---- Step 2 → verify OTP ----
+  var otpErr = document.getElementById('otpErrBox');
+  function showOtpErr(msg) { otpErr.textContent = msg; otpErr.style.display = 'block'; }
+  function hideOtpErr() { otpErr.style.display = 'none'; }
+
+  document.getElementById('verifyBtn').addEventListener('click', function () {
+    hideOtpErr();
+    var otp = Array.from(otpInputs).map(function (i) { return i.value; }).join('');
+    if (otp.length !== 6) { showOtpErr('請完整輸入 6 位數驗證碼'); return; }
+
+    var btn = this;
+    btn.disabled = true; var oldText = btn.textContent;
+    btn.textContent = '驗證中...';
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          // Remember plan intent so onboarding / login flow can read it
+          try {
+            localStorage.setItem('regmaster_signup_plan', pendingPlan);
+            localStorage.setItem('regmaster_signup_username', pendingUsername);
+          } catch (e) {}
+          showState(3);
+        } else {
+          btn.disabled = false; btn.textContent = oldText;
+          showOtpErr((res && res.message) || '驗證失敗');
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false; btn.textContent = oldText;
+        showOtpErr((err && err.message) || '網路錯誤');
+      })
+      .verifyAccount(pendingUsername, otp);
+  });
+
+  // ---- Resend OTP (re-trigger requestAccount with same params; backend handles dup) ----
+  document.getElementById('resendLink').addEventListener('click', function (e) {
+    e.preventDefault();
+    if (!pendingUsername) return;
+    showOtpErr('正在重新寄送...');
+    // Backend doesn't yet have a dedicated "resend" callable; the cleanest behavior would be a
+    // new resendVerification(username) callable. For Phase 2 we direct user to redo step 1.
+    setTimeout(function () {
+      showOtpErr('請回到上一步重新填寫表單（驗證碼有效 15 分鐘）');
+    }, 800);
+  });
+
+  document.getElementById('backToStep1').addEventListener('click', function (e) {
+    e.preventDefault();
+    showState(1);
+  });
+})();
+</script>
+</body>
+</html>

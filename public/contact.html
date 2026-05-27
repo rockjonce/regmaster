@@ -303,9 +303,7 @@
     btn.disabled = true;
     btn.textContent = '送出中...';
 
-    // Build the inquiry payload as a single JSON string in the `question` field
     var payload = {
-      v: 'v3-contact-form',
       category: activeTab,
       topic: topic || '',
       name: name,
@@ -317,17 +315,23 @@
       newsletter: newsletter,
       message: message,
       ua: navigator.userAgent,
-      lang: AppState.getLang(),
-      ts: new Date().toISOString()
+      lang: AppState.getLang()
     };
 
-    // Use addNotification (public callable) as transport. compId="_contact" namespace.
+    // Phase 2: public callable submitContactInquiry (stores in contactInquiries collection
+    // + emails system admin). Single-object arg signature.
     google.script.run
-      .withSuccessHandler(function () {
-        document.getElementById('contactForm').style.display = 'none';
-        document.querySelector('.form-foot').style.display = 'none';
-        document.getElementById('successBox').style.display = 'flex';
-        document.getElementById('successBox').scrollIntoView({behavior:'smooth', block:'center'});
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          document.getElementById('contactForm').style.display = 'none';
+          document.querySelector('.form-foot').style.display = 'none';
+          document.getElementById('successBox').style.display = 'flex';
+          document.getElementById('successBox').scrollIntoView({behavior:'smooth', block:'center'});
+        } else {
+          btn.disabled = false;
+          btn.textContent = '送出 →';
+          alert('送出失敗：' + (res && res.message || '請改用 hello@regmaster.tw 寄信'));
+        }
       })
       .withFailureHandler(function (err) {
         console.error('Contact submit failed:', err);
@@ -335,7 +339,7 @@
         btn.textContent = '送出 →';
         alert('送出失敗，請改用 hello@regmaster.tw 寄信。\n\n錯誤訊息: ' + (err && err.message || err));
       })
-      .addNotification('_contact', JSON.stringify(payload));
+      .submitContactInquiry(payload);
   });
 })();
 </script>

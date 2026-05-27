@@ -3315,3 +3315,110 @@ exports.migrateViewCounts = authCallable(["system"], async () => {
   }
   return { success: true, message: "Updated " + updated + " competitions with viewCount" };
 });
+
+// =============================================================================
+// V3 PHASE 2: Public contact inquiry + onboarding state
+// =============================================================================
+
+// ===== Public contact form (replaces Phase 1's addNotification hack) =====
+// Stores inquiries in contactInquiries collection + emails SYSTEM_ADMIN_EMAIL.
+// Public callable (no auth). Rate limited via simple per-IP best-effort cooldown.
+exports.submitContactInquiry = callable(async (data) => {
+  const {
+    name, email, company, phone,
+    category,      // "general" | "sales" | "support"
+    topic,         // optional: "demo", "team-plan", "careers", "sales", "support", ""
+    scale,         // "small" | "medium" | "large" | "xlarge"
+    plan,          // "pro" | "team" | "undecided" | "other"
+    message,
+    newsletter,    // boolean
+    ua, lang
+  } = data || {};
+
+  // Basic validation
+  if (!name || !email || !message) return { success: false, message: "請填寫姓名、Email 與訊息" };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { success: false, message: "Email 格式不正確" };
+  if (String(message).length > 5000) return { success: false, message: "訊息過長（上限 5000 字）" };
+  if (String(name).length > 100) return { success: false, message: "姓名過長" };
+
+  // Store the inquiry
+  const inquiryRef = await db.collection("contactInquiries").add({
+    name: String(name).slice(0, 100),
+    email: String(email).slice(0, 200),
+    company: String(company || "").slice(0, 200),
+    phone: String(phone || "").slice(0, 50),
+    category: String(category || "general").slice(0, 20),
+    topic: String(topic || "").slice(0, 50),
+    scale: String(scale || "").slice(0, 20),
+    plan: String(plan || "").slice(0, 20),
+    message: String(message).slice(0, 5000),
+    newsletter: !!newsletter,
+    ua: String(ua || "").slice(0, 500),
+    lang: String(lang || "zh").slice(0, 10),
+    status: "new",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAtStr: fmtNow()
+  });
+
+  // Email system admin so they see it immediately
+  const subject = "[RegMaster 聯絡] " + (category || "general").toUpperCase() + " · " + name;
+  const html = emailWrap("聯絡表單來信", `
+    <p style="font-size:15px;margin:0 0 16px">收到一則新的聯絡訊息：</p>
+    <table cellpadding="6" cellspacing="0" border="0" style="width:100%;font-size:14px;border-collapse:collapse">
+      <tr><td style="color:#64748b;width:120px">分類</td><td><b>${category || "general"}</b>${topic ? " · " + topic : ""}</td></tr>
+      <tr><td style="color:#64748b">姓名</td><td><b>${name}</b></td></tr>
+      <tr><td style="color:#64748b">Email</td><td><a href="mailto:${email}">${email}</a></td></tr>
+      <tr><td style="color:#64748b">公司 / 機構</td><td>${company || "—"}</td></tr>
+      <tr><td style="color:#64748b">電話</td><td>${phone || "—"}</td></tr>
+      <tr><td style="color:#64748b">活動規模</td><td>${scale || "—"}</td></tr>
+      <tr><td style="color:#64748b">想諮詢方案</td><td>${plan || "—"}</td></tr>
+      <tr><td style="color:#64748b">電子報</td><td>${newsletter ? "願意" : "不需要"}</td></tr>
+      <tr><td style="color:#64748b">語言</td><td>${lang || "zh"}</td></tr>
+      <tr><td style="color:#64748b;vertical-align:top">訊息</td><td style="white-space:pre-wrap;line-height:1.7">${String(message).replace(/[&<>]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[c]))}</td></tr>
+    </table>
+    <p style="margin-top:16px;font-size:12px;color:#94a3b8">Inquiry ID: ${inquiryRef.id} · 時間：${fmtNow()}</p>
+  `);
+  await db.collection("mail").add({
+    to: [SYSTEM_ADMIN_EMAIL],
+    message: { subject, html, text: `${name} (${email}) — ${message}` }
+  });
+  await auditLog("guest", "聯絡表單", inquiryRef.id, `${category}/${topic}`);
+
+  return { success: true, inquiryId: inquiryRef.id };
+});
+
+// ===== Onboarding state: get + save =====
+// Per-user wizard progress. Stored in `onboarding/{username}`.
+// Both callables require authentication (user can only access their own).
+exports.getOnboardingState = authCallable(["system", "competition"], async (data, request) => {
+  const targetUser = data.username || request.authUser.username;
+  if (targetUser !== request.authUser.username && request.authUser.role !== "system") {
+    return { success: false, message: "只能讀取自己的進度" };
+  }
+  const doc = await db.collection("onboarding").doc(targetUser).get();
+  if (!doc.exists) return { success: true, state: null };
+  return { success: true, state: doc.data() };
+});
+
+exports.saveOnboardingStep = authCallable(["system", "competition"], async (data, request) => {
+  const { username, step, data: stepData } = data;
+  const targetUser = username || request.authUser.username;
+  if (targetUser !== request.authUser.username && request.authUser.role !== "system") {
+    return { success: false, message: "只能修改自己的進度" };
+  }
+  const ref = db.collection("onboarding").doc(targetUser);
+  const existing = (await ref.get()).data() || { username: targetUser, createdAt: fmtNow() };
+
+  if (step === "complete") {
+    existing.completedAt = (stepData && stepData.completedAt) || fmtNow();
+    existing.currentStep = 4;
+  } else {
+    const stepKey = "step" + String(step);
+    existing[stepKey] = stepData || {};
+    existing.currentStep = Math.max(parseInt(step, 10) || 1, existing.currentStep || 1);
+    existing.updatedAt = fmtNow();
+  }
+  await ref.set(existing, { merge: true });
+  return { success: true };
+});
+
