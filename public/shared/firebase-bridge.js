@@ -145,7 +145,11 @@
 
     // V3 Phase 4 additions
     getAiInsights:["compId"],
-    getTodoList:["compId"]
+    getTodoList:["compId"],
+
+    // V3 Phase 5 additions
+    getFormSchema:["compId"],
+    saveFormSchema:["compId","schema"]
   };
   window._argMap = _argMap;
 

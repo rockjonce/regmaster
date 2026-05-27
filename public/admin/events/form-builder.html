@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>表單設計 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+body { background:var(--bg); overflow:hidden; }
+.shell { display:grid; grid-template-columns:60px 1fr; height:100vh; }
+.side-mini { background:var(--surface); border-right:1px solid var(--line); padding:14px 8px; display:flex; flex-direction:column; gap:6px; align-items:center; position:sticky; top:0; height:100vh; }
+.side-mini .logo { width:32px; height:32px; border-radius:8px; background:var(--ink); color:white; display:grid; place-items:center; font:800 14px/1 var(--f-display); margin-bottom:14px; text-decoration:none; }
+.side-mini a { width:36px; height:36px; border-radius:8px; display:grid; place-items:center; color:var(--ink-3); text-decoration:none; transition:.15s; }
+.side-mini a:hover { background:var(--surface-2); color:var(--ink); }
+.side-mini a.on { background:var(--ink); color:white; }
+.side-mini a svg { width:16px; height:16px; }
+
+.top-bar { height:60px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; align-items:center; padding:0 24px; gap:18px; position:sticky; top:0; z-index:25; }
+.top-bar .crumb { font:500 13px/1 var(--f-tc); color:var(--muted); flex:1; }
+.top-bar .crumb a { color:var(--ink-3); text-decoration:none; }
+.top-bar .crumb b { color:var(--ink); }
+.top-bar .crumb .sep { color:var(--line); margin:0 6px; }
+.top-bar .save-meta { font:500 12px/1 var(--f-mono); color:var(--muted); display:flex; align-items:center; gap:6px; padding:6px 12px; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; }
+.top-bar .save-meta.dirty { color:var(--warn-700); background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.25); }
+.top-bar .save-meta.saved { color:var(--ok-700); background:rgba(16,185,129,.08); border-color:rgba(16,185,129,.25); }
+.top-bar .save-meta::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+/* Builder layout */
+.builder { display:grid; grid-template-columns:280px 1fr 320px; height:calc(100vh - 60px); }
+
+/* PALETTE */
+.palette { background:var(--surface); border-right:1px solid var(--line); padding:20px 16px; overflow-y:auto; }
+.palette h5 { font:600 10.5px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.field-types { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:18px; }
+.ft-item { padding:10px 8px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; cursor:grab; transition:.15s; display:flex; flex-direction:column; gap:4px; align-items:flex-start; }
+.ft-item:hover { background:var(--surface); border-color:var(--ink-3); transform:translateY(-1px); }
+.ft-item.dragging { opacity:.4; }
+.ft-item .ic { width:24px; height:24px; border-radius:6px; background:var(--ink); color:white; display:grid; place-items:center; }
+.ft-item .ic svg { width:12px; height:12px; }
+.ft-item.b1 .ic { background:var(--acc); }
+.ft-item.b2 .ic { background:var(--ok-500); }
+.ft-item.b3 .ic { background:var(--amber-500); }
+.ft-item.b4 .ic { background:#8b5cf6; }
+.ft-item h6 { font:600 12px/1.2 var(--f-display); color:var(--ink); }
+.ft-item p { font:400 10px/1.3 var(--f-tc); color:var(--muted); margin:0; }
+
+.legacy-import { padding:14px; background:linear-gradient(135deg, var(--ink), #1a2e52); border-radius:10px; color:white; }
+.legacy-import h5 { color:#fbcd5b; margin-bottom:8px; }
+.legacy-import p { font:400 11.5px/1.5 var(--f-tc); color:rgba(255,255,255,.7); margin-bottom:10px; }
+.legacy-import button { width:100%; padding:8px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); color:white; border-radius:7px; font:500 12px/1 var(--f-tc); cursor:pointer; }
+.legacy-import button:hover { background:rgba(255,255,255,.16); }
+
+/* CANVAS */
+.canvas { background:var(--bg); padding:24px 28px; overflow-y:auto; }
+.canvas-h { margin-bottom:18px; }
+.canvas-h h2 { font:700 20px/1.2 var(--f-display); margin-bottom:4px; }
+.canvas-h p { font:400 12.5px/1.5 var(--f-tc); color:var(--ink-3); }
+
+.canvas-sec { padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:14px; position:relative; }
+.canvas-sec.drag-over { border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+.canvas-sec .sec-h { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--line-2); }
+.canvas-sec .sec-h .nb { padding:3px 8px; background:var(--ink); color:white; border-radius:4px; font:700 10px/1 var(--f-mono); letter-spacing:.06em; }
+.canvas-sec .sec-h .role-tag { padding:2px 7px; border-radius:4px; font:600 10px/1.4 var(--f-mono); }
+.canvas-sec .sec-h .role-tag.student { background:color-mix(in srgb, var(--acc) 12%, transparent); color:var(--acc); }
+.canvas-sec .sec-h .role-tag.teacher { background:color-mix(in srgb, #8b5cf6 12%, transparent); color:#8b5cf6; }
+.canvas-sec .sec-h .role-tag.custom { background:color-mix(in srgb, var(--ok-500) 12%, transparent); color:var(--ok-700); }
+.canvas-sec .sec-h h3 { font:700 16px/1.2 var(--f-display); flex:1; }
+.canvas-sec .sec-h h3 input { border:0; background:transparent; font:inherit; padding:2px 4px; border-radius:4px; width:100%; max-width:340px; }
+.canvas-sec .sec-h h3 input:hover, .canvas-sec .sec-h h3 input:focus { background:var(--surface-2); outline:0; }
+.canvas-sec .sec-h .actions-sec { display:flex; gap:4px; }
+.canvas-sec .sec-h .actions-sec button { width:26px; height:26px; display:grid; place-items:center; border-radius:5px; background:transparent; color:var(--muted); cursor:pointer; }
+.canvas-sec .sec-h .actions-sec button:hover { background:var(--surface-2); color:var(--ink-2); }
+.canvas-sec .sec-h .actions-sec svg { width:12px; height:12px; }
+
+.field-c { padding:12px 14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; margin-bottom:6px; cursor:pointer; position:relative; transition:.15s; }
+.field-c:hover { border-color:var(--ink-3); }
+.field-c.selected { border-color:var(--ink); background:var(--surface); box-shadow:0 0 0 3px rgba(11,28,61,.06); }
+.field-c.dragging { opacity:.4; }
+.field-c .row1 { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.field-c .grip { color:var(--muted); cursor:grab; }
+.field-c .grip svg { width:13px; height:13px; }
+.field-c .ic-f { width:22px; height:22px; border-radius:5px; background:var(--ink); color:white; display:grid; place-items:center; flex-shrink:0; }
+.field-c .ic-f.b1 { background:var(--acc); }
+.field-c .ic-f.b2 { background:var(--ok-500); }
+.field-c .ic-f.b3 { background:var(--amber-500); }
+.field-c .ic-f.b4 { background:#8b5cf6; }
+.field-c .ic-f svg { width:10px; height:10px; }
+.field-c .label-f { flex:1; font:600 12.5px/1.3 var(--f-display); display:flex; align-items:center; gap:6px; }
+.field-c .label-f .req { color:var(--err-500); font-family:var(--f-mono); }
+.field-c .legacy-tag { padding:1px 6px; background:var(--surface); border:1px solid var(--line); border-radius:3px; font:500 9.5px/1.4 var(--f-mono); color:var(--muted); }
+.field-c .actions-f { display:flex; gap:3px; opacity:0; transition:.15s; }
+.field-c:hover .actions-f, .field-c.selected .actions-f { opacity:1; }
+.field-c .actions-f button { width:22px; height:22px; display:grid; place-items:center; border-radius:4px; color:var(--muted); cursor:pointer; }
+.field-c .actions-f button:hover { background:var(--surface); color:var(--ink-2); }
+.field-c .actions-f svg { width:11px; height:11px; }
+.field-c .preview-f { padding-left:34px; padding-top:2px; font:400 11.5px/1.4 var(--f-mono); color:var(--muted); }
+
+.drop-zone-empty { padding:24px; border:1.5px dashed var(--line); border-radius:10px; text-align:center; color:var(--muted); font:500 12px/1.4 var(--f-tc); }
+.drop-zone-empty.drag-over { border-color:var(--acc); background:var(--acc-soft); color:var(--acc-2); }
+
+.add-field-row { display:flex; gap:6px; margin-top:8px; padding:9px; background:transparent; border:1px dashed var(--line); border-radius:7px; font:500 12px/1 var(--f-tc); color:var(--ink-3); cursor:pointer; align-items:center; justify-content:center; }
+.add-field-row:hover { background:var(--surface-2); border-color:var(--ink-3); color:var(--ink); }
+.add-section { padding:16px; background:transparent; border:1.5px dashed var(--line); border-radius:12px; margin-top:14px; cursor:pointer; transition:.15s; text-align:center; display:flex; gap:8px; align-items:center; justify-content:center; font:500 13px/1 var(--f-tc); color:var(--muted); }
+.add-section:hover { border-color:var(--acc); color:var(--acc); }
+
+/* INSPECTOR */
+.inspector { background:var(--surface); border-left:1px solid var(--line); padding:20px; overflow-y:auto; }
+.inspector .ins-h { display:flex; align-items:center; gap:10px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.inspector .ins-h .ic-f { width:28px; height:28px; border-radius:6px; background:var(--ink); color:white; display:grid; place-items:center; }
+.inspector .ins-h .ic-f svg { width:13px; height:13px; }
+.inspector .ins-h h4 { font:700 14px/1.2 var(--f-display); flex:1; }
+.inspector .ins-row { margin-bottom:12px; }
+.inspector .ins-row .lbl { font:500 12px/1.3 var(--f-tc); color:var(--ink-2); margin-bottom:5px; }
+.inspector .ins-row input, .inspector .ins-row select, .inspector .ins-row textarea { width:100%; padding:8px 11px; background:var(--surface); border:1px solid var(--line); border-radius:7px; font:400 12.5px/1.4 var(--f-tc); color:var(--ink); }
+.inspector .ins-row input:focus, .inspector .ins-row select:focus, .inspector .ins-row textarea:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+.inspector .tg-row { display:flex; align-items:center; padding:8px 0; border-bottom:1px solid var(--line-2); }
+.inspector .tg-row:last-child { border-bottom:0; }
+.inspector .tg-row .body { flex:1; }
+.inspector .tg-row .body h6 { font:600 12.5px/1.3 var(--f-display); margin-bottom:2px; color:var(--ink); }
+.inspector .tg-row .body p { font:400 10.5px/1.4 var(--f-tc); color:var(--muted); margin:0; }
+.inspector .tg-sw-s { width:30px; height:18px; background:var(--line); border-radius:99px; position:relative; cursor:pointer; transition:.15s; flex-shrink:0; }
+.inspector .tg-sw-s::after { content:''; position:absolute; width:14px; height:14px; background:white; border-radius:50%; top:2px; left:2px; transition:.15s; box-shadow:var(--sh-sm); }
+.inspector .tg-sw-s.on { background:var(--ok-500); }
+.inspector .tg-sw-s.on::after { left:14px; }
+
+.opts-editor { display:flex; flex-direction:column; gap:6px; }
+.opt-row { display:flex; gap:6px; align-items:center; }
+.opt-row input { flex:1; }
+.opt-row .rm { width:24px; height:24px; display:grid; place-items:center; color:var(--muted); border-radius:5px; cursor:pointer; }
+.opt-row .rm:hover { background:var(--err-bg, rgba(239,68,68,.08)); color:var(--err-700); }
+
+.empty-inspector { padding:48px 20px; text-align:center; color:var(--muted); font:500 13px/1.5 var(--f-tc); }
+.empty-inspector svg { width:48px; height:48px; opacity:.4; margin-bottom:14px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="side-mini">
+    <a class="logo" href="/admin/">R</a>
+    <a id="hubLink" title="活動總覽"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg></a>
+    <a id="editLink" title="活動設定"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></a>
+    <a class="on" title="表單設計"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></a>
+  </aside>
+
+  <main>
+    <div class="top-bar">
+      <div class="crumb">
+        <a href="/admin/">主辦後台</a><span class="sep">/</span>
+        <a href="/admin/events/">活動</a><span class="sep">/</span>
+        <a id="crumbHub">—</a><span class="sep">/</span>
+        <b>表單設計</b>
+      </div>
+      <div class="save-meta" id="saveMeta">尚未變更</div>
+      <button class="btn btn-ghost btn-sm" id="previewBtn">預覽 →</button>
+      <button class="btn btn-primary btn-sm" id="saveBtn" disabled>儲存</button>
+    </div>
+
+    <div id="loadingState" style="text-align:center; padding:80px 20px; color:var(--muted)">載入表單設計⋯</div>
+
+    <div class="builder" id="builder" style="display:none">
+      <!-- PALETTE -->
+      <aside class="palette">
+        <h5>欄位類型</h5>
+        <div class="field-types">
+          <div class="ft-item b1" draggable="true" data-type="text"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg></div><h6>單行文字</h6><p>姓名、學校等</p></div>
+          <div class="ft-item b1" draggable="true" data-type="textarea"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h12"/></svg></div><h6>多行文字</h6><p>自我介紹</p></div>
+          <div class="ft-item b2" draggable="true" data-type="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6>Email</h6><p>含格式驗證</p></div>
+          <div class="ft-item b2" draggable="true" data-type="tel"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>電話</h6><p>含格式</p></div>
+          <div class="ft-item b3" draggable="true" data-type="select"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg></div><h6>下拉選單</h6><p>多選一</p></div>
+          <div class="ft-item b3" draggable="true" data-type="radio"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><h6>單選</h6><p>視覺化</p></div>
+          <div class="ft-item b3" draggable="true" data-type="checkbox"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div><h6>複選</h6><p>多選</p></div>
+          <div class="ft-item b4" draggable="true" data-type="date"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6>日期</h6><p>生日 / 截止</p></div>
+          <div class="ft-item b4" draggable="true" data-type="idnumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6>身分證</h6><p>含驗證</p></div>
+          <div class="ft-item b4" draggable="true" data-type="number"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16"/></svg></div><h6>數字</h6><p>年齡 / 數量</p></div>
+        </div>
+
+        <h5 style="margin-top:18px">特殊欄位（學員預設）</h5>
+        <div class="field-types">
+          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6>中文姓名</h6></div>
+          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="school"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>學校</h6></div>
+          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietary"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M5 19h14M5 5h14"/></svg></div><h6>飲食</h6></div>
+          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="tshirt"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l4 3-2 5h-3v9H9V12H6L4 7z"/></svg></div><h6>T-shirt</h6></div>
+        </div>
+
+        <div class="legacy-import" style="margin-top:18px">
+          <h5>從 v1 欄位匯入</h5>
+          <p>把舊版的 studentFields / customQuestions 一鍵轉成 v3 區塊</p>
+          <button id="importLegacyBtn">執行匯入</button>
+        </div>
+      </aside>
+
+      <!-- CANVAS -->
+      <div class="canvas" id="canvas">
+        <div class="canvas-h">
+          <h2>報名表預覽</h2>
+          <p>從左側拖曳欄位類型到此處，或點擊區塊內的「＋ 新增欄位」</p>
+        </div>
+        <div id="sectionsContainer"></div>
+        <div class="add-section" id="addSectionBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>新增區塊</div>
+      </div>
+
+      <!-- INSPECTOR -->
+      <aside class="inspector" id="inspector">
+        <div class="empty-inspector" id="emptyInspector">
+          <svg fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>點擊任一欄位查看設定</div>
+        </div>
+        <div id="inspectorContent" style="display:none"></div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) {
+    location.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+    return;
+  }
+
+  var compId = '';
+  var m = location.pathname.match(/\/admin\/events\/([^/]+)\/form-builder/);
+  if (m) compId = decodeURIComponent(m[1]);
+  if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
+  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function uid(prefix) { return prefix + '_' + Math.random().toString(36).slice(2, 9); }
+
+  document.getElementById('hubLink').href = '/admin/events/' + encodeURIComponent(compId);
+  document.getElementById('editLink').href = '/admin/events/' + encodeURIComponent(compId) + '/edit';
+  document.getElementById('previewBtn').addEventListener('click', function () { window.open('/events/detail.html?id=' + encodeURIComponent(compId), '_blank'); });
+
+  var SCHEMA = { version: 'v3', sections: [] };
+  var ORIGINAL_JSON = '';
+  var SELECTED = null;  // { secId, fieldId }
+  var LEGACY_CFG = null;
+
+  var FIELD_META = {
+    text: { label: '單行文字', ic: 'b1', icon: '<path d="M4 6h16M4 12h16M4 18h7"/>' },
+    textarea: { label: '多行文字', ic: 'b1', icon: '<path d="M4 6h16M4 10h16M4 14h12"/>' },
+    email: { label: 'Email', ic: 'b2', icon: '<path d="M3 8l9 6 9-6"/>' },
+    tel: { label: '電話', ic: 'b2', icon: '<path d="M3 5a2 2 0 012-2h2.5"/>' },
+    select: { label: '下拉選單', ic: 'b3', icon: '<path d="M19 9l-7 7-7-7"/>' },
+    radio: { label: '單選', ic: 'b3', icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>' },
+    checkbox: { label: '複選', ic: 'b3', icon: '<rect x="4" y="4" width="16" height="16" rx="2"/>' },
+    date: { label: '日期', ic: 'b4', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/>' },
+    idnumber: { label: '身分證', ic: 'b4', icon: '<rect x="3" y="6" width="18" height="12" rx="2"/>' },
+    number: { label: '數字', ic: 'b4', icon: '<path d="M4 9h16M4 15h16"/>' }
+  };
+
+  function loadSchema() {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (!res || !res.success) {
+          alert('無法載入：' + ((res && res.message) || '未知錯誤'));
+          location.href = '/admin/events/';
+          return;
+        }
+        SCHEMA = res.schema || { version: 'v3', sections: [] };
+        // Ensure sections have IDs
+        SCHEMA.sections.forEach(function (s) {
+          if (!s.id) s.id = uid('sec');
+          (s.fields || []).forEach(function (f) { if (!f.id) f.id = uid('f'); });
+        });
+        ORIGINAL_JSON = JSON.stringify(SCHEMA);
+        // Get legacy cfg for import button
+        google.script.run.withSuccessHandler(function (b) {
+          LEGACY_CFG = b && b.config;
+          if (b && b.config) document.getElementById('crumbHub').textContent = b.config.competitionName || compId;
+          document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+        }).getRegistrationBundle(compId);
+
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('builder').style.display = 'grid';
+        render();
+      })
+      .withFailureHandler(function (err) {
+        alert('載入失敗：' + (err && err.message));
+      })
+      .getFormSchema(compId);
+  }
+  loadSchema();
+
+  function render() {
+    var container = document.getElementById('sectionsContainer');
+    if (SCHEMA.sections.length === 0) {
+      container.innerHTML = '<div class="canvas-sec" style="text-align:center; padding:48px"><p style="color:var(--muted)">尚無區塊。請點下方「新增區塊」開始。</p></div>';
+      markDirty();
+      return;
+    }
+    container.innerHTML = SCHEMA.sections.map(function (sec, sIdx) {
+      var roleLabels = { student: '學員', teacher: '指導老師', custom: '附加問題' };
+      return '<div class="canvas-sec" data-sec-id="' + sec.id + '">' +
+        '<div class="sec-h">' +
+          '<span class="nb">' + String(sIdx + 1).padStart(2, '0') + '</span>' +
+          '<span class="role-tag ' + (sec.role || 'custom') + '">' + (roleLabels[sec.role] || '自訂') + '</span>' +
+          '<h3><input value="' + escapeHtml(sec.title || '') + '" data-sec-field="title" placeholder="區塊標題"></h3>' +
+          '<div class="actions-sec">' +
+            '<button data-act="sec-up" data-id="' + sec.id + '" title="上移"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
+            '<button data-act="sec-down" data-id="' + sec.id + '" title="下移"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></button>' +
+            '<button data-act="sec-del" data-id="' + sec.id + '" title="刪除"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6v14a2 2 0 002 2h8a2 2 0 002-2V6"/></svg></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="fields-list" data-sec-id="' + sec.id + '">' +
+          (sec.fields || []).map(function (f, fIdx) { return renderField(sec.id, f, fIdx); }).join('') +
+          ((sec.fields || []).length === 0 ? '<div class="drop-zone-empty">拖曳左側欄位到此區塊</div>' : '') +
+        '</div>' +
+        '<button class="add-field-row" data-act="add-field" data-sec-id="' + sec.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px"><path d="M12 5v14M5 12h14"/></svg> 新增欄位</button>' +
+      '</div>';
+    }).join('');
+
+    // Wire up section header inputs
+    container.querySelectorAll('input[data-sec-field]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var secId = inp.closest('.canvas-sec').dataset.secId;
+        var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
+        if (sec) { sec[inp.dataset.secField] = inp.value; markDirty(); }
+      });
+    });
+
+    // Wire field clicks
+    container.querySelectorAll('.field-c').forEach(function (fc) {
+      fc.addEventListener('click', function () {
+        SELECTED = { secId: fc.closest('.fields-list').dataset.secId, fieldId: fc.dataset.fieldId };
+        renderInspector();
+        container.querySelectorAll('.field-c').forEach(function (x) { x.classList.remove('selected'); });
+        fc.classList.add('selected');
+      });
+    });
+
+    // Action buttons
+    container.querySelectorAll('[data-act]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var act = btn.dataset.act;
+        var id = btn.dataset.id;
+        if (act === 'sec-del') {
+          if (!confirm('刪除整個區塊？')) return;
+          SCHEMA.sections = SCHEMA.sections.filter(function (s) { return s.id !== id; });
+          render(); markDirty();
+        } else if (act === 'sec-up') {
+          var i = SCHEMA.sections.findIndex(function (s) { return s.id === id; });
+          if (i > 0) { [SCHEMA.sections[i-1], SCHEMA.sections[i]] = [SCHEMA.sections[i], SCHEMA.sections[i-1]]; render(); markDirty(); }
+        } else if (act === 'sec-down') {
+          var i2 = SCHEMA.sections.findIndex(function (s) { return s.id === id; });
+          if (i2 < SCHEMA.sections.length - 1) { [SCHEMA.sections[i2+1], SCHEMA.sections[i2]] = [SCHEMA.sections[i2], SCHEMA.sections[i2+1]]; render(); markDirty(); }
+        } else if (act === 'add-field') {
+          var secId = btn.dataset.secId;
+          var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
+          if (sec) {
+            sec.fields = sec.fields || [];
+            sec.fields.push({ id: uid('f'), type: 'text', label: '新欄位', req: false, opts: [] });
+            render(); markDirty();
+          }
+        } else if (act === 'field-del') {
+          var fid = btn.dataset.fid;
+          SCHEMA.sections.forEach(function (s) { s.fields = (s.fields || []).filter(function (f) { return f.id !== fid; }); });
+          if (SELECTED && SELECTED.fieldId === fid) { SELECTED = null; renderInspector(); }
+          render(); markDirty();
+        } else if (act === 'field-up' || act === 'field-down') {
+          var fid2 = btn.dataset.fid;
+          SCHEMA.sections.forEach(function (s) {
+            var idx = (s.fields || []).findIndex(function (f) { return f.id === fid2; });
+            if (idx < 0) return;
+            if (act === 'field-up' && idx > 0) { [s.fields[idx-1], s.fields[idx]] = [s.fields[idx], s.fields[idx-1]]; }
+            if (act === 'field-down' && idx < s.fields.length - 1) { [s.fields[idx+1], s.fields[idx]] = [s.fields[idx], s.fields[idx+1]]; }
+          });
+          render(); markDirty();
+        }
+      });
+    });
+
+    // Drag-drop wiring
+    wireDragDrop();
+
+    markDirty();
+  }
+
+  function renderField(secId, f, idx) {
+    var meta = FIELD_META[f.type] || FIELD_META.text;
+    return '<div class="field-c" data-field-id="' + f.id + '" draggable="true">' +
+      '<div class="row1">' +
+        '<span class="grip"><svg fill="currentColor" viewBox="0 0 24 24"><circle cx="8" cy="6" r="1.5"/><circle cx="8" cy="12" r="1.5"/><circle cx="8" cy="18" r="1.5"/><circle cx="16" cy="6" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="16" cy="18" r="1.5"/></svg></span>' +
+        '<span class="ic-f ' + meta.ic + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + meta.icon + '</svg></span>' +
+        '<span class="label-f">' + escapeHtml(f.label || '(未命名)') + (f.req ? ' <span class="req">*</span>' : '') +
+          (f.legacyKey ? ' <span class="legacy-tag">' + escapeHtml(f.legacyKey) + '</span>' : '') +
+        '</span>' +
+        '<span class="actions-f">' +
+          '<button data-act="field-up" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
+          '<button data-act="field-down" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></button>' +
+          '<button data-act="field-del" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/></svg></button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="preview-f">' + meta.label + (f.opts && f.opts.length ? ' · ' + f.opts.length + ' 個選項' : '') + '</div>' +
+    '</div>';
+  }
+
+  function renderInspector() {
+    if (!SELECTED) {
+      document.getElementById('emptyInspector').style.display = 'block';
+      document.getElementById('inspectorContent').style.display = 'none';
+      return;
+    }
+    var sec = SCHEMA.sections.find(function (s) { return s.id === SELECTED.secId; });
+    if (!sec) return;
+    var f = (sec.fields || []).find(function (x) { return x.id === SELECTED.fieldId; });
+    if (!f) return;
+    var meta = FIELD_META[f.type] || FIELD_META.text;
+    document.getElementById('emptyInspector').style.display = 'none';
+    var ins = document.getElementById('inspectorContent');
+    ins.style.display = 'block';
+    ins.innerHTML =
+      '<div class="ins-h">' +
+        '<div class="ic-f ' + meta.ic + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + meta.icon + '</svg></div>' +
+        '<div><h4>' + meta.label + '</h4></div>' +
+      '</div>' +
+      '<div class="ins-row"><div class="lbl">欄位類型</div><select data-ins="type">' +
+        Object.keys(FIELD_META).map(function (t) { return '<option value="' + t + '"' + (f.type === t ? ' selected' : '') + '>' + FIELD_META[t].label + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="ins-row"><div class="lbl">標籤文字</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
+      '<div class="ins-row"><div class="lbl">說明文字（可選）</div><input type="text" data-ins="help" value="' + escapeHtml(f.help || '') + '" placeholder="顯示在欄位下方"></div>' +
+      '<div class="ins-row"><div class="lbl">舊欄位 key（為與 v1 報名相容）</div><select data-ins="legacyKey"><option value="">無</option>' +
+        ['chineseName','englishName','idNumber','email','phone','school','department','grade','dietary','tshirt','birthday','address']
+          .map(function (k) { return '<option value="' + k + '"' + (f.legacyKey === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') +
+      '</select></div>' +
+
+      ((['select','radio','checkbox'].indexOf(f.type) >= 0) ? (
+        '<div class="ins-row"><div class="lbl">選項</div><div class="opts-editor" id="opts-editor">' +
+          (f.opts || []).map(function (o, i) {
+            return '<div class="opt-row"><input type="text" value="' + escapeHtml(o) + '" data-opt-idx="' + i + '"><span class="rm" data-rm-opt="' + i + '">×</span></div>';
+          }).join('') +
+          '<button class="add-row" data-add-opt>＋ 新增選項</button>' +
+        '</div></div>'
+      ) : '') +
+
+      '<div class="tg-row"><div class="body"><h6>必填</h6><p>送出表單時必須填寫</p></div><div class="tg-sw-s ' + (f.req ? 'on' : '') + '" data-ins-toggle="req"></div></div>' +
+
+      '<div class="ins-row" style="margin-top:18px"><div class="lbl">條件邏輯（進階）</div>' +
+        '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); padding:10px; background:var(--surface-2); border-radius:7px">支援格式：當某欄位等於某值時才顯示此欄位。Phase 6 將提供 UI 編輯器。</div>' +
+      '</div>';
+
+    // Wire inspector
+    ins.querySelectorAll('[data-ins]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        f[el.dataset.ins] = el.value;
+        render(); // also re-renders inspector
+        // re-select
+        var selFieldId = f.id;
+        SELECTED.fieldId = selFieldId;
+        renderInspector();
+        markDirty();
+      });
+      el.addEventListener('change', function () {
+        f[el.dataset.ins] = el.value;
+        render();
+        SELECTED.fieldId = f.id;
+        renderInspector();
+        markDirty();
+      });
+    });
+    ins.querySelectorAll('[data-ins-toggle]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        el.classList.toggle('on');
+        f[el.dataset.insToggle] = el.classList.contains('on');
+        render();
+        SELECTED.fieldId = f.id;
+        renderInspector();
+        markDirty();
+      });
+    });
+    // Opts editing
+    var oe = document.getElementById('opts-editor');
+    if (oe) {
+      oe.querySelectorAll('[data-opt-idx]').forEach(function (inp) {
+        inp.addEventListener('input', function () {
+          f.opts[parseInt(inp.dataset.optIdx, 10)] = inp.value;
+          markDirty();
+          // re-render the field card only
+          var fc = document.querySelector('.field-c[data-field-id="' + f.id + '"] .preview-f');
+          if (fc) fc.textContent = (FIELD_META[f.type] || FIELD_META.text).label + ' · ' + f.opts.length + ' 個選項';
+        });
+      });
+      oe.querySelectorAll('[data-rm-opt]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          f.opts.splice(parseInt(b.dataset.rmOpt, 10), 1);
+          renderInspector();
+          render();
+          SELECTED.fieldId = f.id;
+          renderInspector();
+          markDirty();
+        });
+      });
+      var addBtn = oe.querySelector('[data-add-opt]');
+      if (addBtn) addBtn.addEventListener('click', function () {
+        f.opts = f.opts || [];
+        f.opts.push('');
+        renderInspector();
+        markDirty();
+      });
+    }
+  }
+
+  // ---- Drag-drop ----
+  var DRAG = null;
+
+  function wireDragDrop() {
+    // Palette items - drag start
+    document.querySelectorAll('.ft-item').forEach(function (it) {
+      it.addEventListener('dragstart', function (e) {
+        DRAG = { kind: 'palette', type: it.dataset.type, legacyKey: it.dataset.legacy || null };
+        e.dataTransfer.effectAllowed = 'copy';
+        it.classList.add('dragging');
+      });
+      it.addEventListener('dragend', function () { it.classList.remove('dragging'); });
+    });
+    // Field cards - drag start (reorder within / across sections)
+    document.querySelectorAll('.field-c').forEach(function (fc) {
+      fc.addEventListener('dragstart', function (e) {
+        e.stopPropagation();
+        DRAG = { kind: 'field', fieldId: fc.dataset.fieldId };
+        e.dataTransfer.effectAllowed = 'move';
+        fc.classList.add('dragging');
+      });
+      fc.addEventListener('dragend', function () { fc.classList.remove('dragging'); });
+    });
+    // Section drop zones
+    document.querySelectorAll('.canvas-sec').forEach(function (sec) {
+      sec.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = DRAG && DRAG.kind === 'palette' ? 'copy' : 'move';
+        sec.classList.add('drag-over');
+      });
+      sec.addEventListener('dragleave', function () { sec.classList.remove('drag-over'); });
+      sec.addEventListener('drop', function (e) {
+        e.preventDefault();
+        sec.classList.remove('drag-over');
+        if (!DRAG) return;
+        var targetSecId = sec.dataset.secId;
+        var targetSec = SCHEMA.sections.find(function (s) { return s.id === targetSecId; });
+        if (!targetSec) return;
+        if (DRAG.kind === 'palette') {
+          var label = labelForLegacy(DRAG.legacyKey) || ((FIELD_META[DRAG.type] || FIELD_META.text).label);
+          var newField = { id: uid('f'), type: DRAG.type, label: label, legacyKey: DRAG.legacyKey || undefined, req: false, opts: [] };
+          if (DRAG.legacyKey === 'dietary') newField.opts = ['豬肉', '牛肉', '雞肉', '海鮮', '全素'];
+          if (DRAG.legacyKey === 'tshirt')  newField.opts = ['XS','S','M','L','XL','2XL','3XL'];
+          targetSec.fields = targetSec.fields || [];
+          targetSec.fields.push(newField);
+          render(); markDirty();
+        } else if (DRAG.kind === 'field') {
+          // Move field from its current section to target
+          var movedField;
+          SCHEMA.sections.forEach(function (s) {
+            var idx = (s.fields || []).findIndex(function (f) { return f.id === DRAG.fieldId; });
+            if (idx >= 0) {
+              movedField = s.fields[idx];
+              s.fields.splice(idx, 1);
+            }
+          });
+          if (movedField) {
+            targetSec.fields = targetSec.fields || [];
+            targetSec.fields.push(movedField);
+            render(); markDirty();
+          }
+        }
+        DRAG = null;
+      });
+    });
+  }
+
+  function labelForLegacy(k) {
+    return ({ chineseName:'中文姓名', englishName:'英文姓名', idNumber:'身分證/護照', email:'Email', phone:'電話',
+              school:'學校', department:'系所', grade:'年級', dietary:'飲食習慣', tshirt:'T-shirt 尺寸',
+              birthday:'生日', address:'地址' })[k] || '';
+  }
+
+  // ---- Add section ----
+  document.getElementById('addSectionBtn').addEventListener('click', function () {
+    var role = prompt('區塊類型：student / teacher / custom', 'student');
+    if (!role || !['student', 'teacher', 'custom'].includes(role)) {
+      if (role) alert('類型只能是 student / teacher / custom');
+      return;
+    }
+    var title = prompt('區塊標題', role === 'student' ? '學員資料' : role === 'teacher' ? '指導老師' : '附加問題');
+    if (!title) return;
+    SCHEMA.sections.push({ id: uid('sec'), title: title, role: role, repeat: 1, fields: [] });
+    render(); markDirty();
+  });
+
+  // ---- Import from legacy ----
+  document.getElementById('importLegacyBtn').addEventListener('click', function () {
+    if (!LEGACY_CFG) { alert('找不到舊資料'); return; }
+    if (SCHEMA.sections.length > 0 && !confirm('將會覆蓋目前的設計，確定？')) return;
+    SCHEMA.sections = [];
+    var sf = LEGACY_CFG.studentFields || [];
+    var tf = LEGACY_CFG.teacherFields || [];
+    var cq = LEGACY_CFG.customQuestions || [];
+    if (sf.length) {
+      SCHEMA.sections.push({
+        id: uid('sec'), title: '學員資料', role: 'student', repeat: LEGACY_CFG.memberCount || 1,
+        fields: sf.map(function (k) { return { id: uid('f'), type: typeForLegacy(k), label: labelForLegacy(k) || k, legacyKey: k, req: true,
+          opts: k === 'dietary' ? (LEGACY_CFG.dietaryOptions || []) : k === 'tshirt' ? (LEGACY_CFG.tshirtOptions || []) : [] }; })
+      });
+    }
+    if (tf.length && (LEGACY_CFG.teacherCount || 0) > 0) {
+      SCHEMA.sections.push({
+        id: uid('sec'), title: '指導老師', role: 'teacher', repeat: LEGACY_CFG.teacherCount || 1,
+        fields: tf.map(function (k) { return { id: uid('f'), type: typeForLegacy(k), label: labelForLegacy(k) || k, legacyKey: k, req: true, opts: [] }; })
+      });
+    }
+    if (cq.length) {
+      SCHEMA.sections.push({
+        id: uid('sec'), title: '附加問題', role: 'custom', repeat: 1,
+        fields: cq.map(function (q, i) { return { id: uid('f'), type: q.type || 'text', label: q.q || ('問題 ' + (i + 1)), req: !!q.req, opts: q.opts || [] }; })
+      });
+    }
+    if (SCHEMA.sections.length === 0) {
+      alert('舊資料為空，已建立預設區塊');
+      SCHEMA.sections.push({ id: uid('sec'), title: '學員資料', role: 'student', repeat: 1, fields: [
+        { id: uid('f'), type: 'text', label: '中文姓名', legacyKey: 'chineseName', req: true, opts: [] },
+        { id: uid('f'), type: 'email', label: 'Email', legacyKey: 'email', req: true, opts: [] }
+      ]});
+    }
+    render(); markDirty();
+  });
+  function typeForLegacy(k) {
+    return ({ email: 'email', phone: 'tel', birthday: 'date', dietary: 'select', tshirt: 'select', idNumber: 'idnumber' })[k] || 'text';
+  }
+
+  // ---- Save ----
+  function markDirty() {
+    var cur = JSON.stringify(SCHEMA);
+    var meta = document.getElementById('saveMeta');
+    var btn = document.getElementById('saveBtn');
+    if (cur === ORIGINAL_JSON) {
+      meta.textContent = '已儲存';
+      meta.className = 'save-meta saved';
+      btn.disabled = true;
+    } else {
+      meta.textContent = '有未儲存變更';
+      meta.className = 'save-meta dirty';
+      btn.disabled = false;
+    }
+  }
+  document.getElementById('saveBtn').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          ORIGINAL_JSON = JSON.stringify(SCHEMA);
+          btn.textContent = '儲存';
+          markDirty();
+          var meta = document.getElementById('saveMeta');
+          meta.textContent = '✓ 已儲存（同步舊欄位 ' + res.derived.studentFields.length + ' 學員 + ' + res.derived.customQuestionCount + ' 附加問題）';
+          meta.className = 'save-meta saved';
+        } else {
+          btn.disabled = false; btn.textContent = '儲存';
+          alert('儲存失敗：' + ((res && res.message) || ''));
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false; btn.textContent = '儲存';
+        alert('儲存失敗：' + (err && err.message));
+      })
+      .saveFormSchema(compId, SCHEMA);
+  });
+
+  window.addEventListener('beforeunload', function (e) {
+    if (JSON.stringify(SCHEMA) !== ORIGINAL_JSON) { e.preventDefault(); e.returnValue = ''; }
+  });
+})();
+</script>
+</body>
+</html>

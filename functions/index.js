@@ -3446,6 +3446,202 @@ exports.submitContactInquiry = callable(async (data) => {
 });
 
 // =============================================================================
+// V3 PHASE 5: Form schema (drag-drop builder) + dual-write to legacy fields
+// =============================================================================
+//
+// New shape:
+//   cfg.formSchema = {
+//     version: 'v3',
+//     sections: [
+//       { id, title, desc, role: 'student'|'teacher'|'custom',
+//         fields: [ { id, type, label, legacyKey?, req, opts[], help, size, logic? } ] }
+//     ]
+//   }
+//
+// Dual-write contract:
+//   When saveFormSchema is called we *also* back-derive these legacy fields
+//   used by the v1 SPA registration page and Phase 3 /events/register.html:
+//     - cfg.studentFields  = fields with role='student' and legacyKey
+//     - cfg.teacherFields  = fields with role='teacher' and legacyKey
+//     - cfg.customQuestions = fields with role='custom' (no legacyKey)
+//     - cfg.memberCount     = max number of "student" repetitions
+//     - cfg.teacherCount    = max number of "teacher" repetitions
+//     - cfg.dietaryOptions / tshirtOptions extracted from any `dietary` /
+//       `tshirt` field's opts (for legacy lookup compat)
+//
+// Cleanup script (Phase 9c) removes the legacy fields ~3 months after deploy.
+
+const LEGACY_FIELD_KEYS = new Set([
+  'chineseName','englishName','idNumber','passport','birthday','school',
+  'department','grade','email','phone','address','dietary','tshirt'
+]);
+
+function deriveLegacyFromFormSchema(formSchema) {
+  const out = {
+    studentFields: [],
+    teacherFields: [],
+    customQuestions: [],
+    memberCount: 1,
+    teacherCount: 0,
+    dietaryOptions: undefined,
+    tshirtOptions: undefined
+  };
+  if (!formSchema || !Array.isArray(formSchema.sections)) return out;
+
+  const seenStudent = new Set();
+  const seenTeacher = new Set();
+  for (const sec of formSchema.sections) {
+    const role = sec.role || 'custom';
+    const repeat = parseInt(sec.repeat, 10) || 1;
+    if (role === 'student' && repeat > out.memberCount) out.memberCount = repeat;
+    if (role === 'teacher' && repeat > out.teacherCount) out.teacherCount = repeat;
+    for (const f of (sec.fields || [])) {
+      if (!f || !f.type) continue;
+      if (role === 'student' && f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) {
+        if (!seenStudent.has(f.legacyKey)) { out.studentFields.push(f.legacyKey); seenStudent.add(f.legacyKey); }
+        if (f.legacyKey === 'dietary' && Array.isArray(f.opts) && f.opts.length) out.dietaryOptions = f.opts.slice();
+        if (f.legacyKey === 'tshirt'  && Array.isArray(f.opts) && f.opts.length) out.tshirtOptions = f.opts.slice();
+      } else if (role === 'teacher' && f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) {
+        if (!seenTeacher.has(f.legacyKey)) { out.teacherFields.push(f.legacyKey); seenTeacher.add(f.legacyKey); }
+      } else {
+        // Custom question
+        const cq = { q: f.label || f.id || '', type: f.type, req: !!f.req, opts: Array.isArray(f.opts) ? f.opts.slice() : [] };
+        out.customQuestions.push(cq);
+      }
+    }
+  }
+  return out;
+}
+
+function buildFormSchemaFromLegacy(cfg) {
+  cfg = cfg || {};
+  const sections = [];
+  const studentFields = (cfg.studentFields || []).slice();
+  const teacherFields = (cfg.teacherFields || []).slice();
+  const customQuestions = (cfg.customQuestions || []).slice();
+
+  const FIELD_LABELS = {
+    chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證 / 護照',
+    birthday: '出生年月日', school: '學校', department: '系所', grade: '年級',
+    email: 'Email', phone: '電話', address: '地址',
+    dietary: '飲食習慣', tshirt: 'T-shirt 尺寸'
+  };
+  const FIELD_TYPES = {
+    chineseName: 'text', englishName: 'text', idNumber: 'idnumber',
+    birthday: 'date', school: 'text', department: 'text', grade: 'text',
+    email: 'email', phone: 'tel', address: 'text',
+    dietary: 'select', tshirt: 'select'
+  };
+
+  if (studentFields.length > 0) {
+    sections.push({
+      id: 'sec_student', title: '學員資料', desc: '請填寫每位學員的資訊', role: 'student',
+      repeat: cfg.memberCount || 1,
+      fields: studentFields.map((k, i) => ({
+        id: 'student_' + k, type: FIELD_TYPES[k] || 'text', label: FIELD_LABELS[k] || k,
+        legacyKey: k, req: true,
+        opts: k === 'dietary' ? (cfg.dietaryOptions || []) : k === 'tshirt' ? (cfg.tshirtOptions || []) : []
+      }))
+    });
+  }
+  if (teacherFields.length > 0 && (cfg.teacherCount || 0) > 0) {
+    sections.push({
+      id: 'sec_teacher', title: '指導老師', desc: '老師的聯絡資訊', role: 'teacher',
+      repeat: cfg.teacherCount || 1,
+      fields: teacherFields.map((k, i) => ({
+        id: 'teacher_' + k, type: FIELD_TYPES[k] || 'text', label: FIELD_LABELS[k] || k,
+        legacyKey: k, req: true, opts: []
+      }))
+    });
+  }
+  if (customQuestions.length > 0) {
+    sections.push({
+      id: 'sec_custom', title: '附加問題', desc: '主辦方額外想了解的資訊', role: 'custom',
+      repeat: 1,
+      fields: customQuestions.map((cq, i) => ({
+        id: 'custom_' + i, type: cq.type || 'text', label: cq.q || ('問題 ' + (i+1)),
+        req: !!cq.req, opts: cq.opts || []
+      }))
+    });
+  }
+  return { version: 'v3-legacy-derived', sections, derivedFromLegacy: true };
+}
+
+exports.getFormSchema = compAuthCallable(async (data) => {
+  const doc = await db.collection("competitions").doc(data.compId).get();
+  if (!doc.exists) return { success: false, message: "找不到活動" };
+  const cfg = (doc.data().config) || {};
+  if (cfg.formSchema && Array.isArray(cfg.formSchema.sections)) {
+    return { success: true, schema: cfg.formSchema, source: 'v3' };
+  }
+  // Fallback: synthesize from legacy fields
+  return { success: true, schema: buildFormSchemaFromLegacy(cfg), source: 'legacy' };
+});
+
+exports.saveFormSchema = compAuthCallable(async (data, request) => {
+  const { compId, schema } = data;
+  if (!schema || !Array.isArray(schema.sections)) return { success: false, message: "schema 無效" };
+
+  // Sanitize: cap sizes, strip unknown keys per field.
+  // CRITICAL: Firestore rejects `undefined` values, so we must OMIT optional
+  // keys entirely rather than setting them to undefined.
+  const cleanSchema = {
+    version: 'v3',
+    sections: schema.sections.slice(0, 20).map(sec => {
+      const cleanSec = {
+        id: String(sec.id || '').slice(0, 40),
+        title: String(sec.title || '').slice(0, 80),
+        desc: String(sec.desc || '').slice(0, 200),
+        role: ['student','teacher','custom'].includes(sec.role) ? sec.role : 'custom',
+        repeat: Math.max(1, Math.min(20, parseInt(sec.repeat, 10) || 1)),
+        fields: (sec.fields || []).slice(0, 50).map(f => {
+          const cleanF = {
+            id: String(f.id || '').slice(0, 40),
+            type: String(f.type || 'text').slice(0, 20),
+            label: String(f.label || '').slice(0, 100),
+            req: !!f.req,
+            opts: Array.isArray(f.opts) ? f.opts.slice(0, 50).map(o => String(o).slice(0, 100)) : [],
+            help: String(f.help || '').slice(0, 200),
+            size: ['half','full','third'].includes(f.size) ? f.size : 'half'
+          };
+          if (f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) cleanF.legacyKey = f.legacyKey;
+          if (f.logic && typeof f.logic === 'object') cleanF.logic = f.logic;
+          return cleanF;
+        })
+      };
+      return cleanSec;
+    })
+  };
+
+  const derived = deriveLegacyFromFormSchema(cleanSchema);
+
+  const update = {
+    'config.formSchema': cleanSchema,
+    'config.studentFields': derived.studentFields,
+    'config.teacherFields': derived.teacherFields,
+    'config.customQuestions': derived.customQuestions,
+    'config.memberCount': derived.memberCount,
+    'config.teacherCount': derived.teacherCount
+  };
+  if (derived.dietaryOptions !== undefined) update['config.dietaryOptions'] = derived.dietaryOptions;
+  if (derived.tshirtOptions !== undefined) update['config.tshirtOptions'] = derived.tshirtOptions;
+
+  await db.collection("competitions").doc(compId).update(update);
+  await auditLog(request.authUser.username, "saveFormSchema", compId, cleanSchema.sections.length + " sections");
+  return {
+    success: true,
+    schema: cleanSchema,
+    derived: {
+      studentFields: derived.studentFields,
+      teacherFields: derived.teacherFields,
+      customQuestionCount: derived.customQuestions.length,
+      memberCount: derived.memberCount,
+      teacherCount: derived.teacherCount
+    }
+  };
+});
+
+// =============================================================================
 // V3 PHASE 4: Admin dashboard insights + todo aggregation
 // =============================================================================
 

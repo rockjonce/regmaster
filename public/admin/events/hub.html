@@ -253,13 +253,16 @@
           </div>
         </div>
 
-        <!-- Other tabs as stubs - link to legacy SPA which has working implementations -->
+        <!-- Settings: Phase 5 page replaces the stub -->
         <div class="tab-pane" data-pane="settings" style="display:none">
-          <div class="tab-stub">
-            <div class="ic">⚙</div>
-            <h3>活動設定</h3>
-            <p>完整的活動設定面板（基本資料、組別、報名欄位、收費、附加問題、檔案上傳⋯）將於 <b>Phase 5</b> 帶來全新 v3 form-builder。<br><br>在此之前，請使用既有的設定頁面進行詳細配置。</p>
-            <a id="legacyEditLink" href="#" class="btn btn-primary">開啟舊版設定頁 →</a>
+          <div class="tab-stub" style="background:linear-gradient(135deg, var(--surface), var(--surface-2)); border-color:var(--acc-soft)">
+            <div class="ic" style="background:var(--acc-soft); color:var(--acc)">⚙</div>
+            <h3>活動設定（v3）</h3>
+            <p>6 個分頁：基本 / 組別場次 / 報名表單 / 收費 / 通知 / 進階。<br>表單欄位請於專屬「表單設計器」拖放編輯，享受 v3 體驗。</p>
+            <div style="display:flex; gap:10px; justify-content:center">
+              <a id="editLinkBtn" href="#" class="btn btn-primary">開啟 v3 設定頁 →</a>
+              <a id="formBuilderLinkBtn" href="#" class="btn btn-ghost">表單設計器</a>
+            </div>
           </div>
         </div>
         <div class="tab-pane" data-pane="registrations" style="display:none">
@@ -503,10 +506,11 @@
     });
     document.getElementById('publicBtn').addEventListener('click', function () { window.open('/events/detail.html?id=' + encodeURIComponent(compId), '_blank'); });
 
-    // Legacy SPA links (Phase 5/6 will replace each)
-    var legacyHash = '/legacy/index.html#comp/' + encodeURIComponent(compId);
+    // Phase 5 settings + form-builder links
+    document.getElementById('editLinkBtn').href = '/admin/events/' + encodeURIComponent(compId) + '/edit';
+    document.getElementById('formBuilderLinkBtn').href = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
+    // Phase 6+ stubs still link to legacy SPA
     var legacyBase = '/?comp=' + encodeURIComponent(compId);
-    document.getElementById('legacyEditLink').href = legacyBase + '&admin=1';
     document.getElementById('legacyRegLink').href = legacyBase + '&admin=1#regs';
     document.getElementById('legacyAnnLink').href = legacyBase + '&admin=1#ann';
     document.getElementById('legacyScoreLink').href = legacyBase + '&admin=1#scores';

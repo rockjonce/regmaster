@@ -3,8 +3,10 @@
     "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
-      { "source": "/admin/events/*", "destination": "/admin/events/hub.html" },
-      { "source": "**", "destination": "/index.html" }
+      { "source": "/admin/events/*/edit",         "destination": "/admin/events/edit.html" },
+      { "source": "/admin/events/*/form-builder", "destination": "/admin/events/form-builder.html" },
+      { "source": "/admin/events/*",              "destination": "/admin/events/hub.html" },
+      { "source": "**",                            "destination": "/index.html" }
     ]
   },
   "functions": {
