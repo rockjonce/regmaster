@@ -115,25 +115,29 @@ firebase auth:import _dev/backup/auth-pre-v3-upgrade-2026-05-27.json `
 
 ## Layer 5 · Deploy 狀態紀錄
 
-> 此節由 snapshot 流程的 orchestrator 在 export 完成後填入。執行完整 snapshot 後請看本檔尾端的「Layer 5 補檔」段。
-
 ### Hosting
 
-```
-(snapshot 完成後填入 `firebase hosting:releases:list --site=regmaster-pro --limit=5` 輸出)
-```
+| 項目 | 值 |
+| --- | --- |
+| Site | `regmaster-pro` |
+| Live channel URL | `https://regmaster-pro.web.app` |
+| Last release time | `2026-04-20 14:15:20` (UTC+8 推估) |
+| Expire time | `never` |
+
+說明：Firebase Hosting 自動保留歷史版本，可用 `firebase hosting:clone` 在 1 分鐘內回滾，無須等 restore.ps1。
 
 ### Functions
 
-| 統計 | 值 |
+| 項目 | 值 |
 | --- | --- |
-| 函式總數 | ~98 個 v2 callable + 2 個 onRequest（payuni notify） |
+| Callable 總數 | **95** 個（CLI 計算 `functions:list \| grep -c callable`） |
+| Plus onRequest | 2 個（`payuniNotify`、`payuniRegNotify`） |
+| Generation | v2（全部） |
 | Region | `us-central1` |
 | Runtime | nodejs20 |
+| Memory | 256 MB（預設） |
 
-```
-(snapshot 完成後填入 `firebase functions:list` 輸出的精簡版)
-```
+說明：所有 callable 程式碼在 `functions/index.js`（git 已涵蓋）。Functions 部署版本由 Firebase 平台保留，restore 流程的 Layer 5 會 `firebase deploy --only functions` 從 git tag 重 deploy。
 
 ### 緊急 1 分鐘回滾 Hosting（不用跑 restore.ps1）
 

@@ -128,12 +128,14 @@ Invoke-RestoreStep `
     -Label "[2/5] Firestore: import from $FsExportPath" `
     -Question "Restore Firestore data? (THIS OVERWRITES PRODUCTION DATA)" `
     -Action {
-        # Find the actual export metadata file (firestore export creates a timestamp subfolder)
+        # Find the actual export metadata file. For `gcloud firestore export <path> --async`,
+        # the metadata lives directly at <path>/firestore.overall_export_metadata
+        # (no extra timestamp subfolder).
         $metaPath = gcloud storage ls --recursive $FsExportPath --project=$Project 2>&1 |
             Select-String -Pattern "overall_export_metadata$" |
             Select-Object -First 1
         if (-not $metaPath) {
-            throw "Cannot find overall_export_metadata under $FsExportPath"
+            throw "Cannot find overall_export_metadata under $FsExportPath. Verify snapshot is complete."
         }
         $metaUri = $metaPath.Line.Trim()
         Log "  Importing from: $metaUri" White
