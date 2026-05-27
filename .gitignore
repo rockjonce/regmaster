@@ -1,3 +1,17 @@
+# Claude Code session state (not project state)
+.claude/
+
+# Backup auth dumps (contain hashed passwords; never commit)
+_dev/backup/auth-*.json
+_dev/backup/RESTORE_LOG_*.txt
+
+# Generic credentials safety net
+*-creds.json
+*-credentials.json
+
+# Unzipped reference design (large; original zip remains in user's Desktop)
+_dev/design_zip_extracted/
+
 # Logs
 logs
 *.log
