@@ -345,7 +345,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
         btn.disabled = false; btn.textContent = oldText;
         showErr((err && err.message) || '網路錯誤');
       })
-      .requestAccount(username, password, displayName, email, phone);
+      .requestAccount(username, password, displayName, email, phone, pendingPlan);
   });
 
   // ---- OTP input handling ----

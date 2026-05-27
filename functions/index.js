@@ -831,23 +831,28 @@ exports.submitRegistration = callable(async (data) => {
 
 // ===== 新增：帳號申請與驗證信功能 =====
 exports.requestAccount = callable(async (data) => {
-  const { username, password, displayName, email, phone } = data;
+  const { username, password, displayName, email, phone, intendedPlan } = data;
   if (!username || !password || !email || !displayName) return { success: false, message: "必填欄位請填寫完整" };
-  
+
+  // V3 Phase 2.5: validate plan from signup page (defaults to "free" legacy behavior)
+  const validPlans = ["free", "trial", "starter", "pro"];
+  const plan = validPlans.includes(intendedPlan) ? intendedPlan : "free";
+
   // 檢查是否已被註冊
   const existUser = await db.collection("accounts").where("username", "==", username).limit(1).get();
   if (!existUser.empty) return { success: false, message: "此帳號已被註冊" };
-  
+
   const existEmail = await db.collection("accounts").where("email", "==", email).limit(1).get();
   if (!existEmail.empty) return { success: false, message: "此 Email 已被註冊過" };
 
   // 產生 6 位數 OTP 驗證碼
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  
+
   // 寫入暫存區 (15分鐘後過期)
   await db.collection("accountRequests").doc(username).set({
     username, passwordHash: hashPwd(password), displayName, email, phone, otp,
-    expiresAt: new Date(Date.now() + 15 * 60000).getTime() 
+    intendedPlan: plan,
+    expiresAt: new Date(Date.now() + 15 * 60000).getTime()
   });
 
   // 發送驗證信
@@ -951,28 +956,72 @@ exports.verifyAccount = callable(async (data) => {
     return { success: false, message: "驗證碼輸入錯誤（剩餘 " + remaining + " 次機會）" };
   }
 
-  // 1. 正式建立帳號
+  // 1. 正式建立帳號（V3 Phase 2.5：紀錄使用者註冊時的方案意圖）
+  const intendedPlan = reqData.intendedPlan || "free";
   await db.collection("accounts").add({
     username: reqData.username, passwordHash: reqData.passwordHash, role: "competition",
     displayName: reqData.displayName, email: reqData.email, phone: reqData.phone || "",
-    emailVerified: true, // 【新增此行】：標記此帳號已通過 Email OTP 驗證
+    emailVerified: true,
+    intendedPlan,                       // V3: signup-time plan choice (free/trial/starter/pro)
     createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
   });
 
-  // 2. 自動產出一組免費的「單次活動授權碼」
+  // 2. 產出授權碼。依方案不同建立不同類型：
+  //    free  → 維持原本 count=1 未啟用授權碼（使用者拿到 code 再去 activateLicense）
+  //    trial / starter / pro → 預先啟用的 14 天 subscription，可立即建活動，無 code 啟用步驟
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "RM";
   for (let i = 0; i < 4; i++) {
     code += "-";
     for (let j = 0; j < 4; j++) code += c[Math.floor(Math.random() * c.length)];
   }
-  await db.collection("licenses").doc(code).set({
-    code, type: "count", maxCount: 1, usedCount: 0, years: 0,
-    activatedBy: "", activatedAt: "", expiresAt: "", status: "未啟用", createdAt: fmtNow()
-  });
 
-  // 3. 發送歡迎信與免費授權碼
-  const htmlBody = `
+  const isTrial = intendedPlan === "trial" || intendedPlan === "starter" || intendedPlan === "pro";
+  const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  if (isTrial) {
+    // 14-day subscription, pre-activated for the new user
+    await db.collection("licenses").doc(code).set({
+      code, type: "subscription", maxCount: 0, usedCount: 0, years: 0,
+      activatedBy: reqData.username,
+      activatedAt: fmtNow(),
+      expiresAt: trialExpiresAt,
+      status: "已啟用",
+      createdAt: fmtNow(),
+      trial: true,                       // V3 marker: distinguish trial from paid subscription
+      intendedPlan                       // remember which paid plan they wanted (for upsell)
+    });
+  } else {
+    // Legacy behavior: free single-count license, user must activate manually
+    await db.collection("licenses").doc(code).set({
+      code, type: "count", maxCount: 1, usedCount: 0, years: 0,
+      activatedBy: "", activatedAt: "", expiresAt: "",
+      status: "未啟用", createdAt: fmtNow()
+    });
+  }
+
+  // 3. 發送歡迎信（內容依方案而異）
+  const subject = isTrial
+    ? "🎉 [RegMaster] 14 天免費試用已啟動"
+    : "🎉 [RegMaster] 帳號開通成功與專屬授權碼";
+
+  const trialExpDate = trialExpiresAt.substring(0, 10);
+  const bodyTrial = `
+    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background: #0A437A; padding: 20px; text-align: center; color: white;"><h2 style="margin: 0;">🎉 您的試用已啟動</h2></div>
+      <div style="padding: 30px 20px;">
+        <p style="font-size: 16px;">您好 <b>${reqData.displayName}</b>，您的帳號已成功開通並啟動 <b>14 天免費試用</b>！</p>
+        <p style="font-size: 16px;">所有功能無使用限制，可立即建立活動 — <b>${intendedPlan === "trial" ? "" : "您原本選擇的方案是「" + intendedPlan + "」，試用期結束後可前往帳務頁升級。"}</b></p>
+        <div style="padding: 15px; background: #FFF7ED; border-radius: 8px; margin: 20px 0;">
+          <div style="font-size: 12px; color: #64748b; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px">試用期效</div>
+          <div style="font-size: 16px; font-weight: 700; color: #0A437A">即日起 ~ ${trialExpDate}</div>
+        </div>
+        <p style="font-size: 14px; color: #64748b;">💡 提示：登入後即可直接建立第一場活動，無需輸入授權碼。試用期內所有功能皆可使用。</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 16px;">內部紀錄：授權碼 <code>${code}</code></p>
+      </div>
+    </div>
+  `;
+  const bodyFree = `
     <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: #10b981; padding: 20px; text-align: center; color: white;"><h2 style="margin: 0;">🎉 歡迎加入 RegMaster</h2></div>
       <div style="padding: 30px 20px;">
@@ -987,13 +1036,17 @@ exports.verifyAccount = callable(async (data) => {
   `;
   await db.collection("mail").add({
     to: [reqData.email],
-    message: { subject: "🎉 [RegMaster] 帳號開通成功與專屬授權碼", html: htmlBody, text: `授權碼: ${code}` }
+    message: {
+      subject,
+      html: isTrial ? bodyTrial : bodyFree,
+      text: isTrial ? `14 天試用已啟動，至 ${trialExpDate}` : `授權碼: ${code}`
+    }
   });
 
   // 4. 清除暫存
   await doc.ref.delete();
 
-  return { success: true };
+  return { success: true, plan: intendedPlan, isTrial };
 });
 
 exports.loginTeam = callable(async (data) => {

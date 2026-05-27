@@ -120,7 +120,7 @@
     listAccounts:[],
     getGeminiKeys:[],
     addNotification:["compId","question"],
-    requestAccount:["username","password","displayName","email","phone"],
+    requestAccount:["username","password","displayName","email","phone","intendedPlan"],
     verifyAccount:["username","otp"],
     resetAdminPassword:["email"],
     sendSystemEmail:["targetEmail","subject","content","user"],
