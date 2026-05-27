@@ -3446,6 +3446,89 @@ exports.submitContactInquiry = callable(async (data) => {
 });
 
 // =============================================================================
+// V3 PHASE 7: AI Conversation history (workspace UI)
+// =============================================================================
+
+exports.listConversations = authCallable(["system", "competition"], async (data, request) => {
+  const compId = data && data.compId;
+  const user = request.authUser.username;
+  let q = db.collection("aiConversations").where("user", "==", user);
+  if (compId) q = q.where("compId", "==", compId);
+  const snap = await q.get();
+  const list = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+  list.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+  return { success: true, conversations: list };
+});
+
+exports.createConversation = authCallable(["system", "competition"], async (data, request) => {
+  const { compId, title } = data;
+  const ref = await db.collection("aiConversations").add({
+    user: request.authUser.username,
+    compId: compId || '',
+    title: String(title || '新對話').slice(0, 100),
+    createdAt: fmtNow(),
+    updatedAt: fmtNow(),
+    messageCount: 0,
+    lastSnippet: ''
+  });
+  return { success: true, id: ref.id };
+});
+
+exports.getConversation = authCallable(["system", "competition"], async (data, request) => {
+  const { conversationId } = data;
+  const doc = await db.collection("aiConversations").doc(conversationId).get();
+  if (!doc.exists) return { success: false, message: "找不到對話" };
+  const conv = doc.data();
+  if (conv.user !== request.authUser.username && request.authUser.role !== 'system') {
+    return { success: false, message: "權限不足" };
+  }
+  const msgSnap = await db.collection("aiMessages").where("conversationId", "==", conversationId).get();
+  const messages = msgSnap.docs.map(d => Object.assign({ id: d.id }, d.data()))
+                              .sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
+  return { success: true, conversation: Object.assign({ id: conversationId }, conv), messages };
+});
+
+exports.appendMessage = authCallable(["system", "competition"], async (data, request) => {
+  const { conversationId, role, content } = data;
+  if (!['user', 'ai', 'system'].includes(role)) return { success: false, message: "role 無效" };
+  const convRef = db.collection("aiConversations").doc(conversationId);
+  const convDoc = await convRef.get();
+  if (!convDoc.exists) return { success: false, message: "找不到對話" };
+  if (convDoc.data().user !== request.authUser.username && request.authUser.role !== 'system') {
+    return { success: false, message: "權限不足" };
+  }
+  const cleanContent = String(content || '').slice(0, 10000);
+  const msgRef = await db.collection("aiMessages").add({
+    conversationId, role, content: cleanContent,
+    createdAt: new Date().toISOString()
+  });
+  await convRef.update({
+    updatedAt: fmtNow(),
+    messageCount: FieldValue.increment(1),
+    lastSnippet: cleanContent.slice(0, 80)
+  });
+  return { success: true, id: msgRef.id };
+});
+
+exports.deleteConversation = authCallable(["system", "competition"], async (data, request) => {
+  const { conversationId } = data;
+  const doc = await db.collection("aiConversations").doc(conversationId).get();
+  if (!doc.exists) return { success: false };
+  if (doc.data().user !== request.authUser.username && request.authUser.role !== 'system') {
+    return { success: false, message: "權限不足" };
+  }
+  // Delete messages in batches
+  const msgSnap = await db.collection("aiMessages").where("conversationId", "==", conversationId).get();
+  for (let i = 0; i < msgSnap.docs.length; i += 400) {
+    const batch = db.batch();
+    msgSnap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await doc.ref.delete();
+  return { success: true, deletedMessages: msgSnap.size };
+});
+
+// =============================================================================
 // V3 PHASE 6: Campaigns (announcements) + multi-judge scoring + check-in extras
 // =============================================================================
 

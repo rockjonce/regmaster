@@ -159,7 +159,14 @@
     sendCampaignNow:["campaignId"],
     submitJudgeScore:["compId","teamId","items","totalScore","comment"],
     getLiveLeaderboard:["compId"],
-    checkInTeamV2:["teamId","extras"]
+    checkInTeamV2:["teamId","extras"],
+
+    // V3 Phase 7 additions
+    listConversations:["compId"],
+    createConversation:["compId","title"],
+    getConversation:["conversationId"],
+    appendMessage:["conversationId","role","content"],
+    deleteConversation:["conversationId"]
   };
   window._argMap = _argMap;
 
