@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>評分 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+<style>
+.body-3 { display:grid; grid-template-columns:360px 1fr; min-height:calc(100vh - 60px); }
+.left-c { background:var(--surface); border-right:1px solid var(--line); padding:18px; overflow-y:auto; }
+.lc-h { padding-bottom:14px; border-bottom:1px solid var(--line); margin-bottom:14px; }
+.lc-h h3 { font:700 16px/1.2 var(--f-display); display:flex; align-items:center; gap:8px; }
+.lc-h .live-pill { padding:3px 8px; background:linear-gradient(135deg, var(--ok-500), #047857); color:white; border-radius:5px; font:700 10px/1 var(--f-mono); margin-left:auto; }
+
+.lb-row { display:grid; grid-template-columns:32px 1fr auto; gap:10px; padding:10px 12px; align-items:center; cursor:pointer; transition:.12s; border-bottom:1px solid var(--line-2); }
+.lb-row:hover { background:var(--surface-2); }
+.lb-row.on { background:color-mix(in srgb, var(--acc) 8%, var(--surface)); border-left:3px solid var(--ink); padding-left:9px; }
+.lb-row .rank { font:800 18px/1 var(--f-display); color:var(--muted); text-align:center; font-feature-settings:"tnum"; }
+.lb-row.top-1 .rank { color:#FFD700; }
+.lb-row.top-2 .rank { color:#C0C0C0; }
+.lb-row.top-3 .rank { color:#CD7F32; }
+.lb-row .nm { font:600 13.5px/1.3 var(--f-display); }
+.lb-row .meta { font:500 10.5px/1.3 var(--f-mono); color:var(--muted); margin-top:2px; }
+.lb-row .pts { font:800 16px/1 var(--f-display); }
+.lb-row .pts small { display:block; font:500 9.5px/1 var(--f-mono); color:var(--muted); margin-top:3px; }
+
+.center-c { padding:24px 28px; overflow-y:auto; }
+.cc-h { display:flex; align-items:center; gap:14px; padding:18px 22px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:18px; }
+.cc-h .av-l { width:48px; height:48px; border-radius:11px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:white; display:grid; place-items:center; font:800 18px/1 var(--f-display); }
+.cc-h h2 { font:700 19px/1.2 var(--f-display); margin-bottom:3px; }
+.cc-h p { font:500 12px/1.4 var(--f-mono); color:var(--muted); margin:0; }
+
+.score-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+.score-card { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.score-card h4 { font:700 14px/1.2 var(--f-display); margin-bottom:10px; }
+.score-card .input-row { display:flex; gap:10px; align-items:center; }
+.score-card input { flex:1; padding:14px 16px; background:var(--surface-2); border:1.5px solid var(--line); border-radius:9px; font:800 28px/1 var(--f-display); text-align:center; font-feature-settings:"tnum"; color:var(--ink); }
+.score-card input:focus { outline:0; border-color:var(--ink); }
+.score-card .max { font:500 14px/1 var(--f-mono); color:var(--muted); }
+.score-card .weight { font:500 10.5px/1 var(--f-mono); color:var(--muted); padding:2px 6px; background:var(--surface-2); border-radius:4px; margin-left:auto; }
+.score-card .input-row .stepper { display:flex; flex-direction:column; gap:2px; }
+.score-card .input-row .stepper button { width:30px; height:24px; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; cursor:pointer; }
+
+.total-card { padding:24px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:white; border-radius:14px; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.total-card .l { font:500 11px/1 var(--f-mono); color:rgba(255,255,255,.6); letter-spacing:.06em; text-transform:uppercase; }
+.total-card .v { font:800 48px/1 var(--f-display); margin-top:4px; }
+.total-card .v em { font-style:normal; font-size:16px; opacity:.6; margin-left:6px; font-weight:500; }
+.total-card .actions button { padding:10px 18px; border-radius:8px; font:600 13px/1 var(--f-tc); cursor:pointer; }
+.total-card .actions .btn-primary-w { background:white; color:var(--ink); border:0; }
+
+.comment-card { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.comment-card label { font:600 12px/1.4 var(--f-display); color:var(--ink-2); margin-bottom:8px; display:block; }
+.comment-card textarea { width:100%; padding:10px 14px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; font:400 13.5px/1.6 var(--f-tc); color:var(--ink); resize:vertical; min-height:80px; }
+.comment-card textarea:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+
+.empty-cc { text-align:center; padding:80px 32px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="side">
+    <a class="brand" href="/admin/"><div class="logo">R</div><div class="nm">RegMaster<small>主辦後台</small></div></a>
+    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p>主辦方</p></div></div>
+    <div class="nav-grp">
+      <div class="l-grp">概覽</div>
+      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg>儀表板</a>
+      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>所有活動</a>
+    </div>
+    <div class="nav-grp">
+      <div class="l-grp">本活動</div>
+      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg>總覽</a>
+      <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
+      <a class="nav-it" id="annLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>公告</a>
+      <a class="nav-it" id="paymentsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg>付款</a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
+      <a class="nav-it" id="checkinLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>報到</a>
+    </div>
+  </aside>
+  <main>
+    <header class="head">
+      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>評分</b></div>
+      <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+    </header>
+    <div id="loadingState" class="loading-c">載入評分資料⋯</div>
+    <div class="body-3" id="content" style="display:none">
+      <aside class="left-c">
+        <div class="lc-h">
+          <h3>🏆 即時排行榜<span class="live-pill">LIVE</span></h3>
+          <p style="font:500 11px/1.4 var(--f-mono); color:var(--muted); margin-top:6px">您為評審：<b id="judgeBadge">—</b></p>
+        </div>
+        <div id="leaderboard"></div>
+      </aside>
+      <section class="center-c" id="centerC">
+        <div class="empty-cc">👈 從左側選擇隊伍開始評分</div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="/shared/app-state.js"></script>
+<script>
+(function(){
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
+  var compId = '';
+  var m = location.pathname.match(/\/admin\/events\/([^/]+)\/scoring/);
+  if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
+  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  ['hubLink','editLink','annLink','paymentsLink','checkinLink'].forEach(function (id) {
+    var el = document.getElementById(id);
+    var suffix = { hubLink: '', editLink: '/edit', annLink: '/announcements', paymentsLink: '/payments', checkinLink: '/checkin' }[id];
+    if (el) el.href = '/admin/events/' + encodeURIComponent(compId) + suffix;
+  });
+  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('orgName').textContent = me.displayName || me.username;
+  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('meName').textContent = me.displayName || me.username;
+  document.getElementById('judgeBadge').textContent = me.displayName || me.username;
+
+  // 4 default scoring criteria
+  var CRITERIA = [
+    { key: 'creativity', label: '創意', weight: 1, max: 25 },
+    { key: 'technical', label: '技術', weight: 1, max: 25 },
+    { key: 'presentation', label: '呈現', weight: 1, max: 25 },
+    { key: 'impact', label: '影響', weight: 1, max: 25 }
+  ];
+
+  var SELECTED_TEAM = null;
+  var TEAMS = [];
+
+  function load() {
+    Promise.all([
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getRegistrationBundle(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getLiveLeaderboard(compId); })
+    ]).then(function (r) {
+      var bundle = r[0] || {}; var cfg = bundle.config || {};
+      TEAMS = r[1] || [];
+      document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+      document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('content').style.display = 'grid';
+      renderLeaderboard();
+    });
+  }
+
+  function renderLeaderboard() {
+    var lb = document.getElementById('leaderboard');
+    if (TEAMS.length === 0) {
+      lb.innerHTML = '<p style="text-align:center; padding:48px 14px; color:var(--muted)">尚無報名隊伍</p>';
+      return;
+    }
+    lb.innerHTML = TEAMS.map(function (t) {
+      var topClass = t.rank === 1 ? 'top-1' : t.rank === 2 ? 'top-2' : t.rank === 3 ? 'top-3' : '';
+      return '<div class="lb-row ' + topClass + '" data-tid="' + escapeHtml(t.teamId) + '">' +
+        '<div class="rank">' + t.rank + '</div>' +
+        '<div><div class="nm">' + escapeHtml(t.teamNameCN || '(無)') + '</div><div class="meta">' + escapeHtml(t.group || '') + ' · ' + t.judgeCount + ' 評審</div></div>' +
+        '<div class="pts">' + (t.avg ? t.avg.toFixed(1) : '—') + '<small>/100</small></div>' +
+      '</div>';
+    }).join('');
+    lb.querySelectorAll('.lb-row').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var t = TEAMS.find(function (x) { return x.teamId === el.dataset.tid; });
+        if (t) selectTeam(t);
+      });
+    });
+  }
+
+  function selectTeam(t) {
+    SELECTED_TEAM = t;
+    document.querySelectorAll('.lb-row').forEach(function (x) { x.classList.toggle('on', x.dataset.tid === t.teamId); });
+    var myScore = (t.scores || []).find(function (s) { return s.judgeId === me.username; });
+    var items = myScore ? myScore.items : CRITERIA.map(function (c) { return Object.assign({}, c, { score: 0 }); });
+    document.getElementById('centerC').innerHTML =
+      '<div class="cc-h">' +
+        '<div class="av-l">' + escapeHtml((t.teamNameCN || '?').charAt(0)) + '</div>' +
+        '<div><h2>' + escapeHtml(t.teamNameCN || '(無)') + '</h2><p>' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.group || '') + '</p></div>' +
+      '</div>' +
+      '<div class="score-grid">' +
+        items.map(function (c, i) {
+          return '<div class="score-card" data-key="' + escapeHtml(c.key) + '">' +
+            '<h4>' + escapeHtml(c.label) + ' <span class="weight">最高 ' + (c.maxScore || c.max || 25) + '</span></h4>' +
+            '<div class="input-row">' +
+              '<input type="number" data-score min="0" max="' + (c.maxScore || c.max || 25) + '" value="' + (c.score || 0) + '">' +
+              '<span class="max">/' + (c.maxScore || c.max || 25) + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div class="total-card">' +
+        '<div><div class="l">總分</div><div class="v"><span id="totalScore">0</span><em>/100</em></div></div>' +
+        '<div class="actions"><button class="btn-primary-w" id="submitScoreBtn">提交評分</button></div>' +
+      '</div>' +
+      '<div class="comment-card"><label>評審評語（選填）</label><textarea id="commentInput" placeholder="可寫給選手的建議⋯">' + escapeHtml((myScore && myScore.comment) || '') + '</textarea></div>';
+
+    function calcTotal() {
+      var total = 0;
+      document.querySelectorAll('[data-score]').forEach(function (inp) { total += parseFloat(inp.value) || 0; });
+      document.getElementById('totalScore').textContent = total.toFixed(1);
+      return total;
+    }
+    document.querySelectorAll('[data-score]').forEach(function (inp) { inp.addEventListener('input', calcTotal); });
+    calcTotal();
+
+    document.getElementById('submitScoreBtn').addEventListener('click', function () {
+      var items = Array.from(document.querySelectorAll('.score-card')).map(function (card) {
+        var c = CRITERIA.find(function (x) { return x.key === card.dataset.key; }) || {};
+        return { key: card.dataset.key, label: c.label, score: parseFloat(card.querySelector('[data-score]').value) || 0, maxScore: c.max || 25, weight: c.weight || 1 };
+      });
+      var total = calcTotal();
+      var comment = document.getElementById('commentInput').value;
+      var btn = this; btn.disabled = true; btn.textContent = '提交中⋯';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            btn.textContent = '✓ 已提交';
+            setTimeout(function () { btn.disabled = false; btn.textContent = '提交評分'; load(); }, 800);
+          } else { btn.disabled = false; btn.textContent = '提交評分'; alert('失敗：' + ((res && res.message) || '')); }
+        })
+        .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '提交評分'; alert('失敗：' + (err && err.message)); })
+        .submitJudgeScore(compId, t.teamId, items, total, comment);
+    });
+  }
+  load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QR 報到 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+<style>
+.body-3 { display:grid; grid-template-columns:320px 1fr 360px; min-height:calc(100vh - 60px); }
+.left-c { background:var(--surface); border-right:1px solid var(--line); padding:18px; overflow-y:auto; }
+.kpi-c { padding:14px 16px; border-radius:11px; margin-bottom:10px; position:relative; overflow:hidden; }
+.kpi-c.featured { background:linear-gradient(135deg, var(--ok-500), #047857); color:white; }
+.kpi-c.std { background:var(--surface-2); border:1px solid var(--line); color:var(--ink); }
+.kpi-c .l { font:500 11px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; opacity:.7; margin-bottom:6px; }
+.kpi-c .v { font:800 30px/1 var(--f-display); letter-spacing:-.018em; }
+.kpi-c .v em { font-style:normal; font-size:14px; opacity:.5; margin-left:4px; font-weight:500; }
+.kpi-c .progress { height:5px; background:rgba(255,255,255,.2); border-radius:3px; overflow:hidden; margin-top:8px; }
+.kpi-c.std .progress { background:var(--line); }
+.kpi-c .progress > div { height:100%; background:white; border-radius:3px; transition:.4s; }
+.kpi-c.std .progress > div { background:var(--ink); }
+
+.scanner-c { background:#0a0e1c; display:flex; flex-direction:column; min-height:0; color:white; position:relative; }
+.scanner-c::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px); background-size:40px 40px; }
+.scanner-c > * { position:relative; }
+.sc-h { padding:18px 28px; border-bottom:1px solid rgba(255,255,255,.06); }
+.sc-h h2 { font:700 18px/1.2 var(--f-display); }
+.scan-area { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; gap:24px; }
+.manual-input-card { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:32px; max-width:480px; width:100%; }
+.manual-input-card h3 { font:700 20px/1.2 var(--f-display); margin-bottom:14px; }
+.manual-input-card input { width:100%; padding:14px 16px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.18); border-radius:9px; color:white; font:700 18px/1 var(--f-mono); letter-spacing:.06em; text-align:center; }
+.manual-input-card input::placeholder { color:rgba(255,255,255,.3); letter-spacing:0; font:400 14px/1 var(--f-tc); }
+.manual-input-card input:focus { outline:0; border-color:#fbcd5b; box-shadow:0 0 0 3px rgba(251,205,91,.18); }
+.manual-input-card .btn-scan { width:100%; padding:14px; background:#fbcd5b; color:#3D2410; border-radius:9px; font:700 14px/1 var(--f-tc); margin-top:12px; }
+.manual-input-card .help { font:400 12px/1.55 var(--f-tc); color:rgba(255,255,255,.55); text-align:center; margin-top:12px; }
+.manual-input-card.success { background:rgba(34,197,94,.1); border-color:#10b981; }
+.manual-input-card.error { background:rgba(220,38,38,.1); border-color:#ef4444; }
+
+.history-c { background:var(--surface); border-left:1px solid var(--line); padding:18px; overflow-y:auto; }
+.history-c h4 { font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+.hist-row { display:flex; gap:10px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; margin-bottom:6px; align-items:center; }
+.hist-row .av { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg, var(--ok-500), #047857); color:white; display:grid; place-items:center; font:700 13px/1 var(--f-display); flex-shrink:0; }
+.hist-row .body { flex:1; min-width:0; }
+.hist-row .nm { font:600 13px/1.3 var(--f-display); }
+.hist-row .meta { font:500 11px/1.4 var(--f-mono); color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="side">
+    <a class="brand" href="/admin/"><div class="logo">R</div><div class="nm">RegMaster<small>主辦後台</small></div></a>
+    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p>主辦方</p></div></div>
+    <div class="nav-grp">
+      <div class="l-grp">概覽</div>
+      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg>儀表板</a>
+      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>所有活動</a>
+    </div>
+    <div class="nav-grp">
+      <div class="l-grp">本活動</div>
+      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg>總覽</a>
+      <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
+      <a class="nav-it" id="annLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>公告</a>
+      <a class="nav-it" id="paymentsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg>付款</a>
+      <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>QR 報到</a>
+    </div>
+  </aside>
+  <main>
+    <header class="head">
+      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>QR 報到</b></div>
+      <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+    </header>
+    <div id="loadingState" class="loading-c">載入報到面板⋯</div>
+    <div class="body-3" id="content" style="display:none">
+      <aside class="left-c">
+        <h4 style="font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px">即時統計</h4>
+        <div class="kpi-c featured"><div class="l">已報到</div><div class="v" id="checkedInV">0</div><div class="progress"><div id="checkedInBar" style="width:0%"></div></div></div>
+        <div class="kpi-c std"><div class="l">未報到</div><div class="v" id="notCheckedV">0</div></div>
+        <div class="kpi-c std"><div class="l">報到率</div><div class="v" id="rateV">0<em>%</em></div></div>
+      </aside>
+      <section class="scanner-c">
+        <header class="sc-h"><h2>📷 QR / 編號報到</h2></header>
+        <div class="scan-area">
+          <div class="manual-input-card" id="inputCard">
+            <h3>輸入隊伍編號</h3>
+            <input id="teamIdInput" placeholder="例：T4F000" maxlength="20" autofocus>
+            <button class="btn-scan" id="checkInBtn">確認報到 →</button>
+            <div class="help">QR 掃描器整合：開啟手機相機掃 QR Code 後，編號會自動填入此欄位。<br>Phase 9 將整合 navigator.mediaDevices 相機 API。</div>
+          </div>
+        </div>
+      </section>
+      <aside class="history-c">
+        <h4>最近報到紀錄</h4>
+        <div id="historyList"><p style="text-align:center; color:var(--muted); padding:24px 0">尚無紀錄</p></div>
+      </aside>
+    </div>
+  </main>
+</div>
+<script src="/shared/app-state.js"></script>
+<script>
+(function(){
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
+  var compId = '';
+  var m = location.pathname.match(/\/admin\/events\/([^/]+)\/checkin/);
+  if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
+  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  ['hubLink','editLink','annLink','paymentsLink','scoringLink'].forEach(function (id) {
+    var el = document.getElementById(id);
+    var suffix = { hubLink: '', editLink: '/edit', annLink: '/announcements', paymentsLink: '/payments', scoringLink: '/scoring' }[id];
+    if (el) el.href = '/admin/events/' + encodeURIComponent(compId) + suffix;
+  });
+  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('orgName').textContent = me.displayName || me.username;
+  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('meName').textContent = me.displayName || me.username;
+
+  var TEAMS = [], HISTORY = [];
+
+  function load() {
+    Promise.all([
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getRegistrationBundle(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getAllTeams(compId); })
+    ]).then(function (r) {
+      var bundle = r[0] || {}; var cfg = bundle.config || {};
+      TEAMS = r[1] || [];
+      document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+      document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('content').style.display = 'grid';
+      updateStats();
+      renderHistory();
+    });
+  }
+  function updateStats() {
+    var active = TEAMS.filter(function (t) { return t.status !== '已取消'; });
+    var checkedIn = active.filter(function (t) { return t.checkedIn || t.checkInTime; });
+    var pct = active.length > 0 ? Math.round(checkedIn.length / active.length * 100) : 0;
+    document.getElementById('checkedInV').textContent = checkedIn.length;
+    document.getElementById('notCheckedV').textContent = active.length - checkedIn.length;
+    document.getElementById('rateV').innerHTML = pct + '<em>%</em>';
+    document.getElementById('checkedInBar').style.width = pct + '%';
+  }
+  function renderHistory() {
+    var recent = TEAMS.filter(function (t) { return t.checkInTime; }).sort(function (a, b) { return (b.checkInTime || '').localeCompare(a.checkInTime || ''); }).slice(0, 10);
+    var list = document.getElementById('historyList');
+    if (recent.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 0">尚無紀錄</p>'; return; }
+    list.innerHTML = recent.map(function (t) {
+      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || '(無)') + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
+    }).join('');
+  }
+  function showResult(success, msg) {
+    var card = document.getElementById('inputCard');
+    card.classList.toggle('success', success);
+    card.classList.toggle('error', !success);
+    var orig = card.innerHTML;
+    card.innerHTML = '<h3 style="text-align:center">' + (success ? '✓ 報到成功' : '✗ 報到失敗') + '</h3>' + '<p style="text-align:center; color:rgba(255,255,255,.7); margin:18px 0">' + escapeHtml(msg) + '</p>' + '<button class="btn-scan" id="contBtn">繼續</button>';
+    document.getElementById('contBtn').addEventListener('click', function () {
+      card.innerHTML = orig;
+      card.classList.remove('success', 'error');
+      // Re-wire
+      wireCheckin();
+    });
+  }
+  function wireCheckin() {
+    document.getElementById('teamIdInput').focus();
+    document.getElementById('checkInBtn').addEventListener('click', doCheckIn);
+    document.getElementById('teamIdInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doCheckIn(); });
+  }
+  function doCheckIn() {
+    var tid = document.getElementById('teamIdInput').value.trim().toUpperCase();
+    if (!tid) return;
+    var btn = document.getElementById('checkInBtn');
+    btn.disabled = true; btn.textContent = '處理中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = '確認報到 →';
+        if (res && res.success) {
+          showResult(true, '隊伍 ' + tid + ' (' + (res.teamNameCN || '') + ') 報到成功');
+          load();
+        } else {
+          showResult(false, (res && res.message) || '未知錯誤');
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false; btn.textContent = '確認報到 →';
+        showResult(false, (err && err.message) || '網路錯誤');
+      })
+      .checkInTeamV2(tid, { meal: true });  // For Phase 6 we default meal=true; full picker in Phase 9
+  }
+  wireCheckin();
+  load();
+})();
+</script>
+</body>
+</html>

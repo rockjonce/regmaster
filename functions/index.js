@@ -3446,6 +3446,222 @@ exports.submitContactInquiry = callable(async (data) => {
 });
 
 // =============================================================================
+// V3 PHASE 6: Campaigns (announcements) + multi-judge scoring + check-in extras
+// =============================================================================
+
+// ---- Campaigns / EDM (multi-channel announcements) ----
+// Phase 6 ships Email channel only. SMS / LINE are recorded as "scheduled"
+// but actual delivery is a Phase 9+ integration.
+
+exports.listCampaigns = compAuthCallable(async (data) => {
+  const snap = await db.collection("campaigns").where("compId", "==", data.compId).get();
+  return snap.docs.map(d => Object.assign({ id: d.id }, d.data()))
+                  .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+});
+
+exports.createCampaign = compAuthCallable(async (data, request) => {
+  const { compId, payload } = data;
+  if (!payload || !payload.subject) return { success: false, message: "缺少標題" };
+  const camp = {
+    compId,
+    subject: String(payload.subject).slice(0, 200),
+    body: String(payload.body || "").slice(0, 20000),
+    channels: Array.isArray(payload.channels) ? payload.channels.filter(c => ['email','sms','line'].includes(c)) : ['email'],
+    recipientFilter: payload.recipientFilter || 'all',
+    status: 'draft',
+    createdAt: fmtNow(),
+    createdBy: request.authUser.username,
+    sentAt: '',
+    scheduledFor: payload.scheduledFor || '',
+    stats: { recipients: 0, sent: 0, opened: 0 }
+  };
+  const ref = await db.collection("campaigns").add(camp);
+  await auditLog(request.authUser.username, "createCampaign", ref.id, payload.subject);
+  return { success: true, id: ref.id };
+});
+
+exports.updateCampaign = compAuthCallable(async (data, request) => {
+  const { campaignId, payload } = data;
+  const doc = await db.collection("campaigns").doc(campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到 campaign" };
+  // Auth check: must own the comp
+  const compDoc = await db.collection("competitions").doc(doc.data().compId).get();
+  if (!compDoc.exists || (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username)) {
+    return { success: false, message: "權限不足" };
+  }
+  const update = {};
+  if (payload.subject !== undefined) update.subject = String(payload.subject).slice(0, 200);
+  if (payload.body !== undefined) update.body = String(payload.body).slice(0, 20000);
+  if (Array.isArray(payload.channels)) update.channels = payload.channels.filter(c => ['email','sms','line'].includes(c));
+  if (payload.recipientFilter !== undefined) update.recipientFilter = payload.recipientFilter;
+  if (payload.scheduledFor !== undefined) update.scheduledFor = payload.scheduledFor;
+  if (Object.keys(update).length) await doc.ref.update(update);
+  return { success: true };
+});
+
+exports.deleteCampaign = compAuthCallable(async (data, request) => {
+  const doc = await db.collection("campaigns").doc(data.campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到" };
+  const compDoc = await db.collection("competitions").doc(doc.data().compId).get();
+  if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
+    return { success: false, message: "權限不足" };
+  }
+  await doc.ref.delete();
+  return { success: true };
+});
+
+exports.sendCampaignNow = compAuthCallable(async (data, request) => {
+  const { campaignId } = data;
+  const doc = await db.collection("campaigns").doc(campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到 campaign" };
+  const camp = doc.data();
+  const compDoc = await db.collection("competitions").doc(camp.compId).get();
+  if (!compDoc.exists) return { success: false, message: "找不到活動" };
+  if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
+    return { success: false, message: "權限不足" };
+  }
+  const cfg = compDoc.data().config || {};
+
+  // Gather recipients based on filter
+  const teamSnap = await db.collection("teams").where("compId", "==", camp.compId).get();
+  const teamIds = new Set();
+  teamSnap.docs.forEach(d => {
+    const t = d.data();
+    if (t.status === '已取消') return;
+    if (camp.recipientFilter === 'paid' && !(t.paymentStatus || '').includes('已確認')) return;
+    if (camp.recipientFilter === 'unpaid' && (t.paymentStatus || '').includes('已確認')) return;
+    if (camp.recipientFilter === 'waitlist' && !(t.status || '').startsWith('備取')) return;
+    teamIds.add(d.id);
+  });
+  const memSnap = teamIds.size > 0
+    ? await db.collection("members").where("compId", "==", camp.compId).get()
+    : { docs: [] };
+  const emails = new Set();
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    if (teamIds.has(m.teamId) && m.email) emails.add(m.email);
+  });
+
+  // Queue Email
+  let sentCount = 0;
+  if (camp.channels.includes('email') && emails.size > 0) {
+    const html = emailWrap(camp.subject || '活動公告', camp.body.replace(/\n/g, '<br>'));
+    await db.collection("mail").add({
+      to: Array.from(emails),
+      message: { subject: '[' + (cfg.competitionName || '活動') + '] ' + camp.subject, html, text: camp.body }
+    });
+    sentCount += emails.size;
+  }
+  // SMS / LINE: log as 'scheduled' (Phase 9+ for real integration)
+  const smsLineNote = (camp.channels.includes('sms') ? 'SMS ' : '') + (camp.channels.includes('line') ? 'LINE' : '');
+
+  await doc.ref.update({
+    status: 'sent',
+    sentAt: fmtNow(),
+    'stats.recipients': emails.size,
+    'stats.sent': sentCount,
+    'stats.smsLineQueued': smsLineNote || ''
+  });
+  await auditLog(request.authUser.username, "sendCampaign", campaignId, sentCount + " emails");
+  return { success: true, sent: sentCount, channels: camp.channels };
+});
+
+// ---- Multi-judge scoring ----
+// Schema: scores/{compId_teamId_judgeId} = { compId, teamId, judgeId, items[], totalScore, comment, createdAt }
+// Legacy saveScore (single-judge) still works; we just add a new shape.
+
+exports.submitJudgeScore = compAuthCallable(async (data, request) => {
+  const { compId, teamId, items, totalScore, comment } = data;
+  if (!compId || !teamId) return { success: false, message: "缺少 compId / teamId" };
+  const judgeId = request.authUser.username;
+  const docId = compId + '_' + teamId + '_' + judgeId;
+  await db.collection("scores").doc(docId).set({
+    compId, teamId, judgeId,
+    items: Array.isArray(items) ? items.slice(0, 20).map(it => ({
+      key: String(it.key || '').slice(0, 40),
+      label: String(it.label || '').slice(0, 80),
+      score: parseFloat(it.score) || 0,
+      maxScore: parseFloat(it.maxScore) || 100,
+      weight: parseFloat(it.weight) || 1
+    })) : [],
+    totalScore: parseFloat(totalScore) || 0,
+    comment: String(comment || '').slice(0, 1000),
+    schemaVersion: 'v2',
+    createdAt: fmtNow(),
+    updatedAt: fmtNow()
+  }, { merge: true });
+  await auditLog(judgeId, "submitJudgeScore", teamId, "total " + totalScore);
+  return { success: true };
+});
+
+exports.getLiveLeaderboard = compAuthCallable(async (data) => {
+  const { compId } = data;
+  const [tSnap, sSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("scores").where("compId", "==", compId).get()
+  ]);
+  const teamMap = {};
+  tSnap.docs.forEach(d => {
+    const t = d.data();
+    if (t.status === '已取消') return;
+    teamMap[t.teamId] = {
+      teamId: t.teamId,
+      teamNameCN: t.teamNameCN || '',
+      group: t.group || '',
+      status: t.status || '',
+      scores: [],         // per-judge scores
+      avg: 0,
+      judgeCount: 0
+    };
+  });
+  sSnap.docs.forEach(d => {
+    const s = d.data();
+    if (!teamMap[s.teamId]) return;
+    teamMap[s.teamId].scores.push({ judgeId: s.judgeId, total: s.totalScore || 0, items: s.items || [] });
+  });
+  // Average score across judges
+  const rows = Object.values(teamMap).map(t => {
+    if (t.scores.length > 0) {
+      t.judgeCount = t.scores.length;
+      t.avg = t.scores.reduce((a, b) => a + (b.total || 0), 0) / t.scores.length;
+    }
+    return t;
+  });
+  rows.sort((a, b) => b.avg - a.avg);
+  rows.forEach((r, i) => { r.rank = i + 1; });
+  return rows;
+});
+
+// ---- Check-in extras (material distribution) ----
+// Extends the existing checkInTeam to accept extras (meal/shirt/gift) without
+// breaking older clients. This is a backward-compatible signature extension.
+
+// Already exists: exports.checkInTeam — leave untouched. Add a sister
+// callable that records extras separately so the legacy field stays clean.
+exports.checkInTeamV2 = compAuthCallable(async (data, request) => {
+  const { teamId, extras } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists) return { success: false, message: "找不到隊伍" };
+  const t = tDoc.data();
+  const update = {
+    checkedIn: true,
+    checkInTime: fmtNow(),
+    checkInBy: request.authUser.username
+  };
+  if (extras && typeof extras === 'object') {
+    update.checkInExtras = {
+      meal: !!extras.meal,
+      shirt: extras.shirt ? String(extras.shirt).slice(0, 10) : null,
+      gift: !!extras.gift,
+      notes: String(extras.notes || '').slice(0, 200)
+    };
+  }
+  await tDoc.ref.update(update);
+  await auditLog(request.authUser.username, "checkInTeamV2", teamId, "");
+  return { success: true, teamId, teamNameCN: t.teamNameCN || '', group: t.group || '' };
+});
+
+// =============================================================================
 // V3 PHASE 5: Form schema (drag-drop builder) + dual-write to legacy fields
 // =============================================================================
 //

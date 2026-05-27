@@ -506,15 +506,18 @@
     });
     document.getElementById('publicBtn').addEventListener('click', function () { window.open('/events/detail.html?id=' + encodeURIComponent(compId), '_blank'); });
 
-    // Phase 5 settings + form-builder links
-    document.getElementById('editLinkBtn').href = '/admin/events/' + encodeURIComponent(compId) + '/edit';
-    document.getElementById('formBuilderLinkBtn').href = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
-    // Phase 6+ stubs still link to legacy SPA
-    var legacyBase = '/?comp=' + encodeURIComponent(compId);
-    document.getElementById('legacyRegLink').href = legacyBase + '&admin=1#regs';
-    document.getElementById('legacyAnnLink').href = legacyBase + '&admin=1#ann';
-    document.getElementById('legacyScoreLink').href = legacyBase + '&admin=1#scores';
-    document.getElementById('legacyCheckinLink').href = legacyBase + '&admin=1#checkin';
+    // Phase 5 + 6 page links (all now v3 native)
+    var base = '/admin/events/' + encodeURIComponent(compId);
+    document.getElementById('editLinkBtn').href = base + '/edit';
+    document.getElementById('formBuilderLinkBtn').href = base + '/form-builder';
+    document.getElementById('legacyRegLink').href = base + '/payments';
+    document.getElementById('legacyAnnLink').href = base + '/announcements';
+    document.getElementById('legacyScoreLink').href = base + '/scoring';
+    document.getElementById('legacyCheckinLink').href = base + '/checkin';
+    document.getElementById('legacyRegLink').textContent = '開啟付款管理 →';
+    document.getElementById('legacyAnnLink').textContent = '開啟公告管理 →';
+    document.getElementById('legacyScoreLink').textContent = '開啟評分頁 →';
+    document.getElementById('legacyCheckinLink').textContent = '開啟報到頁 →';
   }
 
   // Tab switching

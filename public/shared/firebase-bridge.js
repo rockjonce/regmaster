@@ -149,7 +149,17 @@
 
     // V3 Phase 5 additions
     getFormSchema:["compId"],
-    saveFormSchema:["compId","schema"]
+    saveFormSchema:["compId","schema"],
+
+    // V3 Phase 6 additions
+    listCampaigns:["compId"],
+    createCampaign:["compId","payload"],
+    updateCampaign:["campaignId","payload"],
+    deleteCampaign:["campaignId"],
+    sendCampaignNow:["campaignId"],
+    submitJudgeScore:["compId","teamId","items","totalScore","comment"],
+    getLiveLeaderboard:["compId"],
+    checkInTeamV2:["teamId","extras"]
   };
   window._argMap = _argMap;
 
