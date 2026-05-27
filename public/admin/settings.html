@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>帳戶設定 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+<style>
+.settings-shell { display:grid; grid-template-columns:220px 1fr; gap:24px; padding:24px 32px 64px; max-width:1280px; }
+.set-nav { display:flex; flex-direction:column; gap:2px; padding:18px 0; }
+.set-nav a { padding:10px 14px; border-radius:8px; font:500 13.5px/1.4 var(--f-tc); color:var(--ink-3); cursor:pointer; text-decoration:none; }
+.set-nav a:hover { background:var(--surface-2); }
+.set-nav a.on { background:var(--ink); color:white; font-weight:600; }
+
+.section { background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:18px; max-width:760px; }
+.section .sh { padding:18px 22px; border-bottom:1px solid var(--line-2); }
+.section .sh h3 { font:700 16px/1.2 var(--f-display); margin-bottom:4px; }
+.section .sh p { font:400 12.5px/1.5 var(--f-tc); color:var(--ink-3); margin:0; }
+.section .sb { padding:22px; }
+
+.profile-row { display:flex; gap:18px; align-items:center; padding-bottom:18px; border-bottom:1px solid var(--line-2); margin-bottom:18px; }
+.profile-row .av-l { width:72px; height:72px; border-radius:16px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:white; display:grid; place-items:center; font:800 28px/1 var(--f-display); }
+.profile-row .body h2 { font:700 18px/1.2 var(--f-display); }
+.profile-row .body p { font:500 12px/1.4 var(--f-mono); color:var(--muted); margin:3px 0 0; }
+
+.fld { margin-bottom:14px; }
+.fld .lbl { font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); margin-bottom:6px; }
+.fld input, .fld select { width:100%; padding:9px 12px; background:var(--surface); border:1px solid var(--line); border-radius:7px; font:400 13px/1.4 var(--f-tc); color:var(--ink); }
+.fld input:focus, .fld select:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+.fld input:disabled { background:var(--surface-2); color:var(--muted); cursor:not-allowed; }
+
+.row-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+.toggle-row { padding:14px 0; border-top:1px solid var(--line-2); display:flex; align-items:center; gap:14px; }
+.toggle-row:first-child { border-top:0; padding-top:0; }
+.toggle-row .body { flex:1; }
+.toggle-row h6 { font:600 13px/1.3 var(--f-display); margin-bottom:2px; }
+.toggle-row p { font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin:0; }
+.tg-sw { width:34px; height:20px; background:var(--line); border-radius:99px; position:relative; cursor:pointer; flex-shrink:0; transition:.15s; }
+.tg-sw::after { content:''; position:absolute; width:16px; height:16px; background:white; border-radius:50%; top:2px; left:2px; transition:.15s; box-shadow:var(--sh-sm); }
+.tg-sw.on { background:var(--ok-500); }
+.tg-sw.on::after { left:16px; }
+
+.session-row { padding:12px 14px; background:var(--surface-2); border:1px solid var(--line); border-radius:8px; display:flex; gap:12px; align-items:center; margin-bottom:6px; }
+.session-row .ic-s { width:32px; height:32px; border-radius:7px; background:var(--surface); border:1px solid var(--line); display:grid; place-items:center; color:var(--ink-2); flex-shrink:0; }
+.session-row .body { flex:1; min-width:0; }
+.session-row h6 { font:600 13px/1.3 var(--f-display); display:flex; align-items:center; gap:6px; }
+.session-row .cur { padding:2px 6px; background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); border-radius:3px; font:600 10px/1.3 var(--f-mono); }
+.session-row p { font:500 11px/1.4 var(--f-mono); color:var(--muted); margin:0; }
+
+.save-bar { position:sticky; bottom:0; padding:14px 22px; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:saturate(1.4) blur(12px); border-top:1px solid var(--line-2); margin:-22px -22px -22px; border-radius:0 0 14px 14px; display:flex; gap:12px; justify-content:flex-end; }
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="side">
+    <a class="brand" href="/admin/"><div class="logo">R</div><div class="nm">RegMaster<small>主辦後台</small></div></a>
+    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p>主辦方</p></div></div>
+    <div class="nav-grp">
+      <div class="l-grp">概覽</div>
+      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg>儀表板</a>
+      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>所有活動</a>
+      <a class="nav-it" href="/admin/ai.html"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>AI 助理</a>
+    </div>
+    <div class="nav-grp">
+      <div class="l-grp">系統</div>
+      <a class="nav-it" href="/admin/license.html"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>方案與授權</a>
+      <a class="nav-it" href="/admin/audit.html"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>操作日誌</a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
+    </div>
+  </aside>
+  <main>
+    <header class="head">
+      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><b>帳戶設定</b></div>
+      <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+    </header>
+    <div class="settings-shell">
+      <aside class="set-nav">
+        <a class="on" data-tab="profile">個人資料</a>
+        <a data-tab="notifications">通知偏好</a>
+        <a data-tab="security">安全與登入</a>
+        <a data-tab="sessions">登入裝置</a>
+        <a data-tab="account">帳戶</a>
+      </aside>
+      <div>
+        <div id="errorBanner" class="error-banner" style="display:none"></div>
+
+        <!-- profile -->
+        <div class="tab-pane" data-pane="profile">
+          <div class="section">
+            <div class="sh"><h3>個人資料</h3><p>顯示於報名頁、發票、Email 通知</p></div>
+            <div class="sb">
+              <div class="profile-row">
+                <div class="av-l" id="bigAv">—</div>
+                <div class="body"><h2 id="bigName">—</h2><p id="bigRole">—</p></div>
+              </div>
+              <div class="row-2">
+                <div class="fld"><div class="lbl">帳號（不可變更）</div><input id="prof-username" disabled></div>
+                <div class="fld"><div class="lbl">角色（不可變更）</div><input id="prof-role" disabled></div>
+                <div class="fld"><div class="lbl">顯示名稱</div><input id="prof-displayName"></div>
+                <div class="fld"><div class="lbl">Email</div><input id="prof-email" type="email"></div>
+                <div class="fld"><div class="lbl">電話</div><input id="prof-phone" type="tel"></div>
+              </div>
+              <div class="save-bar"><button class="btn btn-primary" disabled>儲存（Phase 9 補功能）</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- notifications -->
+        <div class="tab-pane" data-pane="notifications" style="display:none">
+          <div class="section">
+            <div class="sh"><h3>Email 通知</h3></div>
+            <div class="sb">
+              <div class="toggle-row"><div class="body"><h6>新報名通知</h6><p>每筆報名成功立即寄</p></div><div class="tg-sw on" data-pref="email.newRegistration"></div></div>
+              <div class="toggle-row"><div class="body"><h6>付款成功通知</h6><p>每筆付款確認後寄</p></div><div class="tg-sw on" data-pref="email.paymentReceived"></div></div>
+              <div class="toggle-row"><div class="body"><h6>每日摘要</h6><p>每天早上 8:00 寄送昨日數據</p></div><div class="tg-sw" data-pref="email.dailyDigest"></div></div>
+              <div class="toggle-row"><div class="body"><h6>每週報表</h6><p>每週一寄送本週重點</p></div><div class="tg-sw on" data-pref="email.weekly"></div></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="sh"><h3>緊急通知</h3></div>
+            <div class="sb">
+              <div class="toggle-row"><div class="body"><h6>SMS — 重大警示</h6><p>系統異常 / 付款失敗（Phase 9 上線）</p></div><div class="tg-sw" data-pref="sms.critical" style="opacity:.5"></div></div>
+              <div class="toggle-row"><div class="body"><h6>LINE — 所有動態</h6><p>即時推播（Phase 9 上線）</p></div><div class="tg-sw" data-pref="line.allActivity" style="opacity:.5"></div></div>
+            </div>
+          </div>
+          <div class="save-bar"><button class="btn btn-primary" id="saveNotifBtn">儲存通知偏好</button></div>
+        </div>
+
+        <!-- security -->
+        <div class="tab-pane" data-pane="security" style="display:none">
+          <div class="section">
+            <div class="sh"><h3>變更密碼</h3></div>
+            <div class="sb">
+              <div class="fld"><div class="lbl">目前密碼</div><input id="oldPwd" type="password"></div>
+              <div class="row-2">
+                <div class="fld"><div class="lbl">新密碼</div><input id="newPwd" type="password"></div>
+                <div class="fld"><div class="lbl">確認新密碼</div><input id="newPwd2" type="password"></div>
+              </div>
+              <button class="btn btn-primary" id="changePwdBtn">變更密碼</button>
+            </div>
+          </div>
+          <div class="section">
+            <div class="sh"><h3>雙因素驗證</h3></div>
+            <div class="sb">
+              <div class="toggle-row"><div class="body"><h6>啟用 TOTP（Phase 9 上線）</h6><p>使用 Google Authenticator 等 App</p></div><div class="tg-sw" style="opacity:.5"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- sessions -->
+        <div class="tab-pane" data-pane="sessions" style="display:none">
+          <div class="section">
+            <div class="sh"><h3>登入裝置</h3><p>查看與管理目前正在登入的裝置</p></div>
+            <div class="sb" id="sessionsList">載入中⋯</div>
+          </div>
+        </div>
+
+        <!-- account -->
+        <div class="tab-pane" data-pane="account" style="display:none">
+          <div class="section">
+            <div class="sh"><h3>登出</h3></div>
+            <div class="sb">
+              <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:14px">點擊以登出當前裝置。</p>
+              <button class="btn btn-ghost" id="logoutNowBtn">立即登出</button>
+            </div>
+          </div>
+          <div class="section" style="border-color:rgba(239,68,68,.2); background:rgba(239,68,68,.04)">
+            <div class="sh" style="border-bottom-color:rgba(239,68,68,.15)"><h3 style="color:var(--err-700)">⚠ 刪除帳戶</h3><p>永久刪除帳戶與所有資料，無法復原</p></div>
+            <div class="sb"><button class="btn btn-ghost" disabled style="border-color:var(--err-500); color:var(--err-700)">刪除帳戶（Phase 9 上線）</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/shared/app-state.js"></script>
+<script>
+(function(){
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function setNested(obj, path, val) { var keys = path.split('.'); var o = obj; for (var i = 0; i < keys.length - 1; i++) { o[keys[i]] = o[keys[i]] || {}; o = o[keys[i]]; } o[keys[keys.length-1]] = val; }
+  function getNested(obj, path) { return path.split('.').reduce(function (o, k) { return o && o[k]; }, obj); }
+
+  ['orgAv','meAv','bigAv'].forEach(function (id) { document.getElementById(id).textContent = (me.displayName || me.username).charAt(0).toUpperCase(); });
+  document.getElementById('orgName').textContent = me.displayName || me.username;
+  document.getElementById('meName').textContent = me.displayName || me.username;
+  document.getElementById('bigName').textContent = me.displayName || me.username;
+  document.getElementById('bigRole').textContent = me.role === 'system' ? '系統管理員' : '主辦方';
+  document.getElementById('prof-username').value = me.username;
+  document.getElementById('prof-role').value = me.role === 'system' ? '系統管理員' : '主辦方';
+  document.getElementById('prof-displayName').value = me.displayName || '';
+  document.getElementById('prof-email').value = me.email || '';
+
+  document.querySelectorAll('.set-nav a').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      document.querySelectorAll('.set-nav a').forEach(function (x) { x.classList.remove('on'); });
+      a.classList.add('on');
+      document.querySelectorAll('.tab-pane').forEach(function (p) { p.style.display = p.dataset.pane === a.dataset.tab ? 'block' : 'none'; });
+      if (a.dataset.tab === 'sessions') loadSessions();
+    });
+  });
+
+  // Load notif prefs
+  var PREFS = {};
+  google.script.run.withSuccessHandler(function (res) {
+    PREFS = (res && res.prefs) || {};
+    document.querySelectorAll('[data-pref]').forEach(function (sw) {
+      var v = getNested(PREFS, sw.dataset.pref);
+      sw.classList.toggle('on', !!v);
+    });
+  }).getNotifPrefs();
+
+  document.querySelectorAll('[data-pref]').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      if (sw.style.opacity === '0.5') return;  // disabled (sms/line phase 9)
+      sw.classList.toggle('on');
+      setNested(PREFS, sw.dataset.pref, sw.classList.contains('on'));
+    });
+  });
+
+  document.getElementById('saveNotifBtn').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
+    google.script.run
+      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = '儲存通知偏好'; }, 1200); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '儲存通知偏好'; alert('失敗：' + (err && err.message)); })
+      .saveNotifPrefs(PREFS);
+  });
+
+  document.getElementById('changePwdBtn').addEventListener('click', function () {
+    var oldP = document.getElementById('oldPwd').value;
+    var newP = document.getElementById('newPwd').value;
+    var newP2 = document.getElementById('newPwd2').value;
+    if (!oldP || !newP) return alert('請填寫兩個密碼欄位');
+    if (newP !== newP2) return alert('兩次新密碼不一致');
+    if (newP.length < 10) return alert('新密碼至少 10 字元');
+    var btn = this; btn.disabled = true; btn.textContent = '變更中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = '變更密碼';
+        if (res && res.success) {
+          alert('✓ 密碼已更新');
+          if (res.sessionToken) {
+            me.sessionToken = res.sessionToken;
+            AppState.setMe(me);
+          }
+          document.getElementById('oldPwd').value = '';
+          document.getElementById('newPwd').value = '';
+          document.getElementById('newPwd2').value = '';
+        } else { alert((res && res.message) || '失敗'); }
+      })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '變更密碼'; alert('失敗：' + (err && err.message)); })
+      .changePassword(me.username, oldP, newP);
+  });
+
+  function loadSessions() {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        var list = document.getElementById('sessionsList');
+        var sessions = (res && res.sessions) || [];
+        list.innerHTML = sessions.map(function (s) {
+          return '<div class="session-row">' +
+            '<div class="ic-s"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/></svg></div>' +
+            '<div class="body"><h6>' + escapeHtml(s.browser || 'Unknown') + (s.current ? ' <span class="cur">當前裝置</span>' : '') + '</h6>' +
+            '<p>' + escapeHtml(s.device || '') + ' · ' + escapeHtml(s.lastActive || '') + '</p></div>' +
+          '</div>';
+        }).join('');
+      })
+      .listSessions({ device: navigator.userAgent.indexOf('Mobile') >= 0 ? 'Mobile' : 'Desktop', browser: navigator.userAgent.split(') ').pop().split(' ')[0] || 'Unknown' });
+  }
+
+  document.getElementById('logoutNowBtn').addEventListener('click', function () {
+    if (!confirm('確認登出？')) return;
+    AppState.setMe(null);
+    location.href = '/login.html';
+  });
+})();
+</script>
+</body>
+</html>

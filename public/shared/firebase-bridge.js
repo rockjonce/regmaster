@@ -166,7 +166,15 @@
     createConversation:["compId","title"],
     getConversation:["conversationId"],
     appendMessage:["conversationId","role","content"],
-    deleteConversation:["conversationId"]
+    deleteConversation:["conversationId"],
+
+    // V3 Phase 8 additions
+    getNotifPrefs:[],
+    saveNotifPrefs:["prefs"],
+    listSessions:["clientInfo"],
+    revokeSession:["sessionId"],
+    getPlatformHealth:[],
+    listAllOrgs:[]
   };
   window._argMap = _argMap;
 

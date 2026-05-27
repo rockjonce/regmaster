@@ -10,6 +10,7 @@
       { "source": "/admin/events/*/scoring",       "destination": "/admin/events/scoring.html" },
       { "source": "/admin/events/*/checkin",       "destination": "/admin/events/checkin.html" },
       { "source": "/admin/events/*",               "destination": "/admin/events/hub.html" },
+      { "source": "/admin/super",                  "destination": "/admin/super.html" },
       { "source": "**",                             "destination": "/index.html" }
     ]
   },
