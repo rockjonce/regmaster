@@ -141,7 +141,11 @@
     saveOnboardingStep:["username","step","data"],
 
     // V3 Phase 3 additions
-    listMyRegistrationsByEmail:["email","phone"]
+    listMyRegistrationsByEmail:["email","phone"],
+
+    // V3 Phase 4 additions
+    getAiInsights:["compId"],
+    getTodoList:["compId"]
   };
   window._argMap = _argMap;
 

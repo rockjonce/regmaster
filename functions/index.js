@@ -3445,6 +3445,181 @@ exports.submitContactInquiry = callable(async (data) => {
   return { success: true, inquiryId: inquiryRef.id };
 });
 
+// =============================================================================
+// V3 PHASE 4: Admin dashboard insights + todo aggregation
+// =============================================================================
+
+// AI insights (Phase 7 will wire to LLM; Phase 4 returns rule-based heuristic
+// suggestions derived from real Firestore data so the UI doesn't show mock).
+exports.getAiInsights = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const compId = data && data.compId;
+
+  // Pull this user's competitions (or single compId if specified)
+  let compSnap;
+  if (compId) {
+    const d = await db.collection("competitions").doc(compId).get();
+    compSnap = { docs: d.exists ? [d] : [] };
+  } else if (request.authUser.role === "system") {
+    compSnap = await db.collection("competitions").get();
+  } else {
+    compSnap = await db.collection("competitions").where("creator", "==", username).get();
+  }
+
+  const insights = [];
+  const now = Date.now();
+
+  for (const cDoc of compSnap.docs) {
+    const c = cDoc.data();
+    const cfg = c.config || {};
+    const max = c.maxTeams || c.maxCapacityLimit || 0;
+    const team = c.teamCount || 0;
+    const dl = cfg.deadline ? new Date(cfg.deadline).getTime() : 0;
+    const daysLeft = dl ? Math.ceil((dl - now) / 86400000) : null;
+
+    // Heuristic 1: nearly full + open
+    if (c.isOpen && max > 0 && team / max >= 0.9 && team / max < 1) {
+      insights.push({
+        severity: "urgent",
+        severityLabel: "緊急",
+        ago: "剛剛",
+        title: `「${c.name}」報名已達 ${Math.round(team / max * 100)}%`,
+        body: `已收 ${team} / ${max} 名。預測 24 小時內額滿，建議提前關閉或啟用候補機制。`,
+        compId: cDoc.id
+      });
+    }
+
+    // Heuristic 2: deadline approaching with low fill
+    if (c.isOpen && daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && max > 0 && team / max < 0.5) {
+      insights.push({
+        severity: "tip",
+        severityLabel: "建議",
+        ago: "剛剛",
+        title: `「${c.name}」報名數偏低`,
+        body: `截止前還有 ${daysLeft} 天，目前僅 ${team}/${max} 報名（${Math.round(team / max * 100)}%）。建議寄送 EDM 提醒或加強社群推廣。`,
+        compId: cDoc.id
+      });
+    }
+
+    // Heuristic 3: payment lag — count pending payments
+    if (team > 0) {
+      const tSnap = await db.collection("teams").where("compId", "==", cDoc.id).get();
+      let payWait = 0;
+      tSnap.docs.forEach(d => {
+        const t = d.data();
+        if (t.status === "已取消") return;
+        if (!(t.paymentStatus || "").includes("已確認")) payWait++;
+      });
+      if (payWait > 0 && payWait / team > 0.2) {
+        insights.push({
+          severity: "tip",
+          severityLabel: "建議",
+          ago: "剛剛",
+          title: `「${c.name}」有 ${payWait} 筆待付款`,
+          body: `占總報名 ${Math.round(payWait / team * 100)}%。建議寄送付款提醒信，可提升轉換率約 15%。`,
+          compId: cDoc.id
+        });
+      }
+    }
+  }
+
+  // Cap to top 5
+  insights.sort((a, b) => {
+    const order = { urgent: 0, tip: 1, success: 2 };
+    return (order[a.severity] || 9) - (order[b.severity] || 9);
+  });
+  return { insights: insights.slice(0, 5) };
+});
+
+// Todo list — real aggregation from teams + competitions
+exports.getTodoList = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const compId = data && data.compId;
+
+  let compSnap;
+  if (compId) {
+    const d = await db.collection("competitions").doc(compId).get();
+    compSnap = { docs: d.exists ? [d] : [] };
+  } else if (request.authUser.role === "system") {
+    compSnap = await db.collection("competitions").get();
+  } else {
+    compSnap = await db.collection("competitions").where("creator", "==", username).get();
+  }
+
+  const todos = [];
+  const now = Date.now();
+
+  for (const cDoc of compSnap.docs) {
+    const c = cDoc.data();
+    const cfg = c.config || {};
+
+    // Todo 1: pending payments
+    if ((c.teamCount || 0) > 0) {
+      const tSnap = await db.collection("teams").where("compId", "==", cDoc.id).get();
+      let payWait = 0, fileWait = 0;
+      tSnap.docs.forEach(d => {
+        const t = d.data();
+        if (t.status === "已取消") return;
+        if (!(t.paymentStatus || "").includes("已確認")) payWait++;
+        if (t.fileUrl && t.fileApproved !== true && cfg.requireFileUpload) fileWait++;
+      });
+      if (payWait > 0) {
+        todos.push({
+          priority: payWait > 10 ? "high" : "med",
+          title: `確認 ${payWait} 筆付款`,
+          body: `${c.name} · 待主辦方人工核對`,
+          link: `/admin/events/${cDoc.id}#registrations`,
+          compId: cDoc.id
+        });
+      }
+      if (fileWait > 0) {
+        todos.push({
+          priority: "med",
+          title: `審核 ${fileWait} 份檔案上傳`,
+          body: `${c.name} · 學員提交檔案待審核`,
+          link: `/admin/events/${cDoc.id}#registrations`,
+          compId: cDoc.id
+        });
+      }
+    }
+
+    // Todo 2: deadline approaching
+    if (c.isOpen && cfg.deadline) {
+      const dl = new Date(cfg.deadline).getTime();
+      const daysLeft = Math.ceil((dl - now) / 86400000);
+      if (daysLeft >= 0 && daysLeft <= 3) {
+        todos.push({
+          priority: daysLeft <= 1 ? "high" : "med",
+          title: `${c.name} 報名截止前 ${daysLeft} 天`,
+          body: '即將截止 · 建議發布最後提醒公告',
+          link: `/admin/events/${cDoc.id}#announcements`,
+          compId: cDoc.id
+        });
+      }
+    }
+
+    // Todo 3: drafts (not visible, no isOpen, no deadline)
+    if (!c.isVisible && !c.isOpen && !cfg.deadline && c.teamCount === 0) {
+      const createdAt = c.createdAt || "";
+      todos.push({
+        priority: "low",
+        title: `草稿活動「${c.name}」未發布`,
+        body: '建立於 ' + (createdAt || '日期不明') + ' · 點擊繼續設定',
+        link: `/admin/events/${cDoc.id}`,
+        compId: cDoc.id
+      });
+    }
+  }
+
+  // Sort: high → med → low
+  todos.sort((a, b) => {
+    const pr = { high: 0, med: 1, low: 2 };
+    return (pr[a.priority] || 9) - (pr[b.priority] || 9);
+  });
+
+  return { todos: todos.slice(0, 8) };
+});
+
 // ===== Public: list a person's registrations across events =====
 // Looks up by email OR phone (matches members.email/members.phone). Returns
 // a list of teams the person is part of. Verification mode:

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>儀表板 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+/* Welcome row */
+.welcome-row { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; gap:24px; flex-wrap:wrap; }
+.welcome-row .l h1 { font:700 28px/1.2 var(--f-display); letter-spacing:-.014em; margin-bottom:4px; }
+.welcome-row .l h1 em { font-style:normal; color:var(--acc); }
+.welcome-row .l p { font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3); }
+.welcome-row .l p .badge-c { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; background:color-mix(in srgb, var(--ok-500) 14%, var(--surface)); color:var(--ok-700); border-radius:4px; font:600 10.5px/1.4 var(--f-mono); margin-left:4px; }
+.welcome-row .l p .badge-c::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--ok-500); }
+.welcome-row .r { display:flex; gap:8px; align-items:center; }
+.date-pill { padding:8px 12px; background:var(--surface); border:1px solid var(--line); border-radius:8px; font:500 12px/1 var(--f-mono); color:var(--ink-2); display:flex; gap:6px; align-items:center; }
+
+/* KPI row */
+.kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+.kpi { padding:18px 20px; background:var(--surface); border:1px solid var(--line); border-radius:14px; position:relative; overflow:hidden; cursor:pointer; transition:.15s; }
+.kpi:hover { border-color:var(--ink-3); transform:translateY(-1px); box-shadow:var(--sh-sm); }
+.kpi .head-k { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.kpi .head-k .label-k { font:500 11.5px/1.3 var(--f-mono); letter-spacing:.04em; color:var(--ink-3); display:flex; align-items:center; gap:6px; }
+.kpi .head-k .label-k svg { width:13px; height:13px; opacity:.7; }
+.kpi .head-k .delta-k { font:600 11.5px/1 var(--f-mono); padding:3px 7px; border-radius:5px; display:flex; align-items:center; gap:4px; }
+.kpi .head-k .delta-k.up { color:var(--ok-700); background:color-mix(in srgb, var(--ok-500) 12%, transparent); }
+.kpi .head-k .delta-k.down { color:var(--err-700); background:color-mix(in srgb, var(--err-500) 12%, transparent); }
+.kpi .v-k { font:700 32px/1 var(--f-display); letter-spacing:-.022em; margin-bottom:6px; font-feature-settings:"tnum"; }
+.kpi .v-k em { font-style:normal; font-size:14px; color:var(--muted); margin-left:4px; font-weight:500; }
+.kpi .sub-k { font:400 12px/1.4 var(--f-tc); color:var(--ink-3); margin-bottom:10px; min-height:34px; }
+.kpi .spark { display:flex; align-items:flex-end; gap:2px; height:32px; }
+.kpi .spark .b { flex:1; background:var(--blue-300); border-radius:1.5px; opacity:.4; transition:.4s; }
+.kpi .spark .b.peak { background:var(--acc); opacity:1; }
+.kpi:nth-child(2) .spark .b { background:#6ee7b7; }
+.kpi:nth-child(2) .spark .b.peak { background:var(--ok-500); }
+.kpi:nth-child(3) .spark .b { background:#fcd34d; }
+.kpi:nth-child(3) .spark .b.peak { background:var(--amber-500); }
+.kpi:nth-child(4) .spark .b { background:#cbd5e1; }
+.kpi:nth-child(4) .spark .b.peak { background:var(--ink-3); }
+
+/* Primary grid */
+.prim-grid { display:grid; grid-template-columns:1fr 380px; gap:18px; margin-bottom:28px; }
+.chart-card { padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+.chart-card .head-c { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.chart-card h3 { font:700 17px/1.2 var(--f-display); margin-bottom:3px; }
+.chart-card .sub-c { font:400 12.5px/1.4 var(--f-tc); color:var(--ink-3); }
+.chart-card .filters { display:flex; gap:4px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; }
+.chart-card .filters button { padding:5px 10px; border-radius:5px; font:500 11.5px/1 var(--f-mono); color:var(--muted); cursor:pointer; }
+.chart-card .filters button.on { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:var(--sh-xs); }
+.chart-svg-wrap { position:relative; padding-bottom:8px; padding-top:8px; }
+.chart-svg-wrap svg { width:100%; height:200px; display:block; }
+.chart-leg { display:flex; gap:18px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line-2); flex-wrap:wrap; }
+.chart-leg .l-i { display:flex; align-items:center; gap:8px; font:500 12px/1 var(--f-tc); color:var(--ink-2); }
+.chart-leg .l-i .dot-l { width:10px; height:10px; border-radius:3px; }
+.chart-leg .l-i b { font:600 13px/1 var(--f-mono); margin-left:4px; }
+
+/* AI insights right rail */
+.ai-card { padding:20px; background:linear-gradient(135deg, var(--ink) 0%, #1a2e52 100%); border-radius:14px; color:white; position:relative; overflow:hidden; }
+.ai-card::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px); background-size:24px 24px; }
+.ai-card::after { content:''; position:absolute; top:-30%; right:-10%; width:40%; height:160%; background:radial-gradient(circle, rgba(124,58,237,.4), transparent 70%); }
+.ai-card > * { position:relative; }
+.ai-card .head-ai { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.ai-card .head-ai .ic-w { width:24px; height:24px; border-radius:6px; background:rgba(124,58,237,.3); border:1px solid rgba(124,58,237,.5); display:grid; place-items:center; }
+.ai-card .head-ai .ic-w svg { width:13px; height:13px; }
+.ai-card .head-ai h4 { font:700 14px/1.2 var(--f-display); flex:1; }
+.ai-card .head-ai .badge-ai { padding:3px 7px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); border-radius:4px; font:600 10px/1 var(--f-mono); letter-spacing:.05em; }
+.insight { padding:12px 14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:10px; margin-bottom:10px; cursor:pointer; transition:.15s; }
+.insight:hover { background:rgba(255,255,255,.08); }
+.insight:last-child { margin-bottom:0; }
+.insight .row1 { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.insight .row1 .p-i { padding:2px 7px; border-radius:4px; font:600 10px/1.4 var(--f-mono); letter-spacing:.05em; }
+.insight .row1 .p-i.urgent { background:rgba(220,38,38,.2); color:#fca5a5; border:1px solid rgba(220,38,38,.3); }
+.insight .row1 .p-i.tip { background:rgba(245,158,11,.2); color:#fcd34d; border:1px solid rgba(245,158,11,.3); }
+.insight .row1 .p-i.success { background:rgba(34,197,94,.2); color:#86efac; border:1px solid rgba(34,197,94,.3); }
+.insight .row1 .ago { margin-left:auto; font:500 10.5px/1 var(--f-mono); opacity:.5; }
+.insight h6 { font:600 13px/1.35 var(--f-display); margin-bottom:4px; }
+.insight p { font:400 11.5px/1.5 var(--f-tc); color:rgba(255,255,255,.65); margin:0; }
+
+/* Secondary grid */
+.sec-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:28px; }
+.events-card { padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+.events-card .head-e { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.events-card h3 { font:700 17px/1.2 var(--f-display); }
+.events-card .head-e a { font:500 12px/1 var(--f-tc); color:var(--acc); text-decoration:none; }
+
+.event-row { display:grid; grid-template-columns:48px 1fr auto; gap:14px; padding:14px 0; border-bottom:1px solid var(--line-2); align-items:center; cursor:pointer; text-decoration:none; color:inherit; }
+.event-row:last-child { border-bottom:0; padding-bottom:0; }
+.event-row .av-e { width:48px; height:48px; border-radius:9px; display:grid; place-items:center; color:white; font:800 16px/1 var(--f-display); position:relative; overflow:hidden; flex-shrink:0; }
+.event-row .av-e.c1 { background:linear-gradient(135deg, #DC2626, #7F1D1D); }
+.event-row .av-e.c2 { background:linear-gradient(135deg, #3D6BFF, #1F3FB8); }
+.event-row .av-e.c3 { background:linear-gradient(135deg, #16A34A, #14532D); }
+.event-row .av-e.c4 { background:linear-gradient(135deg, #F59E0B, #92400E); }
+.event-row .av-e.c5 { background:linear-gradient(135deg, #8B5CF6, #4C1D95); }
+.event-row .body-e h6 { font:700 14px/1.3 var(--f-display); margin-bottom:4px; }
+.event-row .body-e .meta-e { display:flex; gap:14px; flex-wrap:wrap; font:400 11.5px/1.4 var(--f-tc); color:var(--ink-3); }
+.event-row .body-e .meta-e b { color:var(--ink-2); font-weight:500; }
+.event-row .progress-e { width:120px; }
+.event-row .progress-e .p-bar { height:4px; background:var(--surface-2); border-radius:2px; overflow:hidden; margin-bottom:5px; }
+.event-row .progress-e .p-bar > div { height:100%; border-radius:2px; background:var(--ink); }
+.event-row .progress-e .p-bar.warn > div { background:var(--amber-500); }
+.event-row .progress-e .p-bar.danger > div { background:var(--err-500); }
+.event-row .progress-e .p-meta { display:flex; justify-content:space-between; font:500 10.5px/1 var(--f-mono); color:var(--muted); }
+.event-row .progress-e .p-meta b { color:var(--ink); font-weight:600; }
+
+/* Todo card */
+.todo-card { padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+.todo-card .head-t { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.todo-card h3 { font:700 17px/1.2 var(--f-display); }
+.todo-card .ct-t { padding:3px 8px; background:var(--surface-2); border-radius:5px; font:600 11px/1.4 var(--f-mono); color:var(--ink-2); }
+
+.todo-it { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-2); align-items:flex-start; }
+.todo-it:last-child { border-bottom:0; padding-bottom:0; }
+.todo-it .ck-t { width:18px; height:18px; border:1.5px solid var(--line); border-radius:5px; flex-shrink:0; cursor:pointer; margin-top:2px; transition:.15s; display:grid; place-items:center; }
+.todo-it .ck-t:hover { border-color:var(--ink-3); }
+.todo-it .ck-t.checked { background:var(--ok-500); border-color:var(--ok-500); }
+.todo-it .ck-t.checked::after { content:''; width:9px; height:5px; border-left:2px solid white; border-bottom:2px solid white; transform:rotate(-45deg) translate(1px,-1px); }
+.todo-it.done .body-t { opacity:.4; }
+.todo-it.done .body-t h6 { text-decoration:line-through; }
+.todo-it .body-t { flex:1; }
+.todo-it .body-t h6 { font:600 13.5px/1.35 var(--f-display); margin-bottom:3px; }
+.todo-it .body-t p { font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin:0; }
+.todo-it .body-t a { color:var(--acc); text-decoration:none; }
+.todo-it .pri-t { padding:2px 7px; border-radius:4px; font:600 10.5px/1.3 var(--f-mono); letter-spacing:.04em; flex-shrink:0; }
+.todo-it .pri-t.high { background:color-mix(in srgb, var(--err-500) 14%, transparent); color:var(--err-700); }
+.todo-it .pri-t.med { background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--amber-700, var(--warn-700)); }
+.todo-it .pri-t.low { background:var(--surface-2); color:var(--muted); }
+
+/* Quick actions */
+.qa-card { padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+.qa-card h3 { font:700 17px/1.2 var(--f-display); margin-bottom:14px; }
+.qa-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.qa-it { padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:10px; cursor:pointer; transition:.12s; text-decoration:none; color:inherit; display:block; }
+.qa-it:hover { background:var(--surface); border-color:var(--ink-3); transform:translateY(-1px); }
+.qa-it .ic-q { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; margin-bottom:8px; }
+.qa-it .ic-q.b1 { background:color-mix(in srgb, var(--acc) 14%, transparent); color:var(--acc); }
+.qa-it .ic-q.b2 { background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); }
+.qa-it .ic-q.b3 { background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--amber-600); }
+.qa-it .ic-q.b4 { background:color-mix(in srgb, #7c3aed 14%, transparent); color:#7c3aed; }
+.qa-it .ic-q svg { width:14px; height:14px; }
+.qa-it h6 { font:700 12.5px/1.3 var(--f-display); margin-bottom:2px; }
+.qa-it p { font:400 11px/1.4 var(--f-tc); color:var(--muted); margin:0; }
+
+@media (max-width: 1180px) {
+  .prim-grid, .sec-grid { grid-template-columns:1fr; }
+  .kpis { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="admin">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="side">
+    <a class="brand" href="/admin/">
+      <div class="logo">R</div>
+      <div class="nm">RegMaster<small>主辦後台</small></div>
+    </a>
+
+    <div class="org-switcher">
+      <div class="av" id="orgAv">—</div>
+      <div class="body">
+        <h6 id="orgName">載入中⋯</h6>
+        <p id="orgPlan">—</p>
+      </div>
+    </div>
+
+    <div class="nav-grp">
+      <div class="l-grp">概覽</div>
+      <a class="nav-it on">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+        儀表板
+      </a>
+      <a class="nav-it" href="/admin/events/">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        所有活動 <span class="ct" id="navCompCount">—</span>
+      </a>
+    </div>
+
+    <div class="nav-grp">
+      <div class="l-grp">資源</div>
+      <a class="nav-it" href="/admin/license.html">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>
+        方案與授權
+      </a>
+      <a class="nav-it" href="/admin/settings.html">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-1 3"/></svg>
+        設定
+      </a>
+    </div>
+
+    <div class="side-foot">
+      <div class="usage-card">
+        <h6>本月用量</h6>
+        <div class="nm-p" id="planBadge">TRIAL 14 天</div>
+        <div class="bar"><div id="usageBar" style="width:0%"></div></div>
+        <div class="meta-u"><span id="usageText">— / —</span><span id="usagePct">0%</span></div>
+        <a class="upgrade-link" href="/admin/license.html">升級方案 →</a>
+      </div>
+      <a class="nav-it" href="/login.html?logout=1" id="logoutBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 3h-4a2 2 0 00-2 2v14a2 2 0 002 2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        登出
+      </a>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <main>
+    <header class="head">
+      <div class="crumbs">
+        <span>主辦後台</span>
+        <span class="sep">/</span>
+        <b>儀表板</b>
+      </div>
+      <div class="quick-search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+        <input id="searchInput" placeholder="搜尋活動 / 報名者...">
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="actions">
+        <a class="btn btn-primary" href="/admin/events/?new=1" style="font:600 13px/1 var(--f-tc)">
+          <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" style="width:13px; height:13px; vertical-align:-2px; margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>
+          建立活動
+        </a>
+        <div class="me-h">
+          <div class="av-c" id="meAv">—</div>
+          <span id="meName">—</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-c">
+
+      <div id="errorBanner" class="error-banner" style="display:none"></div>
+      <div id="loadingState" class="loading-c">載入儀表板資料⋯</div>
+
+      <div id="content" style="display:none">
+        <!-- Welcome -->
+        <div class="welcome-row">
+          <div class="l">
+            <h1 id="greet">早安 ☀️</h1>
+            <p><span id="welcomeBlurb">—</span> <span class="badge-c" id="liveBadge">— 場活動進行中</span></p>
+          </div>
+          <div class="r">
+            <div class="date-pill">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:12px; height:12px"><path d="M8 7V3m8 4V3M3 11h18"/></svg>
+              <span id="todayDate">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI ROW -->
+        <div class="kpis">
+          <div class="kpi">
+            <div class="head-k">
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>總報名</div>
+              <span class="delta-k up" id="d1Delta" style="display:none"></span>
+            </div>
+            <div class="v-k" id="d1Val">—<em>人</em></div>
+            <div class="sub-k" id="d1Sub">跨所有活動累計</div>
+            <div class="spark" id="d1Spark"></div>
+          </div>
+
+          <div class="kpi">
+            <div class="head-k">
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>已付款</div>
+              <span class="delta-k up" id="d2Delta" style="display:none"></span>
+            </div>
+            <div class="v-k" id="d2Val">—</div>
+            <div class="sub-k" id="d2Sub">完成繳費的隊伍數</div>
+            <div class="spark" id="d2Spark"></div>
+          </div>
+
+          <div class="kpi">
+            <div class="head-k">
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>待處理</div>
+              <span class="delta-k up" id="d3Delta" style="display:none"></span>
+            </div>
+            <div class="v-k" id="d3Val">—</div>
+            <div class="sub-k" id="d3Sub">含待付款、待審核、即將截止</div>
+            <div class="spark" id="d3Spark"></div>
+          </div>
+
+          <div class="kpi">
+            <div class="head-k">
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>活動數</div>
+            </div>
+            <div class="v-k" id="d4Val">—<em>場</em></div>
+            <div class="sub-k" id="d4Sub">進行中 + 已截止 + 草稿</div>
+            <div class="spark" id="d4Spark"></div>
+          </div>
+        </div>
+
+        <!-- PRIMARY GRID: chart + AI insights -->
+        <div class="prim-grid">
+          <div class="chart-card">
+            <div class="head-c">
+              <div>
+                <h3>報名趨勢</h3>
+                <div class="sub-c">最近 30 天 · 跨所有活動</div>
+              </div>
+              <div class="filters">
+                <button data-r="7">7 天</button>
+                <button class="on" data-r="30">30 天</button>
+                <button data-r="90">90 天</button>
+              </div>
+            </div>
+            <div class="chart-svg-wrap">
+              <svg id="trendChart" viewBox="0 0 600 200" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="gAcc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3D6BFF" stop-opacity=".26"/>
+                    <stop offset="100%" stop-color="#3D6BFF" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 4">
+                  <line x1="0" y1="40" x2="600" y2="40"/>
+                  <line x1="0" y1="80" x2="600" y2="80"/>
+                  <line x1="0" y1="120" x2="600" y2="120"/>
+                  <line x1="0" y1="160" x2="600" y2="160"/>
+                </g>
+                <path id="trendArea" fill="url(#gAcc)" d="M0 200 L600 200 L600 200 L0 200 Z"/>
+                <path id="trendLine" fill="none" stroke="#3D6BFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d=""/>
+              </svg>
+            </div>
+            <div class="chart-leg">
+              <div class="l-i"><span class="dot-l" style="background:var(--acc)"></span>近 30 天 <b id="legTotal">—</b></div>
+              <div class="l-i" style="margin-left:auto" id="legChange"></div>
+            </div>
+          </div>
+
+          <div class="ai-card">
+            <div class="head-ai">
+              <div class="ic-w"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
+              <h4>AI 洞察</h4>
+              <span class="badge-ai" id="aiCountBadge">— NEW</span>
+            </div>
+            <div id="insightsList">
+              <p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">AI 洞察分析中⋯</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECONDARY GRID: active events + todos -->
+        <div class="sec-grid">
+          <div class="events-card">
+            <div class="head-e">
+              <h3>進行中的活動</h3>
+              <a href="/admin/events/">查看全部 →</a>
+            </div>
+            <div id="activeEventsList">
+              <div class="loading-c" style="padding:24px">載入活動清單⋯</div>
+            </div>
+          </div>
+
+          <div class="todo-card">
+            <div class="head-t">
+              <h3>待辦事項</h3>
+              <span class="ct-t" id="todoCount">— 項</span>
+            </div>
+            <div id="todoList">
+              <div class="loading-c" style="padding:24px">分析待辦⋯</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TERTIARY: quick actions -->
+        <div class="qa-card">
+          <h3>快速操作</h3>
+          <div class="qa-grid">
+            <a class="qa-it" href="/admin/events/?new=1">
+              <div class="ic-q b1"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+              <h6>建立活動</h6><p>從零或模板</p>
+            </a>
+            <a class="qa-it" href="/admin/events/">
+              <div class="ic-q b2"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg></div>
+              <h6>所有活動</h6><p>列表 / 編輯</p>
+            </a>
+            <a class="qa-it" href="/admin/license.html">
+              <div class="ic-q b3"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg></div>
+              <h6>方案與授權</h6><p>試用 / 升級</p>
+            </a>
+            <a class="qa-it" href="/admin/settings.html">
+              <div class="ic-q b4"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></div>
+              <h6>帳戶設定</h6><p>個人 / 安全</p>
+            </a>
+            <a class="qa-it" href="/contact.html?topic=support">
+              <div class="ic-q b1"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7"/></svg></div>
+              <h6>聯絡客服</h6><p>4 hr 回覆</p>
+            </a>
+            <a class="qa-it" href="/Manual.html" target="_blank">
+              <div class="ic-q b2"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
+              <h6>說明文件</h6><p>使用手冊</p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+
+  // ---- Auth guard ----
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) {
+    location.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+    return;
+  }
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function showErr(msg) { var b = document.getElementById('errorBanner'); b.innerHTML = msg; b.style.display = 'block'; }
+  function parseDate(s) {
+    if (!s) return null;
+    var d = new Date(s); if (!isNaN(d.getTime())) return d;
+    var m = String(s).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    return null;
+  }
+
+  // ---- Greeting + sidebar fill ----
+  var now = new Date();
+  var hr = now.getHours();
+  var greetWord = hr < 6 ? '凌晨好' : hr < 12 ? '早安' : hr < 18 ? '午安' : '晚安';
+  var emoji = hr < 6 ? '🌙' : hr < 12 ? '☀️' : hr < 18 ? '🌤' : '🌙';
+  document.getElementById('greet').textContent = greetWord + '，' + (me.displayName || me.username) + ' ' + emoji;
+  document.getElementById('todayDate').textContent = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0');
+  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('meName').textContent = me.displayName || me.username;
+  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('orgName').textContent = (me.displayName || me.username);
+  document.getElementById('orgPlan').textContent = me.role === 'system' ? 'SYSTEM 角色' : '主辦方';
+
+  document.getElementById('searchInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.value.trim()) {
+      location.href = '/admin/events/?q=' + encodeURIComponent(e.target.value.trim());
+    }
+  });
+
+  // ---- Load competitions + per-comp stats + insights/todos in parallel ----
+  var COMPS = [];
+  var loadErr = null;
+
+  function fetchCompetitions() {
+    return new Promise(function (resolve) {
+      google.script.run
+        .withSuccessHandler(function (list) { resolve(list || []); })
+        .withFailureHandler(function (err) {
+          loadErr = err && err.message;
+          resolve([]);
+        })
+        .listCompetitions();
+    });
+  }
+  function fetchStats(compId) {
+    return new Promise(function (resolve) {
+      google.script.run
+        .withSuccessHandler(function (s) { resolve(s || {}); })
+        .withFailureHandler(function () { resolve({}); })
+        .getDashboardStats(compId);
+    });
+  }
+  function fetchInsights() {
+    return new Promise(function (resolve) {
+      google.script.run
+        .withSuccessHandler(function (s) { resolve(s || {}); })
+        .withFailureHandler(function () { resolve({ insights: [] }); })
+        .getAiInsights('');
+    });
+  }
+  function fetchTodos() {
+    return new Promise(function (resolve) {
+      google.script.run
+        .withSuccessHandler(function (s) { resolve(s || {}); })
+        .withFailureHandler(function () { resolve({ todos: [] }); })
+        .getTodoList('');
+    });
+  }
+
+  fetchCompetitions().then(function (comps) {
+    COMPS = comps;
+    if (loadErr) { showErr('<b>無法載入活動清單：</b> ' + escapeHtml(loadErr)); }
+    document.getElementById('navCompCount').textContent = comps.length;
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    // Per-comp stats
+    return Promise.all(comps.map(function (c) { return fetchStats(c.compId).then(function (s) { return Object.assign({}, c, { stats: s }); }); }));
+  }).then(function (compsWithStats) {
+    renderKPIs(compsWithStats);
+    renderActiveEvents(compsWithStats);
+    renderTrendChart(compsWithStats);
+    return Promise.all([fetchInsights(), fetchTodos()]);
+  }).then(function (results) {
+    renderInsights(results[0]);
+    renderTodos(results[1]);
+  });
+
+  function renderKPIs(comps) {
+    var totalRegs = 0, paidCount = 0, pendingCount = 0;
+    comps.forEach(function (c) {
+      totalRegs += (c.teamCount || 0);
+      var s = c.stats || {};
+      paidCount += (s.accepted || 0) - (s.payWait || 0);
+      pendingCount += (s.payWait || 0);
+    });
+    document.getElementById('d1Val').innerHTML = totalRegs.toLocaleString() + '<em>人</em>';
+    document.getElementById('d2Val').textContent = Math.max(0, paidCount).toLocaleString();
+    document.getElementById('d3Val').textContent = pendingCount.toLocaleString();
+    document.getElementById('d4Val').innerHTML = comps.length + '<em>場</em>';
+
+    // Compute next-deadline for welcome blurb
+    var now = Date.now();
+    var nextEvent = null;
+    comps.forEach(function (c) {
+      var dl = parseDate(c.deadline);
+      if (dl && dl > now) {
+        if (!nextEvent || dl < parseDate(nextEvent.deadline)) nextEvent = c;
+      }
+    });
+    var liveCount = comps.filter(function (c) { return c.isOpen; }).length;
+    if (nextEvent) {
+      var daysLeft = Math.ceil((parseDate(nextEvent.deadline) - now) / 86400000);
+      document.getElementById('welcomeBlurb').innerHTML = '你的 <em style="color:var(--ink); font-weight:600">「' + escapeHtml(nextEvent.name) + '」</em>還有 <b>' + daysLeft + ' 天</b>截止報名';
+    } else if (comps.length > 0) {
+      document.getElementById('welcomeBlurb').textContent = '所有活動報名已截止或進行中';
+    } else {
+      document.getElementById('welcomeBlurb').textContent = '尚未建立任何活動，點右上「建立活動」開始吧';
+    }
+    document.getElementById('liveBadge').textContent = liveCount + ' 場活動進行中';
+
+    // Sparklines: fill with random-ish derived bars (real time-series in Phase 7)
+    function spark(elId, intensity) {
+      var el = document.getElementById(elId);
+      el.innerHTML = '';
+      var pattern = [30, 42, 38, 55, 48, 64, 78, 90, 100, 88];
+      for (var i = 0; i < 10; i++) {
+        var div = document.createElement('div');
+        div.className = 'b' + (i >= 6 ? ' peak' : '');
+        div.style.height = Math.max(8, pattern[i] * intensity) + '%';
+        el.appendChild(div);
+      }
+    }
+    spark('d1Spark', 1);
+    spark('d2Spark', Math.max(.3, paidCount / Math.max(1, totalRegs)));
+    spark('d3Spark', Math.max(.4, Math.min(1, pendingCount / 10)));
+    spark('d4Spark', Math.max(.5, Math.min(1, comps.length / 10)));
+  }
+
+  function renderActiveEvents(comps) {
+    var live = comps.filter(function (c) { return c.isOpen; }).slice(0, 4);
+    if (live.length === 0) {
+      document.getElementById('activeEventsList').innerHTML =
+        '<div class="empty-c" style="padding:40px 20px"><div class="ic">🎟</div><h3>沒有進行中的活動</h3><p>建立活動並開放報名後即可在這裡看到。</p><a class="btn btn-primary btn-sm" href="/admin/events/?new=1">建立活動</a></div>';
+      return;
+    }
+    var html = live.map(function (c, i) {
+      var max = c.maxTeams || c.maxCapacityLimit || 0;
+      var pct = max > 0 ? Math.min(100, (c.teamCount || 0) / max * 100) : 0;
+      var pctClass = pct > 90 ? 'danger' : pct > 70 ? 'warn' : '';
+      var dl = parseDate(c.deadline);
+      var daysLeft = dl ? Math.ceil((dl - Date.now()) / 86400000) : null;
+      return '<a class="event-row" href="/admin/events/' + encodeURIComponent(c.compId) + '">' +
+        '<div class="av-e c' + ((i % 5) + 1) + '"><span>' + escapeHtml((c.name || '?').charAt(0)) + '</span></div>' +
+        '<div class="body-e"><h6>' + escapeHtml(c.name) + '</h6>' +
+          '<div class="meta-e">' +
+            (c.deadline ? '<div>📅 截止 ' + escapeHtml(c.deadline) + '</div>' : '') +
+            (daysLeft !== null && daysLeft > 0 ? '<div>還有 <b>' + daysLeft + ' 天</b></div>' : (daysLeft !== null ? '<div style="color:var(--err-700)"><b>已截止</b></div>' : '')) +
+          '</div></div>' +
+        '<div class="progress-e">' +
+          '<div class="p-bar ' + pctClass + '"><div style="width:' + pct + '%"></div></div>' +
+          '<div class="p-meta"><span><b>' + (c.teamCount || 0) + '</b>' + (max > 0 ? ' / ' + max : '') + '</span><span>' + (max > 0 ? Math.round(pct) + '%' : '') + '</span></div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+    document.getElementById('activeEventsList').innerHTML = html;
+  }
+
+  function renderTrendChart(comps) {
+    // Build daily registration counts from comps[*].stats.daily if available, else flat
+    // Aggregate last 30 days
+    var days = 30;
+    var pts = new Array(days).fill(0);
+    comps.forEach(function (c) {
+      var daily = c.stats && c.stats.daily || {};
+      var now = Date.now();
+      for (var i = 0; i < days; i++) {
+        var d = new Date(now - (days - 1 - i) * 86400000);
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        pts[i] += (daily[key] || 0);
+      }
+    });
+    var total = pts.reduce(function (a, b) { return a + b; }, 0);
+    var maxV = Math.max.apply(null, pts);
+    if (maxV === 0) {
+      // No real data — show a flat line at bottom
+      document.getElementById('trendLine').setAttribute('d', 'M0 180 L600 180');
+      document.getElementById('trendArea').setAttribute('d', 'M0 180 L600 180 L600 200 L0 200 Z');
+      document.getElementById('legTotal').textContent = '0 筆';
+      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">尚無報名資料</span>';
+      return;
+    }
+    var pathPts = pts.map(function (v, i) {
+      var x = i / (days - 1) * 600;
+      var y = 200 - (v / maxV) * 170 - 10;
+      return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }).join(' ');
+    document.getElementById('trendLine').setAttribute('d', pathPts);
+    document.getElementById('trendArea').setAttribute('d', pathPts + ' L600 200 L0 200 Z');
+    document.getElementById('legTotal').textContent = total.toLocaleString() + ' 筆';
+    var firstHalf = pts.slice(0, days/2).reduce(function (a, b) { return a + b; }, 0);
+    var secondHalf = pts.slice(days/2).reduce(function (a, b) { return a + b; }, 0);
+    if (firstHalf > 0) {
+      var growth = (secondHalf - firstHalf) / firstHalf * 100;
+      var sign = growth >= 0 ? '↑' : '↓';
+      var color = growth >= 0 ? 'var(--ok-700)' : 'var(--err-700)';
+      document.getElementById('legChange').innerHTML = '<span style="color:' + color + '"><b>' + sign + ' ' + Math.abs(growth).toFixed(1) + '%</b></span> 後 15 天 vs 前 15 天';
+    } else {
+      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">' + secondHalf + ' 筆於近 15 天</span>';
+    }
+  }
+
+  function renderInsights(data) {
+    var insights = (data && data.insights) || [];
+    document.getElementById('aiCountBadge').textContent = insights.length + ' NEW';
+    if (insights.length === 0) {
+      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">目前沒有 AI 洞察。<br>建議於 Phase 7 整合 LLM 後重新分析。</p>';
+      return;
+    }
+    document.getElementById('insightsList').innerHTML = insights.map(function (ins) {
+      return '<div class="insight">' +
+        '<div class="row1">' +
+          '<span class="p-i ' + escapeHtml(ins.severity || 'tip') + '">' + escapeHtml(ins.severityLabel || (ins.severity === 'urgent' ? '緊急' : ins.severity === 'success' ? '機會' : '建議')) + '</span>' +
+          '<span class="ago">' + escapeHtml(ins.ago || '剛剛') + '</span>' +
+        '</div>' +
+        '<h6>' + escapeHtml(ins.title) + '</h6>' +
+        '<p>' + escapeHtml(ins.body) + '</p>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderTodos(data) {
+    var todos = (data && data.todos) || [];
+    document.getElementById('todoCount').textContent = todos.length + ' 項';
+    if (todos.length === 0) {
+      document.getElementById('todoList').innerHTML = '<div class="empty-c" style="padding:30px 20px; background:transparent; border:0"><div class="ic" style="width:48px;height:48px;font-size:22px">✓</div><h3 style="font-size:16px">沒有待辦事項</h3><p style="font-size:13px">所有事情都處理完了，好棒！</p></div>';
+      return;
+    }
+    document.getElementById('todoList').innerHTML = todos.map(function (t) {
+      var pri = t.priority || 'low';
+      var priLabel = pri === 'high' ? '高' : pri === 'med' ? '中' : '低';
+      var linkHtml = t.link ? '<a href="' + escapeHtml(t.link) + '" style="font:500 11px/1 var(--f-mono)">查看 →</a>' : '';
+      return '<div class="todo-it">' +
+        '<div class="ck-t" onclick="this.classList.toggle(\'checked\'); this.closest(\'.todo-it\').classList.toggle(\'done\')"></div>' +
+        '<div class="body-t"><h6>' + escapeHtml(t.title) + '</h6><p>' + escapeHtml(t.body || '') + ' ' + linkHtml + '</p></div>' +
+        '<span class="pri-t ' + pri + '">' + priLabel + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    AppState.setMe(null);
+    location.href = '/login.html';
+  });
+})();
+</script>
+</body>
+</html>

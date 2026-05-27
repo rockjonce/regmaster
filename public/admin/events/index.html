@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>所有活動 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+
+<style>
+/* Page head */
+.page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; flex-wrap:wrap; }
+.page-head .l h1 { font:700 28px/1.2 var(--f-display); letter-spacing:-.014em; margin-bottom:4px; }
+.page-head .l h1 .ct-h { display:inline-flex; align-items:center; padding:3px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; font:600 13px/1.4 var(--f-mono); color:var(--ink-2); margin-left:8px; vertical-align:3px; }
+.page-head .l p { font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3); }
+.page-head .r { display:flex; gap:8px; align-items:center; }
+
+/* Stat strip */
+.stat-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:24px; }
+.stat-strip > div { background:var(--surface); padding:14px 18px; cursor:pointer; transition:.12s; position:relative; }
+.stat-strip > div:hover { background:var(--surface-2); }
+.stat-strip > div.on { background:var(--surface-2); }
+.stat-strip > div.on::after { content:''; position:absolute; left:18px; right:18px; bottom:0; height:2px; background:var(--ink); }
+.stat-strip .l-s { font:500 11px/1 var(--f-mono); letter-spacing:.04em; color:var(--muted); display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.stat-strip .l-s .dot-c { width:6px; height:6px; border-radius:50%; }
+.stat-strip .v-s { font:700 22px/1 var(--f-display); letter-spacing:-.014em; }
+.stat-strip .v-s em { font-style:normal; font-size:11px; color:var(--muted); margin-left:4px; font-weight:500; }
+
+/* Toolbar */
+.toolbar { display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.search-w { flex:1; max-width:340px; position:relative; }
+.search-w svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--muted); }
+.search-w input { width:100%; padding:9px 12px 9px 34px; background:var(--surface); border:1px solid var(--line); border-radius:9px; font:400 13px/1.4 var(--f-tc); color:var(--ink); }
+
+/* Grid */
+.events-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:18px; }
+.evt-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; cursor:pointer; transition:.18s; display:flex; flex-direction:column; text-decoration:none; color:inherit; }
+.evt-card:hover { border-color:var(--ink-3); transform:translateY(-2px); box-shadow:var(--sh); }
+.evt-card .cover { aspect-ratio:16/8; position:relative; overflow:hidden; }
+.evt-card .cover .ph-bg { position:absolute; inset:0; }
+.evt-card .cover .ph-bg::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px); background-size:30px 30px; }
+.evt-card .cover.c1 .ph-bg { background:linear-gradient(135deg, #DC2626, #7F1D1D); }
+.evt-card .cover.c2 .ph-bg { background:linear-gradient(135deg, #3D6BFF, #1F3FB8); }
+.evt-card .cover.c3 .ph-bg { background:linear-gradient(135deg, #16A34A, #14532D); }
+.evt-card .cover.c4 .ph-bg { background:linear-gradient(135deg, #F59E0B, #92400E); }
+.evt-card .cover.c5 .ph-bg { background:linear-gradient(135deg, #8B5CF6, #4C1D95); }
+.evt-card .cover.c6 .ph-bg { background:linear-gradient(135deg, #06B6D4, #155E75); }
+.evt-card .cover.c7 .ph-bg { background:linear-gradient(135deg, #475569, #1e293b); }
+.evt-card .cover.c8 .ph-bg { background:linear-gradient(135deg, #EC4899, #9D174D); }
+.evt-card .cover img.poster-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.evt-card .cover .status-c { position:absolute; top:12px; left:12px; display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:rgba(0,0,0,.5); backdrop-filter:blur(8px); color:white; border-radius:5px; font:600 10.5px/1.4 var(--f-mono); letter-spacing:.06em; }
+.evt-card .cover .status-c .dot-c { width:6px; height:6px; border-radius:50%; }
+.evt-card .cover .status-c.live .dot-c { background:#34d77a; box-shadow:0 0 0 3px rgba(52,215,122,.3); animation:pulse-c 2s infinite; }
+@keyframes pulse-c { 50% { opacity:.5; } }
+.evt-card .cover .status-c.draft { background:rgba(255,255,255,.85); color:var(--ink); }
+.evt-card .cover .status-c.draft .dot-c { background:var(--muted); }
+.evt-card .cover .status-c.ended { background:rgba(0,0,0,.6); }
+.evt-card .cover .status-c.ended .dot-c { background:#94a3b8; }
+.evt-card .cover .date-block { position:absolute; bottom:12px; left:12px; padding:8px 12px; background:rgba(0,0,0,.5); backdrop-filter:blur(8px); border-radius:8px; color:white; }
+.evt-card .cover .date-block .d { font:800 22px/1 var(--f-display); letter-spacing:-.014em; }
+.evt-card .cover .date-block .m { font:500 10px/1 var(--f-mono); letter-spacing:.08em; opacity:.85; margin-top:3px; }
+.evt-card .cover .countdown-c { position:absolute; bottom:12px; right:12px; padding:6px 10px; background:rgba(0,0,0,.5); backdrop-filter:blur(8px); border-radius:6px; color:white; font:600 11px/1 var(--f-mono); }
+
+.evt-card .body { padding:16px; display:flex; flex-direction:column; gap:10px; flex:1; }
+.evt-card .body h3 { font:700 15px/1.3 var(--f-display); letter-spacing:-.005em; }
+.evt-card .body .meta-evt { display:flex; flex-direction:column; gap:5px; font:400 11.5px/1.4 var(--f-tc); color:var(--ink-3); }
+.evt-card .body .meta-evt div { display:flex; align-items:center; gap:6px; }
+.evt-card .body .meta-evt svg { width:11px; height:11px; opacity:.7; }
+.evt-card .body .meta-evt b { color:var(--ink-2); font-weight:500; }
+
+.evt-card .progress { padding-top:10px; margin-top:auto; border-top:1px solid var(--line-2); }
+.evt-card .progress .label-p { display:flex; justify-content:space-between; font:500 11px/1.4 var(--f-mono); margin-bottom:6px; }
+.evt-card .progress .label-p .l-p { color:var(--muted); }
+.evt-card .progress .label-p .v-p { color:var(--ink); font-weight:600; }
+.evt-card .progress .v-p .pct { color:var(--ok-700); margin-left:4px; font-size:10.5px; }
+.evt-card .progress .v-p.warn .pct { color:var(--warn-700); }
+.evt-card .progress .v-p.danger .pct { color:var(--err-700); }
+.evt-card .progress .bar-p { height:5px; background:var(--surface-2); border-radius:3px; overflow:hidden; }
+.evt-card .progress .bar-p > div { height:100%; border-radius:3px; background:var(--ok-500); }
+.evt-card .progress .bar-p.warn > div { background:var(--amber-500); }
+.evt-card .progress .bar-p.danger > div { background:var(--err-500); }
+
+.evt-card .quick-row { display:flex; gap:6px; padding:10px 16px; border-top:1px solid var(--line-2); background:var(--surface-2); }
+.evt-card .quick-row a { flex:1; text-align:center; padding:7px; font:500 11px/1 var(--f-tc); color:var(--ink-2); border-radius:6px; transition:.15s; cursor:pointer; text-decoration:none; }
+.evt-card .quick-row a:hover { background:var(--surface); color:var(--ink); }
+
+/* New-card variant */
+.evt-card.new-card { background:var(--surface-2); border:1.5px dashed var(--line); display:grid; place-items:center; min-height:260px; transition:.18s; }
+.evt-card.new-card:hover { border-color:var(--acc); background:color-mix(in srgb, var(--acc) 5%, var(--surface-2)); }
+.evt-card.new-card .inner { text-align:center; padding:24px; }
+.evt-card.new-card .inner .ic-n { width:44px; height:44px; margin:0 auto 12px; border-radius:11px; background:var(--ink); color:white; display:grid; place-items:center; }
+.evt-card.new-card .inner .ic-n svg { width:18px; height:18px; }
+.evt-card.new-card .inner h3 { font:700 16px/1.3 var(--f-display); margin-bottom:4px; }
+.evt-card.new-card .inner p { font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-bottom:12px; max-width:240px; }
+.evt-card.new-card .inner .btn-n { padding:7px 14px; background:var(--ink); color:white; border-radius:7px; font:600 12px/1 var(--f-tc); display:inline-block; text-decoration:none; }
+
+/* Create modal */
+.modal-bg { position:fixed; inset:0; background:rgba(11,28,61,.5); backdrop-filter:blur(4px); display:none; place-items:center; z-index:200; }
+.modal-bg.on { display:grid; }
+.modal { background:var(--surface); border-radius:18px; padding:32px; max-width:480px; width:90%; box-shadow:var(--sh-xl); }
+.modal h3 { font:700 22px/1.2 var(--f-display); margin-bottom:8px; }
+.modal p.sub { font:400 14px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:24px; }
+.modal .fld { margin-bottom:14px; }
+.modal .lbl { display:block; font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); margin-bottom:6px; }
+.modal input, .modal select { width:100%; padding:10px 14px; background:var(--surface); border:1px solid var(--line); border-radius:9px; font:400 14px/1.5 var(--f-tc); color:var(--ink); }
+.modal input:focus, .modal select:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+.modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; padding-top:18px; border-top:1px solid var(--line-2); }
+</style>
+</head>
+<body>
+
+<div class="admin">
+
+  <aside class="side">
+    <a class="brand" href="/admin/">
+      <div class="logo">R</div>
+      <div class="nm">RegMaster<small>主辦後台</small></div>
+    </a>
+    <div class="org-switcher">
+      <div class="av" id="orgAv">—</div>
+      <div class="body"><h6 id="orgName">—</h6><p id="orgPlan">—</p></div>
+    </div>
+    <div class="nav-grp">
+      <div class="l-grp">概覽</div>
+      <a class="nav-it" href="/admin/">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"/></svg>
+        儀表板
+      </a>
+      <a class="nav-it on">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        所有活動 <span class="ct" id="navCompCount">—</span>
+      </a>
+    </div>
+    <div class="nav-grp">
+      <div class="l-grp">資源</div>
+      <a class="nav-it" href="/admin/license.html">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>
+        方案與授權
+      </a>
+      <a class="nav-it" href="/admin/settings.html">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>
+        設定
+      </a>
+    </div>
+    <div class="side-foot">
+      <a class="nav-it" href="/login.html?logout=1" id="logoutBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 3h-4a2 2 0 00-2 2v14a2 2 0 002 2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        登出
+      </a>
+    </div>
+  </aside>
+
+  <main>
+    <header class="head">
+      <div class="crumbs">
+        <a href="/admin/">主辦後台</a><span class="sep">/</span><b>所有活動</b>
+      </div>
+      <div class="quick-search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+        <input id="searchInput" placeholder="搜尋活動名稱、類別⋯">
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="newCompBtn" style="font:600 13px/1 var(--f-tc)">
+          <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" style="width:13px; height:13px; vertical-align:-2px; margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>
+          建立活動
+        </button>
+        <div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div>
+      </div>
+    </header>
+
+    <div class="main-c">
+      <div class="page-head">
+        <div class="l">
+          <h1>所有活動 <span class="ct-h" id="totalCount">— 場</span></h1>
+          <p id="subline">管理你舉辦過的所有活動 · 點選即可進入活動詳情</p>
+        </div>
+      </div>
+
+      <div id="errorBanner" class="error-banner" style="display:none"></div>
+
+      <div class="stat-strip" id="statStrip">
+        <div class="on" data-filter="all"><div class="l-s">全部</div><div class="v-s" id="ssAll">—<em>場</em></div></div>
+        <div data-filter="live"><div class="l-s"><span class="dot-c" style="background:var(--ok-500)"></span>進行中</div><div class="v-s" id="ssLive">—</div></div>
+        <div data-filter="upcoming"><div class="l-s"><span class="dot-c" style="background:var(--amber-500)"></span>即將開放</div><div class="v-s" id="ssUp">—</div></div>
+        <div data-filter="draft"><div class="l-s"><span class="dot-c" style="background:var(--muted)"></span>草稿</div><div class="v-s" id="ssDr">—</div></div>
+        <div data-filter="ended"><div class="l-s"><span class="dot-c" style="background:var(--ink-3)"></span>已結束</div><div class="v-s" id="ssEd">—</div></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-w">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+          <input id="filterInput" placeholder="篩選名稱、類別⋯">
+        </div>
+      </div>
+
+      <div id="contentArea">
+        <div class="loading-c">載入活動清單⋯</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Create event modal -->
+<div class="modal-bg" id="createModal">
+  <div class="modal">
+    <h3>建立新活動</h3>
+    <p class="sub">先填基本資料，建立完成後再進入詳細設定。</p>
+    <div class="error-banner" id="createErr" style="display:none"></div>
+    <div class="fld">
+      <label class="lbl" for="newName">活動名稱 *</label>
+      <input id="newName" placeholder="例：春季程式競賽 2026">
+    </div>
+    <div class="fld">
+      <label class="lbl" for="newCategory">類別</label>
+      <select id="newCategory">
+        <option value="研討會">研討會</option>
+        <option value="程式競賽">程式競賽</option>
+        <option value="工作坊">工作坊</option>
+        <option value="夏令營">夏令營</option>
+        <option value="學術論壇">學術論壇</option>
+        <option value="校友活動">校友活動</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label class="lbl" for="newEventType">參賽形式</label>
+      <select id="newEventType">
+        <option value="single_no_coach">個人賽（無指導老師）</option>
+        <option value="single_coach">個人賽（含指導老師）</option>
+        <option value="team_no_coach">團體賽（無指導老師）</option>
+        <option value="team_coach">團體賽（含指導老師）</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="cancelCreate">取消</button>
+      <button class="btn btn-primary" id="confirmCreate">建立 →</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script>
+(function () {
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) {
+    location.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+    return;
+  }
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function parseDate(s) { if (!s) return null; var d = new Date(s); if (!isNaN(d.getTime())) return d; var m = String(s).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3])); return null; }
+  function showErr(msg) { var b = document.getElementById('errorBanner'); b.innerHTML = msg; b.style.display = 'block'; }
+
+  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('meName').textContent = me.displayName || me.username;
+  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('orgName').textContent = me.displayName || me.username;
+  document.getElementById('orgPlan').textContent = me.role === 'system' ? 'SYSTEM 角色' : '主辦方';
+
+  var ALL = [];
+  var STATE = { filter: 'all', q: '' };
+
+  function classifyComp(c) {
+    var now = Date.now();
+    var dl = parseDate(c.deadline);
+    var od = parseDate(c.openDate);
+    if (c.isOpen) return 'live';
+    if (od && now < od.getTime()) return 'upcoming';
+    if (dl && now > dl.getTime()) return 'ended';
+    return 'draft';
+  }
+
+  function render() {
+    var grid = document.getElementById('contentArea');
+    var counts = { all: ALL.length, live: 0, upcoming: 0, draft: 0, ended: 0 };
+    ALL.forEach(function (c) { counts[classifyComp(c)]++; });
+    document.getElementById('ssAll').innerHTML = counts.all + '<em>場</em>';
+    document.getElementById('ssLive').textContent = counts.live;
+    document.getElementById('ssUp').textContent = counts.upcoming;
+    document.getElementById('ssDr').textContent = counts.draft;
+    document.getElementById('ssEd').textContent = counts.ended;
+    document.getElementById('navCompCount').textContent = counts.all;
+    document.getElementById('totalCount').textContent = '共 ' + counts.all + ' 場';
+    document.getElementById('subline').textContent = '管理你舉辦過的所有活動 · 進行中 ' + counts.live + ' / 草稿 ' + counts.draft + ' / 歷史 ' + counts.ended;
+
+    var q = (STATE.q || '').toLowerCase();
+    var filtered = ALL.filter(function (c) {
+      if (STATE.filter !== 'all' && classifyComp(c) !== STATE.filter) return false;
+      if (q && (c.name + ' ' + (c.category || '')).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+
+    // Sort: live first, then upcoming, then by created
+    filtered.sort(function (a, b) {
+      var oa = ['live', 'upcoming', 'draft', 'ended'].indexOf(classifyComp(a));
+      var ob = ['live', 'upcoming', 'draft', 'ended'].indexOf(classifyComp(b));
+      if (oa !== ob) return oa - ob;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    var newCard = '<div class="evt-card new-card" id="newCardBtn"><div class="inner">' +
+      '<div class="ic-n"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>' +
+      '<h3>建立新活動</h3>' +
+      '<p>從零開始，或使用模板快速上線</p>' +
+      '<span class="btn-n">開始 →</span>' +
+      '</div></div>';
+    var html = newCard + filtered.map(renderCard).join('');
+    grid.innerHTML = '<div class="events-grid">' + html + '</div>';
+
+    document.getElementById('newCardBtn').addEventListener('click', openCreateModal);
+    document.querySelectorAll('.evt-card[data-id]').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('.quick-row a')) return;
+        location.href = '/admin/events/' + encodeURIComponent(card.dataset.id);
+      });
+    });
+  }
+
+  function renderCard(c, idx) {
+    var cls = classifyComp(c);
+    var statusHtml;
+    if (cls === 'live') statusHtml = '<div class="status-c live"><span class="dot-c"></span>LIVE · 報名中</div>';
+    else if (cls === 'upcoming') statusHtml = '<div class="status-c draft"><span class="dot-c"></span>即將開放</div>';
+    else if (cls === 'ended') statusHtml = '<div class="status-c ended"><span class="dot-c"></span>已結束</div>';
+    else statusHtml = '<div class="status-c draft"><span class="dot-c"></span>草稿</div>';
+
+    var max = c.maxTeams || c.maxCapacityLimit || 0;
+    var pct = max > 0 ? Math.min(100, (c.teamCount || 0) / max * 100) : 0;
+    var pctClass = pct > 90 ? 'danger' : pct > 70 ? 'warn' : '';
+    var dl = parseDate(c.deadline);
+    var daysLeft = dl ? Math.ceil((dl.getTime() - Date.now()) / 86400000) : null;
+    var countdown = '';
+    if (cls === 'live' && daysLeft !== null && daysLeft >= 0) countdown = '<div class="countdown-c">⏰ 還有 ' + daysLeft + ' 天</div>';
+
+    var dateBlock = '';
+    if (dl) {
+      var m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][dl.getMonth()];
+      var wd = ['SUN','MON','TUE','WED','THU','FRI','SAT'][dl.getDay()];
+      dateBlock = '<div class="date-block"><div class="d">' + (dl.getMonth()+1).toString().padStart(2,'0') + '.' + String(dl.getDate()).padStart(2,'0') + '</div><div class="m">' + wd + ' · ' + m + '</div></div>';
+    }
+
+    var coverClass = 'c' + ((idx % 8) + 1);
+    var coverInner = '<div class="ph-bg"></div>';
+    // We don't have posterUrl in listCompetitions result, so just use gradients
+
+    return '<a class="evt-card" data-id="' + escapeHtml(c.compId) + '">' +
+      '<div class="cover ' + coverClass + '">' + coverInner + statusHtml + dateBlock + countdown + '</div>' +
+      '<div class="body">' +
+        '<h3>' + escapeHtml(c.name) + '</h3>' +
+        '<div class="meta-evt">' +
+          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml(c.deadline || '尚未設定截止日') + '</div>' +
+          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + (c.teamCount || 0) + '</b> 報名' + (max > 0 ? ' / ' + max : '') + '</div>' +
+        '</div>' +
+        '<div class="progress">' +
+          '<div class="label-p"><span class="l-p">報名進度</span><span class="v-p ' + pctClass + '">' + (c.teamCount || 0) + (max > 0 ? ' / ' + max : '') + ' <span class="pct">' + (max > 0 ? Math.round(pct) + '%' : '無上限') + '</span></span></div>' +
+          '<div class="bar-p ' + pctClass + '"><div style="width:' + pct + '%"></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="quick-row">' +
+        '<a href="/events/detail.html?id=' + encodeURIComponent(c.compId) + '" target="_blank">公開頁 ↗</a>' +
+        '<a onclick="event.stopPropagation();" href="javascript:void(0)" data-action="toggle-open" data-id="' + escapeHtml(c.compId) + '" data-current="' + (c.isOpen ? '1' : '0') + '">' + (c.isOpen ? '⏸ 關閉' : '▶ 開放') + '</a>' +
+        '<a onclick="event.stopPropagation();" href="javascript:void(0)" data-action="duplicate" data-id="' + escapeHtml(c.compId) + '" data-name="' + escapeHtml(c.name) + '">📋 複製</a>' +
+      '</div>' +
+    '</a>';
+  }
+
+  // ---- Quick actions ----
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    var action = btn.dataset.action;
+    var id = btn.dataset.id;
+    if (action === 'toggle-open') {
+      var isOpen = btn.dataset.current === '1';
+      if (!confirm((isOpen ? '關閉' : '開放') + '此活動報名？')) return;
+      google.script.run
+        .withSuccessHandler(function () { load(); })
+        .withFailureHandler(function (err) { alert('失敗：' + (err && err.message)); })
+        .setRegistrationOpen(id, !isOpen);
+    } else if (action === 'duplicate') {
+      var nm = prompt('複製活動 — 請輸入新活動名稱', btn.dataset.name + ' (複製)');
+      if (!nm) return;
+      google.script.run
+        .withSuccessHandler(function () { alert('已建立複本'); load(); })
+        .withFailureHandler(function (err) { alert('失敗：' + (err && err.message)); })
+        .duplicateCompetition(id, nm, me.username);
+    }
+  });
+
+  // ---- Create modal ----
+  function openCreateModal() { document.getElementById('createModal').classList.add('on'); document.getElementById('newName').focus(); }
+  function closeCreateModal() { document.getElementById('createModal').classList.remove('on'); document.getElementById('newName').value = ''; document.getElementById('createErr').style.display = 'none'; }
+  document.getElementById('newCompBtn').addEventListener('click', openCreateModal);
+  document.getElementById('cancelCreate').addEventListener('click', closeCreateModal);
+  document.getElementById('createModal').addEventListener('click', function (e) { if (e.target === this) closeCreateModal(); });
+  document.getElementById('confirmCreate').addEventListener('click', function () {
+    var name = document.getElementById('newName').value.trim();
+    if (!name) { document.getElementById('createErr').textContent = '請填寫活動名稱'; document.getElementById('createErr').style.display = 'block'; return; }
+    var category = document.getElementById('newCategory').value;
+    var eventType = document.getElementById('newEventType').value;
+    var btn = this; btn.disabled = true; btn.textContent = '建立中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = '建立 →';
+        if (res && res.success) {
+          closeCreateModal();
+          // Go straight to the event hub
+          location.href = '/admin/events/' + encodeURIComponent(res.compId);
+        } else {
+          document.getElementById('createErr').textContent = (res && res.message) || '建立失敗';
+          document.getElementById('createErr').style.display = 'block';
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled = false; btn.textContent = '建立 →';
+        document.getElementById('createErr').textContent = (err && err.message) || '網路錯誤';
+        document.getElementById('createErr').style.display = 'block';
+      })
+      .createCompetition(name, category, eventType);
+  });
+
+  // ---- Filter handlers ----
+  document.querySelectorAll('#statStrip > div').forEach(function (d) {
+    d.addEventListener('click', function () {
+      document.querySelectorAll('#statStrip > div').forEach(function (x) { x.classList.remove('on'); });
+      d.classList.add('on');
+      STATE.filter = d.dataset.filter;
+      render();
+    });
+  });
+  document.getElementById('filterInput').addEventListener('input', function (e) { STATE.q = e.target.value; render(); });
+  document.getElementById('searchInput').addEventListener('input', function (e) {
+    STATE.q = e.target.value;
+    document.getElementById('filterInput').value = e.target.value;
+    render();
+  });
+
+  // ---- Auto-open create modal on ?new=1 ----
+  if (new URLSearchParams(location.search).get('new') === '1') {
+    setTimeout(openCreateModal, 200);
+  }
+  // ---- Pre-fill search from ?q= ----
+  var qsq = new URLSearchParams(location.search).get('q');
+  if (qsq) { STATE.q = qsq; document.getElementById('searchInput').value = qsq; document.getElementById('filterInput').value = qsq; }
+
+  // ---- Logout ----
+  document.getElementById('logoutBtn').addEventListener('click', function (e) { e.preventDefault(); AppState.setMe(null); location.href = '/login.html'; });
+
+  // ---- Load ----
+  function load() {
+    google.script.run
+      .withSuccessHandler(function (list) {
+        ALL = list || [];
+        render();
+      })
+      .withFailureHandler(function (err) {
+        showErr('<b>無法載入活動：</b>' + escapeHtml((err && err.message) || ''));
+        document.getElementById('contentArea').innerHTML = '<div class="events-grid">' +
+          '<div class="evt-card new-card" id="newCardBtn"><div class="inner">' +
+          '<div class="ic-n"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>' +
+          '<h3>建立新活動</h3><p>看起來這是你的第一場活動</p><span class="btn-n">開始 →</span></div></div>' +
+        '</div>';
+        document.getElementById('newCardBtn').addEventListener('click', openCreateModal);
+      })
+      .listCompetitions();
+  }
+  load();
+})();
+</script>
+</body>
+</html>
