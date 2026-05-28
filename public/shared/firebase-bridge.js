@@ -33,6 +33,36 @@
     return;
   }
 
+  // ---------------------------------------------------------------------------
+  // EMULATOR AUTO-DETECT (BLOCKER B1 fix)
+  // ---------------------------------------------------------------------------
+  // Without this, all callables / Firestore reads from a v3 page running under
+  // `firebase emulators:start` hit the PRODUCTION project — risky because:
+  //   1. Local QA reads real Firestore data (privacy)
+  //   2. Local QA could write to real Firestore (data corruption)
+  //   3. Cloud Functions are not the local emulator copy, so any backend
+  //      change being tested is silently ignored.
+  //
+  // In production deploy, location.hostname will be 'regmaster-pro.web.app'
+  // (or a custom domain), so the if-block is a no-op. Safe and self-disabling.
+  //
+  // Ports match firebase.json emulators config (functions:5001, firestore:8085,
+  // auth:9099). If you change those, update here too.
+  // ---------------------------------------------------------------------------
+  var _isLocalhost = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
+  if (_isLocalhost) {
+    try {
+      if (firebase.functions) firebase.functions().useEmulator('127.0.0.1', 5001);
+    } catch (e) { console.warn('[firebase-bridge] useEmulator(functions) failed:', e.message); }
+    try {
+      if (firebase.firestore) firebase.firestore().useEmulator('127.0.0.1', 8085);
+    } catch (e) { console.warn('[firebase-bridge] useEmulator(firestore) failed:', e.message); }
+    try {
+      if (firebase.auth) firebase.auth().useEmulator('http://127.0.0.1:9099', { disableWarnings: true });
+    } catch (e) { /* auth emulator may not be running; OK to ignore */ }
+    console.log('[firebase-bridge] 🟢 Connected to LOCAL emulators (functions:5001, firestore:8085).');
+  }
+
   var _fn = firebase.functions();
   window._fn = _fn;
 

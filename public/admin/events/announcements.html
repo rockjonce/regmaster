@@ -179,10 +179,27 @@
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('content').style.display = 'grid';
       renderList();
+      // BUGFIX M3 (Phase 9.1): no longer auto-create draft on empty state.
+      // Previously this fired createCampaign() during page load, polluting the
+      // collection. Now we show an empty-state prompt; user must click "+ 新增".
       if (CAMPS.length > 0) selectCamp(CAMPS[0]);
-      else createDraft();
+      else showEmptyEditor();
       updateRecipCount();
     });
+  }
+
+  function showEmptyEditor() {
+    SELECTED = null;
+    document.getElementById('campTitle').value = '';
+    document.getElementById('campTitle').placeholder = '尚未選擇 Campaign — 請點左側「＋ 新增 Campaign」';
+    document.getElementById('subjectInput').value = '';
+    document.getElementById('subjectInput').disabled = true;
+    document.getElementById('bodyTitleInput').value = '';
+    document.getElementById('bodyContent').value = '';
+    document.getElementById('bodyContent').disabled = true;
+    document.getElementById('saveCampBtn').disabled = true;
+    document.getElementById('sendNowBtn').disabled = true;
+    document.getElementById('statsBox').textContent = '請先建立或選擇 Campaign';
   }
 
   function renderList() {
@@ -208,9 +225,13 @@
     SELECTED = c;
     document.querySelectorAll('.camp').forEach(function (x) { x.classList.toggle('on', x.dataset.id === c.id); });
     document.getElementById('campTitle').value = c.subject || '';
+    document.getElementById('campTitle').placeholder = 'Campaign 標題';
     document.getElementById('subjectInput').value = c.subject || '';
+    document.getElementById('subjectInput').disabled = false;
     document.getElementById('bodyTitleInput').value = c.subject || '';
     document.getElementById('bodyContent').value = c.body || '';
+    document.getElementById('bodyContent').disabled = false;
+    document.getElementById('saveCampBtn').disabled = false;
     document.getElementById('recipFilter').value = c.recipientFilter || 'all';
     CHANNELS = (c.channels || ['email']).slice();
     document.querySelectorAll('.channel-pill').forEach(function (p) {

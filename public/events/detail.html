@@ -451,10 +451,35 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   }
 
   function renderRich(text) {
-    // If text already contains HTML tags, allow it as-is (admin-trusted content from cfg).
-    // Otherwise convert plain text to paragraphs.
-    if (/<\w+[^>]*>/.test(text)) return text;
-    return text.split(/\n{2,}/).map(function (p) { return '<p>' + escapeHtml(p).replace(/\n/g, '<br>') + '</p>'; }).join('');
+    // Admin-trusted content from cfg.description (set via competition settings).
+    // Three forms we handle:
+    //   (a) Full HTML document (`<!DOCTYPE html>...<html>...<body>X</body>...</html>`)
+    //        → extract <body> innerHTML so we don't try to nest <html> inside <div>
+    //   (b) HTML fragment (`<p>hello</p><img src=...>`)        → render as-is
+    //   (c) Plain text with line breaks                        → wrap in <p>, escape
+    if (!text) return '';
+    var s = String(text);
+
+    // Detect a complete HTML document
+    var isFullDoc = /<!DOCTYPE\s+html/i.test(s) || /<html[\s>]/i.test(s);
+    if (isFullDoc) {
+      try {
+        var doc = new DOMParser().parseFromString(s, 'text/html');
+        if (doc && doc.body) {
+          // Strip any <script> for safety (admin-trusted but defensive)
+          doc.body.querySelectorAll('script').forEach(function (n) { n.remove(); });
+          return doc.body.innerHTML;
+        }
+      } catch (e) { /* fall through to fragment treatment */ }
+    }
+
+    // HTML fragment (anything with a tag) → render as-is
+    if (/<\w+[^>]*>/.test(s)) return s;
+
+    // Plain text — wrap in paragraphs
+    return s.split(/\n{2,}/).map(function (p) {
+      return '<p>' + escapeHtml(p).replace(/\n/g, '<br>') + '</p>';
+    }).join('');
   }
 
   function tickCountdown(target) {
