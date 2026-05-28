@@ -406,14 +406,12 @@ body { background:var(--bg); }
       btn.disabled = false;
       if (r && r.success) {
         toast('帳號已建立');
-        // best-effort: also set email if backend stored it (createAccount stores username/role/display only)
         closeModal('acctModal');
         ['na-username','na-display','na-email','na-password'].forEach(function (id) { document.getElementById(id).value = ''; });
         loadAccounts();
       } else toast((r && r.message) || '建立失敗', 'err');
     }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || '建立失敗', 'err'); })
-      .createAccount(username, password, role, display || username);
-    // note: email field is informational; backend createAccount does not persist email.
+      .createAccount(username, password, role, display || username, email);
   });
 
   // ================= 授權碼 =================

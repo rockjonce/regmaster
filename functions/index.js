@@ -265,15 +265,20 @@ exports.listAccounts = authCallable(["system"], async (data) => {
 });
 
 exports.createAccount = authCallable(["system"], async (data) => {
-  const { username, password, role, displayName } = data;
+  const { username, password, role, displayName, email } = data;
   if (!username || !password) return { success: false, message: "必填" };
   if (role !== "system" && role !== "competition") return { success: false, message: "角色無效" };
   const exist = await db.collection("accounts").where("username", "==", username).limit(1).get();
   if (!exist.empty) return { success: false, message: "已存在" };
+  const cleanEmail = (email || "").trim().toLowerCase();
+  // Admin-created accounts are trusted, so mark the email verified (also lets
+  // Google Sign-In match this account by email).
   await db.collection("accounts").add({
-    username, passwordHash: hashPwd(password), role, displayName: displayName || username, createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
+    username, passwordHash: hashPwd(password), role, displayName: displayName || username,
+    email: cleanEmail, emailVerified: !!cleanEmail,
+    createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
   });
-  await auditLog("system", "建帳號", username, role);
+  await auditLog("system", "建帳號", username, role + (cleanEmail ? " / " + cleanEmail : ""));
   return { success: true };
 });
 

@@ -73,7 +73,7 @@
   var _argMap = {
     loginAccount:["username","password","_clientInfo"],
     loginWithGoogle:["idToken"],
-    createAccount:["username","password","role","displayName"],
+    createAccount:["username","password","role","displayName","email"],
     deleteAccount:["username"],
     changePassword:["username","oldPassword","newPassword"],
     saveGeminiKeys:["keys"],
