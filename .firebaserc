@@ -3,5 +3,18 @@
     "default": "regmaster-v3",
     "v3": "regmaster-v3",
     "prod": "regmaster-pro"
+  },
+  "targets": {},
+  "etags": {
+    "regmaster-pro": {
+      "extensionInstances": {
+        "firestore-send-email": "75dada2cc58cade5e3e776faf718399e8248c39a1df3230ddcba87461306fe09"
+      }
+    },
+    "regmaster-v3": {
+      "extensionInstances": {
+        "firestore-send-email": "02ae3077e3771c43772574cea3615ab10cb4bf82e0a4d176ef963fe8af88ceb0"
+      }
+    }
   }
 }

@@ -1,21 +1,53 @@
 {
   "hosting": {
     "public": "public",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
-      { "source": "/admin/events/*/edit",          "destination": "/admin/events/edit.html" },
-      { "source": "/admin/events/*/form-builder",  "destination": "/admin/events/form-builder.html" },
-      { "source": "/admin/events/*/announcements", "destination": "/admin/events/announcements.html" },
-      { "source": "/admin/events/*/payments",      "destination": "/admin/events/payments.html" },
-      { "source": "/admin/events/*/scoring",       "destination": "/admin/events/scoring.html" },
-      { "source": "/admin/events/*/checkin",       "destination": "/admin/events/checkin.html" },
-      { "source": "/admin/events/*",               "destination": "/admin/events/hub.html" },
-      { "source": "/admin/super",                  "destination": "/admin/super.html" },
+      {
+        "source": "/admin/events/*/edit",
+        "destination": "/admin/events/edit.html"
+      },
+      {
+        "source": "/admin/events/*/form-builder",
+        "destination": "/admin/events/form-builder.html"
+      },
+      {
+        "source": "/admin/events/*/announcements",
+        "destination": "/admin/events/announcements.html"
+      },
+      {
+        "source": "/admin/events/*/payments",
+        "destination": "/admin/events/payments.html"
+      },
+      {
+        "source": "/admin/events/*/scoring",
+        "destination": "/admin/events/scoring.html"
+      },
+      {
+        "source": "/admin/events/*/checkin",
+        "destination": "/admin/events/checkin.html"
+      },
+      {
+        "source": "/admin/events/*",
+        "destination": "/admin/events/hub.html"
+      },
+      {
+        "source": "/admin/super",
+        "destination": "/admin/super.html"
+      },
       {
         "_comment": "Legacy SPA fallback during the 3-month overlap (per Q6). Any path that doesn't match a static file falls through to legacy. New v3 root is public/index.html (was landing.html).",
-        "source": "/legacy/**",                    "destination": "/legacy/index.html"
+        "source": "/legacy/**",
+        "destination": "/legacy/index.html"
       },
-      { "source": "**",                             "destination": "/index.html" }
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   },
   "functions": {
@@ -31,12 +63,28 @@
     "rules": "storage.rules"
   },
   "emulators": {
-    "auth": { "port": 9099 },
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8085 },
-    "hosting": { "port": 5000 },
-    "storage": { "port": 9199 },
-    "ui": { "enabled": true, "port": 4000 },
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8085
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
     "singleProjectMode": true
+  },
+  "extensions": {
+    "firestore-send-email": "firebase/firestore-send-email@0.2.7"
   }
 }

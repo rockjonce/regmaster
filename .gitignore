@@ -10,6 +10,11 @@ _dev/backup/v3-seed-admin.json
 *-creds.json
 *-credentials.json
 
+# Firebase Extensions env files (firestore-send-email.env contains SMTP password)
+extensions/*.env
+extensions/*.local
+extensions/*.secret.local
+
 # Unzipped reference design (large; original zip remains in user's Desktop)
 _dev/design_zip_extracted/
 
