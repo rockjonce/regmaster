@@ -64,13 +64,14 @@
     var on = (path === href || path === href.replace('.html', '')) ? ' on' : '';
     return '<a class="nav-it' + on + '" href="' + href + '">' + icon + label + '</a>';
   }
+  // 平台總覽 (Super Admin) is now a tab inside 系統設定, so the nav only needs
+  // two entries. We still strip any old standalone "Super Admin" links above.
   var grp = document.createElement('div');
   grp.className = 'nav-grp';
   grp.innerHTML =
     '<div class="l-grp">系統管理</div>' +
     item('/admin/system.html', '系統設定', ICON.gear) +
-    item('/admin/audit.html', '操作日誌', ICON.log) +
-    item('/admin/super.html', 'Super Admin', ICON.sup);
+    item('/admin/audit.html', '操作日誌', ICON.log);
 
   // Insert before the sidebar footer (usage card / logout) when present,
   // otherwise append to the end of the sidebar.

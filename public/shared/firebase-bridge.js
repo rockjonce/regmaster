@@ -266,20 +266,32 @@
               try { if (window.loading) window.loading(false); } catch (x) {}
               window.ME = null;
               try { if (window.delCookie) window.delCookie('regmaster_session'); } catch (x) {}
-              try {
-                var I18N = window.I18N || { zh: {}, en: {} };
-                var LANG = window.LANG || 'zh';
-                if (window.$) {
-                  var btn = window.$('adminBtn');
-                  if (btn) btn.textContent = '🔑 ' + ((I18N[LANG] || I18N.zh).manage || '管理');
-                  var bell = window.$('bellWrap');
-                  if (bell) bell.style.display = 'none';
+              try { localStorage.removeItem('regmaster_me'); } catch (x) {}
+              if (typeof window.openM === 'function') {
+                // Legacy SPA: re-open the in-page login modal.
+                try {
+                  var I18N = window.I18N || { zh: {}, en: {} };
+                  var LANG = window.LANG || 'zh';
+                  if (window.$) {
+                    var btn = window.$('adminBtn');
+                    if (btn) btn.textContent = '🔑 ' + ((I18N[LANG] || I18N.zh).manage || '管理');
+                    var bell = window.$('bellWrap');
+                    if (bell) bell.style.display = 'none';
+                  }
+                } catch (x) {}
+                if (window.toast) {
+                  window.toast(window.LANG === 'en' ? 'Session expired, please login again' : '登入已過期，請重新登入', 'error');
                 }
-              } catch (x) {}
-              if (window.toast) {
-                window.toast(window.LANG === 'en' ? 'Session expired, please login again' : '登入已過期，請重新登入', 'error');
+                setTimeout(function () { try { window.openM('mLogin'); } catch (x) {} }, 600);
+              } else {
+                // V3 multi-page: there is no in-page login modal, so hard-redirect
+                // to the login page for re-auth. (Previously this branch did
+                // nothing, leaving callers' promises unresolved → infinite spinner.)
+                var _next = encodeURIComponent(location.pathname + location.search);
+                location.replace('/login.html?next=' + _next + '&expired=1');
               }
-              setTimeout(function () { try { if (window.openM) window.openM('mLogin'); } catch (x) {} }, 600);
+              // Still notify the caller so any pending UI promise can settle.
+              if (fail) { try { fail(e); } catch (x) {} }
               return;
             }
             if (fail) fail(e);

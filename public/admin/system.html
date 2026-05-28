@@ -66,6 +66,22 @@ body { background:var(--bg); }
 .kpi .l { font:500 11px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 .kpi .v { font:700 26px/1 var(--f-display); letter-spacing:-.018em; }
 
+/* platform health strip */
+.health-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:11px; overflow:hidden; margin-bottom:18px; }
+@media(max-width:780px){ .health-strip { grid-template-columns:repeat(2,1fr); } }
+.health-strip > div { padding:14px 16px; background:var(--surface); }
+.health-strip .lbl-h { font:500 10.5px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.health-strip .dot-h { width:8px; height:8px; border-radius:50%; }
+.health-strip .dot-h.ok { background:var(--ok-500); box-shadow:0 0 0 3px color-mix(in srgb, var(--ok-500) 30%, transparent); }
+.health-strip .dot-h.warn { background:var(--amber-500); }
+.health-strip .dot-h.danger { background:var(--err-500); }
+.health-strip .v-h { font:700 20px/1 var(--f-display); }
+.health-strip .v-h em { font-style:normal; font-size:11px; color:var(--muted); font-weight:500; margin-left:3px; }
+.org-cell { display:flex; gap:10px; align-items:center; }
+.org-cell .av-o { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:white; display:grid; place-items:center; font:700 12px/1 var(--f-display); flex-shrink:0; }
+.org-cell h6 { font:600 13px/1.3 var(--f-display); margin:0; }
+.org-cell p { font:500 11px/1.4 var(--f-mono); color:var(--muted); margin:1px 0 0; }
+
 .bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 .bar-row .nm { width:120px; font:500 12px/1.3 var(--f-tc); flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .bar-row .bar { flex:1; height:8px; background:var(--surface-2); border-radius:99px; overflow:hidden; }
@@ -138,7 +154,8 @@ body { background:var(--bg); }
       </div>
 
       <div class="tabbar">
-        <a data-tab="params" class="on"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg>參數設定</a>
+        <a data-tab="overview" class="on"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>平台總覽</a>
+        <a data-tab="params"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg>參數設定</a>
         <a data-tab="accounts"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 11l2 2 4-4"/></svg>帳號管理 <span class="ct" id="ctAccts"></span></a>
         <a data-tab="licenses"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>授權碼 <span class="ct" id="ctLics"></span></a>
         <a data-tab="analytics"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>使用者分析</a>
@@ -146,8 +163,27 @@ body { background:var(--bg); }
         <a data-tab="aikeys"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13l8-8M16 5l3 3M14 7l3 3"/></svg>AI 金鑰 <span class="ct" id="ctKeys"></span></a>
       </div>
 
+      <!-- ============ 平台總覽 (was Super Admin) ============ -->
+      <div class="pane on" data-pane="overview">
+        <h3 style="font:600 13px/1.2 var(--f-display); margin-bottom:12px; color:var(--ink-3)">服務狀態</h3>
+        <div class="health-strip" id="healthStrip"><div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:18px">載入中⋯</div></div>
+        <div class="kpis">
+          <div class="kpi"><div class="l">活動總數</div><div class="v" id="o-comps">—</div></div>
+          <div class="kpi"><div class="l">隊伍總數</div><div class="v" id="o-teams">—</div></div>
+          <div class="kpi"><div class="l">帳號總數</div><div class="v" id="o-accts">—</div></div>
+          <div class="kpi"><div class="l">有效授權</div><div class="v" id="o-lics">—</div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><div><h3>所有組織</h3><p>平台上的全部帳號與其使用情況</p></div><button class="icon-btn" id="reloadOvBtn">重新整理</button></div>
+          <div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>組織</th><th>角色</th><th>方案</th><th>活動 / 報名</th><th>狀態</th><th>建立</th></tr></thead>
+            <tbody id="orgsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ 參數設定 ============ -->
-      <div class="pane on" data-pane="params">
+      <div class="pane" data-pane="params">
         <div class="card">
           <div class="ch"><div><h3>銷售與計費</h3><p>授權碼定價、稅率（給授權碼購買頁使用）</p></div></div>
           <div class="cb">
@@ -330,6 +366,45 @@ body { background:var(--bg); }
   document.querySelectorAll('.tabbar a').forEach(function (a) {
     a.addEventListener('click', function () { showTab(a.dataset.tab); });
   });
+
+  // ================= 平台總覽 (was Super Admin) =================
+  function loadOverview() {
+    google.script.run.withSuccessHandler(function (res) {
+      res = res || {};
+      var health = res.health || {};
+      var hs = document.getElementById('healthStrip');
+      var keys = Object.keys(health);
+      hs.innerHTML = keys.length ? keys.map(function (k) {
+        var h = health[k];
+        var val = h.latencyMs ? (h.latencyMs + '<em>ms</em>') : (h.queueDepth !== undefined ? (h.queueDepth + '<em>queued</em>') : '正常');
+        return '<div><div class="lbl-h"><span class="dot-h ' + esc(h.status || 'ok') + '"></span>' + esc(h.label || k) + '</div><div class="v-h">' + val + '</div></div>';
+      }).join('') : '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:18px">無服務狀態資料</div>';
+      var m = res.metrics || {};
+      document.getElementById('o-comps').textContent = (m.totalCompetitions || 0).toLocaleString();
+      document.getElementById('o-teams').textContent = (m.totalTeams || 0).toLocaleString();
+      document.getElementById('o-accts').textContent = (m.totalAccounts || 0).toLocaleString();
+      document.getElementById('o-lics').textContent = (m.activeLicenses || 0).toLocaleString();
+    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getPlatformHealth();
+
+    google.script.run.withSuccessHandler(function (res) {
+      var orgs = (res && res.orgs) || [];
+      var b = document.getElementById('orgsBody');
+      if (!orgs.length) { b.innerHTML = '<tr><td colspan="6" class="empty">尚無組織</td></tr>'; return; }
+      b.innerHTML = orgs.map(function (o) {
+        var stat = o.locked ? 'err' : o.emailVerified ? 'ok' : 'warn';
+        var statLabel = o.locked ? '已鎖定' : o.emailVerified ? '正常' : '未驗證';
+        var plan = (o.intendedPlan || 'free');
+        return '<tr>' +
+          '<td><div class="org-cell"><div class="av-o">' + esc((o.displayName || o.username || '?').charAt(0).toUpperCase()) + '</div><div><h6>' + esc(o.displayName || o.username) + '</h6><p>' + esc(o.email || '') + '</p></div></div></td>' +
+          '<td>' + (o.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">主辦方</span>') + '</td>' +
+          '<td><span class="pill neutral">' + esc(plan.toUpperCase()) + '</span></td>' +
+          '<td>' + (o.compCount || 0) + ' / ' + (o.totalTeams || 0) + '</td>' +
+          '<td><span class="pill ' + stat + '">' + statLabel + '</span></td>' +
+          '<td class="muted">' + esc(o.createdAt || '') + '</td></tr>';
+      }).join('');
+    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).listAllOrgs();
+  }
+  document.getElementById('reloadOvBtn').addEventListener('click', loadOverview);
 
   // ================= 參數設定 =================
   function loadParams() {
@@ -576,13 +651,13 @@ body { background:var(--bg); }
   });
 
   var loaders = {
-    params: loadParams, accounts: loadAccounts, licenses: loadLicenses,
+    overview: loadOverview, params: loadParams, accounts: loadAccounts, licenses: loadLicenses,
     analytics: loadAnalytics, feedback: loadFeedback, aikeys: loadKeys
   };
 
-  // initial tab (from hash or default params)
+  // initial tab (from hash or default to platform overview)
   var startTab = (location.hash || '').replace('#', '');
-  if (!loaders[startTab]) startTab = 'params';
+  if (!loaders[startTab]) startTab = 'overview';
   showTab(startTab);
 })();
 </script>

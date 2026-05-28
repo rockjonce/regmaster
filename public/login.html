@@ -166,6 +166,8 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
     showOk('帳號已建立並驗證完成！請用您的帳號密碼登入。');
   } else if (justParam === 'reset') {
     showOk('密碼已重設。請用新密碼登入。');
+  } else if (new URLSearchParams(location.search).get('expired') === '1') {
+    showErr('登入已過期，請重新登入。');
   }
 
   // Collect minimal client info for security audit (same shape legacy SPA uses)
