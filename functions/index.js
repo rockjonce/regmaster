@@ -43,7 +43,18 @@ async function auditLog(user, action, target, detail) {
   } catch (e) { /* silent */ }
 }
 
-const EMAIL_HOST = "https://regmaster-pro.web.app";
+// Project-derived host: in the Cloud Functions runtime GCLOUD_PROJECT is always
+// set, so deploying to regmaster-v3 yields v3 URLs and deploying to regmaster-pro
+// yields prod URLs — same source file, no per-project edits. (Fallback chain
+// covers the emulator / unusual runtimes.)
+const PROJECT_ID = process.env.GCLOUD_PROJECT
+  || process.env.GOOGLE_CLOUD_PROJECT
+  || (admin.app().options && admin.app().options.projectId)
+  || "regmaster-pro";
+const PROJECT_HOST = "https://" + PROJECT_ID + ".web.app";
+const FUNCTIONS_BASE = "https://us-central1-" + PROJECT_ID + ".cloudfunctions.net";
+
+const EMAIL_HOST = PROJECT_HOST;
 const EMAIL_LOGO_URL = EMAIL_HOST + "/Emaillogo.png";
 const SYSTEM_ADMIN_EMAIL = "ceo@calculator.com.tw";
 
@@ -656,7 +667,7 @@ exports.getRegistrationBundle = callable(async (data) => {
 });
 
 exports.getShareLink = callable(async (data) => {
-  return "https://regmaster-pro.web.app/?comp=" + data.compId;
+  return PROJECT_HOST + "/?comp=" + data.compId;
 });
 
 // ===== Announcements =====
@@ -1887,7 +1898,7 @@ async function loadManualSections() {
   const now = Date.now();
   if (_manualCache.sections.length > 0 && (now - _manualCache.ts) < 3600000) return _manualCache.sections;
   try {
-    const res = await fetch("https://regmaster-pro.web.app/Manual.html");
+    const res = await fetch(PROJECT_HOST + "/Manual.html");
     const html = await res.text();
     const plain = html
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -2765,7 +2776,7 @@ exports.createPayuniOrder = callable(async (data) => {
   });
   
   /* Build PAYUNi parameters */
-  const hostUrl = "https://regmaster-pro.web.app";
+  const hostUrl = PROJECT_HOST;
   const encryptInfo = {
     MerID: sales.payuniMerID,
     MerTradeNo: orderId,
@@ -2773,7 +2784,7 @@ exports.createPayuniOrder = callable(async (data) => {
     Timestamp: String(Math.floor(Date.now() / 1000)),
     ProdDesc: "RegMaster " + orderItems.map(i => i.type === "count" ? "次數x" + i.qty : "訂閱x" + i.qty + "年").join("+"),
     ReturnURL: hostUrl + "/payuni-return.html",
-    NotifyURL: "https://us-central1-regmaster-pro.cloudfunctions.net/payuniNotify",
+    NotifyURL: FUNCTIONS_BASE + "/payuniNotify",
     TradeType: "1"
   };
   const encStr = payuniEncrypt(encryptInfo, sales.payuniHashKey, sales.payuniHashIV);
@@ -2856,7 +2867,7 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
                 <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px">
                   <p style="font-size:15px;color:#1e293b">感謝您的購買！以下是您的授權碼：</p>
                   ${codesHtml}
-                  <p style="font-size:14px;color:#475569;margin-top:16px">請登入 <a href="https://regmaster-pro.web.app" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「🔑 管理授權碼」輸入上述代碼即可啟用。</p>
+                  <p style="font-size:14px;color:#475569;margin-top:16px">請登入 <a href="${PROJECT_HOST}" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「🔑 管理授權碼」輸入上述代碼即可啟用。</p>
                   <p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">訂單編號：${orderId}<br>付款金額：NT$${order.total}</p>
                 </div>
               </div>`;
@@ -2945,7 +2956,7 @@ exports.createRegistrationPayment = callable(async (data) => {
     status: "pending", createdAt: fmtNow()
   });
 
-  const hostUrl = "https://regmaster-pro.web.app";
+  const hostUrl = PROJECT_HOST;
   const encryptInfo = {
     MerID: cfg.payuniMerID,
     MerTradeNo: orderId,
@@ -2953,7 +2964,7 @@ exports.createRegistrationPayment = callable(async (data) => {
     Timestamp: String(Math.floor(Date.now() / 1000)),
     ProdDesc: (cfg.competitionName || "RegMaster").substring(0, 40) + " " + teamId,
     ReturnURL: hostUrl + "/payuni-return.html",
-    NotifyURL: "https://us-central1-regmaster-pro.cloudfunctions.net/payuniRegNotify",
+    NotifyURL: FUNCTIONS_BASE + "/payuniRegNotify",
     TradeType: "1"
   };
   const encStr = payuniEncrypt(encryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
