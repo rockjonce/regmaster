@@ -10,6 +10,7 @@
 
 <script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-auth-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
 
@@ -80,9 +81,9 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
     <div class="alert-box ok" id="okBox" style="display:none"></div>
 
     <div class="sso-row">
-      <button class="sso-btn" type="button" title="SSO 即將推出">
+      <button class="sso-btn" id="googleBtn" type="button" title="使用 Google 登入" style="opacity:1;pointer-events:auto;cursor:pointer">
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.33z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.99 7.28-2.66L15.71 17.6a6.84 6.84 0 01-10.21-3.59H1.83v2.84A11 11 0 0012 23z"/><path fill="#FBBC05" d="M5.5 14a6.59 6.59 0 010-4.21V6.95H1.83a11 11 0 000 10.1l3.67-2.85V14z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.07.56 4.21 1.64l3.15-3.15A11 11 0 0012 1a11 11 0 00-10.17 5.95L5.5 9.79A6.61 6.61 0 0112 5.38z"/></svg>
-        Google <span class="badge-soon">即將</span>
+        使用 Google 登入
       </button>
       <button class="sso-btn" type="button" title="SSO 即將推出">
         <svg viewBox="0 0 24 24"><path fill="#06C755" d="M19.4 11.2c0-3.5-3.5-6.4-7.8-6.4S3.8 7.7 3.8 11.2c0 3.1 2.7 5.7 6.4 6.3.3 0 .6.2.7.5l.1.7c0 .2-.2.5-.5.4-1.1-.4 4.4-2.6 6.5-4.4 1.5-1.5 2.4-2.5 2.4-3.5z"/></svg>
@@ -216,6 +217,55 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       })
       .loginAccount(username, password, getClientInfo());
   });
+
+  // ---- Google Sign-In (Firebase Auth → app session) ----
+  var googleBtn = document.getElementById('googleBtn');
+  if (googleBtn) {
+    googleBtn.addEventListener('click', function () {
+      hideAlerts();
+      if (typeof firebase === 'undefined' || !firebase.auth) { showErr('Google 登入元件尚未載入，請重新整理'); return; }
+      var provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      googleBtn.style.pointerEvents = 'none';
+      googleBtn.style.opacity = '.6';
+      function reset() { googleBtn.style.pointerEvents = 'auto'; googleBtn.style.opacity = '1'; }
+
+      firebase.auth().signInWithPopup(provider).then(function (result) {
+        return result.user.getIdToken();
+      }).then(function (idToken) {
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (res && res.success) {
+              AppState.setMe({ username: res.username, role: res.role, displayName: res.displayName, sessionToken: res.sessionToken });
+              showOk('登入成功，正在轉跳...');
+              var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
+              setTimeout(function () { location.href = nextUrl; }, 600);
+            } else {
+              reset();
+              showErr(res && res.message ? res.message : 'Google 登入失敗');
+              try { firebase.auth().signOut(); } catch (e) {}
+            }
+          })
+          .withFailureHandler(function (err) {
+            reset();
+            showErr((err && err.message) || 'Google 登入失敗，請稍後再試');
+          })
+          .loginWithGoogle(idToken);
+      }).catch(function (e) {
+        reset();
+        var code = (e && e.code) || '';
+        if (code === 'auth/operation-not-allowed') {
+          showErr('Google 登入尚未在後台啟用，請聯絡管理員');
+        } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+          /* user closed the popup — stay silent */
+        } else if (code === 'auth/unauthorized-domain') {
+          showErr('此網域未授權 Google 登入');
+        } else {
+          showErr((e && e.message) || 'Google 登入失敗');
+        }
+      });
+    });
+  }
 })();
 </script>
 </body>

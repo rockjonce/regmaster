@@ -211,6 +211,40 @@ exports.loginAccount = callable(async (data) => {
   return { success: false, message: "密碼錯誤（剩" + (5 - fails) + "次）" };
 });
 
+// V3: Google Sign-In — exchange a Firebase ID token (from a Google popup) for
+// an app session. SECURITY: only PRE-PROVISIONED accounts (matched by email)
+// may log in; we never auto-create accounts from a Google identity. This keeps
+// the admin surface closed while letting existing admins skip password entry.
+exports.loginWithGoogle = callable(async (data) => {
+  const { idToken } = data;
+  if (!idToken) return { success: false, message: "缺少 Google 登入憑證" };
+  let decoded;
+  try {
+    decoded = await admin.auth().verifyIdToken(idToken);
+  } catch (e) {
+    return { success: false, message: "Google 登入驗證失敗，請重試" };
+  }
+  const email = (decoded.email || "").toLowerCase().trim();
+  if (!email) return { success: false, message: "無法取得 Google 帳號 Email" };
+  if (decoded.email_verified === false) return { success: false, message: "此 Google 帳號的 Email 尚未驗證" };
+
+  // Match an existing account by email, then fall back to username == email
+  let snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
+  if (snap.empty) snap = await db.collection("accounts").where("username", "==", email).limit(1).get();
+  if (snap.empty) {
+    return { success: false, message: "此 Google 帳號（" + email + "）尚未開通，請聯絡系統管理員" };
+  }
+  const doc = snap.docs[0];
+  const acct = doc.data();
+  if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) {
+    return { success: false, message: "帳號鎖定中，請稍後再試" };
+  }
+  const sessionToken = generateSessionToken();
+  await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
+  await auditLog(acct.username, "Google 登入", "", email);
+  return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName || acct.username, sessionToken };
+});
+
 exports.listAccounts = authCallable(["system"], async (data) => {
   const snap = await db.collection("accounts").get();
   const list = [];
