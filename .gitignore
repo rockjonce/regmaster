@@ -4,6 +4,7 @@
 # Backup auth dumps (contain hashed passwords; never commit)
 _dev/backup/auth-*.json
 _dev/backup/RESTORE_LOG_*.txt
+_dev/backup/v3-seed-admin.json
 
 # Generic credentials safety net
 *-creds.json
