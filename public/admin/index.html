@@ -640,7 +640,7 @@
     var insights = (data && data.insights) || [];
     document.getElementById('aiCountBadge').textContent = insights.length + ' NEW';
     if (insights.length === 0) {
-      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">目前沒有 AI 洞察。<br>建議於 Phase 7 整合 LLM 後重新分析。</p>';
+      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">目前沒有需要注意的洞察 👍<br>當報名出現異常（即將額滿 / 報名偏低 / 待付款累積）時，這裡會自動提醒。</p>';
       return;
     }
     document.getElementById('insightsList').innerHTML = insights.map(function (ins) {

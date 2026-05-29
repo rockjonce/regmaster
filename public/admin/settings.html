@@ -107,7 +107,7 @@
                 <div class="fld"><div class="lbl">Email</div><input id="prof-email" type="email"></div>
                 <div class="fld"><div class="lbl">電話</div><input id="prof-phone" type="tel"></div>
               </div>
-              <div class="save-bar"><button class="btn btn-primary" disabled>儲存（Phase 9 補功能）</button></div>
+              <div class="save-bar"><button class="btn btn-primary" id="saveProfileBtn">儲存變更</button></div>
             </div>
           </div>
         </div>
@@ -173,7 +173,7 @@
           </div>
           <div class="section" style="border-color:rgba(239,68,68,.2); background:rgba(239,68,68,.04)">
             <div class="sh" style="border-bottom-color:rgba(239,68,68,.15)"><h3 style="color:var(--err-700)">⚠ 刪除帳戶</h3><p>永久刪除帳戶與所有資料，無法復原</p></div>
-            <div class="sb"><button class="btn btn-ghost" disabled style="border-color:var(--err-500); color:var(--err-700)">刪除帳戶（Phase 9 上線）</button></div>
+            <div class="sb"><button class="btn btn-ghost" id="deleteAcctBtn" style="border-color:var(--err-500); color:var(--err-700)">刪除帳戶</button></div>
           </div>
         </div>
       </div>
@@ -199,7 +199,13 @@
   document.getElementById('prof-username').value = me.username;
   document.getElementById('prof-role').value = me.role === 'system' ? '系統管理員' : '主辦方';
   document.getElementById('prof-displayName').value = me.displayName || '';
-  document.getElementById('prof-email').value = me.email || '';
+  // Load authoritative profile (email/phone aren't in the login session payload)
+  google.script.run.withSuccessHandler(function (p) {
+    p = p || {};
+    document.getElementById('prof-displayName').value = p.displayName || '';
+    document.getElementById('prof-email').value = p.email || '';
+    document.getElementById('prof-phone').value = p.phone || '';
+  }).getMyProfile();
 
   document.querySelectorAll('.set-nav a').forEach(function (a) {
     a.addEventListener('click', function (e) {
@@ -261,6 +267,44 @@
       })
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '變更密碼'; alert('失敗：' + (err && err.message)); })
       .changePassword(me.username, oldP, newP);
+  });
+
+  // ---- Save profile (displayName / email / phone) ----
+  document.getElementById('saveProfileBtn').addEventListener('click', function () {
+    var displayName = document.getElementById('prof-displayName').value.trim();
+    var email = document.getElementById('prof-email').value.trim();
+    var phone = document.getElementById('prof-phone').value.trim();
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = o;
+        if (res && res.success) {
+          btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = o; }, 1400);
+          // keep the local session display name in sync
+          if (displayName) { me.displayName = displayName; AppState.setMe(me); }
+          document.getElementById('bigName').textContent = displayName || me.username;
+          document.getElementById('orgName').textContent = displayName || me.username;
+        } else { alert((res && res.message) || '儲存失敗'); }
+      })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; alert('失敗：' + (err && err.message)); })
+      .updateProfile(displayName, email, phone);
+  });
+
+  // ---- Delete own account ----
+  document.getElementById('deleteAcctBtn').addEventListener('click', function () {
+    if (!confirm('確定永久刪除您的帳戶「' + me.username + '」？此動作無法復原。')) return;
+    if (!confirm('再次確認：刪除後將立即登出且無法恢復。確定繼續？')) return;
+    var btn = this; btn.disabled = true; btn.textContent = '刪除中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          alert('帳戶已刪除。');
+          AppState.clearMe();
+          location.href = '/login.html';
+        } else { btn.disabled = false; btn.textContent = '刪除帳戶'; alert((res && res.message) || '刪除失敗'); }
+      })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '刪除帳戶'; alert('失敗：' + (err && err.message)); })
+      .deleteOwnAccount();
   });
 
   function loadSessions() {

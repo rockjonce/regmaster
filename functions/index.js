@@ -170,7 +170,12 @@ function compAuthCallable(handler) {
 // ===== Account Management =====
 exports.loginAccount = callable(async (data) => {
   const { username, password } = data;
-  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  const key = (username || "").trim();
+  // Allow logging in with either the username OR the account email.
+  let snap = await db.collection("accounts").where("username", "==", key).limit(1).get();
+  if (snap.empty) {
+    snap = await db.collection("accounts").where("email", "==", key.toLowerCase()).limit(1).get();
+  }
   if (snap.empty) return { success: false, message: "帳號不存在" };
   const doc = snap.docs[0];
   const acct = doc.data();
@@ -305,6 +310,56 @@ exports.changePassword = authCallable(["system","competition"], async (data, req
   await doc.ref.update({ passwordHash: hashPwd(newPassword), sessionToken: newToken });
   await auditLog(request.authUser.username, "修改密碼", username, "");
   return { success: true, sessionToken: newToken };
+});
+
+// V3 Phase 9: read the caller's own profile (for the 個人資料 settings tab).
+exports.getMyProfile = authCallable(["system", "competition"], async (data, request) => {
+  const a = request.authUser;
+  return {
+    username: a.username, role: a.role,
+    displayName: a.displayName || "", email: a.email || "", phone: a.phone || "",
+    emailVerified: a.emailVerified || false
+  };
+});
+
+// V3 Phase 9: update the caller's OWN profile (displayName / email / phone).
+exports.updateProfile = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const update = {};
+  if (data.displayName !== undefined) update.displayName = String(data.displayName || "").slice(0, 80);
+  if (data.phone !== undefined) update.phone = String(data.phone || "").slice(0, 40);
+  if (data.email !== undefined) {
+    const e = String(data.email || "").trim().toLowerCase();
+    if (e) {
+      // Reject if the email is already used by a DIFFERENT account.
+      const dup = await db.collection("accounts").where("email", "==", e).limit(1).get();
+      if (!dup.empty && dup.docs[0].data().username !== username) {
+        return { success: false, message: "此 Email 已被其他帳號使用" };
+      }
+    }
+    update.email = e;
+    update.emailVerified = !!e;
+  }
+  await snap.docs[0].ref.update(update);
+  await auditLog(username, "更新個人資料", username, "");
+  return { success: true, displayName: update.displayName, email: update.email, phone: update.phone };
+});
+
+// V3 Phase 9: let a user delete their OWN account (with lockout safeguards).
+exports.deleteOwnAccount = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  if (username === "admin") return { success: false, message: "預設管理員帳號無法刪除" };
+  if (request.authUser.role === "system") {
+    const sysSnap = await db.collection("accounts").where("role", "==", "system").get();
+    if (sysSnap.size <= 1) return { success: false, message: "無法刪除：這是系統上唯一的管理員帳號" };
+  }
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  await snap.docs[0].ref.delete();
+  await auditLog(username, "刪除自己的帳戶", username, "");
+  return { success: true };
 });
 
 // ===== Gemini Keys =====

@@ -50,6 +50,20 @@
     if (!g.querySelector('a')) g.remove();
   });
 
+  // 3) Ensure the organizer "AI 助理" link is present + consistent on EVERY page
+  //    (several pages hardcoded sidebars without it). Shown to both roles.
+  if (!side.querySelector('a[href*="/admin/ai"]')) {
+    var eventsLink = side.querySelector('a[href*="/admin/events"]');
+    if (eventsLink) {
+      var aiOn = location.pathname.indexOf('/admin/ai') >= 0 ? ' on' : '';
+      var ai = document.createElement('a');
+      ai.className = 'nav-it' + aiOn;
+      ai.href = '/admin/ai.html';
+      ai.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>AI 助理';
+      eventsLink.insertAdjacentElement('afterend', ai);
+    }
+  }
+
   // Organizers: done — only their own features remain.
   if (!isSystem) return;
 
