@@ -11,8 +11,11 @@
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 .body-3 { display:grid; grid-template-columns:320px 1fr 360px; min-height:calc(100vh - 60px); }
+#qrReader { width:100%; max-width:360px; border-radius:14px; overflow:hidden; margin-bottom:18px; }
+#qrReader video { border-radius:14px; }
 .left-c { background:var(--surface); border-right:1px solid var(--line); padding:18px; overflow-y:auto; }
 .kpi-c { padding:14px 16px; border-radius:11px; margin-bottom:10px; position:relative; overflow:hidden; }
 .kpi-c.featured { background:linear-gradient(135deg, var(--ok-500), #047857); color:white; }
@@ -86,11 +89,13 @@
       <section class="scanner-c">
         <header class="sc-h"><h2>📷 QR / 編號報到</h2></header>
         <div class="scan-area">
+          <div id="qrReader" style="display:none"></div>
           <div class="manual-input-card" id="inputCard">
-            <h3>輸入隊伍編號</h3>
+            <h3>掃描 QR 或輸入編號</h3>
             <input id="teamIdInput" placeholder="例：T4F000" maxlength="20" autofocus>
             <button class="btn-scan" id="checkInBtn">確認報到 →</button>
-            <div class="help">QR 掃描器整合：開啟手機相機掃 QR Code 後，編號會自動填入此欄位。<br>Phase 9 將整合 navigator.mediaDevices 相機 API。</div>
+            <button class="btn-scan" id="scanToggleBtn" style="background:rgba(255,255,255,.12); color:#fff; margin-top:8px">📷 開啟相機掃描</button>
+            <div class="help">用手機 / 電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</div>
           </div>
         </div>
       </section>
@@ -174,6 +179,44 @@
     document.getElementById('teamIdInput').focus();
     document.getElementById('checkInBtn').addEventListener('click', doCheckIn);
     document.getElementById('teamIdInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doCheckIn(); });
+    var st = document.getElementById('scanToggleBtn');
+    if (st) st.addEventListener('click', function () { scanning ? stopScan() : startScan(); });
+  }
+
+  // ---- Camera QR scanning (html5-qrcode) ----
+  var html5Qr = null, scanning = false;
+  function updateScanBtn() {
+    var b = document.getElementById('scanToggleBtn');
+    if (b) b.textContent = scanning ? '■ 停止掃描' : '📷 開啟相機掃描';
+  }
+  function startScan() {
+    if (typeof Html5Qrcode === 'undefined') { alert('掃描元件載入失敗，請改用手動輸入'); return; }
+    var reader = document.getElementById('qrReader');
+    reader.style.display = 'block';
+    if (!html5Qr) html5Qr = new Html5Qrcode('qrReader');
+    html5Qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 240 },
+      function (decoded) {
+        // The registration QR encodes the team ID directly
+        var tid = String(decoded || '').trim();
+        var mm = tid.match(/[A-Z]\w{5,}/i);   // tolerate a URL wrapper
+        tid = (mm ? mm[0] : tid).toUpperCase();
+        stopScan();
+        var inp = document.getElementById('teamIdInput');
+        if (inp) inp.value = tid;
+        doCheckIn();
+      },
+      function () { /* per-frame decode errors: ignore */ }
+    ).then(function () { scanning = true; updateScanBtn(); })
+     .catch(function (e) {
+       reader.style.display = 'none';
+       alert('無法開啟相機：' + ((e && e.message) || e) + '\n請確認已允許相機權限，或改用手動輸入。');
+     });
+  }
+  function stopScan() {
+    var reader = document.getElementById('qrReader');
+    if (html5Qr && scanning) {
+      html5Qr.stop().then(function () { scanning = false; if (reader) reader.style.display = 'none'; updateScanBtn(); }).catch(function () { scanning = false; if (reader) reader.style.display = 'none'; updateScanBtn(); });
+    } else if (reader) { reader.style.display = 'none'; }
   }
   function doCheckIn() {
     var tid = document.getElementById('teamIdInput').value.trim().toUpperCase();

@@ -168,6 +168,40 @@ function compAuthCallable(handler) {
 }
 
 // ===== Account Management =====
+// ===== TOTP (RFC 6238) two-factor auth — implemented with crypto (no deps) =====
+const _B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+function base32Encode(buf) {
+  let bits = 0, val = 0, out = "";
+  for (let i = 0; i < buf.length; i++) { val = (val << 8) | buf[i]; bits += 8; while (bits >= 5) { out += _B32[(val >>> (bits - 5)) & 31]; bits -= 5; } }
+  if (bits > 0) out += _B32[(val << (5 - bits)) & 31];
+  return out;
+}
+function base32Decode(str) {
+  str = String(str || "").toUpperCase().replace(/[^A-Z2-7]/g, "");
+  let bits = 0, val = 0; const out = [];
+  for (const ch of str) { const idx = _B32.indexOf(ch); if (idx < 0) continue; val = (val << 5) | idx; bits += 5; if (bits >= 8) { out.push((val >>> (bits - 8)) & 0xff); bits -= 8; } }
+  return Buffer.from(out);
+}
+function totpAt(secretBase32, step) {
+  const keyBuf = base32Decode(secretBase32);
+  const counter = Buffer.alloc(8);
+  let t = step;
+  for (let i = 7; i >= 0; i--) { counter[i] = t & 0xff; t = Math.floor(t / 256); }
+  const h = crypto.createHmac("sha1", keyBuf).update(counter).digest();
+  const off = h[h.length - 1] & 0xf;
+  const bin = ((h[off] & 0x7f) << 24) | ((h[off + 1] & 0xff) << 16) | ((h[off + 2] & 0xff) << 8) | (h[off + 3] & 0xff);
+  return String(bin % 1000000).padStart(6, "0");
+}
+function totpVerify(secret, token) {
+  if (!secret || !token) return false;
+  token = String(token).replace(/\D/g, "");
+  if (token.length !== 6) return false;
+  const step = Math.floor(Date.now() / 1000 / 30);
+  for (let w = -1; w <= 1; w++) { if (totpAt(secret, step + w) === token) return true; }  // ±30s drift
+  return false;
+}
+function genTotpSecret() { return base32Encode(crypto.randomBytes(20)); }
+
 exports.loginAccount = callable(async (data) => {
   const { username, password } = data;
   const key = (username || "").trim();
@@ -183,6 +217,11 @@ exports.loginAccount = callable(async (data) => {
   if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil))
     return { success: false, message: "帳號鎖定中，請稍後再試" };
   if (acct.passwordHash === hashPwd(password)) {
+    if (acct.totpEnabled && acct.totpSecret) {
+      // Password correct but 2FA is on — do NOT issue a session yet.
+      await doc.ref.update({ loginFails: 0, lockedUntil: "" });
+      return { success: false, requiresTotp: true, username: acct.username };
+    }
     const sessionToken = generateSessionToken();
     await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
     await auditLog(username, "登入", "", "");
@@ -248,6 +287,74 @@ exports.loginWithGoogle = callable(async (data) => {
   await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
   await auditLog(acct.username, "Google 登入", "", email);
   return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName || acct.username, sessionToken };
+});
+
+// ===== TOTP 2FA — login step 2 + enrollment management =====
+// Step 2 of password login when 2FA is on: re-check password + the 6-digit code.
+exports.loginVerifyTotp = callable(async (data) => {
+  const { username, password, code } = data;
+  const key = (username || "").trim();
+  let snap = await db.collection("accounts").where("username", "==", key).limit(1).get();
+  if (snap.empty) snap = await db.collection("accounts").where("email", "==", key.toLowerCase()).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const doc = snap.docs[0];
+  const acct = doc.data();
+  if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) return { success: false, message: "帳號鎖定中，請稍後再試" };
+  if (acct.passwordHash !== hashPwd(password)) return { success: false, message: "密碼錯誤" };
+  if (!acct.totpEnabled || !acct.totpSecret) {
+    // 2FA not actually on — issue session normally.
+    const st0 = generateSessionToken();
+    await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken: st0 });
+    return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName, sessionToken: st0 };
+  }
+  if (!totpVerify(acct.totpSecret, code)) return { success: false, message: "驗證碼錯誤或已過期" };
+  const sessionToken = generateSessionToken();
+  await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
+  await auditLog(acct.username, "登入(2FA)", "", "");
+  return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName, sessionToken };
+});
+
+// Is 2FA on for the current account?
+exports.getTotpStatus = authCallable(["system", "competition"], async (data, request) => {
+  return { enabled: !!request.authUser.totpEnabled };
+});
+
+// Start enrollment: generate a (pending) secret + otpauth URI for the QR.
+exports.generateTotpSecret = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const secret = genTotpSecret();
+  await snap.docs[0].ref.update({ totpPending: secret });
+  const label = encodeURIComponent("RegMaster:" + username);
+  const otpauth = "otpauth://totp/" + label + "?secret=" + secret + "&issuer=RegMaster&algorithm=SHA1&digits=6&period=30";
+  return { success: true, secret, otpauth };
+});
+
+// Confirm enrollment: verify a code against the pending secret, then activate.
+exports.enableTotp = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const acct = snap.docs[0].data();
+  if (!acct.totpPending) return { success: false, message: "請先產生密鑰" };
+  if (!totpVerify(acct.totpPending, data.code)) return { success: false, message: "驗證碼錯誤，請確認 App 時間同步後重試" };
+  await snap.docs[0].ref.update({ totpSecret: acct.totpPending, totpEnabled: true, totpPending: FieldValue.delete() });
+  await auditLog(username, "啟用兩步驟驗證", username, "");
+  return { success: true };
+});
+
+// Turn 2FA off (requires a current code).
+exports.disableTotp = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const acct = snap.docs[0].data();
+  if (!acct.totpEnabled) return { success: true };
+  if (!totpVerify(acct.totpSecret, data.code)) return { success: false, message: "驗證碼錯誤" };
+  await snap.docs[0].ref.update({ totpEnabled: false, totpSecret: FieldValue.delete(), totpPending: FieldValue.delete() });
+  await auditLog(username, "停用兩步驟驗證", username, "");
+  return { success: true };
 });
 
 exports.listAccounts = authCallable(["system"], async (data) => {
@@ -2059,13 +2166,88 @@ function ragSearch(sections, question, topK) {
   return results.map(r => r.section.content).join("\n\n");
 }
 
+// ===== Vector knowledge base (Gemini embeddings + cosine retrieval) =====
+const EMBED_MODEL = "gemini-embedding-001";
+const EMBED_DIM = 768;
+async function geminiEmbed(text, keyInfo) {
+  const k = keyInfo || await getNextGeminiKey();
+  if (!k) return null;
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + EMBED_MODEL + ":embedContent?key=" + k.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "models/" + EMBED_MODEL,
+        content: { parts: [{ text: String(text || "").slice(0, 8000) }] },
+        outputDimensionality: EMBED_DIM
+      })
+    });
+    const j = await res.json();
+    return (j && j.embedding && j.embedding.values) || null;
+  } catch (e) { return null; }
+}
+function cosineSim(a, b) {
+  if (!a || !b || a.length !== b.length) return 0;
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+  return (na && nb) ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+// Returns top-K manual passages by semantic similarity, or null if the KB is
+// empty / embedding fails (callers then fall back to keyword ragSearch).
+async function vectorSearch(question, topK) {
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return null;
+  const qEmb = await geminiEmbed(question, keyInfo);
+  if (!qEmb) return null;
+  const snap = await db.collection("knowledgeBase").get();
+  if (snap.empty) return null;
+  const scored = snap.docs.map(d => { const k = d.data(); return { content: k.content, score: cosineSim(qEmb, k.embedding || []) }; });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, topK).map(r => r.content).join("\n\n");
+}
+
+// Rebuild the vector knowledge base from the operation manual (system only).
+exports.rebuildKnowledgeBase = authCallable(["system"], async () => {
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { success: false, message: "AI 金鑰未設定" };
+  _manualCache.ts = 0; // force a fresh manual fetch
+  const sections = await loadManualSections();
+  if (!sections.length) return { success: false, message: "找不到知識庫來源（Manual.html）" };
+  // Clear the old KB
+  const old = await db.collection("knowledgeBase").get();
+  if (old.size) { const bd = db.batch(); old.docs.forEach(d => bd.delete(d.ref)); await bd.commit(); }
+  // Embed + store each section
+  let count = 0;
+  for (let i = 0; i < sections.length; i++) {
+    const s = sections[i];
+    const emb = await geminiEmbed(s.heading + "\n" + s.content, keyInfo);
+    if (!emb) continue;
+    await db.collection("knowledgeBase").doc("kb_" + i).set({ heading: s.heading, content: s.content, embedding: emb, idx: i, updatedAt: fmtNow() });
+    count++;
+  }
+  await auditLog("system", "重建AI知識庫", "", count + " / " + sections.length + " 段");
+  return { success: true, count, total: sections.length };
+});
+
+// Knowledge-base status (count) for the system settings UI.
+exports.getKnowledgeBaseStatus = authCallable(["system"], async () => {
+  const snap = await db.collection("knowledgeBase").get();
+  let updatedAt = "";
+  snap.docs.forEach(d => { const u = d.data().updatedAt || ""; if (u > updatedAt) updatedAt = u; });
+  return { count: snap.size, updatedAt };
+});
+
 exports.askAdminAI = compAuthCallable(async (data) => {
   const { question, compId } = data;
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return { answer: "AI 未設定" };
 
-  const sections = await loadManualSections();
-  const ragContext = ragSearch(sections, question, 5);
+  // Prefer semantic (vector) retrieval; fall back to keyword search if the KB
+  // hasn't been built yet or embedding is unavailable.
+  let ragContext = await vectorSearch(question, 5);
+  if (!ragContext) {
+    const sections = await loadManualSections();
+    ragContext = ragSearch(sections, question, 5);
+  }
 
   let ctx = "你是 RegMaster 線上報名平台的系統設定 AI 助理。\n";
   ctx += "回覆規則：\n";

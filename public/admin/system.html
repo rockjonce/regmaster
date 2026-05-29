@@ -290,6 +290,16 @@ body { background:var(--bg); }
         <div style="display:flex; gap:10px; justify-content:flex-end">
           <button class="btn btn-primary" id="saveKeysBtn">儲存金鑰</button>
         </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="ch"><div><h3>AI 知識庫（向量檢索）</h3><p>把操作手冊轉成向量索引，AI 助理回答時會做語意比對檢索，找出最相關的內容。新增/修改手冊後請重建一次。</p></div></div>
+          <div class="cb">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
+              <div id="kbStatus" style="font:500 13px/1.5 var(--f-tc); color:var(--ink-2)">查詢中⋯</div>
+              <button class="btn btn-primary" id="rebuildKbBtn">重建知識庫</button>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -624,7 +634,26 @@ body { background:var(--bg); }
   function loadKeys() {
     google.script.run.withSuccessHandler(function (list) { keys = (list || []).slice(); renderKeys(); })
       .withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getGeminiKeys();
+    loadKbStatus();
   }
+  function loadKbStatus() {
+    google.script.run.withSuccessHandler(function (r) {
+      r = r || {};
+      var el = document.getElementById('kbStatus');
+      if (!el) return;
+      if (r.count > 0) el.textContent = '已索引 ' + r.count + ' 段' + (r.updatedAt ? '（更新：' + r.updatedAt + '）' : '');
+      else el.textContent = '尚未建立知識庫（AI 將改用關鍵字檢索）';
+    }).withFailureHandler(function () {}).getKnowledgeBaseStatus();
+  }
+  document.getElementById('rebuildKbBtn').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '建立中⋯（約 30 秒）';
+    google.script.run.withSuccessHandler(function (r) {
+      btn.disabled = false; btn.textContent = o;
+      if (r && r.success) { toast('知識庫已重建：' + r.count + ' / ' + r.total + ' 段'); loadKbStatus(); }
+      else toast((r && r.message) || '重建失敗', 'err');
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast(e.message || '重建失敗', 'err'); })
+      .rebuildKnowledgeBase();
+  });
   document.getElementById('addKeyBtn').addEventListener('click', function () {
     var v = document.getElementById('newKey').value.trim();
     if (!v) return;

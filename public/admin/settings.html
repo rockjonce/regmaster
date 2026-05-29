@@ -147,9 +147,32 @@
             </div>
           </div>
           <div class="section">
-            <div class="sh"><h3>雙因素驗證</h3></div>
+            <div class="sh"><h3>雙因素驗證 (2FA)</h3><p>使用 Google Authenticator、Authy 等 App 產生一次性驗證碼，登入時多一層保護。</p></div>
             <div class="sb">
-              <div class="toggle-row"><div class="body"><h6>啟用 TOTP（Phase 9 上線）</h6><p>使用 Google Authenticator 等 App</p></div><div class="tg-sw" style="opacity:.5"></div></div>
+              <div class="toggle-row">
+                <div class="body"><h6>TOTP 兩步驟驗證</h6><p id="totpStateText">查詢狀態中⋯</p></div>
+                <button class="btn btn-ghost btn-sm" id="totpToggleBtn" style="display:none">啟用</button>
+              </div>
+
+              <!-- Enrollment panel (hidden until 啟用 clicked) -->
+              <div id="totpEnroll" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line-2)">
+                <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:12px">1. 用驗證 App 掃描下方 QR Code（或手動輸入密鑰）：</p>
+                <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin-bottom:14px">
+                  <img id="totpQr" alt="TOTP QR" width="160" height="160" style="border:1px solid var(--line); border-radius:10px; background:#fff">
+                  <div>
+                    <div style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-bottom:6px">手動密鑰</div>
+                    <code id="totpSecret" style="font:600 13px/1.6 var(--f-mono); word-break:break-all; max-width:220px; display:inline-block"></code>
+                  </div>
+                </div>
+                <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:8px">2. 輸入 App 顯示的 6 位數驗證碼以完成啟用：</p>
+                <div class="row-2" style="align-items:end">
+                  <div class="fld" style="margin:0"><input id="totpEnrollCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位數驗證碼" style="letter-spacing:.2em; text-align:center"></div>
+                  <div style="display:flex; gap:8px">
+                    <button class="btn btn-primary" id="totpConfirmBtn">確認啟用</button>
+                    <button class="btn btn-ghost" id="totpCancelBtn">取消</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -306,6 +329,53 @@
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '刪除帳戶'; alert('失敗：' + (err && err.message)); })
       .deleteOwnAccount();
   });
+
+  // ---- Two-factor (TOTP) ----
+  var totpEnabled = false;
+  function loadTotpStatus() {
+    google.script.run.withSuccessHandler(function (res) {
+      totpEnabled = !!(res && res.enabled);
+      document.getElementById('totpStateText').textContent = totpEnabled ? '✓ 已啟用 — 登入時需輸入驗證碼' : '尚未啟用';
+      var b = document.getElementById('totpToggleBtn');
+      b.style.display = ''; b.textContent = totpEnabled ? '停用' : '啟用';
+      b.style.color = totpEnabled ? 'var(--err-700)' : '';
+      b.style.borderColor = totpEnabled ? 'var(--err-500)' : '';
+      document.getElementById('totpEnroll').style.display = 'none';
+    }).withFailureHandler(function () {}).getTotpStatus();
+  }
+  document.getElementById('totpToggleBtn').addEventListener('click', function () {
+    if (totpEnabled) {
+      var code = prompt('停用兩步驟驗證請輸入目前的 6 位數驗證碼：');
+      if (!code) return;
+      google.script.run.withSuccessHandler(function (res) {
+        if (res && res.success) { alert('已停用兩步驟驗證'); loadTotpStatus(); }
+        else alert((res && res.message) || '停用失敗');
+      }).withFailureHandler(function (e) { alert('失敗：' + (e && e.message)); }).disableTotp(code.replace(/\D/g, ''));
+    } else {
+      var b = this; b.disabled = true;
+      google.script.run.withSuccessHandler(function (res) {
+        b.disabled = false;
+        if (res && res.success) {
+          document.getElementById('totpSecret').textContent = res.secret;
+          document.getElementById('totpQr').src = 'https://quickchart.io/qr?size=160&text=' + encodeURIComponent(res.otpauth);
+          document.getElementById('totpEnroll').style.display = 'block';
+          document.getElementById('totpEnrollCode').value = '';
+        } else alert((res && res.message) || '無法產生密鑰');
+      }).withFailureHandler(function (e) { b.disabled = false; alert('失敗：' + (e && e.message)); }).generateTotpSecret();
+    }
+  });
+  document.getElementById('totpCancelBtn').addEventListener('click', function () { document.getElementById('totpEnroll').style.display = 'none'; });
+  document.getElementById('totpConfirmBtn').addEventListener('click', function () {
+    var code = document.getElementById('totpEnrollCode').value.replace(/\D/g, '');
+    if (code.length !== 6) return alert('請輸入 6 位數驗證碼');
+    var b = this; b.disabled = true; b.textContent = '驗證中⋯';
+    google.script.run.withSuccessHandler(function (res) {
+      b.disabled = false; b.textContent = '確認啟用';
+      if (res && res.success) { alert('✓ 兩步驟驗證已啟用'); loadTotpStatus(); }
+      else alert((res && res.message) || '啟用失敗');
+    }).withFailureHandler(function (e) { b.disabled = false; b.textContent = '確認啟用'; alert('失敗：' + (e && e.message)); }).enableTotp(code);
+  });
+  loadTotpStatus();
 
   function loadSessions() {
     google.script.run

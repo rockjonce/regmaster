@@ -110,6 +110,16 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       </label>
       <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit">登入 →</button>
     </form>
+
+    <form class="field-stack" id="totpForm" autocomplete="off" style="display:none">
+      <div>
+        <label class="label" for="totpCode">兩步驟驗證碼</label>
+        <input class="input" id="totpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="請輸入驗證 App 顯示的 6 位數字" style="letter-spacing:.3em; text-align:center; font:600 18px/1 var(--f-mono)">
+        <p style="font:400 12px/1.5 var(--f-tc); color:var(--ink-3); margin-top:8px">開啟 Google Authenticator 等驗證 App，輸入目前顯示的 6 位數驗證碼。</p>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" id="totpBtn" type="submit">驗證並登入 →</button>
+      <button class="btn btn-ghost btn-block" id="totpBack" type="button">← 返回</button>
+    </form>
   </div>
 
   <div class="foot">
@@ -197,15 +207,15 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
-          AppState.setMe({
-            username: res.username,
-            role: res.role,
-            displayName: res.displayName,
-            sessionToken: res.sessionToken
-          });
-          showOk('登入成功，正在轉跳...');
-          var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
-          setTimeout(function () { location.href = nextUrl; }, 600);
+          finishLogin(res);
+        } else if (res && res.requiresTotp) {
+          // Password OK, but 2FA required — switch to the code step.
+          btn.disabled = false; btn.textContent = oldText;
+          TOTP_CREDS = { username: username, password: password };
+          document.getElementById('loginForm').style.display = 'none';
+          document.getElementById('totpForm').style.display = 'flex';
+          hideAlerts();
+          setTimeout(function () { document.getElementById('totpCode').focus(); }, 50);
         } else {
           btn.disabled = false;
           btn.textContent = oldText;
@@ -218,6 +228,37 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
         showErr((err && err.message) || '網路錯誤，請稍後再試');
       })
       .loginAccount(username, password, getClientInfo());
+  });
+
+  // ---- 2FA second step ----
+  var TOTP_CREDS = null;
+  function finishLogin(res) {
+    AppState.setMe({ username: res.username, role: res.role, displayName: res.displayName, sessionToken: res.sessionToken });
+    showOk('登入成功，正在轉跳...');
+    var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
+    setTimeout(function () { location.href = nextUrl; }, 600);
+  }
+  document.getElementById('totpBack').addEventListener('click', function () {
+    TOTP_CREDS = null;
+    document.getElementById('totpForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'flex';
+    document.getElementById('totpCode').value = '';
+    hideAlerts();
+  });
+  document.getElementById('totpForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideAlerts();
+    if (!TOTP_CREDS) { showErr('請重新登入'); return; }
+    var code = document.getElementById('totpCode').value.replace(/\D/g, '');
+    if (code.length !== 6) { showErr('請輸入 6 位數驗證碼'); return; }
+    var b = document.getElementById('totpBtn'); b.disabled = true; var ot = b.textContent; b.textContent = '驗證中...';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) { finishLogin(res); }
+        else { b.disabled = false; b.textContent = ot; showErr((res && res.message) || '驗證失敗'); }
+      })
+      .withFailureHandler(function (err) { b.disabled = false; b.textContent = ot; showErr((err && err.message) || '驗證失敗'); })
+      .loginVerifyTotp(TOTP_CREDS.username, TOTP_CREDS.password, code);
   });
 
   // ---- Google Sign-In (Firebase Auth → app session) ----
