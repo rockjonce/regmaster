@@ -59,6 +59,17 @@
 .tg-sw.on { background:var(--ok-500); }
 .tg-sw.on::after { left:18px; }
 
+/* Date-mode option cards — match the settings design language */
+.datemode-grp { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.datemode-opt { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:var(--surface-2); border:1.5px solid var(--line); border-radius:10px; cursor:pointer; transition:.15s; }
+.datemode-opt:hover { border-color:var(--ink-3); }
+.datemode-opt input { margin:1px 0 0; width:16px; height:16px; flex-shrink:0; accent-color:var(--ink); cursor:pointer; }
+.datemode-opt:has(input:checked) { border-color:var(--ink); background:color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+.datemode-opt .dm-body { display:flex; flex-direction:column; gap:2px; }
+.datemode-opt .dm-body b { font:600 13px/1.3 var(--f-display); color:var(--ink); }
+.datemode-opt .dm-body small { font:400 11.5px/1.45 var(--f-tc); color:var(--muted); }
+@media (max-width:560px){ .datemode-grp { grid-template-columns:1fr; } }
+
 .list-grp { display:flex; flex-direction:column; gap:8px; }
 .list-row { display:flex; gap:10px; align-items:center; padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; }
 .list-row .grip { color:var(--muted); cursor:grab; }
@@ -173,9 +184,15 @@
             </div>
             <div class="fld" style="margin-top:4px">
               <div class="lbl">活動日期模式</div>
-              <div style="display:flex; flex-wrap:wrap; gap:8px 20px; padding:4px 0">
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="radio" name="dateMode" value="single" data-dirty> 單日活動（設定單一活動日）</label>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="radio" name="dateMode" value="multi" data-dirty> 多梯次 / 多日（於「組別 / 場次」分頁設定各梯次）</label>
+              <div class="datemode-grp">
+                <label class="datemode-opt">
+                  <input type="radio" name="dateMode" value="single" data-dirty>
+                  <span class="dm-body"><b>單日活動</b><small>設定單一活動日期</small></span>
+                </label>
+                <label class="datemode-opt">
+                  <input type="radio" name="dateMode" value="multi" data-dirty>
+                  <span class="dm-body"><b>多梯次 / 多日</b><small>於「組別 / 場次」分頁設定各梯次</small></span>
+                </label>
               </div>
             </div>
             <div class="fld" id="singleDateField"><div class="lbl">活動日</div><input type="datetime-local" id="basic-competitionDate" data-dirty></div>
