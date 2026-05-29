@@ -61,7 +61,6 @@
   var html =
     '<a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div>' +
       '<div class="nm">RegMaster<small>' + (isSystem ? '系統管理員' : '主辦後台') + '</small></div>' +
-      '<button class="side-collapse-btn" type="button" title="收合側欄" aria-label="收合側欄">' + IC.chev + '</button>' +
     '</a>' +
     '<div class="org-switcher"><div class="av" id="orgAv">' + esc(initial) + '</div>' +
       '<div class="body"><h6 id="orgName">' + esc(name) + '</h6><p id="orgPlan">' + roleLabel + '</p></div></div>' +
@@ -117,37 +116,43 @@
     } catch (x) {}
   }
 
-  // --- Collapse (desktop, persisted) ---
+  // --- Restore persisted desktop-collapsed state ---
   var LS_COLLAPSE = 'regmaster_side_collapsed';
   try { if (localStorage.getItem(LS_COLLAPSE) === '1') document.body.classList.add('side-collapsed'); } catch (x) {}
-  var collapseBtn = side.querySelector('.side-collapse-btn');
-  if (collapseBtn) {
-    collapseBtn.addEventListener('click', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      var c = document.body.classList.toggle('side-collapsed');
-      try { localStorage.setItem(LS_COLLAPSE, c ? '1' : '0'); } catch (x) {}
-    });
-  }
 
-  // --- Mobile drawer: hamburger in the topbar + backdrop ---
+  function isMobile() { return window.matchMedia('(max-width: 768px)').matches; }
   function closeDrawer() { document.body.classList.remove('side-open'); }
+
+  // Backdrop for the mobile drawer
   var backdrop = document.createElement('div');
   backdrop.className = 'side-backdrop';
   backdrop.addEventListener('click', closeDrawer);
   document.body.appendChild(backdrop);
 
+  // ONE always-visible toggle in the topbar:
+  //   • mobile  → open / close the off-canvas drawer
+  //   • desktop → collapse / expand the sidebar (persisted)
+  // This is also how a collapsed desktop sidebar gets re-opened.
   var head = document.querySelector('.head');
   if (head && !head.querySelector('.side-hamburger')) {
     var burger = document.createElement('button');
     burger.type = 'button';
     burger.className = 'side-hamburger';
-    burger.setAttribute('aria-label', '選單');
+    burger.setAttribute('aria-label', '展開 / 收合選單');
+    burger.title = '展開 / 收合選單';
     burger.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
-    burger.addEventListener('click', function () { document.body.classList.toggle('side-open'); });
+    burger.addEventListener('click', function () {
+      if (isMobile()) {
+        document.body.classList.toggle('side-open');
+      } else {
+        var c = document.body.classList.toggle('side-collapsed');
+        try { localStorage.setItem(LS_COLLAPSE, c ? '1' : '0'); } catch (x) {}
+      }
+    });
     head.insertBefore(burger, head.firstChild);
   }
-  // Close the drawer after navigating (link click) on mobile.
+  // Close the drawer after tapping a link on mobile.
   side.addEventListener('click', function (e) {
-    if (e.target.closest('a.nav-it') && window.matchMedia('(max-width: 768px)').matches) closeDrawer();
+    if (e.target.closest('a.nav-it') && isMobile()) closeDrawer();
   });
 })();

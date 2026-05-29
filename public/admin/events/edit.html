@@ -350,7 +350,9 @@
   document.getElementById('formBuilderLink').href = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
   document.getElementById('openFormBuilder').href = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
   document.getElementById('previewBtn').href = '/events/detail.html?id=' + encodeURIComponent(compId);
-  document.getElementById('openAnnLink').addEventListener('click', function () { alert('Phase 6 上線後可使用。'); });
+  document.getElementById('openAnnLink').addEventListener('click', function () {
+    location.href = '/admin/events/' + encodeURIComponent(compId) + '/announcements';
+  });
 
   document.getElementById('logoutBtn').addEventListener('click', function (e) { e.preventDefault(); AppState.setMe(null); location.href = '/login.html'; });
 
