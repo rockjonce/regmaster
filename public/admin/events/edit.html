@@ -13,6 +13,7 @@
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/ui-dialog.js"></script>
 
 <style>
 .cfg-tabs { background:var(--surface); border-bottom:1px solid var(--line); padding:0 32px; position:sticky; top:60px; z-index:25; display:flex; gap:0; overflow-x:auto; }
@@ -552,9 +553,11 @@
     el.addEventListener('change', markDirty);
   });
   document.getElementById('revertBtn').addEventListener('click', function () {
-    if (!confirm('還原所有未儲存變更？')) return;
-    populate();
-    markDirty();
+    uiConfirm('還原所有未儲存變更？', { title: '還原變更' }).then(function (ok) {
+      if (!ok) return;
+      populate();
+      markDirty();
+    });
   });
 
   document.getElementById('saveBtn').addEventListener('click', function () {
@@ -615,20 +618,25 @@
 
   // Danger zone
   document.getElementById('dupBtn').addEventListener('click', function () {
-    var name = prompt('複製活動 — 新名稱', (CFG.competitionName || '活動') + ' (複製)');
-    if (!name) return;
-    google.script.run
-      .withSuccessHandler(function () { alert('已建立複本，請至活動列表查看'); location.href = '/admin/events/'; })
-      .withFailureHandler(function (err) { alert('失敗：' + (err && err.message)); })
-      .duplicateCompetition(compId, name, me.username);
+    uiPrompt('請輸入複本名稱', (CFG.competitionName || '活動') + ' (複製)', { title: '複製活動' }).then(function (name) {
+      if (!name) return;
+      google.script.run
+        .withSuccessHandler(function () { uiAlert('已建立複本，請至活動列表查看').then(function () { location.href = '/admin/events/'; }); })
+        .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+        .duplicateCompetition(compId, name, me.username);
+    });
   });
   document.getElementById('deleteBtn').addEventListener('click', function () {
-    if (!confirm('永久刪除「' + CFG.competitionName + '」及其所有報名資料？此操作無法復原。')) return;
-    if (prompt('輸入活動名稱以確認刪除') !== CFG.competitionName) { alert('名稱不符，已取消。'); return; }
-    google.script.run
-      .withSuccessHandler(function () { alert('已刪除'); location.href = '/admin/events/'; })
-      .withFailureHandler(function (err) { alert('失敗：' + (err && err.message)); })
-      .deleteCompetition(compId);
+    uiConfirm('永久刪除「' + CFG.competitionName + '」及其所有報名資料？此操作無法復原。', { title: '刪除活動', okText: '繼續', danger: true }).then(function (ok) {
+      if (!ok) return;
+      uiPrompt('請輸入活動名稱以確認刪除：', '', { title: '最終確認', placeholder: CFG.competitionName, danger: true, okText: '永久刪除' }).then(function (typed) {
+        if (typed !== CFG.competitionName) { if (typed !== null) uiAlert('名稱不符，已取消。'); return; }
+        google.script.run
+          .withSuccessHandler(function () { uiAlert('已刪除').then(function () { location.href = '/admin/events/'; }); })
+          .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+          .deleteCompetition(compId);
+      });
+    });
   });
 
   // Prevent navigation when dirty

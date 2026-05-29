@@ -2980,7 +2980,12 @@ exports.getSalesConfig = authCallable(["system","competition"], async (data, req
   const doc = await db.collection("config").doc("sales").get();
   const cfg = doc.exists ? doc.data() : { singlePrice: 500, yearlyPrice: 3000, taxRate: 5, bulkDiscounts: [], payuniMerID: "", payuniHashKey: "", payuniHashIV: "", payuniMode: "t" };
   if (request.authUser.role === "competition") {
-    return { singlePrice: cfg.singlePrice, yearlyPrice: cfg.yearlyPrice, taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || [] };
+    // Organizers see tier prices (to upgrade) but never the PayUni secrets.
+    return {
+      starterPrice: cfg.starterPrice || 0, proPrice: cfg.proPrice || 0, teamPrice: cfg.teamPrice || 0,
+      singlePrice: cfg.singlePrice, yearlyPrice: cfg.yearlyPrice,
+      taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || []
+    };
   }
   return cfg;
 });

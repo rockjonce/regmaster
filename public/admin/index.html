@@ -445,7 +445,7 @@
   document.getElementById('meName').textContent = me.displayName || me.username;
   document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('orgName').textContent = (me.displayName || me.username);
-  document.getElementById('orgPlan').textContent = me.role === 'system' ? 'SYSTEM 角色' : '主辦方';
+  document.getElementById('orgPlan').textContent = me.role === 'system' ? '系統管理員' : '主辦方';
 
   document.getElementById('searchInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.value.trim()) {

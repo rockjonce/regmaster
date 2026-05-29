@@ -13,6 +13,7 @@
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/ui-dialog.js"></script>
 
 <style>
 /* Page head */
@@ -264,7 +265,7 @@
   document.getElementById('meName').textContent = me.displayName || me.username;
   document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('orgName').textContent = me.displayName || me.username;
-  document.getElementById('orgPlan').textContent = me.role === 'system' ? 'SYSTEM 角色' : '主辦方';
+  document.getElementById('orgPlan').textContent = me.role === 'system' ? '系統管理員' : '主辦方';
 
   var ALL = [];
   var STATE = { filter: 'all', q: '' };
@@ -279,18 +280,24 @@
     return 'draft';
   }
 
+  // Null-safe DOM setters — never throw if an element is absent (e.g. a sidebar
+  // node owned by the shared shell), so a missing node can't hang the page.
+  function setTxt(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  function setHtml(id, v) { var el = document.getElementById(id); if (el) el.innerHTML = v; }
+
   function render() {
     var grid = document.getElementById('contentArea');
+    if (!grid) return;
     var counts = { all: ALL.length, live: 0, upcoming: 0, draft: 0, ended: 0 };
     ALL.forEach(function (c) { counts[classifyComp(c)]++; });
-    document.getElementById('ssAll').innerHTML = counts.all + '<em>場</em>';
-    document.getElementById('ssLive').textContent = counts.live;
-    document.getElementById('ssUp').textContent = counts.upcoming;
-    document.getElementById('ssDr').textContent = counts.draft;
-    document.getElementById('ssEd').textContent = counts.ended;
-    document.getElementById('navCompCount').textContent = counts.all;
-    document.getElementById('totalCount').textContent = '共 ' + counts.all + ' 場';
-    document.getElementById('subline').textContent = '管理你舉辦過的所有活動 · 進行中 ' + counts.live + ' / 草稿 ' + counts.draft + ' / 歷史 ' + counts.ended;
+    setHtml('ssAll', counts.all + '<em>場</em>');
+    setTxt('ssLive', counts.live);
+    setTxt('ssUp', counts.upcoming);
+    setTxt('ssDr', counts.draft);
+    setTxt('ssEd', counts.ended);
+    setTxt('navCompCount', counts.all);
+    setTxt('totalCount', '共 ' + counts.all + ' 場');
+    setTxt('subline', '管理你舉辦過的所有活動 · 進行中 ' + counts.live + ' / 草稿 ' + counts.draft + ' / 歷史 ' + counts.ended);
 
     var q = (STATE.q || '').toLowerCase();
     var filtered = ALL.filter(function (c) {
@@ -382,18 +389,21 @@
     var id = btn.dataset.id;
     if (action === 'toggle-open') {
       var isOpen = btn.dataset.current === '1';
-      if (!confirm((isOpen ? '關閉' : '開放') + '此活動報名？')) return;
-      google.script.run
-        .withSuccessHandler(function () { load(); })
-        .withFailureHandler(function (err) { alert('失敗：' + (err && err.message)); })
-        .setRegistrationOpen(id, !isOpen);
+      uiConfirm((isOpen ? '關閉' : '開放') + '此活動報名？', { title: '報名狀態' }).then(function (ok) {
+        if (!ok) return;
+        google.script.run
+          .withSuccessHandler(function () { load(); })
+          .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+          .setRegistrationOpen(id, !isOpen);
+      });
     } else if (action === 'duplicate') {
-      var nm = prompt('複製活動 — 請輸入新活動名稱', btn.dataset.name + ' (複製)');
-      if (!nm) return;
-      google.script.run
-        .withSuccessHandler(function () { alert('已建立複本'); load(); })
-        .withFailureHandler(function (err) { alert('失敗：' + (err && err.message)); })
-        .duplicateCompetition(id, nm, me.username);
+      uiPrompt('請輸入新活動名稱', btn.dataset.name + ' (複製)', { title: '複製活動' }).then(function (nm) {
+        if (!nm) return;
+        google.script.run
+          .withSuccessHandler(function () { uiToast('已建立複本'); load(); })
+          .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+          .duplicateCompetition(id, nm, me.username);
+      });
     }
   });
 
