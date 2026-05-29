@@ -954,7 +954,39 @@ exports.submitRegistration = callable(async (data) => {
     return { success: false, message: "報名尚未開始，開放時間：" + String(cfg.openDate).replace('T', ' ') };
   }
   if (comp.deadline && new Date() >= new Date(comp.deadline)) return { success: false, message: "已截止" };
-  
+
+  // Item 4: uniqueness checks — within this competition, no two students may share
+  // the same 身分證號碼 (idNumber), and no two may share the same 護照號碼 + 國籍 pair.
+  {
+    const newStudents = fd.students || [];
+    const newIds = [], newPP = [];
+    for (const sObj of newStudents) {
+      const idn = String(sObj.idNumber || "").trim();
+      const pp = String(sObj.passport || "").trim();
+      const nat = String(sObj.nationality || "").trim();
+      if (idn) {
+        if (newIds.indexOf(idn) >= 0) return { success: false, message: "同一筆報名中有重複的身分證號碼：" + idn };
+        newIds.push(idn);
+      }
+      if (pp) {
+        const key = pp + "|" + nat;
+        if (newPP.indexOf(key) >= 0) return { success: false, message: "同一筆報名中有重複的護照號碼：" + pp };
+        newPP.push(key);
+      }
+    }
+    if (newIds.length || newPP.length) {
+      const exSnap = await db.collection("members").where("compId", "==", compId).get();
+      const exIds = new Set(), exPP = new Set();
+      exSnap.docs.forEach(d => {
+        const m = d.data();
+        if (m.idNumber) exIds.add(String(m.idNumber).trim());
+        if (m.passport) exPP.add(String(m.passport).trim() + "|" + String(m.nationality || "").trim());
+      });
+      for (const idn of newIds) if (exIds.has(idn)) return { success: false, message: "身分證號碼「" + idn + "」已被報名，不可重複報名。" };
+      for (const key of newPP) if (exPP.has(key)) return { success: false, message: "此護照號碼（與國籍）已被其他人報名，不可重複報名。" };
+    }
+  }
+
   const teamId = generateId("T");
   const pwd = generatePassword();
   const perSession = isPerSessionQuota(cfg);

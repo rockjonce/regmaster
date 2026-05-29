@@ -347,6 +347,7 @@ body { background:var(--bg); overflow:hidden; }
           '<div class="actions-sec">' +
             '<button data-act="sec-up" data-id="' + sec.id + '" title="上移"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
             '<button data-act="sec-down" data-id="' + sec.id + '" title="下移"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></button>' +
+            '<button data-act="sec-dup" data-id="' + sec.id + '" title="複製區塊"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></button>' +
             '<button data-act="sec-del" data-id="' + sec.id + '" title="刪除"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6v14a2 2 0 002 2h8a2 2 0 002-2V6"/></svg></button>' +
           '</div>' +
         '</div>' +
@@ -395,6 +396,27 @@ body { background:var(--bg); overflow:hidden; }
         } else if (act === 'sec-down') {
           var i2 = SCHEMA.sections.findIndex(function (s) { return s.id === id; });
           if (i2 < SCHEMA.sections.length - 1) { [SCHEMA.sections[i2+1], SCHEMA.sections[i2]] = [SCHEMA.sections[i2], SCHEMA.sections[i2+1]]; render(); markDirty(); }
+        } else if (act === 'sec-dup') {
+          // Item 3: duplicate a section (all fields) with a sequential number suffix.
+          var src = SCHEMA.sections.find(function (s) { return s.id === id; });
+          if (src) {
+            var base = (src.title || '區塊').replace(/\s*\d+$/, '').trim();
+            var used = {};
+            SCHEMA.sections.forEach(function (s) {
+              var m = (s.title || '').match(/^(.*?)\s*(\d+)$/);
+              if (m && m[1].trim() === base) used[parseInt(m[2], 10)] = true;
+            });
+            var n = 1; while (used[n]) n++;
+            var copy = JSON.parse(JSON.stringify(src));
+            copy.id = uid('sec');
+            copy.title = base + ' ' + n;
+            var idMap = {};
+            (copy.fields || []).forEach(function (f) { var nid = uid('f'); idMap[f.id] = nid; f.id = nid; });
+            (copy.fields || []).forEach(function (f) { if (f.logic && f.logic.key && idMap[f.logic.key]) f.logic.key = idMap[f.logic.key]; });
+            var si = SCHEMA.sections.findIndex(function (s) { return s.id === id; });
+            SCHEMA.sections.splice(si + 1, 0, copy);
+            render(); markDirty();
+          }
         } else if (act === 'add-field') {
           var secId = btn.dataset.secId;
           var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
@@ -464,6 +486,11 @@ body { background:var(--bg); overflow:hidden; }
     var fieldKeyOf = function (x) { return x.legacyKey || x.id; };
     var otherFields = (sec.fields || []).filter(function (x) { return x.id !== f.id; });
     var on = !!(f.logic && f.logic.key);
+    // Item 2: operators depend on the controlling field's type.
+    var ctlField = on ? otherFields.filter(function (x) { return fieldKeyOf(x) === f.logic.key; })[0] : null;
+    var numOps = ctlField && ctlField.type === 'number';
+    var OP_LIST = numOps ? [['gt','大於'],['eq','等於'],['lt','小於'],['neq','不等於']] : [['eq','等於'],['neq','不等於']];
+    var opSelect = '<select data-cond="op">' + OP_LIST.map(function (o) { return '<option value="' + o[0] + '"' + ((f.logic && f.logic.op === o[0]) || (o[0] === 'eq' && (!f.logic || !f.logic.op)) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
     var condEditorHtml =
       '<div class="ins-row" style="margin-top:18px"><div class="lbl">顯示條件（進階）</div>' +
         '<select data-cond="enabled"><option value="">一律顯示</option>' +
@@ -472,8 +499,8 @@ body { background:var(--bg); overflow:hidden; }
           '<div style="margin-top:8px; display:flex; flex-direction:column; gap:6px">' +
             '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">當此區塊的欄位：</div>' +
             '<select data-cond="key">' + otherFields.map(function (x) { var k = fieldKeyOf(x); return '<option value="' + escapeHtml(k) + '"' + (f.logic.key === k ? ' selected' : '') + '>' + escapeHtml(x.label || k) + '</option>'; }).join('') + '</select>' +
-            '<select data-cond="op"><option value="eq"' + (f.logic.op !== 'neq' ? ' selected' : '') + '>等於</option><option value="neq"' + (f.logic.op === 'neq' ? ' selected' : '') + '>不等於</option></select>' +
-            '<input type="text" data-cond="value" value="' + escapeHtml(f.logic.value || '') + '" placeholder="比對的值（例：男 / 是）">' +
+            opSelect +
+            '<input type="' + (numOps ? 'number' : 'text') + '" data-cond="value" value="' + escapeHtml(f.logic.value || '') + '" placeholder="比對的值（例：男 / 18）">' +
           '</div>'
         ) : (otherFields.length ? '' : '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:6px">此區塊需有其他欄位才能設定條件</div>')) +
       '</div>';
@@ -542,6 +569,11 @@ body { background:var(--bg); overflow:hidden; }
         } else {
           if (!f.logic) f.logic = { key: '', op: 'eq', value: '' };
           f.logic[which] = el.value;
+          // If the controlling field is no longer numeric, gt/lt are invalid → reset to eq.
+          if (which === 'key') {
+            var ctl = otherFields.filter(function (x) { return fieldKeyOf(x) === f.logic.key; })[0];
+            if ((!ctl || ctl.type !== 'number') && (f.logic.op === 'gt' || f.logic.op === 'lt')) f.logic.op = 'eq';
+          }
         }
         SELECTED.fieldId = f.id;
         renderInspector();
@@ -583,8 +615,13 @@ body { background:var(--bg); overflow:hidden; }
   // ---- Drag-drop ----
   var DRAG = null;
 
-  function wireDragDrop() {
-    // Palette items - drag start
+  // BUG FIX (item 1): palette items are static, so their listeners must be wired
+  // exactly ONCE. Previously they were re-bound on every render(), so a single
+  // click fired N times and added a burst of duplicate fields.
+  var PALETTE_WIRED = false;
+  function wirePalette() {
+    if (PALETTE_WIRED) return;
+    PALETTE_WIRED = true;
     document.querySelectorAll('.ft-item').forEach(function (it) {
       it.addEventListener('dragstart', function (e) {
         DRAG = { kind: 'palette', type: it.dataset.type, legacyKey: it.dataset.legacy || null };
@@ -592,13 +629,15 @@ body { background:var(--bg); overflow:hidden; }
         it.classList.add('dragging');
       });
       it.addEventListener('dragend', function () { it.classList.remove('dragging'); });
-      // Tap-to-add fallback — HTML5 drag-drop does not work on touch devices,
-      // so clicking/tapping a palette item appends the field to the selected
-      // section (or the last section). Keeps the builder usable on phones.
+      // Tap-to-add (touch / click) — appends one field to the selected/last section.
       it.addEventListener('click', function () {
         addPaletteField(it.dataset.type, it.dataset.legacy || null);
       });
     });
+  }
+
+  function wireDragDrop() {
+    wirePalette();
     // Field cards - drag start (reorder within / across sections)
     document.querySelectorAll('.field-c').forEach(function (fc) {
       fc.addEventListener('dragstart', function (e) {
