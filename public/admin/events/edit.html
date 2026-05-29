@@ -198,7 +198,12 @@
                 <option value="team_coach">團體報名（含指導者）</option>
               </select></div>
             </div>
-            <div class="fld"><div class="lbl">活動描述</div><textarea id="basic-description" rows="5" data-dirty></textarea><div class="help">支援基本 HTML，會顯示在公開頁的「關於這場活動」區塊</div></div>
+            <div class="fld"><div class="lbl">活動描述</div><textarea id="basic-description" rows="5" data-dirty></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px">
+                <div class="help" style="margin-top:0">支援基本 HTML，會顯示在公開頁的「關於這場活動」區塊</div>
+                <button type="button" class="btn btn-ghost btn-sm" id="convertHtmlBtn" style="flex-shrink:0">🔄 一鍵轉內聯 HTML</button>
+              </div>
+            </div>
             <div class="row2">
               <div class="fld"><div class="lbl">開放報名時間</div><input type="datetime-local" id="basic-openDate" data-dirty><div class="help">到此時間才開放填表報名；留空為立即開放</div></div>
               <div class="fld"><div class="lbl">報名截止時間 <span class="req">*</span></div><input type="datetime-local" id="basic-deadline" data-dirty><div class="help">此時間後停止接受報名</div></div>
@@ -218,6 +223,39 @@
             </div>
             <div class="fld" id="singleDateField"><div class="lbl">活動日</div><input type="datetime-local" id="basic-competitionDate" data-dirty></div>
             <div class="alert-box info" id="multiDateHint" style="display:none">此活動為多梯次模式 — 請至「組別 / 場次」分頁設定各梯次的日期與名額；單一「活動日」欄位已停用。</div>
+          </div>
+
+          <!-- 活動海報 + AI 配色 -->
+          <div class="sec">
+            <div class="sec-hd">
+              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+              <div><h3>活動海報</h3><p>上傳海報圖片，並可用 AI 自動擷取主視覺配色，套用到公開頁的主題色</p></div>
+            </div>
+            <div id="posterPreview" style="display:none; margin-bottom:14px"><img id="posterImg" alt="海報" style="max-width:240px; max-height:320px; border-radius:10px; border:1px solid var(--line); display:block"></div>
+            <input type="file" id="posterFile" accept="image/*" style="display:none">
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <button type="button" class="btn btn-ghost btn-sm" id="posterPickBtn">選擇圖片…</button>
+              <button type="button" class="btn btn-primary btn-sm" id="posterUploadBtn" disabled>上傳海報</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="analyzeColorsBtn" disabled>🎨 AI 配色</button>
+            </div>
+            <div id="posterMsg" class="help" style="margin-top:8px"></div>
+            <div id="colorSwatches" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap"></div>
+          </div>
+
+          <!-- 活動簡章 PDF + AI 知識庫 -->
+          <div class="sec">
+            <div class="sec-hd">
+              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+              <div><h3>活動簡章 (PDF)</h3><p>上傳簡章 PDF，系統會擷取內容作為 AI 知識庫，供報名者於活動頁詢問活動相關問題</p></div>
+            </div>
+            <div id="pdfStatus" class="help" style="margin-bottom:10px"></div>
+            <input type="file" id="pdfFile" accept="application/pdf" style="display:none">
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <button type="button" class="btn btn-ghost btn-sm" id="pdfPickBtn">選擇 PDF…</button>
+              <button type="button" class="btn btn-primary btn-sm" id="pdfUploadBtn" disabled>上傳簡章</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="aiFillBtn">🤖 用簡章 AI 自動填寫設定</button>
+            </div>
+            <div id="pdfMsg" class="help" style="margin-top:8px"></div>
           </div>
         </div>
 
@@ -557,6 +595,18 @@
     renderGroupDisc(CFG.groupDiscounts || []);
     loadDiscCodes();
 
+    // S2: poster initial state
+    if (CFG.posterUrl) {
+      document.getElementById('analyzeColorsBtn').disabled = false;
+      document.getElementById('posterMsg').textContent = '已有海報';
+      google.script.run.withSuccessHandler(function (res) {
+        var src = res && (res.dataUrl || (res.base64 ? ('data:image/jpeg;base64,' + res.base64) : (res.posterUrl && String(res.posterUrl).indexOf('data:') === 0 ? res.posterUrl : '')));
+        if (src) showPosterImg(src);
+      }).withFailureHandler(function () {}).getPosterData(compId);
+    }
+    // S3: pdf initial state
+    refreshPdfStatus();
+
     document.getElementById('adv-maxTeams').value = COMP.config.maxCapacityLimit || COMP.config.maxTeams || 0;
     document.getElementById('adv-allowWaitlist').value = (CFG.allowWaitlist !== false) ? 'true' : 'false';
 
@@ -726,6 +776,162 @@
       else uiAlert((res && res.message) || '建立失敗');
     }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '建立折扣碼'; uiAlert('失敗：' + (e && e.message)); })
       .createDiscountCode(compId, code, type, value, max, exp, '');
+  });
+
+  // ===== S1: 活動描述 一鍵轉內聯 HTML =====
+  function convertDescToHtml(text) {
+    var EMOJI = { '注意':'⚠️ ', '重要':'⚠️ ', '提醒':'🔔 ', '日期':'📅 ', '時間':'🕐 ', '地點':'📍 ', '聯絡':'📞 ', '報名':'📝 ', '費用':'💰 ', '獎':'🏆 ' };
+    function linkify(s) { return s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:#3D6BFF;text-decoration:underline">$1</a>'); }
+    var lines = String(text || '').split(/\r?\n/), out = [], inList = false;
+    lines.forEach(function (raw) {
+      var line = raw.trim();
+      if (!line) { if (inList) { out.push('</ul>'); inList = false; } return; }
+      if (/^#{1,3}\s+/.test(line)) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        out.push('<h3 style="color:#0A437A;font-size:17px;font-weight:700;margin:14px 0 6px">' + escapeHtml(line.replace(/^#{1,3}\s+/, '')) + '</h3>');
+      } else if (/^[-*•]\s+/.test(line)) {
+        if (!inList) { out.push('<ul style="padding-left:20px;margin:6px 0">'); inList = true; }
+        out.push('<li style="margin:3px 0;line-height:1.7">' + linkify(escapeHtml(line.replace(/^[-*•]\s+/, ''))) + '</li>');
+      } else if (/^https?:\/\/\S+$/.test(line)) {
+        if (inList) { out.push('</ul>'); inList = false; }
+        out.push('<p style="margin:8px 0"><a href="' + escapeHtml(line) + '" target="_blank" style="display:inline-block;padding:8px 16px;background:#3D6BFF;color:#fff;border-radius:8px;text-decoration:none">前往連結 →</a></p>');
+      } else {
+        if (inList) { out.push('</ul>'); inList = false; }
+        var t = line; Object.keys(EMOJI).forEach(function (k) { if (t.indexOf(k) === 0) t = EMOJI[k] + t; });
+        out.push('<p style="margin:6px 0;line-height:1.7">' + linkify(escapeHtml(t)) + '</p>');
+      }
+    });
+    if (inList) out.push('</ul>');
+    return out.join('\n');
+  }
+  document.getElementById('convertHtmlBtn').addEventListener('click', function () {
+    var ta = document.getElementById('basic-description'), v = ta.value.trim();
+    if (!v) { uiAlert('請先在活動描述貼上文字'); return; }
+    if (/<[a-z][\s\S]*>/i.test(v)) {
+      uiConfirm('內容看起來已包含 HTML，仍要以純文字重新轉換嗎？（會移除既有標籤）', { title: '一鍵轉 HTML' }).then(function (ok) { if (ok) { ta.value = convertDescToHtml(v.replace(/<[^>]+>/g, '')); markDirty(); } });
+      return;
+    }
+    ta.value = convertDescToHtml(v); markDirty();
+  });
+
+  // ===== S2: 活動海報上傳 + AI 配色 =====
+  var posterChosen = null;
+  function showPosterImg(src) { document.getElementById('posterImg').src = src; document.getElementById('posterPreview').style.display = 'block'; }
+  function compressImage(file, maxKB, cb) {
+    var r = new FileReader();
+    r.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement('canvas');
+        var scale = Math.min(1, 1200 / Math.max(img.width, img.height));
+        canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var q = 0.85, data = canvas.toDataURL('image/jpeg', q);
+        while (data.length > maxKB * 1024 * 1.37 && q > 0.4) { q -= 0.1; data = canvas.toDataURL('image/jpeg', q); }
+        cb(data.split(',')[1]);
+      };
+      img.src = e.target.result;
+    };
+    r.readAsDataURL(file);
+  }
+  document.getElementById('posterPickBtn').addEventListener('click', function () { document.getElementById('posterFile').click(); });
+  document.getElementById('posterFile').addEventListener('change', function () {
+    var file = this.files[0]; if (!file) return;
+    posterChosen = file;
+    document.getElementById('posterUploadBtn').disabled = false;
+    document.getElementById('posterMsg').textContent = '已選擇：' + file.name + '（按「上傳海報」送出）';
+    var r = new FileReader(); r.onload = function (e) { showPosterImg(e.target.result); }; r.readAsDataURL(file);
+  });
+  document.getElementById('posterUploadBtn').addEventListener('click', function () {
+    if (!posterChosen) return;
+    var btn = this; btn.disabled = true; btn.textContent = '上傳中⋯';
+    compressImage(posterChosen, 650, function (b64) {
+      google.script.run.withSuccessHandler(function (res) {
+        btn.textContent = '上傳海報';
+        if (res && res.success) {
+          CFG.posterUrl = 'pfid:' + res.posterDocId;
+          document.getElementById('posterMsg').textContent = '✓ 海報已上傳';
+          document.getElementById('analyzeColorsBtn').disabled = false;
+          if (res.posterUrl) showPosterImg(res.posterUrl);
+          posterChosen = null;
+        } else { btn.disabled = false; uiAlert((res && res.message) || '上傳失敗'); }
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '上傳海報'; uiAlert('上傳失敗：' + (e && e.message)); })
+        .uploadPosterImage(compId, b64, posterChosen.name, 'image/jpeg');
+    });
+  });
+  document.getElementById('analyzeColorsBtn').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; btn.textContent = 'AI 分析中⋯';
+    google.script.run.withSuccessHandler(function (res) {
+      btn.disabled = false; btn.textContent = '🎨 AI 配色';
+      if (res && res.success && res.colors) {
+        var c = res.colors;
+        document.getElementById('colorSwatches').innerHTML = Object.keys(c).map(function (k) { return '<div style="text-align:center"><div style="width:42px;height:42px;border-radius:8px;border:1px solid var(--line);background:' + escapeHtml(c[k]) + '"></div><div style="font:400 9.5px/1.4 var(--f-mono);color:var(--muted);margin-top:3px">' + escapeHtml(k) + '</div></div>'; }).join('');
+        document.getElementById('posterMsg').textContent = '✓ 已套用配色到公開頁主題';
+      } else { uiAlert((res && res.message) || 'AI 配色失敗'); }
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '🎨 AI 配色'; uiAlert('AI 配色失敗：' + (e && e.message)); })
+      .analyzePosterColors(compId, CFG.posterUrl || '');
+  });
+
+  // ===== S3: 簡章 PDF + AI 知識庫 =====
+  var pdfChosen = null;
+  function refreshPdfStatus() {
+    var el = document.getElementById('pdfStatus');
+    if (CFG.rulesPdfId || CFG.pdfDocId) {
+      var chars = (CFG.rulesText || '').length;
+      el.innerHTML = '✓ 已上傳簡章' + (chars ? ('（已擷取約 ' + chars + ' 字作為 AI 知識庫）') : '') + ' — <a href="javascript:void(0)" id="viewPdfLink" style="color:var(--acc)">檢視 PDF</a>';
+      var vp = document.getElementById('viewPdfLink');
+      if (vp) vp.addEventListener('click', function () {
+        var docId = CFG.pdfDocId || String(CFG.rulesPdfId || '').replace('pfpdf:', '');
+        google.script.run.withSuccessHandler(function (res) {
+          var d = res && (res.dataUrl || (res.base64 ? ('data:application/pdf;base64,' + res.base64) : ''));
+          if (d) window.open(d, '_blank'); else uiAlert('無法載入 PDF');
+        }).withFailureHandler(function () { uiAlert('無法載入 PDF'); }).getPdfData(docId);
+      });
+    } else { el.textContent = '尚未上傳簡章。'; }
+  }
+  document.getElementById('pdfPickBtn').addEventListener('click', function () { document.getElementById('pdfFile').click(); });
+  document.getElementById('pdfFile').addEventListener('change', function () {
+    var file = this.files[0]; if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { uiAlert('PDF 不可超過 5MB'); this.value = ''; return; }
+    pdfChosen = file; document.getElementById('pdfUploadBtn').disabled = false;
+    document.getElementById('pdfMsg').textContent = '已選擇：' + file.name;
+  });
+  document.getElementById('pdfUploadBtn').addEventListener('click', function () {
+    if (!pdfChosen) return;
+    var btn = this; btn.disabled = true; btn.textContent = '上傳中⋯';
+    var r = new FileReader();
+    r.onload = function (e) {
+      var b64 = e.target.result.split(',')[1];
+      google.script.run.withSuccessHandler(function (res) {
+        btn.textContent = '上傳簡章';
+        if (res && res.success) {
+          CFG.rulesPdfId = 'pfpdf:' + res.fileId; CFG.pdfDocId = res.fileId;
+          CFG.rulesText = new Array((res.textExtracted || 0) + 1).join(' ');
+          document.getElementById('pdfMsg').textContent = '✓ 簡章已上傳，擷取 ' + (res.textExtracted || 0) + ' 字';
+          refreshPdfStatus(); pdfChosen = null;
+        } else { btn.disabled = false; uiAlert((res && res.message) || '上傳失敗'); }
+      }).withFailureHandler(function (er) { btn.disabled = false; btn.textContent = '上傳簡章'; uiAlert('上傳失敗：' + (er && er.message)); })
+        .uploadRulesPdf(compId, b64, pdfChosen.name);
+    };
+    r.readAsDataURL(pdfChosen);
+  });
+  document.getElementById('aiFillBtn').addEventListener('click', function () {
+    if (!(CFG.rulesPdfId || CFG.pdfDocId)) { uiAlert('請先上傳簡章 PDF'); return; }
+    var btn = this; btn.disabled = true; btn.textContent = 'AI 分析中⋯';
+    google.script.run.withSuccessHandler(function (res) {
+      btn.disabled = false; btn.textContent = '🤖 用簡章 AI 自動填寫設定';
+      if (res && res.success && res.data) {
+        var d = res.data;
+        if (d.competitionName) document.getElementById('basic-name').value = d.competitionName;
+        if (d.description) document.getElementById('basic-description').value = d.description;
+        if (d.openDate) document.getElementById('basic-openDate').value = toLocalInput(d.openDate);
+        if (d.deadline) document.getElementById('basic-deadline').value = toLocalInput(d.deadline);
+        if (d.competitionDate) document.getElementById('basic-competitionDate').value = toLocalInput(d.competitionDate);
+        markDirty();
+        uiAlert('AI 已依簡章填入可辨識的欄位，請檢查後再按「儲存變更」。');
+      } else { uiAlert((res && res.message) || 'AI 分析失敗'); }
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '🤖 用簡章 AI 自動填寫設定'; uiAlert('AI 分析失敗：' + (e && e.message)); })
+      .analyzeRulesWithAI(compId);
   });
 
   function renderFormSummary() {
