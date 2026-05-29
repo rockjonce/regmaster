@@ -799,7 +799,8 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     "studentFields", "teacherCount", "teacherFields", "dietaryOptions", "dietaryRestrictionOptions", "tshirtOptions", "customQuestions", "studentCustomQuestions", "teacherCustomQuestions", "paymentMethods", "bankInfo", "creditCardLink",
     "description", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
     "competitionDate", "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
-    "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel"];
+    "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
+    "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts"];
     
   const jc = {};
   /* Filter undefined values — Firestore rejects undefined */
@@ -948,6 +949,10 @@ exports.submitRegistration = callable(async (data) => {
   const comp = compDoc.data();
   const cfg = comp.config || {};
   if (!comp.isOpen) return { success: false, message: "報名未開放" };
+  // Item 1: enforce the organizer-set open time — registration is not allowed before it.
+  if (cfg.openDate && new Date() < new Date(cfg.openDate)) {
+    return { success: false, message: "報名尚未開始，開放時間：" + String(cfg.openDate).replace('T', ' ') };
+  }
   if (comp.deadline && new Date() >= new Date(comp.deadline)) return { success: false, message: "已截止" };
   
   const teamId = generateId("T");

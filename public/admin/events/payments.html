@@ -84,15 +84,22 @@
     <div id="loadingState" class="loading-c">載入付款資料⋯</div>
     <div class="main-c" id="content" style="display:none">
       <div class="sum-row" id="sumRow"></div>
-      <div class="reconcile-bar">
+      <div class="reconcile-bar" id="reconcileBar" style="display:none">
         <div class="ic-r"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg></div>
         <div class="body">
-          <h5>快速對帳</h5>
-          <p>輸入銀行帳號末 4 碼，系統會自動標記匹配的隊伍為「已確認」</p>
+          <h5>快速銀行對帳</h5>
+          <p>輸入銀行帳號末 4 碼，系統會自動標記匹配的隊伍為「已確認」（PayUni 線上付款會自動對帳，無需手動）</p>
         </div>
         <div class="input-bar">
           <input id="reconcileSuffix" placeholder="例：8923" maxlength="4">
           <button class="btn btn-primary btn-sm" id="reconcileBtn">執行對帳</button>
+        </div>
+      </div>
+      <div class="reconcile-bar" id="reconcileDisabledNote" style="display:none; background:var(--surface-2)">
+        <div class="ic-r" style="background:var(--muted)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 11V7a5 5 0 0110 0v4M5 11h14v9H5z"/></svg></div>
+        <div class="body">
+          <h5>快速銀行對帳未啟用</h5>
+          <p>請至「設定 → 收費 → 銀行 / ATM 轉帳」開啟「啟用銀行轉帳收款與對帳」並填寫銀行帳號後，此功能才會開放。</p>
         </div>
       </div>
       <div class="tbl-wrap">
@@ -141,6 +148,10 @@
       document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('content').style.display = 'block';
+      // Item 12: quick bank reconciliation only available when bank transfer is enabled in settings.
+      var bankOn = (cfg.bankTransferEnabled === true) || (cfg.bankTransferEnabled === undefined && !!(cfg.bankInfo && cfg.bankInfo.accountNumber));
+      document.getElementById('reconcileBar').style.display = bankOn ? '' : 'none';
+      document.getElementById('reconcileDisabledNote').style.display = bankOn ? 'none' : '';
       renderSum(); renderTable();
     });
   }

@@ -157,21 +157,29 @@
             <div class="fld"><div class="lbl">活動名稱 <span class="req">*</span></div><input id="basic-name" data-dirty></div>
             <div class="row2">
               <div class="fld"><div class="lbl">類別</div><select id="basic-category" data-dirty>
-                <option>研討會</option><option>程式競賽</option><option>工作坊</option><option>夏令營</option><option>學術論壇</option><option>校友活動</option><option>其他</option>
+                <option value="研討會">研討會</option><option value="競賽">競賽</option><option value="工作坊">工作坊</option><option value="夏令營">夏令營</option><option value="學術論壇">學術論壇</option><option value="校友活動">校友活動</option><option value="其他">其他</option>
               </select></div>
-              <div class="fld"><div class="lbl">參賽形式</div><select id="basic-eventType" data-dirty>
-                <option value="single_no_coach">個人賽（無指導老師）</option>
-                <option value="single_coach">個人賽（含指導老師）</option>
-                <option value="team_no_coach">團體賽（無指導老師）</option>
-                <option value="team_coach">團體賽（含指導老師）</option>
+              <div class="fld"><div class="lbl">活動形式</div><select id="basic-eventType" data-dirty>
+                <option value="single_no_coach">個人報名</option>
+                <option value="single_coach">個人報名（含指導者）</option>
+                <option value="team_no_coach">團體報名</option>
+                <option value="team_coach">團體報名（含指導者）</option>
               </select></div>
             </div>
             <div class="fld"><div class="lbl">活動描述</div><textarea id="basic-description" rows="5" data-dirty></textarea><div class="help">支援基本 HTML，會顯示在公開頁的「關於這場活動」區塊</div></div>
-            <div class="row3">
-              <div class="fld"><div class="lbl">開放報名日</div><input type="date" id="basic-openDate" data-dirty></div>
-              <div class="fld"><div class="lbl">截止日 <span class="req">*</span></div><input type="date" id="basic-deadline" data-dirty></div>
-              <div class="fld"><div class="lbl">活動日</div><input type="date" id="basic-competitionDate" data-dirty></div>
+            <div class="row2">
+              <div class="fld"><div class="lbl">開放報名時間</div><input type="datetime-local" id="basic-openDate" data-dirty><div class="help">到此時間才開放填表報名；留空為立即開放</div></div>
+              <div class="fld"><div class="lbl">報名截止時間 <span class="req">*</span></div><input type="datetime-local" id="basic-deadline" data-dirty><div class="help">此時間後停止接受報名</div></div>
             </div>
+            <div class="fld" style="margin-top:4px">
+              <div class="lbl">活動日期模式</div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px 20px; padding:4px 0">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="radio" name="dateMode" value="single" data-dirty> 單日活動（設定單一活動日）</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer"><input type="radio" name="dateMode" value="multi" data-dirty> 多梯次 / 多日（於「組別 / 場次」分頁設定各梯次）</label>
+              </div>
+            </div>
+            <div class="fld" id="singleDateField"><div class="lbl">活動日</div><input type="datetime-local" id="basic-competitionDate" data-dirty></div>
+            <div class="alert-box info" id="multiDateHint" style="display:none">此活動為多梯次模式 — 請至「組別 / 場次」分頁設定各梯次的日期與名額；單一「活動日」欄位已停用。</div>
           </div>
         </div>
 
@@ -186,10 +194,11 @@
             <button class="add-row" id="addGroupBtn">＋ 新增組別</button>
           </div>
 
-          <div class="sec">
+          <div class="alert-box info" id="sessionSingleHint" style="display:none">此活動為「單日活動」模式 — 場次設定已停用。若需多梯次，請至「基本」分頁將活動日期模式改為「多梯次 / 多日」。</div>
+          <div class="sec" id="sessionSec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-              <div><h3>場次</h3><p>多日 / 多時段活動可拆成獨立場次（如夏令營梯次、研習場次）</p></div>
+              <div><h3>場次 / 梯次</h3><p>多日 / 多時段活動可拆成獨立場次（如夏令營梯次、研習場次）</p></div>
             </div>
             <div class="alert-box info" style="margin-bottom:14px">場次模式：
               <label style="margin-left:8px"><input type="radio" name="sessionMode" value="single" data-dirty> 單選（每位報名者只能選一個場次）</label>
@@ -234,11 +243,28 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg></div>
-              <div><h3>報名費</h3><p>留空或填 0 為免費活動</p></div>
+              <div><h3>收費項目</h3><p>可新增多個收費項目，報名者需支付所有項目加總；沒有任何項目即為免費活動</p></div>
             </div>
-            <div class="row2">
-              <div class="fld"><div class="lbl">基本報名費 (NT$)</div><input type="number" id="pay-fee" data-dirty min="0"></div>
-              <div class="fld"><div class="lbl">是否啟用線上付款 (PayUni)</div><select id="pay-payuni" data-dirty><option value="false">否</option><option value="true">是</option></select></div>
+            <div class="list-grp" id="feeItemsList"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
+              <select id="feePreset" style="flex:1; min-width:160px; padding:9px 12px; background:var(--surface); border:1px solid var(--line); border-radius:8px; font:400 13px/1.4 var(--f-tc); color:var(--ink)">
+                <option value="">＋ 從範例加入…</option>
+                <option value="報名費">報名費</option>
+                <option value="材料費">材料費</option>
+                <option value="保證金">保證金</option>
+                <option value="餐費">餐費</option>
+                <option value="住宿費">住宿費</option>
+                <option value="服裝費">服裝費</option>
+              </select>
+              <button type="button" class="add-row" id="addFeeCustomBtn" style="width:auto; padding:9px 16px">＋ 自訂項目</button>
+            </div>
+            <div class="fld" style="margin-top:16px; margin-bottom:0">
+              <div class="lbl">收費總額（自動加總）</div>
+              <div id="feeTotal" style="font:700 20px/1 var(--f-display); color:var(--ink)">NT$ 0</div>
+            </div>
+            <div class="toggle-row" style="margin-top:14px">
+              <div class="body"><h6>啟用線上付款 (PayUni 信用卡)</h6><p>開啟後報名者可直接線上刷卡，付款成功自動對帳</p></div>
+              <div class="tg-sw" id="payuniEnabled" data-dirty></div>
             </div>
           </div>
           <div class="sec">
@@ -246,19 +272,18 @@
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 9V7a2 2 0 012-2h16a2 2 0 012 2v2m0 6v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2"/></svg></div>
               <div><h3>銀行 / ATM 轉帳</h3><p>主辦方人工核對方式（適合免線上金流的場景）</p></div>
             </div>
-            <div class="row2">
-              <div class="fld"><div class="lbl">銀行名稱</div><input id="pay-bankName" data-dirty></div>
-              <div class="fld"><div class="lbl">銀行代號</div><input id="pay-bankCode" data-dirty></div>
-              <div class="fld"><div class="lbl">帳號</div><input id="pay-accountNumber" data-dirty></div>
-              <div class="fld"><div class="lbl">戶名</div><input id="pay-accountName" data-dirty></div>
+            <div class="toggle-row" style="border-top:0; padding-top:0">
+              <div class="body"><h6>啟用銀行轉帳收款與對帳</h6><p>開啟後須填寫下方銀行帳號；「付款對帳」頁的快速銀行對帳功能才會啟用</p></div>
+              <div class="tg-sw" id="bankEnabled" data-dirty></div>
             </div>
-          </div>
-          <div class="sec">
-            <div class="sec-hd">
-              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 11l-9 4-9-4M21 15l-9 4-9-4"/></svg></div>
-              <div><h3>第三方信用卡頁面</h3><p>如果你有外部金流頁（綠界、PayUni 自架），貼連結在此</p></div>
+            <div id="bankFields" style="display:none; margin-top:14px">
+              <div class="row2">
+                <div class="fld"><div class="lbl">銀行名稱 <span class="req">*</span></div><input id="pay-bankName" data-dirty></div>
+                <div class="fld"><div class="lbl">銀行代號 <span class="req">*</span></div><input id="pay-bankCode" data-dirty></div>
+                <div class="fld"><div class="lbl">帳號 <span class="req">*</span></div><input id="pay-accountNumber" data-dirty></div>
+                <div class="fld"><div class="lbl">戶名 <span class="req">*</span></div><input id="pay-accountName" data-dirty></div>
+              </div>
             </div>
-            <div class="fld"><div class="lbl">連結網址</div><input id="pay-ccLink" data-dirty placeholder="https://..."></div>
           </div>
         </div>
 
@@ -405,14 +430,30 @@
     })
     .getRegistrationBundle(compId);
 
+  // Normalize a stored date / datetime string into <input type=datetime-local> value (YYYY-MM-DDTHH:mm).
+  function toLocalInput(v) {
+    if (!v) return '';
+    v = String(v);
+    if (v.indexOf('T') !== -1) return v.slice(0, 16);          // already datetime
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v + 'T00:00';     // date-only → midnight
+    var d = new Date(v); if (isNaN(d.getTime())) return '';
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
   function populate() {
     document.getElementById('basic-name').value = CFG.competitionName || '';
     document.getElementById('basic-category').value = CFG.category || '研討會';
     document.getElementById('basic-eventType').value = CFG.eventType || 'single_no_coach';
     document.getElementById('basic-description').value = CFG.description || '';
-    document.getElementById('basic-openDate').value = CFG.openDate || '';
-    document.getElementById('basic-deadline').value = (CFG.deadline || '').slice(0, 10) || (COMP.deadline || '').slice(0, 10);
-    document.getElementById('basic-competitionDate').value = CFG.competitionDate || '';
+    document.getElementById('basic-openDate').value = toLocalInput(CFG.openDate);
+    document.getElementById('basic-deadline').value = toLocalInput(CFG.deadline || COMP.deadline);
+    document.getElementById('basic-competitionDate').value = toLocalInput(CFG.competitionDate);
+
+    // Date mode: explicit dateMode, else infer from whether sessions exist.
+    var dateMode = CFG.dateMode || ((CFG.sessions && CFG.sessions.length) ? 'multi' : 'single');
+    document.querySelectorAll('input[name="dateMode"]').forEach(function (r) { r.checked = (r.value === dateMode); });
+    updateDateMode();
 
     // Groups
     renderGroups(CFG.groups || []);
@@ -426,14 +467,23 @@
     setToggle('isVisible', !!COMP.config.isVisible || !!CFG.isVisible);
     setToggle('isOpen', !!COMP.isOpen);
 
-    document.getElementById('pay-fee').value = CFG.registrationFee || 0;
-    document.getElementById('pay-payuni').value = CFG.payuniEnabled ? 'true' : 'false';
+    // Fee items: migrate from legacy single registrationFee if no feeItems yet.
+    var items = Array.isArray(CFG.feeItems) ? CFG.feeItems.slice() : [];
+    if (!items.length && (parseInt(CFG.registrationFee, 10) || 0) > 0) {
+      items = [{ name: CFG.registrationFeeLabel || '報名費', amount: parseInt(CFG.registrationFee, 10) || 0 }];
+    }
+    renderFeeItems(items);
+    setToggle('payuniEnabled', !!CFG.payuniEnabled);
+
+    // Bank: explicit flag, else infer from whether an account number was stored.
     var b = CFG.bankInfo || {};
     document.getElementById('pay-bankName').value = b.bankName || '';
     document.getElementById('pay-bankCode').value = b.bankCode || '';
     document.getElementById('pay-accountNumber').value = b.accountNumber || '';
     document.getElementById('pay-accountName').value = b.accountName || '';
-    document.getElementById('pay-ccLink').value = CFG.creditCardLink || '';
+    var bankOn = (CFG.bankTransferEnabled === true) || (CFG.bankTransferEnabled === undefined && !!b.accountNumber);
+    setToggle('bankEnabled', bankOn);
+    updateBankFields();
 
     document.getElementById('adv-maxTeams').value = COMP.config.maxCapacityLimit || COMP.config.maxTeams || 0;
     document.getElementById('adv-allowWaitlist').value = (CFG.allowWaitlist !== false) ? 'true' : 'false';
@@ -488,6 +538,58 @@
     sw.addEventListener('click', function () { sw.classList.toggle('on'); markDirty(); });
   });
 
+  // ---- Item 3: single-day vs multi-session mutual exclusivity ----
+  function updateDateMode() {
+    var mode = (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single';
+    var multi = mode === 'multi';
+    document.getElementById('singleDateField').style.display = multi ? 'none' : '';
+    document.getElementById('multiDateHint').style.display = multi ? '' : 'none';
+    var ss = document.getElementById('sessionSec'); if (ss) ss.style.display = multi ? '' : 'none';
+    var sh = document.getElementById('sessionSingleHint'); if (sh) sh.style.display = multi ? 'none' : '';
+  }
+  document.querySelectorAll('input[name="dateMode"]').forEach(function (r) {
+    r.addEventListener('change', function () { updateDateMode(); markDirty(); });
+  });
+
+  // ---- Item 12: bank-account fields gated by enable toggle ----
+  function updateBankFields() {
+    var on = document.getElementById('bankEnabled').classList.contains('on');
+    document.getElementById('bankFields').style.display = on ? '' : 'none';
+  }
+  document.getElementById('bankEnabled').addEventListener('click', updateBankFields);
+
+  // ---- Item 11: fee items list ----
+  function recalcFeeTotal() {
+    var total = readFeeItems().reduce(function (n, it) { return n + (it.amount || 0); }, 0);
+    document.getElementById('feeTotal').textContent = 'NT$ ' + total.toLocaleString();
+  }
+  function renderFeeItems(items) {
+    var el = document.getElementById('feeItemsList');
+    el.innerHTML = (items || []).map(function (it, i) {
+      return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 1fr 130px auto; gap:10px">' +
+        '<span class="grip">⋮⋮</span>' +
+        '<input value="' + escapeHtml(it.name || '') + '" placeholder="項目名稱（如：報名費）" data-ff="name">' +
+        '<input type="number" min="0" value="' + (parseInt(it.amount, 10) || 0) + '" placeholder="金額 NT$" data-ff="amount" style="text-align:right">' +
+        '<span class="rm" data-rm-fee="' + i + '">×</span>' +
+      '</div>';
+    }).join('');
+    el.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { recalcFeeTotal(); markDirty(); }); });
+    el.querySelectorAll('[data-rm-fee]').forEach(function (b) { b.addEventListener('click', function () { var idx = parseInt(b.dataset.rmFee, 10); var arr = readFeeItems(); arr.splice(idx, 1); renderFeeItems(arr); recalcFeeTotal(); markDirty(); }); });
+    recalcFeeTotal();
+  }
+  function readFeeItems() {
+    return Array.from(document.querySelectorAll('#feeItemsList .list-row')).map(function (r) {
+      return { name: r.querySelector('[data-ff="name"]').value.trim(), amount: parseInt(r.querySelector('[data-ff="amount"]').value, 10) || 0 };
+    }).filter(function (it) { return it.name; });
+  }
+  document.getElementById('addFeeCustomBtn').addEventListener('click', function () { var arr = readFeeItems(); arr.push({ name: '', amount: 0 }); renderFeeItems(arr); markDirty(); var inp = document.querySelector('#feeItemsList .list-row:last-of-type [data-ff="name"]'); if (inp) inp.focus(); });
+  document.getElementById('feePreset').addEventListener('change', function () {
+    var v = this.value; if (!v) return;
+    var arr = readFeeItems(); arr.push({ name: v, amount: 0 }); renderFeeItems(arr); markDirty();
+    this.value = '';
+    var inp = document.querySelector('#feeItemsList .list-row:last-of-type [data-ff="amount"]'); if (inp) inp.focus();
+  });
+
   function renderFormSummary() {
     var ms = ['基本', '組別', '表單', '收費', '通知', '進階'];
     var sf = CFG.studentFields || [];
@@ -523,6 +625,7 @@
       openDate: document.getElementById('basic-openDate').value,
       deadline: document.getElementById('basic-deadline').value,
       competitionDate: document.getElementById('basic-competitionDate').value,
+      dateMode: (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single',
       groups: readGroups(),
       sessions: readSessions(),
       sessionMode: (document.querySelector('input[name="sessionMode"]:checked') || {}).value || 'single',
@@ -531,15 +634,15 @@
       autoEmail: document.getElementById('autoEmail').classList.contains('on'),
       isVisible: document.getElementById('isVisible').classList.contains('on'),
       isOpen: document.getElementById('isOpen').classList.contains('on'),
-      fee: parseInt(document.getElementById('pay-fee').value, 10) || 0,
-      payuniEnabled: document.getElementById('pay-payuni').value === 'true',
+      feeItems: readFeeItems(),
+      payuniEnabled: document.getElementById('payuniEnabled').classList.contains('on'),
+      bankEnabled: document.getElementById('bankEnabled').classList.contains('on'),
       bankInfo: {
         bankName: document.getElementById('pay-bankName').value,
         bankCode: document.getElementById('pay-bankCode').value,
         accountNumber: document.getElementById('pay-accountNumber').value,
         accountName: document.getElementById('pay-accountName').value
       },
-      ccLink: document.getElementById('pay-ccLink').value,
       maxTeams: parseInt(document.getElementById('adv-maxTeams').value, 10) || 0,
       allowWaitlist: document.getElementById('adv-allowWaitlist').value === 'true'
     });
@@ -566,28 +669,45 @@
 
   document.getElementById('saveBtn').addEventListener('click', function () {
     var data = JSON.parse(serialize());
+
+    // Client-side validation
+    if (data.bankEnabled && !(data.bankInfo.accountNumber && data.bankInfo.accountName && data.bankInfo.bankName)) {
+      uiAlert('已啟用銀行轉帳，請完整填寫銀行名稱、帳號與戶名。'); return;
+    }
+    if (data.openDate && data.deadline && data.openDate >= data.deadline) {
+      uiAlert('開放報名時間必須早於報名截止時間。'); return;
+    }
+
+    var feeSum = (data.feeItems || []).reduce(function (n, it) { return n + (it.amount || 0); }, 0);
+    var single = data.dateMode !== 'multi';
     var newCfg = Object.assign({}, CFG, {
       competitionName: data.name,
       category: data.category,
       eventType: data.eventType,
       description: data.description,
       openDate: data.openDate,
-      competitionDate: data.competitionDate,
+      deadline: data.deadline,                                  // BUG FIX: deadline was previously never saved
+      dateMode: data.dateMode,
+      // Item 3: single-day vs multi-session are mutually exclusive
+      competitionDate: single ? data.competitionDate : '',
+      sessions: single ? [] : data.sessions,
       groups: data.groups,
-      sessions: data.sessions,
       sessionSelectMode: data.sessionMode,
       requireTeamNameCN: data.requireTeamNameCN,
       requireTeamNameEN: data.requireTeamNameEN,
       autoEmailNotification: data.autoEmail,
       isVisible: data.isVisible,
-      registrationFee: data.fee,
+      // Item 11: itemized fees; keep registrationFee = sum for backward compatibility
+      feeItems: data.feeItems,
+      registrationFee: feeSum,
       payuniEnabled: data.payuniEnabled,
-      bankInfo: data.bankInfo,
-      creditCardLink: data.ccLink,
+      // Item 12: bank transfer gated by explicit enable flag
+      bankTransferEnabled: data.bankEnabled,
+      bankInfo: data.bankEnabled ? data.bankInfo : {},
+      creditCardLink: '',                                       // Item 9: third-party CC link removed
       paymentMethods: [
         (data.payuniEnabled ? 'payuni' : null),
-        (data.bankInfo.accountNumber ? 'atm' : null),
-        (data.ccLink ? 'cc-link' : null)
+        (data.bankEnabled && data.bankInfo.accountNumber ? 'atm' : null)
       ].filter(Boolean),
       allowWaitlist: data.allowWaitlist,
       maxCapacityLimit: data.maxTeams
@@ -595,16 +715,11 @@
     var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
     google.script.run
       .withSuccessHandler(function () {
-        // Also toggle isOpen + deadline separately (different callables)
-        var promises = [
-          new Promise(function (res) {
-            google.script.run.withSuccessHandler(res).withFailureHandler(res).setRegistrationOpen(compId, data.isOpen);
-          })
-        ];
-        // deadline is part of competitions doc, not config — use saveCompetitionConfig already wrote config; we also need to update top-level deadline
-        Promise.all(promises).then(function () {
-          // Save deadline (which is on the top-level comp doc)
-          // saveCompetitionConfig writes only config.* — for deadline we'd need a separate callable. For now we patch via Firestore-direct admin in dev or accept the limitation.
+        // isOpen lives on the top-level comp doc and has its own callable.
+        // deadline is now included in newCfg above; saveCompetitionConfig writes it to the comp doc.
+        new Promise(function (res) {
+          google.script.run.withSuccessHandler(res).withFailureHandler(res).setRegistrationOpen(compId, data.isOpen);
+        }).then(function () {
           ORIGINAL_JSON = serialize();
           markDirty();
           btn.textContent = '儲存變更';
