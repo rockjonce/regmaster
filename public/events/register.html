@@ -513,7 +513,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     birthday: '出生年月日', school: '學校', department: '系所', grade: '年級',
     email: 'Email', phone: '電話', address: '地址', dietary: '飲食習慣', tshirt: 'T-shirt 尺寸',
     gender: '性別', nationality: '國籍', passport: '護照號碼', classroom: '班級',
-    organization: '服務單位', jobTitle: '職稱', postalCode: '郵遞區號'
+    organization: '服務單位', jobTitle: '職稱', postalCode: '郵遞區號',
+    emergencyName: '緊急聯絡人', emergencyPhone: '緊急聯絡電話', emergencyRelation: '緊急聯絡關係',
+    dietaryRestriction: '飲食限制 / 過敏', bloodType: '血型', healthNote: '特殊健康狀況',
+    invoiceTitle: '發票抬頭', taxId: '統一編號', accommodation: '住宿需求', lineId: 'LINE ID'
   };
   var GENDER_OPTS = ['男', '女'];
   var COUNTRY_OPTS = ['台灣 Taiwan','中國 China','香港 Hong Kong','澳門 Macau','日本 Japan','韓國 South Korea','美國 United States','加拿大 Canada','英國 United Kingdom','法國 France','德國 Germany','義大利 Italy','西班牙 Spain','葡萄牙 Portugal','荷蘭 Netherlands','比利時 Belgium','瑞士 Switzerland','奧地利 Austria','瑞典 Sweden','挪威 Norway','丹麥 Denmark','芬蘭 Finland','冰島 Iceland','愛爾蘭 Ireland','波蘭 Poland','捷克 Czech Republic','匈牙利 Hungary','希臘 Greece','土耳其 Turkey','俄羅斯 Russia','烏克蘭 Ukraine','澳洲 Australia','紐西蘭 New Zealand','新加坡 Singapore','馬來西亞 Malaysia','泰國 Thailand','越南 Vietnam','菲律賓 Philippines','印尼 Indonesia','印度 India','巴基斯坦 Pakistan','孟加拉 Bangladesh','斯里蘭卡 Sri Lanka','緬甸 Myanmar','柬埔寨 Cambodia','寮國 Laos','蒙古 Mongolia','北韓 North Korea','尼泊爾 Nepal','以色列 Israel','阿聯酋 UAE','沙烏地阿拉伯 Saudi Arabia','卡達 Qatar','科威特 Kuwait','巴林 Bahrain','阿曼 Oman','伊朗 Iran','伊拉克 Iraq','約旦 Jordan','黎巴嫩 Lebanon','敘利亞 Syria','埃及 Egypt','南非 South Africa','奈及利亞 Nigeria','肯亞 Kenya','迦納 Ghana','摩洛哥 Morocco','突尼西亞 Tunisia','衣索比亞 Ethiopia','坦尚尼亞 Tanzania','墨西哥 Mexico','巴西 Brazil','阿根廷 Argentina','智利 Chile','哥倫比亞 Colombia','秘魯 Peru','委內瑞拉 Venezuela','厄瓜多 Ecuador','古巴 Cuba','巴拿馬 Panama','哥斯大黎加 Costa Rica','多明尼加 Dominican Republic','牙買加 Jamaica','盧森堡 Luxembourg','摩納哥 Monaco','列支敦斯登 Liechtenstein','馬爾他 Malta','克羅埃西亞 Croatia','塞爾維亞 Serbia','斯洛維尼亞 Slovenia','斯洛伐克 Slovakia','羅馬尼亞 Romania','保加利亞 Bulgaria','立陶宛 Lithuania','拉脫維亞 Latvia','愛沙尼亞 Estonia','喬治亞 Georgia','亞美尼亞 Armenia','亞塞拜然 Azerbaijan','哈薩克 Kazakhstan','烏茲別克 Uzbekistan','汶萊 Brunei','斐濟 Fiji','帛琉 Palau','馬紹爾群島 Marshall Islands','東帝汶 Timor-Leste','不丹 Bhutan','馬爾地夫 Maldives','巴布亞紐幾內亞 Papua New Guinea','其他 Other'];
@@ -521,8 +524,17 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   // ---- formSchema-aware field engine (V3 independent) ----
   var SCHEMA = null, STU_DEFS = [], TCH_DEFS = [], CUSTOM_DEFS = [], LABEL_MAP = {};
   function sectionsByRole(role) { return SCHEMA ? SCHEMA.sections.filter(function (s) { return (s.role || 'custom') === role; }) : []; }
-  function inferType(k) { return ({ email:'email', phone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', nationality:'select', idNumber:'idnumber' })[k] || 'text'; }
-  function optsFor(k) { return k === 'gender' ? GENDER_OPTS.slice() : k === 'nationality' ? COUNTRY_OPTS.slice() : k === 'dietary' ? (CFG.dietaryOptions || []) : k === 'tshirt' ? (CFG.tshirtOptions || []) : []; }
+  function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', healthNote:'textarea', idNumber:'idnumber' })[k] || 'text'; }
+  function optsFor(k) {
+    return k === 'gender' ? GENDER_OPTS.slice()
+      : k === 'nationality' ? COUNTRY_OPTS.slice()
+      : k === 'dietary' ? (CFG.dietaryOptions || [])
+      : k === 'tshirt' ? (CFG.tshirtOptions || [])
+      : k === 'dietaryRestriction' ? ['一般','蛋奶素','全素','不吃牛','清真 (Halal)','海鮮過敏','堅果過敏','麩質過敏']
+      : k === 'bloodType' ? ['A','B','O','AB']
+      : k === 'accommodation' ? ['需要','不需要']
+      : [];
+  }
   function toDef(f) {
     var key = f.legacyKey || f.id;
     var opts = (Array.isArray(f.opts) && f.opts.length) ? f.opts.slice() : optsFor(f.legacyKey || '');

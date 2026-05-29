@@ -4498,7 +4498,10 @@ const LEGACY_FIELD_KEYS = new Set([
   'chineseName','englishName','idNumber','passport','birthday','school',
   'department','grade','email','phone','address','dietary','tshirt',
   // V3 ported special fields (item 6)
-  'gender','nationality','classroom','organization','jobTitle','postalCode'
+  'gender','nationality','classroom','organization','jobTitle','postalCode',
+  // V3 item 5 — additional special fields (confirmed with product)
+  'emergencyName','emergencyPhone','emergencyRelation','dietaryRestriction',
+  'bloodType','healthNote','invoiceTitle','taxId','accommodation','lineId'
 ]);
 
 function deriveLegacyFromFormSchema(formSchema) {
@@ -4551,7 +4554,10 @@ function buildFormSchemaFromLegacy(cfg) {
     email: 'Email', phone: '電話', address: '地址',
     dietary: '飲食習慣', tshirt: 'T-shirt 尺寸',
     gender: '性別', nationality: '國籍', passport: '護照號碼', classroom: '班級',
-    organization: '服務單位', jobTitle: '職稱', postalCode: '郵遞區號'
+    organization: '服務單位', jobTitle: '職稱', postalCode: '郵遞區號',
+    emergencyName: '緊急聯絡人', emergencyPhone: '緊急聯絡電話', emergencyRelation: '緊急聯絡關係',
+    dietaryRestriction: '飲食限制 / 過敏', bloodType: '血型', healthNote: '特殊健康狀況',
+    invoiceTitle: '發票抬頭', taxId: '統一編號', accommodation: '住宿需求', lineId: 'LINE ID'
   };
   const FIELD_TYPES = {
     chineseName: 'text', englishName: 'text', idNumber: 'idnumber',
@@ -4559,7 +4565,10 @@ function buildFormSchemaFromLegacy(cfg) {
     email: 'email', phone: 'tel', address: 'text',
     dietary: 'select', tshirt: 'select',
     gender: 'select', nationality: 'select', passport: 'text', classroom: 'text',
-    organization: 'text', jobTitle: 'text', postalCode: 'text'
+    organization: 'text', jobTitle: 'text', postalCode: 'text',
+    emergencyName: 'text', emergencyPhone: 'tel', emergencyRelation: 'text',
+    dietaryRestriction: 'select', bloodType: 'select', healthNote: 'textarea',
+    invoiceTitle: 'text', taxId: 'text', accommodation: 'select', lineId: 'text'
   };
 
   if (studentFields.length > 0) {
