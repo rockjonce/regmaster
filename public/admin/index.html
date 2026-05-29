@@ -638,6 +638,11 @@
 
   function renderInsights(data) {
     var insights = (data && data.insights) || [];
+    if (data && data.locked) {
+      document.getElementById('aiCountBadge').textContent = 'PRO';
+      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.7); padding:20px 0; text-align:center; font:400 12.5px/1.6 var(--f-tc)">🔒 AI 洞察為 <b>PRO</b> 以上方案功能<br><a href="/admin/license.html" style="color:#fcd34d; text-decoration:underline">升級方案解鎖 →</a></p>';
+      return;
+    }
     document.getElementById('aiCountBadge').textContent = insights.length + ' NEW';
     if (insights.length === 0) {
       document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">目前沒有需要注意的洞察 👍<br>當報名出現異常（即將額滿 / 報名偏低 / 待付款累積）時，這裡會自動提醒。</p>';

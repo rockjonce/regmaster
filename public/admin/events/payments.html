@@ -23,7 +23,8 @@
 .sum-card .sub { font:400 11.5px/1.5 var(--f-tc); color:var(--ink-3); margin-top:6px; }
 .sum-card.featured .sub { color:rgba(255,255,255,.6); }
 
-.tbl-wrap { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.tbl-wrap { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow-x:auto; }
+.tbl { min-width:680px; }
 .tbl { width:100%; border-collapse:collapse; font:400 13px/1.5 var(--f-tc); }
 .tbl thead th { text-align:left; padding:11px 14px; background:var(--surface-2); border-bottom:1px solid var(--line); font:600 10.5px/1 var(--f-mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
 .tbl thead th.right { text-align:right; }
@@ -46,6 +47,13 @@
 .reconcile-bar p { font:400 11.5px/1.4 var(--f-tc); color:var(--ink-3); margin:0; }
 .reconcile-bar .input-bar { display:flex; gap:6px; align-items:center; }
 .reconcile-bar input { padding:7px 10px; border:1px solid var(--line); border-radius:6px; font:500 12px/1 var(--f-mono); width:140px; }
+@media (max-width:768px){
+  .sum-row { grid-template-columns:1fr 1fr; gap:10px; }
+  .reconcile-bar { flex-direction:column; align-items:stretch; }
+  .reconcile-bar .input-bar { width:100%; }
+  .reconcile-bar input { flex:1; width:auto; }
+}
+@media (max-width:480px){ .sum-row { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>

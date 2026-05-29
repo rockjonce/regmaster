@@ -73,6 +73,10 @@
 .empty-chat .suggestions { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:480px; margin:24px auto 0; }
 .empty-chat .sg { padding:12px 14px; background:var(--surface); border:1px solid var(--line); border-radius:10px; cursor:pointer; text-align:left; font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); }
 .empty-chat .sg:hover { border-color:var(--ink); background:var(--surface-2); }
+@media (max-width:768px){
+  .body-3 { grid-template-columns:1fr; min-height:0; }
+  .empty-chat .suggestions { grid-template-columns:1fr; }
+}
 </style>
 </head>
 <body>

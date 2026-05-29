@@ -140,6 +140,27 @@ body { background:var(--bg); overflow:hidden; }
 
 .empty-inspector { padding:48px 20px; text-align:center; color:var(--muted); font:500 13px/1.5 var(--f-tc); }
 .empty-inspector svg { width:48px; height:48px; opacity:.4; margin-bottom:14px; }
+
+/* ---- Mobile (≤768px): stack the 3-pane builder so it works on phones ---- */
+@media (max-width:768px){
+  body { overflow:auto; }
+  .shell { grid-template-columns:1fr; height:auto; min-height:100vh; }
+  /* icon rail becomes a horizontal strip at the top (scrolls away; the
+     top-bar below stays pinned, so the two never overlap) */
+  .side-mini { flex-direction:row; height:auto; width:100%; position:static;
+    padding:8px 12px; gap:4px; border-right:0; border-bottom:1px solid var(--line); overflow-x:auto; }
+  .side-mini .logo { margin:0 6px 0 0; flex-shrink:0; }
+  .side-mini a { flex-shrink:0; }
+  .top-bar { padding:0 14px; gap:10px; }
+  .top-bar .crumb { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* stack palette → canvas → inspector vertically, each scrolls with the page */
+  .builder { grid-template-columns:1fr; height:auto; }
+  .palette, .canvas, .inspector { height:auto; overflow:visible; border-right:0; border-left:0;
+    border-bottom:1px solid var(--line); }
+  .field-types { grid-template-columns:1fr 1fr; }
+  .ft-item { cursor:pointer; }  /* tap-to-add on touch */
+}
+@media (max-width:380px){ .field-types { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -529,6 +550,12 @@ body { background:var(--bg); overflow:hidden; }
         it.classList.add('dragging');
       });
       it.addEventListener('dragend', function () { it.classList.remove('dragging'); });
+      // Tap-to-add fallback — HTML5 drag-drop does not work on touch devices,
+      // so clicking/tapping a palette item appends the field to the selected
+      // section (or the last section). Keeps the builder usable on phones.
+      it.addEventListener('click', function () {
+        addPaletteField(it.dataset.type, it.dataset.legacy || null);
+      });
     });
     // Field cards - drag start (reorder within / across sections)
     document.querySelectorAll('.field-c').forEach(function (fc) {
@@ -582,6 +609,22 @@ body { background:var(--bg); overflow:hidden; }
         DRAG = null;
       });
     });
+  }
+
+  // Build + append a field from a palette type (shared by drag-drop and tap-to-add).
+  function addPaletteField(type, legacyKey) {
+    var targetSec = null;
+    if (SELECTED && SELECTED.secId) targetSec = SCHEMA.sections.find(function (s) { return s.id === SELECTED.secId; });
+    if (!targetSec && SCHEMA.sections.length) targetSec = SCHEMA.sections[SCHEMA.sections.length - 1];
+    if (!targetSec) { uiAlert('請先新增區塊，再加入欄位'); return; }
+    var label = labelForLegacy(legacyKey) || ((FIELD_META[type] || FIELD_META.text).label);
+    var newField = { id: uid('f'), type: type, label: label, legacyKey: legacyKey || undefined, req: false, opts: [] };
+    if (legacyKey === 'dietary') newField.opts = ['豬肉', '牛肉', '雞肉', '海鮮', '全素'];
+    if (legacyKey === 'tshirt')  newField.opts = ['XS','S','M','L','XL','2XL','3XL'];
+    targetSec.fields = targetSec.fields || [];
+    targetSec.fields.push(newField);
+    SELECTED = { secId: targetSec.id, fieldId: newField.id };
+    render(); markDirty();
   }
 
   function labelForLegacy(k) {

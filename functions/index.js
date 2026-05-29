@@ -533,16 +533,32 @@ exports.getNotifications = authCallable(["system","competition"], async (data, r
   return await getNotificationsInternal(request.authUser.role, request.authUser.username);
 });
 
-// BUG-03 FIX: markNotificationRead requires authenticated session
-exports.markNotificationRead = authCallable(["system","competition"], async (data) => {
+// BUG-03 FIX: markNotificationRead requires authenticated session.
+// SECURITY (IDOR): an organizer (competition role) may only mark notifications
+// that belong to one of their OWN competitions. System role may mark any.
+exports.markNotificationRead = authCallable(["system","competition"], async (data, request) => {
   if (!data.nid) return { success: false };
+  let ref = null;
   const snap = await db.collection("notifications").where("notifId", "==", data.nid).limit(1).get();
-  if (snap.empty) {
+  if (!snap.empty) {
+    ref = snap.docs[0].ref;
+  } else {
     // Try by doc ID
-    try { await db.collection("notifications").doc(data.nid).update({ read: true }); return { success: true }; }
-    catch (e) { return { success: false }; }
+    const byId = await db.collection("notifications").doc(data.nid).get();
+    if (byId.exists) ref = byId.ref;
   }
-  await snap.docs[0].ref.update({ read: true });
+  if (!ref) return { success: false };
+  // Ownership check for organizers
+  if (request.authUser.role === "competition") {
+    const nDoc = await ref.get();
+    const compId = nDoc.exists ? nDoc.data().compId : null;
+    if (!compId) return { success: false };
+    const compDoc = await db.collection("competitions").doc(compId).get();
+    if (!compDoc.exists || compDoc.data().creator !== request.authUser.username) {
+      throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動通知");
+    }
+  }
+  await ref.update({ read: true });
   return { success: true };
 });
 
@@ -570,7 +586,10 @@ exports.logClientError = callable(async (data) => {
   return { success: true };
 });
 
-exports.getAuditLogs = authCallable(["system","competition"], async (data) => {
+// SECURITY: system-only — audit logs are platform-wide and unfiltered, so they
+// must never be exposed to organizer (competition) accounts. The 操作日誌 page is
+// only present in the sidebar for the system role.
+exports.getAuditLogs = authCallable(["system"], async (data) => {
   const limit = data.limit || 100;
   const snap = await db.collection("auditLogs").orderBy("createdAt", "desc").limit(limit).get();
   return snap.docs.map(d => {
@@ -650,6 +669,17 @@ exports.createCompetition = authCallable(["system","competition"], async (data, 
   const creator = request.authUser.username;
   const compId = generateId("C");
 
+  // Tier gate: cap the number of events; seed the capacity limit from the plan.
+  const tier = request.authUser.role === "system" ? "team" : await getEffectiveTier(creator);
+  const lim = tierLimits(tier);
+  if (lim.maxActiveEvents !== Infinity) {
+    const existing = await db.collection("competitions").where("creator", "==", creator).get();
+    if (existing.size >= lim.maxActiveEvents) {
+      throw new HttpsError("permission-denied",
+        "您的方案（" + tierLabel(tier) + "）最多可建立 " + lim.maxActiveEvents + " 個活動，目前已有 " + existing.size + " 個。請升級方案或刪除舊活動。");
+    }
+  }
+
   let mCount = 1, tCount = 0;
   if (eventType === 'single_coach') { mCount = 1; tCount = 1; }
   else if (eventType === 'single_no_coach') { mCount = 1; tCount = 0; }
@@ -674,7 +704,8 @@ exports.createCompetition = authCallable(["system","competition"], async (data, 
     isOpen: false, isVisible: false, deadline: "", maxTeams: 0,
     creator: creator || "", rulesPdfId: "", rulesText: "", themeColors: "",
     teamCount: 0,
-    maxCapacityLimit: 300, capacityLimitUnlocked: false
+    maxCapacityLimit: lim.maxCapacity === Infinity ? 0 : lim.maxCapacity,
+    capacityLimitUnlocked: lim.maxCapacity === Infinity
   });
   
   await auditLog(creator, "建立活動", compId, name);
@@ -721,9 +752,19 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   
   // ===== Capacity limit validation =====
   const compData = doc.data();
-  const capLimit = compData.maxCapacityLimit !== undefined ? compData.maxCapacityLimit : 300;
-  const capUnlocked = compData.capacityLimitUnlocked === true;
-  
+  // Capacity cap follows the OWNER's current plan, so upgrades take effect
+  // immediately; a system admin may still manually unlock via setCapacityLimit.
+  const ownerTier = await getEffectiveTier(compData.creator);
+  const tierCap = tierLimits(ownerTier).maxCapacity;
+  const capUnlocked = compData.capacityLimitUnlocked === true || tierCap === Infinity;
+  const capLimit = tierCap === Infinity ? 0 : tierCap;
+
+  // Tier gate: enabling paid registration requires the `payment` feature (STARTER+).
+  const wantsPayment = (Array.isArray(config.paymentMethods) && config.paymentMethods.length > 0)
+    || config.payuniEnabled === true
+    || (parseInt(config.registrationFee) || 0) > 0;
+  if (wantsPayment) await requireFeature(request.authUser, "payment");
+
   if (!capUnlocked && capLimit > 0) {
     const sessMode = config.sessionSelectMode || "single";
     const sessions = config.sessions || [];
@@ -1550,7 +1591,8 @@ exports.reconcilePayments = compAuthCallable(async (data, request) => {
   return { success: matched > 0, message: "匹配 " + matched + " 筆" };
 });
 
-exports.exportTeamsCSV = compAuthCallable(async (data) => {
+exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "csvExport");
   const compId = data.compId;
   const compDoc = await db.collection("competitions").doc(compId).get();
   const cfg = compDoc.exists ? (compDoc.data().config || {}) : {};
@@ -1777,6 +1819,72 @@ const TIER_RANK = { free: 0, starter: 1, pro: 2, team: 3 };
 const VALID_TIERS = ["starter", "pro", "team"];
 function tierLabel(t) { return ({ free: "FREE", starter: "STARTER", pro: "PRO", team: "TEAM" })[(t || "free")] || "FREE"; }
 function tierPriceField(t) { return ({ starter: "starterPrice", pro: "proPrice", team: "teamPrice" })[t]; }
+
+// ===== Tier-based feature gating =====
+// Applies to 主辦方 (competition role). 系統管理員 (system) bypasses ALL limits.
+// Numeric limits (confirmed with product): events 1/3/15/∞, capacity 60/300/1500/∞.
+const TIER_LIMITS = {
+  free:    { maxActiveEvents: 1,        maxCapacity: 60 },
+  starter: { maxActiveEvents: 3,        maxCapacity: 300 },
+  pro:     { maxActiveEvents: 15,       maxCapacity: 1500 },
+  team:    { maxActiveEvents: Infinity, maxCapacity: Infinity }
+};
+// Feature key → minimum tier RANK required (see TIER_RANK).
+const FEATURE_MIN_RANK = {
+  payment:    1, // STARTER+  線上金流收款
+  csvExport:  1, // STARTER+  匯出報表
+  ai:         2, // PRO+      AI 助理
+  multiJudge: 2, // PRO+      多評審評分
+  campaigns:  2  // PRO+      公告群發
+};
+const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", multiJudge: "多評審評分", campaigns: "公告群發" };
+const RANK_TIER_LABEL = { 1: "STARTER", 2: "PRO", 3: "TEAM" };
+function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
+
+// Resolve the account's effective (highest active) subscription tier:
+// "free" | "starter" | "pro" | "team". Mirrors getLicenseStatus's bestTier +
+// the legacy "valid-but-untiered subscription counts as starter" fallback.
+async function getEffectiveTier(username) {
+  if (!username) return "free";
+  const snap = await db.collection("licenses").where("activatedBy", "==", username).get();
+  const now = Date.now();
+  let bestRank = 0, bestTier = "free", subValid = false, totalRem = 0;
+  snap.docs.forEach(doc => {
+    const l = doc.data();
+    const type = (l.type || "").toLowerCase();
+    const isSub = type === "subscription" || (!type && l.years > 0);
+    const isCount = type === "count" || (!type && l.maxCount > 0);
+    if (isSub && l.status === "已啟用") {
+      const isLifetime = !l.expiresAt || l.expiresAt === "";
+      let valid = isLifetime;
+      if (!isLifetime) { const t = new Date(l.expiresAt).getTime(); valid = !isNaN(t) && t > now; }
+      if (valid) {
+        subValid = true;
+        const r = TIER_RANK[(l.tier || "").toLowerCase()] || 0;
+        if (r > bestRank) { bestRank = r; bestTier = (l.tier || "free").toLowerCase(); }
+      }
+    }
+    if (isCount && l.status === "已啟用") {
+      totalRem += ((parseInt(l.maxCount) || 0) - (parseInt(l.usedCount) || 0));
+    }
+  });
+  let tier = bestTier;
+  if (tier === "free" && (subValid || totalRem > 0)) tier = "starter";
+  return tier;
+}
+
+// Throw permission-denied if a competition-role account's tier lacks `key`.
+// Returns the resolved tier on success. System role always allowed (returns "team").
+async function requireFeature(authUser, key) {
+  if (authUser && authUser.role === "system") return "team";
+  const tier = await getEffectiveTier(authUser.username);
+  const need = FEATURE_MIN_RANK[key] || 0;
+  if ((TIER_RANK[tier] || 0) < need) {
+    throw new HttpsError("permission-denied",
+      "「" + (FEATURE_LABEL[key] || key) + "」為 " + (RANK_TIER_LABEL[need] || "付費") + " 以上方案功能，請先升級方案。");
+  }
+  return tier;
+}
 
 exports.createLicense = authCallable(["system"], async (data) => {
   const tier = String(data.tier || "").toLowerCase();
@@ -2236,7 +2344,8 @@ exports.getKnowledgeBaseStatus = authCallable(["system"], async () => {
   return { count: snap.size, updatedAt };
 });
 
-exports.askAdminAI = compAuthCallable(async (data) => {
+exports.askAdminAI = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "ai");
   const { question, compId } = data;
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return { answer: "AI 未設定" };
@@ -3986,6 +4095,7 @@ exports.listCampaigns = compAuthCallable(async (data) => {
 });
 
 exports.createCampaign = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "campaigns");
   const { compId, payload } = data;
   if (!payload || !payload.subject) return { success: false, message: "缺少標題" };
   const camp = {
@@ -4037,6 +4147,7 @@ exports.deleteCampaign = compAuthCallable(async (data, request) => {
 });
 
 exports.sendCampaignNow = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "campaigns");
   const { campaignId } = data;
   const doc = await db.collection("campaigns").doc(campaignId).get();
   if (!doc.exists) return { success: false, message: "找不到 campaign" };
@@ -4097,6 +4208,7 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
 // Legacy saveScore (single-judge) still works; we just add a new shape.
 
 exports.submitJudgeScore = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "multiJudge");
   const { compId, teamId, items, totalScore, comment } = data;
   if (!compId || !teamId) return { success: false, message: "缺少 compId / teamId" };
   const judgeId = request.authUser.username;
@@ -4390,6 +4502,14 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
 // AI insights (Phase 7 will wire to LLM; Phase 4 returns rule-based heuristic
 // suggestions derived from real Firestore data so the UI doesn't show mock).
 exports.getAiInsights = authCallable(["system", "competition"], async (data, request) => {
+  // AI insights are a PRO+ feature. Lower tiers get a graceful locked payload
+  // (this is auto-loaded on the dashboard, so we must not throw here).
+  if (request.authUser.role !== "system") {
+    const tier = await getEffectiveTier(request.authUser.username);
+    if ((TIER_RANK[tier] || 0) < FEATURE_MIN_RANK.ai) {
+      return { insights: [], locked: true, tier, message: "AI 洞察為 PRO 以上方案功能，升級即可解鎖。" };
+    }
+  }
   const username = request.authUser.username;
   const compId = data && data.compId;
 

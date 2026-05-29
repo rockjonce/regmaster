@@ -54,6 +54,15 @@
 .status-tag { padding:2px 7px; border-radius:4px; font:600 10px/1.4 var(--f-mono); }
 .status-tag.active { background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); }
 .status-tag.expired { background:var(--surface-2); color:var(--muted); }
+@media (max-width:768px){
+  .plans-grid { grid-template-columns:1fr; }
+  .cur-plan { padding:20px; }
+  .cur-plan .meta-row { flex-direction:column; gap:14px; }
+  .activate-card .input-row { flex-direction:column; }
+  .history-card { overflow-x:auto; }
+  .history-tbl { min-width:520px; }
+}
+@media (min-width:481px) and (max-width:768px){ .plans-grid { grid-template-columns:1fr 1fr; } }
 </style>
 </head>
 <body>
