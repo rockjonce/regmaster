@@ -191,32 +191,29 @@ body { background:var(--bg); overflow:hidden; }
     <div class="builder" id="builder" style="display:none">
       <!-- PALETTE -->
       <aside class="palette">
-        <h5>欄位類型</h5>
+        <h5>通用欄位</h5>
+        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 10px">主辦方可自由增加的欄位</p>
         <div class="field-types">
-          <div class="ft-item b1" draggable="true" data-type="text"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg></div><h6>單行文字</h6><p>姓名、學校等</p></div>
+          <div class="ft-item b1" draggable="true" data-type="text"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg></div><h6>單行文字</h6><p>短文字</p></div>
           <div class="ft-item b1" draggable="true" data-type="textarea"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h12"/></svg></div><h6>多行文字</h6><p>自我介紹</p></div>
-          <div class="ft-item b2" draggable="true" data-type="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6>Email</h6><p>含格式驗證</p></div>
-          <div class="ft-item b2" draggable="true" data-type="tel"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>電話</h6><p>含格式</p></div>
           <div class="ft-item b3" draggable="true" data-type="select"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg></div><h6>下拉選單</h6><p>多選一</p></div>
           <div class="ft-item b3" draggable="true" data-type="radio"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><h6>單選</h6><p>視覺化</p></div>
           <div class="ft-item b3" draggable="true" data-type="checkbox"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div><h6>複選</h6><p>多選</p></div>
           <div class="ft-item b4" draggable="true" data-type="date"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6>日期</h6><p>生日 / 截止</p></div>
-          <div class="ft-item b4" draggable="true" data-type="idnumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6>身分證</h6><p>含驗證</p></div>
           <div class="ft-item b4" draggable="true" data-type="number"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16"/></svg></div><h6>數字</h6><p>年齡 / 數量</p></div>
         </div>
 
-        <h5 style="margin-top:18px">特殊欄位（學員預設）</h5>
+        <h5 style="margin-top:18px">特殊欄位</h5>
+        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 10px">內建驗證與選項的常用欄位</p>
         <div class="field-types">
           <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6>中文姓名</h6></div>
+          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6>英文姓名</h6></div>
+          <div class="ft-item b2" draggable="true" data-type="email" data-legacy="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6>Email</h6></div>
+          <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="phone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>電話</h6></div>
+          <div class="ft-item b4" draggable="true" data-type="idnumber" data-legacy="idNumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6>身分證</h6></div>
           <div class="ft-item b1" draggable="true" data-type="text" data-legacy="school"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>學校</h6></div>
           <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietary"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M5 19h14M5 5h14"/></svg></div><h6>飲食</h6></div>
           <div class="ft-item b3" draggable="true" data-type="select" data-legacy="tshirt"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l4 3-2 5h-3v9H9V12H6L4 7z"/></svg></div><h6>T-shirt</h6></div>
-        </div>
-
-        <div class="legacy-import" style="margin-top:18px">
-          <h5>從 v1 欄位匯入</h5>
-          <p>把舊版的 studentFields / customQuestions 一鍵轉成 v3 區塊</p>
-          <button id="importLegacyBtn">執行匯入</button>
         </div>
       </aside>
 
@@ -325,7 +322,7 @@ body { background:var(--bg); overflow:hidden; }
       return;
     }
     container.innerHTML = SCHEMA.sections.map(function (sec, sIdx) {
-      var roleLabels = { student: '學員', teacher: '指導老師', custom: '附加問題' };
+      var roleLabels = { student: '學員', teacher: '指導者', custom: '附加問題' };
       return '<div class="canvas-sec" data-sec-id="' + sec.id + '">' +
         '<div class="sec-h">' +
           '<span class="nb">' + String(sIdx + 1).padStart(2, '0') + '</span>' +
@@ -421,7 +418,6 @@ body { background:var(--bg); overflow:hidden; }
         '<span class="grip"><svg fill="currentColor" viewBox="0 0 24 24"><circle cx="8" cy="6" r="1.5"/><circle cx="8" cy="12" r="1.5"/><circle cx="8" cy="18" r="1.5"/><circle cx="16" cy="6" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="16" cy="18" r="1.5"/></svg></span>' +
         '<span class="ic-f ' + meta.ic + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + meta.icon + '</svg></span>' +
         '<span class="label-f">' + escapeHtml(f.label || '(未命名)') + (f.req ? ' <span class="req">*</span>' : '') +
-          (f.legacyKey ? ' <span class="legacy-tag">' + escapeHtml(f.legacyKey) + '</span>' : '') +
         '</span>' +
         '<span class="actions-f">' +
           '<button data-act="field-up" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
@@ -457,10 +453,6 @@ body { background:var(--bg); overflow:hidden; }
       '</select></div>' +
       '<div class="ins-row"><div class="lbl">標籤文字</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
       '<div class="ins-row"><div class="lbl">說明文字（可選）</div><input type="text" data-ins="help" value="' + escapeHtml(f.help || '') + '" placeholder="顯示在欄位下方"></div>' +
-      '<div class="ins-row"><div class="lbl">舊欄位 key（為與 v1 報名相容）</div><select data-ins="legacyKey"><option value="">無</option>' +
-        ['chineseName','englishName','idNumber','email','phone','school','department','grade','dietary','tshirt','birthday','address']
-          .map(function (k) { return '<option value="' + k + '"' + (f.legacyKey === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') +
-      '</select></div>' +
 
       ((['select','radio','checkbox'].indexOf(f.type) >= 0) ? (
         '<div class="ins-row"><div class="lbl">選項</div><div class="opts-editor" id="opts-editor">' +
@@ -633,62 +625,39 @@ body { background:var(--bg); overflow:hidden; }
               birthday:'生日', address:'地址' })[k] || '';
   }
 
-  // ---- Add section ----
+  // ---- Add section (item 1: 學員 / 指導者 / 自訂 dropdown) ----
+  var ROLE_LABELS = { student: '學員', teacher: '指導者', custom: '自訂' };
+  function defaultSectionTitle(role) { return role === 'student' ? '學員資料' : role === 'teacher' ? '指導者' : '附加問題'; }
   document.getElementById('addSectionBtn').addEventListener('click', function () {
-    uiPrompt('區塊類型：student / teacher / custom', 'student', { title: '新增區塊' }).then(function (role) {
-      if (!role) return;
-      if (!['student', 'teacher', 'custom'].includes(role)) { uiAlert('類型只能是 student / teacher / custom'); return; }
-      uiPrompt('區塊標題', role === 'student' ? '學員資料' : role === 'teacher' ? '指導者' : '附加問題', { title: '新增區塊' }).then(function (title) {
-        if (!title) return;
-        SCHEMA.sections.push({ id: uid('sec'), title: title, role: role, repeat: 1, fields: [] });
-        render(); markDirty();
-      });
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.45);display:grid;place-items:center;z-index:9999;padding:20px';
+    ov.innerHTML =
+      '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:380px;padding:22px;box-shadow:var(--sh-lg)">' +
+        '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:16px">新增區塊</h3>' +
+        '<div style="margin-bottom:14px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">區塊類型</div>' +
+          '<select id="asRole" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink);background:var(--surface)">' +
+            '<option value="student">學員</option><option value="teacher">指導者</option><option value="custom">自訂</option>' +
+          '</select></div>' +
+        '<div style="margin-bottom:18px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">區塊標題</div>' +
+          '<input id="asTitle" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink)" value="學員資料"></div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px">' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="asCancel">取消</button>' +
+          '<button type="button" class="btn btn-primary btn-sm" id="asOk">建立</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var roleSel = ov.querySelector('#asRole'), titleInp = ov.querySelector('#asTitle');
+    roleSel.addEventListener('change', function () { titleInp.value = defaultSectionTitle(this.value); });
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#asCancel').addEventListener('click', close);
+    ov.querySelector('#asOk').addEventListener('click', function () {
+      var role = roleSel.value, title = (titleInp.value || '').trim() || ROLE_LABELS[role];
+      SCHEMA.sections.push({ id: uid('sec'), title: title, role: role, repeat: 1, fields: [] });
+      close(); render(); markDirty();
     });
+    setTimeout(function () { titleInp.focus(); titleInp.select(); }, 50);
   });
-
-  // ---- Import from legacy ----
-  document.getElementById('importLegacyBtn').addEventListener('click', function () {
-    if (!LEGACY_CFG) { uiAlert('找不到舊資料'); return; }
-    if (SCHEMA.sections.length > 0) {
-      uiConfirm('將會覆蓋目前的設計，確定？', { title: '匯入舊資料', danger: true }).then(function (ok) { if (ok) doImportLegacy(); });
-    } else { doImportLegacy(); }
-  });
-  function doImportLegacy() {
-    SCHEMA.sections = [];
-    var sf = LEGACY_CFG.studentFields || [];
-    var tf = LEGACY_CFG.teacherFields || [];
-    var cq = LEGACY_CFG.customQuestions || [];
-    if (sf.length) {
-      SCHEMA.sections.push({
-        id: uid('sec'), title: '學員資料', role: 'student', repeat: LEGACY_CFG.memberCount || 1,
-        fields: sf.map(function (k) { return { id: uid('f'), type: typeForLegacy(k), label: labelForLegacy(k) || k, legacyKey: k, req: true,
-          opts: k === 'dietary' ? (LEGACY_CFG.dietaryOptions || []) : k === 'tshirt' ? (LEGACY_CFG.tshirtOptions || []) : [] }; })
-      });
-    }
-    if (tf.length && (LEGACY_CFG.teacherCount || 0) > 0) {
-      SCHEMA.sections.push({
-        id: uid('sec'), title: '指導老師', role: 'teacher', repeat: LEGACY_CFG.teacherCount || 1,
-        fields: tf.map(function (k) { return { id: uid('f'), type: typeForLegacy(k), label: labelForLegacy(k) || k, legacyKey: k, req: true, opts: [] }; })
-      });
-    }
-    if (cq.length) {
-      SCHEMA.sections.push({
-        id: uid('sec'), title: '附加問題', role: 'custom', repeat: 1,
-        fields: cq.map(function (q, i) { return { id: uid('f'), type: q.type || 'text', label: q.q || ('問題 ' + (i + 1)), req: !!q.req, opts: q.opts || [] }; })
-      });
-    }
-    if (SCHEMA.sections.length === 0) {
-      alert('舊資料為空，已建立預設區塊');
-      SCHEMA.sections.push({ id: uid('sec'), title: '學員資料', role: 'student', repeat: 1, fields: [
-        { id: uid('f'), type: 'text', label: '中文姓名', legacyKey: 'chineseName', req: true, opts: [] },
-        { id: uid('f'), type: 'email', label: 'Email', legacyKey: 'email', req: true, opts: [] }
-      ]});
-    }
-    render(); markDirty();
-  }
-  function typeForLegacy(k) {
-    return ({ email: 'email', phone: 'tel', birthday: 'date', dietary: 'select', tshirt: 'select', idNumber: 'idnumber' })[k] || 'text';
-  }
 
   // ---- Save ----
   function markDirty() {

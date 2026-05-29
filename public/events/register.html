@@ -228,7 +228,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         </div>
       </div>
 
-      <!-- STEP 2: 學員 + 指導老師 -->
+      <!-- STEP 2: 學員 + 指導者 -->
       <div class="pane" data-pane="2">
         <div class="page-eyebrow">STEP 02</div>
         <h1 class="page-title">填寫成員資料</h1>
@@ -245,7 +245,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         <div class="form-section" id="teacherSection" style="display:none">
           <div class="sec-head">
             <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div>
-            <h3>指導老師 <span id="teacherCount" style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-left:6px"></span></h3>
+            <h3>指導者 <span id="teacherCount" style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-left:6px"></span></h3>
           </div>
           <div id="teacherList"><!-- generated --></div>
         </div>
@@ -531,7 +531,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var card = document.createElement('div');
     card.className = 'member-card';
     card.dataset.role = role; card.dataset.idx = idx;
-    var label = role === 'student' ? '學員' : '指導老師';
+    var label = role === 'student' ? '學員' : '指導者';
     var inner = '<div class="mc-head"><div class="b">' + (idx + 1) + '</div><h6>' + label + ' ' + (idx + 1) + '</h6></div>';
     inner += '<div class="fields-2">';
     fields.forEach(function (f) {
@@ -626,7 +626,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
             if (!tel) continue;
             var tv = (tel.value || '').trim();
             var tfldEl = tel.closest('.fld');
-            if (!tv) { tfldEl.classList.add('error'); showErr('指導老師 ' + (j+1) + ' 的「' + (FIELD_LABELS[tf] || tf) + '」為必填'); return false; }
+            if (!tv) { tfldEl.classList.add('error'); showErr('指導者 ' + (j+1) + ' 的「' + (FIELD_LABELS[tf] || tf) + '」為必填'); return false; }
             tfldEl.classList.remove('error');
             t[tf] = tv;
           }
@@ -671,7 +671,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     });
     STATE.teachers.forEach(function (t, i) {
       var lines = Object.keys(t).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(t[k]) + '</span></div>'; }).join('');
-      html += '<div class="review-section"><h5>指導老師 ' + (i+1) + '</h5>' + lines + '</div>';
+      html += '<div class="review-section"><h5>指導者 ' + (i+1) + '</h5>' + lines + '</div>';
     });
     if (Object.keys(STATE.customAnswers).length > 0) {
       var lines = Object.keys(STATE.customAnswers).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(k) + '</span><span class="v">' + escapeHtml(STATE.customAnswers[k]) + '</span></div>'; }).join('');
