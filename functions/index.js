@@ -1664,8 +1664,17 @@ exports.getScores = compAuthCallable(async (data) => {
 });
 
 // ===== License System =====
+// ===== Plan tiers =====
+// Subscription-only model with three paid tiers above Free.
+const TIER_RANK = { free: 0, starter: 1, pro: 2, team: 3 };
+const VALID_TIERS = ["starter", "pro", "team"];
+function tierLabel(t) { return ({ free: "FREE", starter: "STARTER", pro: "PRO", team: "TEAM" })[(t || "free")] || "FREE"; }
+function tierPriceField(t) { return ({ starter: "starterPrice", pro: "proPrice", team: "teamPrice" })[t]; }
+
 exports.createLicense = authCallable(["system"], async (data) => {
-  const { type, count, years } = data;
+  const tier = String(data.tier || "").toLowerCase();
+  const years = Math.max(1, parseInt(data.years, 10) || 1);
+  if (!VALID_TIERS.includes(tier)) return { success: false, message: "請選擇方案層級（starter / pro / team）" };
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "RM";
   for (let i = 0; i < 4; i++) {
@@ -1673,11 +1682,10 @@ exports.createLicense = authCallable(["system"], async (data) => {
     for (let j = 0; j < 4; j++) code += c[Math.floor(Math.random() * c.length)];
   }
   await db.collection("licenses").doc(code).set({
-    code, type, maxCount: type === "count" ? (count || 1) : 0, usedCount: 0,
-    years: type === "subscription" ? (years || 1) : 0,
+    code, type: "subscription", tier, years,
     activatedBy: "", activatedAt: "", expiresAt: "", status: "未啟用", createdAt: fmtNow()
   });
-  await auditLog("system", "建立授權碼", code, type);
+  await auditLog("system", "建立授權碼", code, tier + " / " + years + " 年");
   return { success: true, code };
 });
 
@@ -1686,25 +1694,13 @@ exports.listLicenses = authCallable(["system"], async () => {
   const now = Date.now();
   return snap.docs.map(d => {
     const l = d.data();
-    /* Compute real status based on actual data, not just stored status string */
-    let computedStatus = l.status || "未啟用";
+    // Subscription-only model: activated + past expiry → 已失效; activated → 已啟用; else 未啟用.
+    let computedStatus = "未啟用";
     if (l.activatedBy) {
-      // 已啟用的授權碼，根據實際使用情況判斷是否已失效
-      if (l.type === "count" && l.maxCount > 0 && l.usedCount >= l.maxCount) {
-        // 次數型：已用完次數 → 已失效
-        computedStatus = "已失效";
-      } else if (l.type === "subscription" && l.expiresAt && String(l.expiresAt).trim() !== "") {
-        // 訂閱型：已超過到期日 → 已失效
-        if (new Date(l.expiresAt).getTime() < now) computedStatus = "已失效";
-        else computedStatus = "已啟用";
-      } else if (computedStatus !== "已失效") {
-        // 其他已啟用的情況（包含 status 為 "已用盡" 等非標準值），正規化為 "已啟用"
-        computedStatus = "已啟用";
-      }
-    } else {
-      computedStatus = "未啟用";
+      if (l.expiresAt && String(l.expiresAt).trim() !== "" && new Date(l.expiresAt).getTime() < now) computedStatus = "已失效";
+      else computedStatus = "已啟用";
     }
-    return { ...l, computedStatus };
+    return { ...l, computedStatus, tier: l.tier || "" };
   });
 });
 
@@ -1744,6 +1740,8 @@ exports.getLicenseStatus = authCallable(["system","competition"], async (data, r
   let maxExpiresAt = 0;
   let hasLifetime = false; // 【修正】：加入永久授權的防呆標記
   let totalRem = 0;
+  let bestTierRank = 0;          // highest active tier rank → effective plan
+  let bestTier = "free";
   const history = [];
 
   snap.docs.forEach(doc => {
@@ -1775,7 +1773,8 @@ exports.getLicenseStatus = authCallable(["system","competition"], async (data, r
     // 寫入歷史紀錄陣列
     history.push({
       code: l.code,
-      type: isSub ? "期限訂閱" : "次數額度",
+      tier: (l.tier || "").toLowerCase(),
+      type: l.tier ? tierLabel(l.tier) : (isSub ? "期限訂閱" : "次數額度"),
       quota: isSub ? `${l.years || 1} 年` : `${l.maxCount || 1} 次`,
       usedCount: isCount ? (l.usedCount || 0) : "-",
       activatedAt: l.activatedAt || "-",
@@ -1792,6 +1791,9 @@ exports.getLicenseStatus = authCallable(["system","competition"], async (data, r
         const t = new Date(l.expiresAt).getTime();
         if (!isNaN(t) && t > maxExpiresAt) maxExpiresAt = t;
       }
+      // Track the highest active tier → the account's effective plan
+      const r = TIER_RANK[(l.tier || "").toLowerCase()] || 0;
+      if (r > bestTierRank) { bestTierRank = r; bestTier = (l.tier || "free").toLowerCase(); }
     }
 
     // 【機制 2】：加總所有有效的次數額度
@@ -1823,7 +1825,14 @@ exports.getLicenseStatus = authCallable(["system","competition"], async (data, r
   // 依照啟用時間排序歷史紀錄 (新的在上面)
   history.sort((a, b) => (b.activatedAt || "").localeCompare(a.activatedAt || ""));
 
-  return { hasValid: subValid || totalRem > 0, message: msg, history };
+  // Effective plan tier. Legacy valid-but-untiered subscriptions count as starter.
+  let tier = bestTier;
+  if (tier === "free" && (subValid || totalRem > 0)) tier = "starter";
+  const expiresAt = (subValid && !hasLifetime && maxExpiresAt > 0)
+    ? new Date(maxExpiresAt).toISOString().substring(0, 10)
+    : (hasLifetime ? "永久" : "");
+
+  return { hasValid: subValid || totalRem > 0, tier, planLabel: tierLabel(tier), expiresAt, message: msg, history };
 });
 
 // ===== 2. 啟用授權碼 (時間累加機制) =====
@@ -2835,15 +2844,28 @@ exports.createPayuniOrder = callable(async (data) => {
   let subtotal = 0;
   const orderItems = [];
   for (const item of (items || [])) {
-    const qty = Math.min(Math.max(1, item.qty || 1), item.type === "count" ? 10 : 5);
-    const unitPrice = item.type === "count" ? (sales.singlePrice || 500) : (sales.yearlyPrice || 3000);
-    let disc = 1;
-    for (const bd of (sales.bulkDiscounts || [])) {
-      if (qty >= bd.qty) disc = Math.min(disc, bd.discount);
+    if (item.type === "tier") {
+      // Tiered subscription purchase (starter / pro / team)
+      const tier = String(item.tier || "").toLowerCase();
+      if (!VALID_TIERS.includes(tier)) continue;
+      const years = Math.min(Math.max(1, parseInt(item.years, 10) || 1), 5);
+      const unitPrice = parseInt(sales[tierPriceField(tier)], 10) || 0;
+      if (unitPrice <= 0) return { success: false, message: "此方案尚未設定價格，請聯絡系統管理員" };
+      const sub = Math.round(years * unitPrice);
+      orderItems.push({ type: "tier", tier, years, unitPrice, discount: 1, subtotal: sub });
+      subtotal += sub;
+    } else {
+      // Legacy count/subscription items (deprecated)
+      const qty = Math.min(Math.max(1, item.qty || 1), item.type === "count" ? 10 : 5);
+      const unitPrice = item.type === "count" ? (sales.singlePrice || 500) : (sales.yearlyPrice || 3000);
+      let disc = 1;
+      for (const bd of (sales.bulkDiscounts || [])) {
+        if (qty >= bd.qty) disc = Math.min(disc, bd.discount);
+      }
+      const sub = Math.round(qty * unitPrice * disc);
+      orderItems.push({ type: item.type, qty, unitPrice, discount: disc, subtotal: sub });
+      subtotal += sub;
     }
-    const sub = Math.round(qty * unitPrice * disc);
-    orderItems.push({ type: item.type, qty, unitPrice, discount: disc, subtotal: sub });
-    subtotal += sub;
   }
   /* Coupon */
   let couponDiscount = 0;
@@ -2876,7 +2898,7 @@ exports.createPayuniOrder = callable(async (data) => {
     MerTradeNo: orderId,
     TradeAmt: String(total),
     Timestamp: String(Math.floor(Date.now() / 1000)),
-    ProdDesc: "RegMaster " + orderItems.map(i => i.type === "count" ? "次數x" + i.qty : "訂閱x" + i.qty + "年").join("+"),
+    ProdDesc: "RegMaster " + orderItems.map(i => i.type === "tier" ? (tierLabel(i.tier) + "x" + i.years + "年") : (i.type === "count" ? "次數x" + i.qty : "訂閱x" + i.qty + "年")).join("+"),
     ReturnURL: hostUrl + "/payuni-return.html",
     NotifyURL: FUNCTIONS_BASE + "/payuniNotify",
     TradeType: "1"
@@ -2912,28 +2934,40 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
     const order = orderDoc.data();
     
     if (tradeStatus === "SUCCESS" && order.status !== "paid") {
-      /* Generate license codes */
+      /* Create licenses. Tier purchases are bound + activated to the buyer
+         immediately (no manual code entry); legacy items stay unactivated. */
       const codes = [];
       const codeDetails = [];
+      const mkCode = () => "RM-" + [1,2,3,4].map(() => {
+        const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
+      }).join("-");
       for (const item of (order.items || [])) {
-        const code = "RM-" + [1,2,3,4].map(() => {
-          const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-          return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join("");
-        }).join("-");
-        
-        const licType = item.type === "count" ? "count" : "subscription";
-        const licData = {
-          code, type: licType, status: "未啟用",
-          maxCount: item.type === "count" ? item.qty : 0,
-          usedCount: 0,
-          years: item.type === "subscription" ? item.qty : 0,
-          durationMonths: item.type === "subscription" ? item.qty * 12 : 0,
-          createdAt: fmtNow(), activatedBy: "", activatedAt: "",
-          orderId, purchasedBy: order.username
-        };
-        await db.collection("licenses").doc(code).set(licData);
-        codes.push(code);
-        codeDetails.push({ code, type: licType, desc: item.type === "count" ? item.qty + " 次" : item.qty + " 年" });
+        const code = mkCode();
+        if (item.type === "tier") {
+          const years = parseInt(item.years, 10) || 1;
+          const exp = new Date(); exp.setFullYear(exp.getFullYear() + years);
+          await db.collection("licenses").doc(code).set({
+            code, type: "subscription", tier: item.tier, years,
+            status: "已啟用", activatedBy: order.username, activatedAt: fmtNow(),
+            expiresAt: exp.toISOString(), createdAt: fmtNow(),
+            orderId, purchasedBy: order.username
+          });
+          codes.push(code);
+          codeDetails.push({ code, type: "tier", desc: tierLabel(item.tier) + " " + years + " 年（已綁定）" });
+        } else {
+          const licType = item.type === "count" ? "count" : "subscription";
+          await db.collection("licenses").doc(code).set({
+            code, type: licType, status: "未啟用",
+            maxCount: item.type === "count" ? item.qty : 0, usedCount: 0,
+            years: item.type === "subscription" ? item.qty : 0,
+            durationMonths: item.type === "subscription" ? item.qty * 12 : 0,
+            createdAt: fmtNow(), activatedBy: "", activatedAt: "",
+            orderId, purchasedBy: order.username
+          });
+          codes.push(code);
+          codeDetails.push({ code, type: licType, desc: item.type === "count" ? item.qty + " 次" : item.qty + " 年" });
+        }
       }
       await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: info.TradeNo || "", licenseCodes: codes });
       
@@ -2949,8 +2983,9 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
         if (!userSnap.empty) {
           const userEmail = (userSnap.docs[0].data().email) || "";
           if (userEmail) {
+            const anyTier = codeDetails.some(d => d.type === "tier");
             let codesHtml = codeDetails.map(d =>
-              `<div style="background:#E8F0F8;padding:14px 18px;border-radius:10px;margin:8px 0;font-family:monospace;font-size:18px;font-weight:700;color:#0A437A;letter-spacing:1px;text-align:center">${d.code}<br><span style="font-size:13px;font-weight:400;color:#475569">${d.type === "count" ? "次數授權 " + d.desc : "訂閱授權 " + d.desc}</span></div>`
+              `<div style="background:#E8F0F8;padding:14px 18px;border-radius:10px;margin:8px 0;font-family:monospace;font-size:18px;font-weight:700;color:#0A437A;letter-spacing:1px;text-align:center">${d.code}<br><span style="font-size:13px;font-weight:400;color:#475569">${d.type === "tier" ? d.desc : (d.type === "count" ? "次數授權 " + d.desc : "訂閱授權 " + d.desc)}</span></div>`
             ).join("");
             const emailHtml = `
               <div style="font-family:'Noto Sans TC',sans-serif;max-width:540px;margin:0 auto">
@@ -2959,9 +2994,11 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
                   <p style="color:rgba(255,255,255,.6);font-size:13px;margin:4px 0 0">RegMaster 授權碼已產生</p>
                 </div>
                 <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px">
-                  <p style="font-size:15px;color:#1e293b">感謝您的購買！以下是您的授權碼：</p>
+                  <p style="font-size:15px;color:#1e293b">感謝您的購買！以下是您的訂單明細：</p>
                   ${codesHtml}
-                  <p style="font-size:14px;color:#475569;margin-top:16px">請登入 <a href="${PROJECT_HOST}" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「🔑 管理授權碼」輸入上述代碼即可啟用。</p>
+                  <p style="font-size:14px;color:#475569;margin-top:16px">${anyTier
+                    ? '您的方案已自動啟用，登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 即可使用（上方代碼供您留存）。'
+                    : '請登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「方案與授權」輸入上述代碼即可啟用。'}</p>
                   <p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">訂單編號：${orderId}<br>付款金額：NT$${order.total}</p>
                 </div>
               </div>`;

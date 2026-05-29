@@ -143,7 +143,7 @@
     aiConvertInlineHTML:["compId","htmlContent","fieldName"],
     deletePosterImage:["compId"],
     deleteRulesPdf:["compId"],
-    createLicense:["type","count","years"],
+    createLicense:["tier","years"],
     deleteLicense:["code"],
     activateLicense:["code","username"],
     getLicenseStatus:["username"],

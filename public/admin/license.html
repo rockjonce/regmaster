@@ -101,11 +101,9 @@
       </div>
 
       <h2 style="font:700 20px/1.2 var(--f-display); margin-bottom:14px">可升級方案</h2>
-      <div class="plans-grid">
-        <div class="plan"><h4>Free</h4><p class="tag">永久免費小型活動</p><div class="price"><span class="num">$0</span><span class="per">/月</span></div><ul><li>1 個活動</li><li>50 筆報名/活動</li><li>5% 金流手續</li></ul><div class="btn-plan">目前可用</div></div>
-        <div class="plan"><h4>Starter</h4><p class="tag">單次活動</p><div class="price"><span class="num">$590</span><span class="per">/月</span></div><ul><li>5 個活動</li><li>500 筆/活動</li><li>1% 金流</li></ul><div class="btn-plan">升級 →</div></div>
-        <div class="plan cur"><h4>Pro</h4><p class="tag">完整功能</p><div class="price"><span class="num">$1,490</span><span class="per">/月</span></div><ul><li>無限活動</li><li>5,000 筆/活動</li><li>AI 助理</li><li>名牌證書</li></ul><div class="btn-plan">查看詳情</div></div>
-        <div class="plan"><h4>Team</h4><p class="tag">大型機構</p><div class="price"><span class="num">$3,990</span><span class="per">+/月</span></div><ul><li>SSO / API</li><li>無限 AI</li><li>專屬經理</li><li>SLA 99.95%</li></ul><div class="btn-plan">聯繫業務</div></div>
+      <p style="font:400 12.5px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:14px">輸入授權碼即可升級，或直接線上刷卡（PayUni）綁定方案。價格以年計。</p>
+      <div class="plans-grid" id="plansGrid">
+        <div class="plan"><h4>載入中⋯</h4></div>
       </div>
 
       <div class="history-card">
@@ -134,27 +132,33 @@
   function load() {
     google.script.run
       .withSuccessHandler(function (res) {
-        if (!res) return;
-        document.getElementById('planTitle').textContent = res.hasValid ? '✓ 有效授權' : '⚠ 無有效授權';
-        document.getElementById('planDesc').textContent = res.message || '';
-        document.getElementById('planStatus').textContent = res.hasValid ? '已啟用' : '未啟用';
-        document.getElementById('planBadge').textContent = res.hasValid ? '★ 已授權' : '⚠ 未授權';
-        if (res.history && res.history.length > 0) {
-          var first = res.history[0];
-          document.getElementById('planExpiry').textContent = first.expiresAt || '—';
-          document.getElementById('planQuota').textContent = first.usedCount !== '-' ? (first.usedCount + ' / ' + (first.quota || '?')) : (first.quota || '—');
-          var tbody = document.getElementById('histBody');
-          tbody.innerHTML = res.history.map(function (h) {
+        res = res || {};
+        var tier = res.tier || 'free';
+        var label = res.planLabel || tier.toUpperCase();
+        document.getElementById('planBadge').textContent = res.hasValid ? ('★ ' + label) : 'FREE';
+        document.getElementById('planTitle').textContent = label + ' 方案';
+        document.getElementById('planDesc').textContent = res.hasValid ? (res.message || '') : '免費方案 — 升級可解鎖更多活動與進階功能';
+        document.getElementById('planStatus').textContent = res.hasValid ? '已啟用' : '免費';
+        document.getElementById('planExpiry').textContent = res.expiresAt || '—';
+        document.getElementById('planQuota').textContent = label;
+        var hist = res.history || [];
+        var tbody = document.getElementById('histBody');
+        if (hist.length > 0) {
+          tbody.innerHTML = hist.map(function (h) {
             var stClass = h.status === '已啟用' ? 'active' : 'expired';
             return '<tr><td style="font-family:var(--f-mono); font-weight:500">' + escapeHtml(h.code) + '</td>' +
               '<td>' + escapeHtml(h.type) + '</td>' +
-              '<td>' + escapeHtml(h.quota) + (h.usedCount !== '-' ? ' (已用 ' + h.usedCount + ')' : '') + '</td>' +
+              '<td>' + escapeHtml(h.quota) + '</td>' +
               '<td><span class="status-tag ' + stClass + '">' + escapeHtml(h.status) + '</span></td>' +
               '<td>' + escapeHtml(h.expiresAt || '—') + '</td></tr>';
           }).join('');
         } else {
-          document.getElementById('histBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">尚無授權紀錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">尚無授權紀錄</td></tr>';
         }
+        // Fetch prices then render the plan cards with the current tier highlighted
+        google.script.run.withSuccessHandler(function (cfg) { renderPlans(tier, cfg || {}); })
+          .withFailureHandler(function () { renderPlans(tier, {}); })
+          .getSalesConfig();
       })
       .withFailureHandler(function (err) {
         document.getElementById('errorBanner').innerHTML = '無法載入授權狀態：' + escapeHtml((err && err.message) || '');
@@ -163,6 +167,51 @@
       .getLicenseStatus();
   }
   load();
+
+  var TIER_DEFS = [
+    { id: 'free',    name: 'Free',    tag: '小型活動入門',  feats: ['基本報名表', '活動管理', 'Email 通知'] },
+    { id: 'starter', name: 'Starter', tag: '單一活動主辦',  feats: ['進階報名表', '金流整合', '匯出報表'] },
+    { id: 'pro',     name: 'Pro',     tag: '完整功能',      feats: ['AI 助理', '多評審評分', '名牌 / 證書', '公告群發'] },
+    { id: 'team',    name: 'Team',    tag: '大型機構',      feats: ['全部 Pro 功能', '專屬支援', 'SLA 保障', '優先客服'] }
+  ];
+  function renderPlans(curTier, cfg) {
+    var priceOf = { free: 0, starter: Number(cfg.starterPrice) || 0, pro: Number(cfg.proPrice) || 0, team: Number(cfg.teamPrice) || 0 };
+    var grid = document.getElementById('plansGrid');
+    grid.innerHTML = TIER_DEFS.map(function (t) {
+      var isCur = (curTier || 'free') === t.id;
+      var price = priceOf[t.id];
+      var priceStr = price > 0 ? ('$' + price.toLocaleString()) : '$0';
+      var btn;
+      if (isCur) btn = '<div class="btn-plan">目前方案</div>';
+      else if (t.id === 'free') btn = '<div class="btn-plan" style="opacity:.45">免費</div>';
+      else if (price <= 0) btn = '<div class="btn-plan" style="opacity:.45" title="尚未設定價格">未開放</div>';
+      else btn = '<button class="btn-plan" data-buy="' + t.id + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買 →</button>';
+      return '<div class="plan' + (isCur ? ' cur' : '') + '"><h4>' + t.name + '</h4><p class="tag">' + t.tag + '</p>' +
+        '<div class="price"><span class="num">' + priceStr + '</span><span class="per">' + (price > 0 ? '/年' : '') + '</span></div>' +
+        '<ul>' + t.feats.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul>' + btn + '</div>';
+    }).join('');
+    grid.querySelectorAll('[data-buy]').forEach(function (b) {
+      b.addEventListener('click', function () { purchaseTier(b.dataset.buy); });
+    });
+  }
+  function purchaseTier(tier) {
+    if (!confirm('將以線上刷卡（PayUni）購買 ' + tier.toUpperCase() + ' 方案（1 年）。付款成功後方案會自動綁定到您的帳號。是否繼續？')) return;
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success && res.payuni) submitPayuni(res.payuni);
+        else alert((res && res.message) || '建立訂單失敗');
+      })
+      .withFailureHandler(function (e) { alert('失敗：' + (e && e.message)); })
+      .createPayuniOrder([{ type: 'tier', tier: tier, years: 1 }], '', me.username);
+  }
+  function submitPayuni(p) {
+    var f = document.createElement('form');
+    f.method = 'POST'; f.action = p.action; f.style.display = 'none';
+    [['MerID', p.MerID], ['Version', p.Version], ['EncryptInfo', p.EncryptInfo], ['HashInfo', p.HashInfo]].forEach(function (kv) {
+      var i = document.createElement('input'); i.type = 'hidden'; i.name = kv[0]; i.value = kv[1]; f.appendChild(i);
+    });
+    document.body.appendChild(f); f.submit();
+  }
 
   document.getElementById('activateBtn').addEventListener('click', function () {
     var code = document.getElementById('licCodeInput').value.trim().toUpperCase();

@@ -185,13 +185,14 @@ body { background:var(--bg); }
       <!-- ============ 參數設定 ============ -->
       <div class="pane" data-pane="params">
         <div class="card">
-          <div class="ch"><div><h3>銷售與計費</h3><p>授權碼定價、稅率（給授權碼購買頁使用）</p></div></div>
+          <div class="ch"><div><h3>方案年費</h3><p>三個付費層級的年費（給「方案與授權」升級頁與線上刷卡使用，單位 NT$ / 年）</p></div></div>
           <div class="cb">
             <div class="row-3">
-              <div class="fld"><label class="lbl">單次授權價格 (NT$)</label><input id="p-single" type="number" min="0"></div>
-              <div class="fld"><label class="lbl">年度訂閱價格 (NT$)</label><input id="p-yearly" type="number" min="0"></div>
-              <div class="fld"><label class="lbl">稅率 (%)</label><input id="p-tax" type="number" min="0" max="100"></div>
+              <div class="fld"><label class="lbl">Starter 年費 (NT$)</label><input id="p-starter" type="number" min="0" placeholder="例：5990"></div>
+              <div class="fld"><label class="lbl">Pro 年費 (NT$)</label><input id="p-pro" type="number" min="0" placeholder="例：14900"></div>
+              <div class="fld"><label class="lbl">Team 年費 (NT$)</label><input id="p-team" type="number" min="0" placeholder="例：39900"></div>
             </div>
+            <div class="fld" style="max-width:200px"><label class="lbl">稅率 (%)</label><input id="p-tax" type="number" min="0" max="100"></div>
           </div>
         </div>
         <div class="card">
@@ -230,10 +231,9 @@ body { background:var(--bg); }
         <div class="card">
           <div class="ch"><div><h3>產生授權碼</h3><p>建立可供主辦方啟用的授權碼</p></div></div>
           <div class="cb">
-            <div class="row-3">
-              <div class="fld"><label class="lbl">類型</label><select id="l-type"><option value="subscription">期限訂閱</option><option value="count">次數額度</option></select></div>
-              <div class="fld" id="l-years-fld"><label class="lbl">年數</label><input id="l-years" type="number" min="1" value="1"></div>
-              <div class="fld" id="l-count-fld" style="display:none"><label class="lbl">次數</label><input id="l-count" type="number" min="1" value="1"></div>
+            <div class="row-2">
+              <div class="fld"><label class="lbl">方案層級</label><select id="l-tier"><option value="starter">Starter</option><option value="pro">Pro</option><option value="team">Team</option></select></div>
+              <div class="fld"><label class="lbl">年數</label><input id="l-years" type="number" min="1" value="1"></div>
             </div>
             <div style="display:flex; justify-content:flex-end"><button class="btn btn-primary" id="genLicBtn">產生授權碼</button></div>
           </div>
@@ -241,7 +241,7 @@ body { background:var(--bg); }
         <div class="card">
           <div class="ch"><div><h3>授權碼清單</h3><p>所有已產生的授權碼</p></div><button class="icon-btn" id="reloadLicBtn">重新整理</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>授權碼</th><th>類型</th><th>額度</th><th>狀態</th><th>啟用者</th><th></th></tr></thead>
+            <table class="tbl"><thead><tr><th>授權碼</th><th>層級</th><th>年限</th><th>狀態</th><th>啟用者</th><th></th></tr></thead>
             <tbody id="licsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
@@ -410,8 +410,9 @@ body { background:var(--bg); }
   function loadParams() {
     google.script.run.withSuccessHandler(function (cfg) {
       cfg = cfg || {};
-      document.getElementById('p-single').value = cfg.singlePrice != null ? cfg.singlePrice : '';
-      document.getElementById('p-yearly').value = cfg.yearlyPrice != null ? cfg.yearlyPrice : '';
+      document.getElementById('p-starter').value = cfg.starterPrice != null ? cfg.starterPrice : '';
+      document.getElementById('p-pro').value = cfg.proPrice != null ? cfg.proPrice : '';
+      document.getElementById('p-team').value = cfg.teamPrice != null ? cfg.teamPrice : '';
       document.getElementById('p-tax').value = cfg.taxRate != null ? cfg.taxRate : '';
       document.getElementById('p-merid').value = cfg.payuniMerID || '';
       document.getElementById('p-hashkey').value = cfg.payuniHashKey || '';
@@ -427,8 +428,9 @@ body { background:var(--bg); }
   document.getElementById('paramsReload').addEventListener('click', loadParams);
   document.getElementById('paramsSave').addEventListener('click', function () {
     var config = {
-      singlePrice: Number(document.getElementById('p-single').value) || 0,
-      yearlyPrice: Number(document.getElementById('p-yearly').value) || 0,
+      starterPrice: Number(document.getElementById('p-starter').value) || 0,
+      proPrice: Number(document.getElementById('p-pro').value) || 0,
+      teamPrice: Number(document.getElementById('p-team').value) || 0,
       taxRate: Number(document.getElementById('p-tax').value) || 0,
       payuniMerID: document.getElementById('p-merid').value.trim(),
       payuniHashKey: document.getElementById('p-hashkey').value.trim(),
@@ -491,11 +493,6 @@ body { background:var(--bg); }
   });
 
   // ================= 授權碼 =================
-  document.getElementById('l-type').addEventListener('change', function () {
-    var sub = this.value === 'subscription';
-    document.getElementById('l-years-fld').style.display = sub ? 'block' : 'none';
-    document.getElementById('l-count-fld').style.display = sub ? 'none' : 'block';
-  });
   function loadLicenses() {
     google.script.run.withSuccessHandler(function (list) {
       list = list || [];
@@ -504,11 +501,11 @@ body { background:var(--bg); }
       if (!list.length) { b.innerHTML = '<tr><td colspan="6" class="empty">尚無授權碼</td></tr>'; return; }
       list.sort(function (a, c) { return (c.createdAt || '').localeCompare(a.createdAt || ''); });
       b.innerHTML = list.map(function (l) {
-        var typeLabel = l.type === 'subscription' ? '期限訂閱' : '次數額度';
-        var quota = l.type === 'subscription' ? ((l.years || 1) + ' 年') : ((l.usedCount || 0) + ' / ' + (l.maxCount || 1) + ' 次');
+        var tierName = (l.tier || '').toUpperCase() || (l.type === 'count' ? '次數(舊)' : '訂閱(舊)');
+        var quota = (l.years || 1) + ' 年';
         var s = l.computedStatus || l.status || '未啟用';
         var cls = s === '已啟用' ? 'ok' : s === '未啟用' ? 'neutral' : 'err';
-        return '<tr><td><b style="font:600 12.5px/1.4 var(--f-mono)">' + esc(l.code) + '</b></td><td>' + typeLabel + '</td><td>' + quota + '</td><td><span class="pill ' + cls + '">' + esc(s) + '</span></td><td class="muted">' + esc(l.activatedBy || '—') + '</td><td style="text-align:right"><button class="icon-btn danger" data-del="' + esc(l.code) + '">刪除</button></td></tr>';
+        return '<tr><td><b style="font:600 12.5px/1.4 var(--f-mono)">' + esc(l.code) + '</b></td><td><span class="pill role">' + esc(tierName) + '</span></td><td>' + quota + '</td><td><span class="pill ' + cls + '">' + esc(s) + '</span></td><td class="muted">' + esc(l.activatedBy || '—') + '</td><td style="text-align:right"><button class="icon-btn danger" data-del="' + esc(l.code) + '">刪除</button></td></tr>';
       }).join('');
       b.querySelectorAll('[data-del]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -520,15 +517,14 @@ body { background:var(--bg); }
   }
   document.getElementById('reloadLicBtn').addEventListener('click', loadLicenses);
   document.getElementById('genLicBtn').addEventListener('click', function () {
-    var type = document.getElementById('l-type').value;
+    var tier = document.getElementById('l-tier').value;
     var years = Number(document.getElementById('l-years').value) || 1;
-    var count = Number(document.getElementById('l-count').value) || 1;
     var btn = this; btn.disabled = true;
     google.script.run.withSuccessHandler(function (r) {
       btn.disabled = false;
-      if (r && r.success) { toast('已產生：' + r.code); loadLicenses(); } else toast((r && r.message) || '產生失敗', 'err');
+      if (r && r.success) { toast('已產生 ' + tier.toUpperCase() + ' 授權碼：' + r.code); loadLicenses(); } else toast((r && r.message) || '產生失敗', 'err');
     }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || '產生失敗', 'err'); })
-      .createLicense(type, count, years);
+      .createLicense(tier, years);
   });
 
   // ================= 使用者分析 =================

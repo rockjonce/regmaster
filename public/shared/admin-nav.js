@@ -107,8 +107,8 @@
         var ut = document.getElementById('usageText');
         if (!badge) return;
         if (res && res.hasValid) {
-          badge.textContent = '付費方案';
-          if (ut) ut.textContent = res.message || '已啟用';
+          badge.textContent = res.planLabel || '付費方案';
+          if (ut) ut.textContent = res.expiresAt ? ('至 ' + res.expiresAt) : (res.message || '已啟用');
         } else {
           badge.textContent = 'FREE';
           if (ut) ut.textContent = '免費方案 — 升級解鎖更多';
