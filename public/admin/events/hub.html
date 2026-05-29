@@ -428,8 +428,9 @@
     document.getElementById('kPayWait').textContent = s.payWait || 0;
     var checkedIn = TEAMS.filter(function (t) { return t.checkedIn || (t.checkInTime); }).length;
     document.getElementById('kCheckin').textContent = checkedIn;
-    document.getElementById('navRegCt').textContent = TEAMS.length;
-    document.getElementById('tabRegCt').textContent = TEAMS.length;
+    // navRegCt lives in the shared shell's "本活動" group; guard in case it's absent.
+    var _nrc = document.getElementById('navRegCt'); if (_nrc) _nrc.textContent = TEAMS.length;
+    var _trc = document.getElementById('tabRegCt'); if (_trc) _trc.textContent = TEAMS.length;
     document.getElementById('kTotalSub').textContent = TEAMS.length === 0 ? '尚無報名' : ('占名額上限 ' + (cfg.maxCapacityLimit || COMP.config.maxTeams || '無') + '');
 
     // Info table

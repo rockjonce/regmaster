@@ -345,12 +345,16 @@
 
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('meName').textContent = me.displayName || me.username;
-  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
-  document.getElementById('orgName').textContent = me.displayName || me.username;
-  document.getElementById('hubLink').href = '/admin/events/' + encodeURIComponent(compId);
-  document.getElementById('formBuilderLink').href = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
-  document.getElementById('openFormBuilder').href = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
-  document.getElementById('previewBtn').href = '/events/detail.html?id=' + encodeURIComponent(compId);
+  // Null-safe DOM helpers — some of these (e.g. hubLink) live in the shared
+  // shell's sidebar and may not exist on this page's own markup.
+  function _st(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+  function _sh(id, u) { var e = document.getElementById(id); if (e) e.href = u; }
+  _st('orgAv', (me.displayName || me.username).charAt(0).toUpperCase());
+  _st('orgName', me.displayName || me.username);
+  _sh('hubLink', '/admin/events/' + encodeURIComponent(compId));
+  _sh('formBuilderLink', '/admin/events/' + encodeURIComponent(compId) + '/form-builder');
+  _sh('openFormBuilder', '/admin/events/' + encodeURIComponent(compId) + '/form-builder');
+  _sh('previewBtn', '/events/detail.html?id=' + encodeURIComponent(compId));
   document.getElementById('openAnnLink').addEventListener('click', function () {
     location.href = '/admin/events/' + encodeURIComponent(compId) + '/announcements';
   });

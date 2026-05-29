@@ -58,6 +58,29 @@
       '<span>' + esc(label) + '</span>' + (extra || '') + '</a>';
   }
 
+  // Event-context sub-navigation ("本活動") — shown when inside a single event.
+  // The per-page sidebars used to carry this; the unified shell now provides it
+  // so navigating between an event's sub-pages keeps working.
+  var evtNavHtml = '';
+  var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|announcements|payments|scoring|checkin))?\/?$/);
+  if (em && em[1] && em[1] !== 'index.html') {
+    var cid = em[1], sub = em[2] || 'hub';
+    var eitem = function (suffix, label, key, icon, extra) {
+      return '<a class="nav-it' + (key === sub ? ' on' : '') + '" href="/admin/events/' + cid + suffix + '">' +
+        icon + '<span>' + esc(label) + '</span>' + (extra || '') + '</a>';
+    };
+    evtNavHtml =
+      '<div class="nav-grp"><div class="l-grp">本活動</div>' +
+        eitem('', '總覽', 'hub', IC.home, '<span class="ct" id="navRegCt"></span>') +
+        eitem('/edit', '設定', 'edit', IC.gear) +
+        eitem('/form-builder', '表單設計', 'form-builder', IC.cal) +
+        eitem('/announcements', '公告', 'announcements', IC.log) +
+        eitem('/payments', '付款', 'payments', IC.lic) +
+        eitem('/scoring', '評分', 'scoring', IC.sys) +
+        eitem('/checkin', '報到', 'checkin', IC.ai) +
+      '</div>';
+  }
+
   var html =
     '<a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div>' +
       '<div class="nm">RegMaster<small>' + (isSystem ? '系統管理員' : '主辦後台') + '</small></div>' +
@@ -69,6 +92,7 @@
       item('/admin/events/', '所有活動', IC.cal, '<span class="ct" id="navCompCount"></span>') +
       item('/admin/ai.html', 'AI 助理', IC.ai) +
     '</div>' +
+    evtNavHtml +
     '<div class="nav-grp"><div class="l-grp">管理</div>' +
       item('/admin/license.html', '方案與授權', IC.lic) +
       item('/admin/settings.html', '設定', IC.gear) +
