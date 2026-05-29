@@ -147,6 +147,8 @@
     uploadRulesPdf:["compId","base64Data","fileName"],
     uploadTeamFile:["compId","teamId","base64Data","fileName"],
     getTeamFileData:["teamId"],
+    uploadRegFile:["compId","base64Data","fileName","mimeType"],
+    getRegFileData:["fileId"],
     analyzePosterColors:["compId","posterUrl"],
     analyzeRulesWithAI:["compId"],
     aiConvertInlineHTML:["compId","htmlContent","fieldName"],

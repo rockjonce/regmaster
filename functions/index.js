@@ -2558,6 +2558,42 @@ exports.uploadTeamFile = callable(async (data) => {
   }
 });
 
+// ===== Item 7: per-field registration file upload (regFiles collection) =====
+// Public: a registrant uploads a file for a form file-field (before the team
+// exists), getting back a fileId stored in the answer as "regfile:<id>|<name>".
+exports.uploadRegFile = callable(async (data) => {
+  const { compId, base64Data, fileName, mimeType } = data;
+  if (!base64Data) return { success: false, message: "缺少檔案" };
+  if (base64Data.length > 8000000) return { success: false, message: "檔案過大（上限約 5MB）" };
+  try {
+    const fileId = "RF" + Date.now() + Math.floor(Math.random() * 1000);
+    const CHUNK = 800000;
+    const total = Math.ceil(base64Data.length / CHUNK);
+    await db.collection("regFiles").doc(fileId).set({
+      fileId, compId: compId || "", fileName: fileName || "file",
+      mimeType: mimeType || "application/octet-stream",
+      data: base64Data.substring(0, CHUNK), totalChunks: total, totalSize: base64Data.length, createdAt: fmtNow()
+    });
+    for (let i = 1; i < total; i++) {
+      await db.collection("regFiles").doc(fileId + "_chunk" + i).set({ parentId: fileId, chunkIndex: i, data: base64Data.substring(i * CHUNK, (i + 1) * CHUNK) });
+    }
+    return { success: true, fileId, fileName: fileName || "file" };
+  } catch (e) { return { success: false, message: "上傳失敗: " + e.message }; }
+});
+exports.getRegFileData = callable(async (data) => {
+  const { fileId } = data;
+  if (!fileId) return { success: false };
+  const doc = await db.collection("regFiles").doc(fileId).get();
+  if (!doc.exists) return { success: false, message: "找不到檔案" };
+  const d = doc.data();
+  let b64 = d.data || "";
+  for (let i = 1; i < (d.totalChunks || 1); i++) {
+    const c = await db.collection("regFiles").doc(fileId + "_chunk" + i).get();
+    if (c.exists) b64 += (c.data().data || "");
+  }
+  return { success: true, fileName: d.fileName, mimeType: d.mimeType, dataUrl: "data:" + (d.mimeType || "application/octet-stream") + ";base64," + b64 };
+});
+
 /* Fetch team uploaded file from teamFiles collection */
 exports.getTeamFileData = compAuthCallable(async (data) => {
   const { teamId } = data;
@@ -4428,7 +4464,9 @@ exports.checkInTeamV2 = compAuthCallable(async (data, request) => {
 
 const LEGACY_FIELD_KEYS = new Set([
   'chineseName','englishName','idNumber','passport','birthday','school',
-  'department','grade','email','phone','address','dietary','tshirt'
+  'department','grade','email','phone','address','dietary','tshirt',
+  // V3 ported special fields (item 6)
+  'gender','nationality','classroom','organization','jobTitle','postalCode'
 ]);
 
 function deriveLegacyFromFormSchema(formSchema) {
@@ -4479,13 +4517,17 @@ function buildFormSchemaFromLegacy(cfg) {
     chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證 / 護照',
     birthday: '出生年月日', school: '學校', department: '系所', grade: '年級',
     email: 'Email', phone: '電話', address: '地址',
-    dietary: '飲食習慣', tshirt: 'T-shirt 尺寸'
+    dietary: '飲食習慣', tshirt: 'T-shirt 尺寸',
+    gender: '性別', nationality: '國籍', passport: '護照號碼', classroom: '班級',
+    organization: '服務單位', jobTitle: '職稱', postalCode: '郵遞區號'
   };
   const FIELD_TYPES = {
     chineseName: 'text', englishName: 'text', idNumber: 'idnumber',
     birthday: 'date', school: 'text', department: 'text', grade: 'text',
     email: 'email', phone: 'tel', address: 'text',
-    dietary: 'select', tshirt: 'select'
+    dietary: 'select', tshirt: 'select',
+    gender: 'select', nationality: 'select', passport: 'text', classroom: 'text',
+    organization: 'text', jobTitle: 'text', postalCode: 'text'
   };
 
   if (studentFields.length > 0) {
