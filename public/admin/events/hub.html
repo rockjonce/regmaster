@@ -175,7 +175,8 @@
         </div>
       </section>
 
-      <div class="tabs-bar">
+      <!-- In-page tab bar removed — the left sidebar (本活動) already links to these pages -->
+      <div class="tabs-bar" style="display:none">
         <a data-tab="overview" class="on">總覽</a>
         <a data-tab="settings">設定</a>
         <a data-tab="registrations">報名管理 <span class="ct" id="tabRegCt">0</span></a>
@@ -201,7 +202,7 @@
                 <div class="h-s">
                   <h3>活動資訊</h3>
                   <div class="actions-s">
-                    <a data-tab-link="settings">編輯設定</a>
+                    <a data-goto="/edit">編輯設定</a>
                   </div>
                 </div>
                 <div id="infoTable" style="font:400 14px/1.7 var(--f-tc); color:var(--ink-2)">—</div>
@@ -211,7 +212,7 @@
                 <div class="h-s">
                   <h3>最近報名</h3>
                   <div class="actions-s">
-                    <a data-tab-link="registrations">查看全部 →</a>
+                    <a data-goto="/payments">查看全部 →</a>
                   </div>
                 </div>
                 <div id="recentRegs">尚無報名資料。</div>
@@ -221,22 +222,22 @@
             <aside>
               <div class="sec-card">
                 <h3 style="font:700 14px/1.2 var(--f-display); margin-bottom:14px">活動工具</h3>
-                <a class="tool-tile" data-tab-link="settings">
+                <a class="tool-tile" data-goto="/edit">
                   <div class="ic-t b1"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></div>
                   <div class="body-t"><h6>活動設定</h6><p>名稱、欄位、收費</p></div>
                   <span class="arr">→</span>
                 </a>
-                <a class="tool-tile" data-tab-link="registrations">
+                <a class="tool-tile" data-goto="/payments">
                   <div class="ic-t b2"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div>
-                  <div class="body-t"><h6>報名管理</h6><p>確認 / 退費 / 匯出</p></div>
+                  <div class="body-t"><h6>報名與付款</h6><p>確認 / 退費 / 匯出</p></div>
                   <span class="arr">→</span>
                 </a>
-                <a class="tool-tile" data-tab-link="announcements">
+                <a class="tool-tile" data-goto="/announcements">
                   <div class="ic-t b3"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg></div>
                   <div class="body-t"><h6>發布公告</h6><p>群發 Email / 訊息</p></div>
                   <span class="arr">→</span>
                 </a>
-                <a class="tool-tile" data-tab-link="checkin">
+                <a class="tool-tile" data-goto="/checkin">
                   <div class="ic-t b4"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg></div>
                   <div class="body-t"><h6>QR 報到</h6><p>活動當天掃碼</p></div>
                   <span class="arr">→</span>
@@ -514,6 +515,7 @@
 
     // Phase 5 + 6 page links (all now v3 native)
     var base = '/admin/events/' + encodeURIComponent(compId);
+    document.querySelectorAll('[data-goto]').forEach(function (a) { a.href = base + a.dataset.goto; });
     document.getElementById('editLinkBtn').href = base + '/edit';
     document.getElementById('formBuilderLinkBtn').href = base + '/form-builder';
     document.getElementById('legacyRegLink').href = base + '/payments';

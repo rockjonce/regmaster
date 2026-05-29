@@ -53,6 +53,17 @@ body { background:var(--bg); overflow:hidden; }
 .ft-item h6 { font:600 12px/1.2 var(--f-display); color:var(--ink); }
 .ft-item p { font:400 10px/1.3 var(--f-tc); color:var(--muted); margin:0; }
 
+/* Collapsible special-field categories */
+.sp-group { border-top:1px solid var(--line-2); }
+.sp-group:first-of-type { border-top:0; }
+.sp-head { display:flex; align-items:center; gap:6px; padding:10px 2px; cursor:pointer; font:600 11.5px/1.2 var(--f-tc); color:var(--ink-2); user-select:none; }
+.sp-head:hover { color:var(--ink); }
+.sp-head .ct { font:500 10px/1 var(--f-mono); color:var(--muted); }
+.sp-head .chev { margin-left:auto; width:13px; height:13px; color:var(--muted); transition:transform .15s; }
+.sp-head.open .chev { transform:rotate(90deg); }
+.sp-body { display:none; grid-template-columns:1fr 1fr; gap:6px; padding:2px 0 12px; }
+.sp-body.open { display:grid; }
+
 .legacy-import { padding:14px; background:linear-gradient(135deg, var(--ink), #1a2e52); border-radius:10px; color:white; }
 .legacy-import h5 { color:#fbcd5b; margin-bottom:8px; }
 .legacy-import p { font:400 11.5px/1.5 var(--f-tc); color:rgba(255,255,255,.7); margin-bottom:10px; }
@@ -205,37 +216,78 @@ body { background:var(--bg); overflow:hidden; }
         </div>
 
         <h5 style="margin-top:18px">特殊欄位</h5>
-        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 10px">內建驗證與選項的常用欄位</p>
-        <div class="field-types">
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6>中文姓名</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6>英文姓名</h6></div>
-          <div class="ft-item b2" draggable="true" data-type="email" data-legacy="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6>Email</h6></div>
-          <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="phone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>電話</h6></div>
-          <div class="ft-item b4" draggable="true" data-type="idnumber" data-legacy="idNumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6>身分證</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="school"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>學校</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietary"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M5 19h14M5 5h14"/></svg></div><h6>飲食</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="tshirt"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l4 3-2 5h-3v9H9V12H6L4 7z"/></svg></div><h6>T-shirt</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="gender"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="10" cy="13" r="5"/><path d="M19 5l-5 5M15 5h4v4"/></svg></div><h6>性別</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="nationality"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><h6>國籍</h6></div>
-          <div class="ft-item b4" draggable="true" data-type="text" data-legacy="passport"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/></svg></div><h6>護照號碼</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="grade"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg></div><h6>年級</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="classroom"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8"/></svg></div><h6>班級</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="organization"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01"/></svg></div><h6>服務單位</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="jobTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div><h6>職稱</h6></div>
-          <div class="ft-item b4" draggable="true" data-type="text" data-legacy="postalCode"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h6>郵遞區號</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="address"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><h6>地址</h6></div>
-          <div class="ft-item b4" draggable="true" data-type="date" data-legacy="birthday"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6>生日</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="department"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>系所/科系</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="emergencyName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6>緊急聯絡人</h6></div>
-          <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="emergencyPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>緊急聯絡電話</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="emergencyRelation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1a4 4 0 10-4-4"/></svg></div><h6>緊急聯絡關係</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietaryRestriction"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18M8 3v6a3 3 0 01-6 0M16 3c-2 0-3 2-3 5s1 5 3 5v8"/></svg></div><h6>飲食限制/過敏</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="bloodType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2s7 7 7 12a7 7 0 01-14 0c0-5 7-12 7-12z"/></svg></div><h6>血型</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="textarea" data-legacy="healthNote"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><h6>特殊健康狀況</h6></div>
-          <div class="ft-item b1" draggable="true" data-type="text" data-legacy="invoiceTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM8 7h8M8 11h8M8 15h5"/></svg></div><h6>發票抬頭</h6></div>
-          <div class="ft-item b4" draggable="true" data-type="text" data-legacy="taxId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h6>統一編號</h6></div>
-          <div class="ft-item b3" draggable="true" data-type="select" data-legacy="accommodation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7a1 1 0 011-1h3a1 1 0 011 1v3"/></svg></div><h6>住宿需求</h6></div>
-          <div class="ft-item b2" draggable="true" data-type="text" data-legacy="lineId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5 9.5 9.5 0 01-3-.5L4 21l1.5-4.5A8.38 8.38 0 0121 11.5z"/></svg></div><h6>LINE ID</h6></div>
+        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 6px">內建驗證與選項的常用欄位 · 點分類標題展開/收合</p>
+        <div id="spAccordion">
+          <div class="sp-group">
+            <div class="sp-head open">基本欄位 <span class="ct">6</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body open">
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6>中文姓名</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6>英文姓名</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="gender"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="10" cy="13" r="5"/><path d="M19 5l-5 5M15 5h4v4"/></svg></div><h6>性別</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="birthday"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6>生日</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="email" data-legacy="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6>Email</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="phone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>電話</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">學籍 / 單位 <span class="ct">6</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="school"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>學校</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="department"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>系所/科系</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="grade"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg></div><h6>年級</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="classroom"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8"/></svg></div><h6>班級</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="organization"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01"/></svg></div><h6>服務單位</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="jobTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div><h6>職稱</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">身分 / 國籍 <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b4" draggable="true" data-type="idnumber" data-legacy="idNumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6>身分證</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="passport"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/></svg></div><h6>護照號碼</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="nationality"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><h6>國籍</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">聯絡 / 地址 <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="postalCode"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h6>郵遞區號</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="address"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><h6>地址</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="text" data-legacy="lineId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5 9.5 9.5 0 01-3-.5L4 21l1.5-4.5A8.38 8.38 0 0121 11.5z"/></svg></div><h6>LINE ID</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">緊急聯絡 <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="emergencyName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6>緊急聯絡人</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="emergencyPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>緊急聯絡電話</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="emergencyRelation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1a4 4 0 10-4-4"/></svg></div><h6>緊急聯絡關係</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">餐飲 / 醫療 <span class="ct">5</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietary"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M5 19h14M5 5h14"/></svg></div><h6>飲食</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietaryRestriction"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18M8 3v6a3 3 0 01-6 0M16 3c-2 0-3 2-3 5s1 5 3 5v8"/></svg></div><h6>飲食限制/過敏</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="tshirt"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l4 3-2 5h-3v9H9V12H6L4 7z"/></svg></div><h6>T-shirt</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="bloodType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2s7 7 7 12a7 7 0 01-14 0c0-5 7-12 7-12z"/></svg></div><h6>血型</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="textarea" data-legacy="healthNote"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><h6>特殊健康狀況</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">發票相關 <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="invoiceType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM9 8h6"/></svg></div><h6>發票類型</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="invoiceTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM8 7h8M8 11h8M8 15h5"/></svg></div><h6>發票抬頭</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="taxId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h6>統一編號</h6></div>
+            </div>
+          </div>
+          <div class="sp-group">
+            <div class="sp-head">其他 <span class="ct">1</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-body">
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="accommodation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7a1 1 0 011-1h3a1 1 0 011 1v3"/></svg></div><h6>住宿需求</h6></div>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -315,6 +367,7 @@ body { background:var(--bg); overflow:hidden; }
       : k === 'dietaryRestriction' ? ['一般','蛋奶素','全素','不吃牛','清真 (Halal)','海鮮過敏','堅果過敏','麩質過敏']
       : k === 'bloodType' ? ['A','B','O','AB']
       : k === 'accommodation' ? ['需要','不需要']
+      : k === 'invoiceType' ? ['二聯式','三聯式']
       : [];
   }
 
@@ -655,6 +708,14 @@ body { background:var(--bg); overflow:hidden; }
         addPaletteField(it.dataset.type, it.dataset.legacy || null);
       });
     });
+    // Collapsible special-field categories (item 1)
+    document.querySelectorAll('.sp-head').forEach(function (h) {
+      h.addEventListener('click', function () {
+        h.classList.toggle('open');
+        var body = h.nextElementSibling;
+        if (body && body.classList.contains('sp-body')) body.classList.toggle('open');
+      });
+    });
   }
 
   function wireDragDrop() {
@@ -734,7 +795,7 @@ body { background:var(--bg); overflow:hidden; }
               classroom:'班級', organization:'服務單位', jobTitle:'職稱', postalCode:'郵遞區號',
               department:'系所/科系', emergencyName:'緊急聯絡人', emergencyPhone:'緊急聯絡電話',
               emergencyRelation:'緊急聯絡關係', dietaryRestriction:'飲食限制/過敏', bloodType:'血型',
-              healthNote:'特殊健康狀況', invoiceTitle:'發票抬頭', taxId:'統一編號', accommodation:'住宿需求', lineId:'LINE ID' })[k] || '';
+              healthNote:'特殊健康狀況', invoiceType:'發票類型', invoiceTitle:'發票抬頭', taxId:'統一編號', accommodation:'住宿需求', lineId:'LINE ID' })[k] || '';
   }
 
   // ---- Add section (item 1: 學員 / 指導者 / 自訂 dropdown) ----
