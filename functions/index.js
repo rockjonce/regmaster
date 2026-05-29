@@ -3367,6 +3367,86 @@ exports.productionReset = authCallable(["system"], async (data) => {
 });
 
 // ===== PAYUNi Registration Payment (活動管理者自己的金流) =====
+// ===== Discounts (item 10): group-tier auto discounts + discount codes =====
+// Pick the best (highest threshold met) group-discount tier for a given headcount.
+function bestGroupDiscount(cfg, peopleCount) {
+  const tiers = Array.isArray(cfg.groupDiscounts) ? cfg.groupDiscounts : [];
+  let best = null;
+  tiers.forEach(t => {
+    const min = parseInt(t.minPeople, 10) || 0;
+    if (peopleCount >= min && (!best || min > best.minPeople)) best = { minPeople: min, type: t.type, value: Number(t.value) || 0 };
+  });
+  return best;
+}
+// Apply a percent/amount discount to a base, clamped to [0, base].
+function applyDisc(base, type, value) {
+  if (!value || base <= 0) return 0;
+  if (type === 'percent') return Math.min(base, Math.round(base * value / 100));
+  return Math.min(base, Math.round(value));
+}
+// Server-authoritative price quote. Group discount is automatic; code is optional.
+async function quoteRegistration(compId, peopleCount, code) {
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return { ok: false, message: "找不到活動" };
+  const cfg = compDoc.data().config || {};
+  const base = parseInt(cfg.registrationFee, 10) || 0;
+  let groupDiscount = 0, groupLabel = "";
+  const g = bestGroupDiscount(cfg, peopleCount || 1);
+  if (g) { groupDiscount = applyDisc(base, g.type, g.value); groupLabel = "團報優惠（滿 " + g.minPeople + " 人）"; }
+  let codeDiscount = 0, codeValid = false, codeMsg = "", codeUp = "";
+  if (code) {
+    codeUp = String(code).toUpperCase();
+    const cd = await db.collection("discountCodes").doc(compId + "_" + codeUp).get();
+    if (!cd.exists) codeMsg = "折扣碼無效";
+    else {
+      const c = cd.data();
+      if (c.active === false) codeMsg = "折扣碼已停用";
+      else if (c.expiresAt && new Date(c.expiresAt).getTime() < Date.now()) codeMsg = "折扣碼已過期";
+      else if ((parseInt(c.maxUses, 10) || 0) > 0 && (c.usedCount || 0) >= c.maxUses) codeMsg = "折扣碼已用完";
+      else { codeDiscount = applyDisc(base - groupDiscount, c.type, c.value); codeValid = true; codeMsg = "已套用折扣碼"; }
+    }
+  }
+  const total = Math.max(0, base - groupDiscount - codeDiscount);
+  return { ok: true, base, groupDiscount, groupLabel, codeDiscount, codeValid, codeMsg, code: codeUp, total };
+}
+
+// Public: registrant previews the discounted total (does NOT consume the code).
+// Counts the team's members server-side so the group discount is accurate.
+exports.validateDiscountCode = callable(async (data) => {
+  let peopleCount = parseInt(data.peopleCount, 10) || 1;
+  if (data.teamId) {
+    try { const ms = await db.collection("members").where("teamId", "==", data.teamId).get(); if (ms.size) peopleCount = ms.size; } catch (e) {}
+  }
+  return await quoteRegistration(data.compId, peopleCount, data.code || "");
+});
+
+// Organizer: manage discount codes (codes live in their own collection for atomic usedCount).
+exports.createDiscountCode = compAuthCallable(async (data, request) => {
+  const { compId, code, type, value, maxUses, expiresAt, note } = data;
+  if (!code || !/^[A-Za-z0-9_-]{2,20}$/.test(code)) return { success: false, message: "折扣碼格式：2–20 碼英數字（可含 - _）" };
+  if (type !== 'percent' && type !== 'amount') return { success: false, message: "折扣類型錯誤" };
+  if (!(Number(value) > 0)) return { success: false, message: "折扣值需大於 0" };
+  const docId = compId + "_" + String(code).toUpperCase();
+  const exist = await db.collection("discountCodes").doc(docId).get();
+  if (exist.exists) return { success: false, message: "此折扣碼已存在" };
+  await db.collection("discountCodes").doc(docId).set({
+    compId, code: String(code).toUpperCase(), type, value: Number(value) || 0,
+    maxUses: parseInt(maxUses, 10) || 0, usedCount: 0, active: true,
+    expiresAt: expiresAt || "", note: note || "", createdAt: fmtNow()
+  });
+  await auditLog(request.authUser.username, "建立折扣碼", compId, String(code).toUpperCase());
+  return { success: true };
+});
+exports.listDiscountCodes = compAuthCallable(async (data) => {
+  const snap = await db.collection("discountCodes").where("compId", "==", data.compId).get();
+  return snap.docs.map(d => d.data()).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+});
+exports.deleteDiscountCode = compAuthCallable(async (data, request) => {
+  await db.collection("discountCodes").doc(data.compId + "_" + String(data.code).toUpperCase()).delete();
+  await auditLog(request.authUser.username, "刪除折扣碼", data.compId, String(data.code).toUpperCase());
+  return { success: true };
+});
+
 exports.createRegistrationPayment = callable(async (data) => {
   const { compId, teamId } = data;
   const compDoc = await db.collection("competitions").doc(compId).get();
@@ -3378,12 +3458,24 @@ exports.createRegistrationPayment = callable(async (data) => {
   if (!teamDoc.exists) return { success: false, message: "找不到報名資料" };
   const team = teamDoc.data();
 
-  const fee = cfg.registrationFee || 0;
+  // Item 10: server-authoritative total = base − group discount − code discount.
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const peopleCount = memSnap.size || 1;
+  const q = await quoteRegistration(compId, peopleCount, data.discountCode || "");
+  if (data.discountCode && !q.codeValid) return { success: false, message: q.codeMsg || "折扣碼無效" };
+  const fee = q.total;
+  if ((q.base || 0) > 0 && fee < 1) {
+    // Fully discounted → no online payment needed; mark paid + consume code.
+    await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 (折扣全免) " + fmtNow(), paymentMethod: "discount" });
+    if (q.codeValid && q.code) { try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {} }
+    return { success: true, freeAfterDiscount: true };
+  }
   if (fee < 1) return { success: false, message: "報名費金額不正確" };
 
   const orderId = "RG" + Date.now() + Math.floor(Math.random() * 100);
   await db.collection("regPayments").doc(orderId).set({
     orderId, compId, teamId, amount: fee,
+    base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount, discountCode: q.codeValid ? q.code : "",
     teamNameCN: team.teamNameCN || "", teamNameEN: team.teamNameEN || "",
     status: "pending", createdAt: fmtNow()
   });
@@ -3447,6 +3539,10 @@ exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async
         paymentMethod: "onlinePayment",
         regPaymentId: orderId
       });
+      /* Item 10: consume the discount code now that payment succeeded */
+      if (order.discountCode) {
+        try { await db.collection("discountCodes").doc(compId + "_" + order.discountCode).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
+      }
       await auditLog("system", "線上付款成功", order.teamId, "PAYUNi " + orderId);
 
       /* Send confirmation email */

@@ -285,6 +285,37 @@
               </div>
             </div>
           </div>
+
+          <!-- Item 10a: group-tier auto discount -->
+          <div class="sec">
+            <div class="sec-hd">
+              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4"/></svg></div>
+              <div><h3>團報優惠</h3><p>依「單筆報名人數」自動折扣，系統取符合條件的最高級距（報名者免輸入折扣碼）</p></div>
+            </div>
+            <div class="list-grp" id="groupDiscList"></div>
+            <button type="button" class="add-row" id="addGroupDiscBtn">＋ 新增級距</button>
+          </div>
+
+          <!-- Item 10b: discount codes -->
+          <div class="sec">
+            <div class="sec-hd">
+              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01"/></svg></div>
+              <div><h3>折扣碼</h3><p>產生折扣代碼供報名者結帳時輸入；可設使用上限與有效期限（也可作推薦獎勵碼）</p></div>
+            </div>
+            <div class="list-grp" id="discCodeList"><div style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:6px 0">載入中⋯</div></div>
+            <div style="margin-top:12px; padding:14px; background:var(--surface-2); border:1px dashed var(--line); border-radius:9px">
+              <div class="row3">
+                <div class="fld" style="margin-bottom:8px"><div class="lbl">折扣碼</div><input id="dc-code" placeholder="如 EARLYBIRD"></div>
+                <div class="fld" style="margin-bottom:8px"><div class="lbl">類型</div><select id="dc-type"><option value="amount">折抵金額 (NT$)</option><option value="percent">百分比 (%)</option></select></div>
+                <div class="fld" style="margin-bottom:8px"><div class="lbl">折扣值</div><input type="number" id="dc-value" min="1"></div>
+              </div>
+              <div class="row3">
+                <div class="fld" style="margin-bottom:0"><div class="lbl">使用上限</div><input type="number" id="dc-max" min="0" placeholder="0 = 不限"></div>
+                <div class="fld" style="margin-bottom:0"><div class="lbl">有效期限</div><input type="date" id="dc-exp"></div>
+                <div class="fld" style="margin-bottom:0; display:flex; align-items:flex-end"><button type="button" class="btn btn-primary" id="dc-create" style="width:100%">建立折扣碼</button></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- TAB: NOTIFICATION -->
@@ -485,6 +516,9 @@
     setToggle('bankEnabled', bankOn);
     updateBankFields();
 
+    renderGroupDisc(CFG.groupDiscounts || []);
+    loadDiscCodes();
+
     document.getElementById('adv-maxTeams').value = COMP.config.maxCapacityLimit || COMP.config.maxTeams || 0;
     document.getElementById('adv-allowWaitlist').value = (CFG.allowWaitlist !== false) ? 'true' : 'false';
 
@@ -590,6 +624,73 @@
     var inp = document.querySelector('#feeItemsList .list-row:last-of-type [data-ff="amount"]'); if (inp) inp.focus();
   });
 
+  // ---- Item 10a: group discount tiers ----
+  function renderGroupDisc(tiers) {
+    var el = document.getElementById('groupDiscList');
+    el.innerHTML = (tiers || []).map(function (t, i) {
+      return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 86px 1fr 110px auto; gap:10px; align-items:center">' +
+        '<span style="color:var(--muted); font:500 12px/1 var(--f-tc)">滿</span>' +
+        '<input type="number" min="1" value="' + (parseInt(t.minPeople, 10) || 0) + '" placeholder="人數" data-gd="minPeople" style="text-align:right">' +
+        '<select data-gd="type"><option value="amount"' + (t.type === 'amount' ? ' selected' : '') + '>折抵 NT$</option><option value="percent"' + (t.type === 'percent' ? ' selected' : '') + '>折 %</option></select>' +
+        '<input type="number" min="1" value="' + (Number(t.value) || 0) + '" placeholder="折扣值" data-gd="value" style="text-align:right">' +
+        '<span class="rm" data-rm-gd="' + i + '">×</span>' +
+      '</div>';
+    }).join('');
+    el.querySelectorAll('input,select').forEach(function (inp) { inp.addEventListener('input', markDirty); inp.addEventListener('change', markDirty); });
+    el.querySelectorAll('[data-rm-gd]').forEach(function (b) { b.addEventListener('click', function () { var idx = parseInt(b.dataset.rmGd, 10); var arr = readGroupDisc(); arr.splice(idx, 1); renderGroupDisc(arr); markDirty(); }); });
+  }
+  function readGroupDisc() {
+    return Array.from(document.querySelectorAll('#groupDiscList .list-row')).map(function (r) {
+      return { minPeople: parseInt(r.querySelector('[data-gd="minPeople"]').value, 10) || 0, type: r.querySelector('[data-gd="type"]').value, value: Number(r.querySelector('[data-gd="value"]').value) || 0 };
+    }).filter(function (t) { return t.minPeople > 0 && t.value > 0; });
+  }
+  document.getElementById('addGroupDiscBtn').addEventListener('click', function () { var arr = readGroupDisc(); arr.push({ minPeople: 0, type: 'amount', value: 0 }); renderGroupDisc(arr); markDirty(); });
+
+  // ---- Item 10b: discount codes (managed live via callables, outside the save flow) ----
+  function loadDiscCodes() {
+    google.script.run.withSuccessHandler(function (codes) {
+      var el = document.getElementById('discCodeList');
+      if (!codes || !codes.length) { el.innerHTML = '<div style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:6px 0">尚無折扣碼</div>'; return; }
+      el.innerHTML = codes.map(function (c) {
+        var disc = c.type === 'percent' ? (c.value + '%') : ('NT$ ' + c.value);
+        var uses = (c.maxUses > 0) ? ((c.usedCount || 0) + ' / ' + c.maxUses) : ((c.usedCount || 0) + ' / ∞');
+        var exp = c.expiresAt ? ('至 ' + c.expiresAt) : '無期限';
+        return '<div class="list-row" style="display:grid; grid-template-columns:1fr auto auto auto auto; gap:12px; align-items:center">' +
+          '<b style="font:600 13px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(c.code) + '</b>' +
+          '<span style="font:500 12px/1 var(--f-tc); color:var(--acc)">' + disc + '</span>' +
+          '<span style="font:400 11.5px/1 var(--f-mono); color:var(--muted)">用量 ' + uses + '</span>' +
+          '<span style="font:400 11.5px/1 var(--f-tc); color:var(--muted)">' + exp + '</span>' +
+          '<span class="rm" data-rm-dc="' + escapeHtml(c.code) + '">×</span>' +
+        '</div>';
+      }).join('');
+      el.querySelectorAll('[data-rm-dc]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          uiConfirm('刪除折扣碼「' + b.dataset.rmDc + '」？', { title: '刪除折扣碼', danger: true }).then(function (ok) {
+            if (!ok) return;
+            google.script.run.withSuccessHandler(loadDiscCodes).withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); }).deleteDiscountCode(compId, b.dataset.rmDc);
+          });
+        });
+      });
+    }).withFailureHandler(function () {
+      document.getElementById('discCodeList').innerHTML = '<div style="color:var(--muted)">載入折扣碼失敗</div>';
+    }).listDiscountCodes(compId);
+  }
+  document.getElementById('dc-create').addEventListener('click', function () {
+    var code = document.getElementById('dc-code').value.trim();
+    var type = document.getElementById('dc-type').value;
+    var value = parseInt(document.getElementById('dc-value').value, 10) || 0;
+    var max = parseInt(document.getElementById('dc-max').value, 10) || 0;
+    var exp = document.getElementById('dc-exp').value;
+    if (!code || value < 1) { uiAlert('請填寫折扣碼與折扣值'); return; }
+    var btn = this; btn.disabled = true; btn.textContent = '建立中⋯';
+    google.script.run.withSuccessHandler(function (res) {
+      btn.disabled = false; btn.textContent = '建立折扣碼';
+      if (res && res.success) { document.getElementById('dc-code').value = ''; document.getElementById('dc-value').value = ''; document.getElementById('dc-max').value = ''; document.getElementById('dc-exp').value = ''; loadDiscCodes(); }
+      else uiAlert((res && res.message) || '建立失敗');
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '建立折扣碼'; uiAlert('失敗：' + (e && e.message)); })
+      .createDiscountCode(compId, code, type, value, max, exp, '');
+  });
+
   function renderFormSummary() {
     var ms = ['基本', '組別', '表單', '收費', '通知', '進階'];
     var sf = CFG.studentFields || [];
@@ -635,6 +736,7 @@
       isVisible: document.getElementById('isVisible').classList.contains('on'),
       isOpen: document.getElementById('isOpen').classList.contains('on'),
       feeItems: readFeeItems(),
+      groupDiscounts: readGroupDisc(),
       payuniEnabled: document.getElementById('payuniEnabled').classList.contains('on'),
       bankEnabled: document.getElementById('bankEnabled').classList.contains('on'),
       bankInfo: {
@@ -699,6 +801,7 @@
       isVisible: data.isVisible,
       // Item 11: itemized fees; keep registrationFee = sum for backward compatibility
       feeItems: data.feeItems,
+      groupDiscounts: data.groupDiscounts,
       registrationFee: feeSum,
       payuniEnabled: data.payuniEnabled,
       // Item 12: bank transfer gated by explicit enable flag

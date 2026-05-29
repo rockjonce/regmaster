@@ -12,6 +12,7 @@
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/ui-dialog.js"></script>
 
 <style>
 .nav { position:sticky; top:0; z-index:50; height:60px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
@@ -167,8 +168,17 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     <aside>
       <div class="totals">
         <h4>應付金額</h4>
-        <div class="li"><span class="lbl">基本報名費</span><span class="v" id="feeAmt">NT$ 0</span></div>
+        <div class="li"><span class="lbl">報名費</span><span class="v" id="feeAmt">NT$ 0</span></div>
+        <div class="li" id="groupDiscLi" style="display:none"><span class="lbl" id="groupDiscLbl">團報優惠</span><span class="v" id="groupDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
+        <div class="li" id="codeDiscLi" style="display:none"><span class="lbl">折扣碼</span><span class="v" id="codeDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
         <div class="li total"><span class="lbl">合計</span><span class="v" id="totalAmt">NT$ 0</span></div>
+        <div style="margin:14px 0 4px">
+          <div style="display:flex; gap:6px">
+            <input id="discCodeInput" placeholder="輸入折扣碼" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:500 13px/1 var(--f-mono); text-transform:uppercase">
+            <button class="btn btn-ghost btn-sm" id="applyCodeBtn" type="button">套用</button>
+          </div>
+          <div id="codeMsg" style="font:400 11.5px/1.5 var(--f-tc); margin-top:5px; min-height:16px"></div>
+        </div>
         <div class="small-note">
           <b>下一步：</b><br>
           1. 選擇上方的付款方式<br>
@@ -210,6 +220,8 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
 
   var CFG = null;
   var fee = 0;
+  var appliedCode = '';   // discount code currently applied (item 10)
+  var quoteTotal = 0;     // server-authoritative payable amount after discounts
 
   // Load comp config
   google.script.run
@@ -262,12 +274,20 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.getElementById('cPayStatus').textContent = payStatus;
     document.getElementById('feeAmt').textContent = 'NT$ ' + fee.toLocaleString();
     document.getElementById('totalAmt').textContent = 'NT$ ' + fee.toLocaleString();
+    quoteTotal = fee;
 
     if (String(payStatus).indexOf('已確認') !== -1 || String(payStatus).indexOf('paid') !== -1) {
       document.getElementById('paidBanner').style.display = 'block';
       document.getElementById('methodCard').style.display = 'none';
     } else {
       buildMethods(team);
+      // Item 10: show auto group discount + allow entering a discount code.
+      if (fee > 0) {
+        refreshQuote('');
+        document.getElementById('applyCodeBtn').addEventListener('click', function () {
+          refreshQuote(document.getElementById('discCodeInput').value.trim().toUpperCase());
+        });
+      }
     }
 
     document.getElementById('loadingState').style.display = 'none';
@@ -277,6 +297,26 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
       // We came from payuni-return; start polling for status
       pollStatus();
     }
+  }
+
+  // Item 10: fetch the server-authoritative discounted quote and update the breakdown.
+  function refreshQuote(code) {
+    google.script.run.withSuccessHandler(function (q) {
+      if (!q || !q.ok) return;
+      appliedCode = (code && q.codeValid) ? q.code : '';
+      quoteTotal = q.total;
+      var gLi = document.getElementById('groupDiscLi');
+      if (q.groupDiscount > 0) { gLi.style.display = ''; document.getElementById('groupDiscLbl').textContent = q.groupLabel || '團報優惠'; document.getElementById('groupDiscAmt').textContent = '- NT$ ' + q.groupDiscount.toLocaleString(); }
+      else gLi.style.display = 'none';
+      var cLi = document.getElementById('codeDiscLi');
+      if (q.codeValid && q.codeDiscount > 0) { cLi.style.display = ''; document.getElementById('codeDiscAmt').textContent = '- NT$ ' + q.codeDiscount.toLocaleString(); }
+      else cLi.style.display = 'none';
+      document.getElementById('totalAmt').textContent = 'NT$ ' + q.total.toLocaleString();
+      var msg = document.getElementById('codeMsg');
+      if (code) { msg.textContent = q.codeMsg || ''; msg.style.color = q.codeValid ? 'var(--ok-700)' : 'var(--err-700)'; }
+      else { msg.textContent = ''; }
+      var ma = document.getElementById('manualAmt'); if (ma) ma.textContent = q.total.toLocaleString();
+    }).withFailureHandler(function () {}).validateDiscountCode(compId, teamId, code || '');
   }
 
   function buildMethods(team) {
@@ -318,7 +358,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           if (info.bankCode) lines.push('<b>銀行代號：</b><span class="copyable" data-copy="' + escapeHtml(info.bankCode) + '">' + escapeHtml(info.bankCode) + ' 📋</span>');
           if (info.accountNumber) lines.push('<b>帳號：</b><span class="copyable" data-copy="' + escapeHtml(info.accountNumber) + '">' + escapeHtml(info.accountNumber) + ' 📋</span>');
           if (info.accountName) lines.push('<b>戶名：</b>' + escapeHtml(info.accountName));
-          lines.push('<b>金額：</b>NT$ ' + fee.toLocaleString());
+          lines.push('<b>金額：</b>NT$ <span id="manualAmt">' + quoteTotal.toLocaleString() + '</span>');
           lines.push('<b>備註填寫：</b><span class="copyable" data-copy="' + escapeHtml(team.teamId) + '">' + escapeHtml(team.teamId) + ' 📋</span>（隊伍編號）');
           document.getElementById('bankInfoBox').innerHTML = lines.join('<br>');
           document.querySelectorAll('.copyable').forEach(function (cb) {
@@ -357,6 +397,12 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
             f.appendChild(inp);
           });
           document.body.appendChild(f);
+          if (res.freeAfterDiscount) {
+            // Fully discounted → no PayUni redirect; payment already confirmed.
+            btn.textContent = '✓ 已折抵全額，無需付款';
+            uiAlert('折扣已折抵全部金額，報名付款已完成！').then(function () { location.reload(); });
+            return;
+          }
           // Store orderId so the return page can poll
           try { localStorage.setItem('regmaster_last_order', res.orderId); } catch (e) {}
           document.getElementById('statusPollCard').style.display = 'block';
@@ -366,7 +412,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           btn.disabled = false; btn.textContent = '前往 PayUni 付款 →';
           showErr((err && err.message) || '網路錯誤');
         })
-        .createRegistrationPayment(compId, teamId);
+        .createRegistrationPayment(compId, teamId, appliedCode);
     });
   }
 
