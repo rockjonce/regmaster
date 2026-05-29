@@ -1,95 +1,153 @@
 // =============================================================================
-// RegMaster · Shared Admin Sidebar Normalizer (shared/admin-nav.js)
+// RegMaster · Shared Admin Sidebar Shell (shared/admin-nav.js)
 // =============================================================================
-// Makes the admin sidebar role-aware and consistent across EVERY admin page:
+// Renders the ENTIRE admin sidebar consistently on every admin page, driven by
+// the logged-in account's role. This replaces the per-page hardcoded sidebars
+// so the nav never "flickers" between pages.
 //
-//   • role = "competition" (主辦方)  → only organizer features are shown;
-//        every system-only link is stripped out.
-//   • role = "system"      (系統管理員) → organizer features PLUS one canonical
-//        「系統管理」group (系統設定 / 操作日誌 / Super Admin), appended
-//        consistently on every page.
+//   • One role label only: 系統管理員 (system) or 主辦方 (competition).
+//   • Always present: 儀表板 / 所有活動 / AI 助理, 方案與授權 / 設定,
+//     方案用量卡, 登出.
+//   • system role additionally gets: 系統設定 / 操作日誌.
+//   • Collapsible (desktop, persisted) + off-canvas drawer (mobile).
 //
-// The organizer nav (儀表板 / 所有活動 / AI 助理 / 方案與授權 / 設定) is already
-// hardcoded in each page's sidebar, so this script only normalizes the
-// SYSTEM-ONLY portion. That gives the behavior the product needs without
-// refactoring every page: a system admin sees the full feature set everywhere,
-// an organizer never sees a system-only link.
+// Load AFTER /shared/app-state.js. Pages without <aside class="side">
+// (e.g. the form-builder editor) are a no-op.
 //
-// Load order: include AFTER /shared/app-state.js (it reads the session straight
-// from localStorage so it does not depend on AppState.init() having run yet).
-// Pages without a standard <aside class="side"> (e.g. the form-builder editor)
-// are no-ops.
+// Preserves the element IDs that page scripts read/write:
+//   orgAv, orgName, orgPlan, navCompCount, planBadge, usageBar, usageText,
+//   usagePct, logoutBtn.
 // =============================================================================
 (function () {
+  var side = document.querySelector('aside.side');
+  if (!side) return;
+
   var me = null;
   try { me = JSON.parse(localStorage.getItem('regmaster_me') || 'null'); } catch (e) {}
+  // Make the session available to the callable bridge now (AppState.init() in the
+  // page's own script runs later); needed so getLicenseStatus below sends _auth.
+  if (me && !window.ME) window.ME = me;
   var isSystem = me && me.role === 'system';
+  var roleLabel = isSystem ? '系統管理員' : '主辦方';
+  var name = (me && (me.displayName || me.username)) || '—';
+  var initial = String(name).charAt(0).toUpperCase();
 
-  var side = document.querySelector('aside.side');
-  if (!side) return; // page has no standard sidebar — nothing to normalize
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
 
-  // Any link pointing at one of these is "system-only".
-  var SYS_HREFS = ['/admin/system.html', '/admin/super.html', '/admin/audit.html', '/admin/system', '/admin/super'];
-  // ...and the current-page (no-href) nav items on the system pages carry these labels.
-  var SYS_LABELS = ['系統設定', '操作日誌', 'Super Admin'];
-  function isSysHref(h) { h = h || ''; return SYS_HREFS.some(function (s) { return h.indexOf(s) >= 0; }); }
-
-  // 1) Strip every existing system-only nav item (by href OR by label, so the
-  //    "active" no-href entries on system pages are caught too) and any sys-only
-  //    blocks. Runs for BOTH roles: organizers lose them; for system admins it
-  //    de-dups before we re-inject one canonical group.
-  side.querySelectorAll('.nav-it, a[href]').forEach(function (a) {
-    var h = a.getAttribute('href');
-    var label = (a.textContent || '').replace(/\s+/g, ' ').trim();
-    if ((h && isSysHref(h)) || SYS_LABELS.indexOf(label) >= 0) a.remove();
-  });
-  side.querySelectorAll('.sys-only').forEach(function (el) { el.remove(); });
-
-  // 2) Drop any nav group that became empty (its label would otherwise orphan).
-  side.querySelectorAll('.nav-grp').forEach(function (g) {
-    if (!g.querySelector('a')) g.remove();
-  });
-
-  // 3) Ensure the organizer "AI 助理" link is present + consistent on EVERY page
-  //    (several pages hardcoded sidebars without it). Shown to both roles.
-  if (!side.querySelector('a[href*="/admin/ai"]')) {
-    var eventsLink = side.querySelector('a[href*="/admin/events"]');
-    if (eventsLink) {
-      var aiOn = location.pathname.indexOf('/admin/ai') >= 0 ? ' on' : '';
-      var ai = document.createElement('a');
-      ai.className = 'nav-it' + aiOn;
-      ai.href = '/admin/ai.html';
-      ai.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>AI 助理';
-      eventsLink.insertAdjacentElement('afterend', ai);
-    }
+  var p = location.pathname.replace(/index\.html$/, '');
+  function active(href) {
+    if (href === '/admin/') return (p === '/admin/' || p === '/admin');
+    if (href === '/admin/events/') return p.indexOf('/admin/events') === 0;
+    return p.indexOf(href.replace(/\.html$/, '')) === 0;
   }
 
-  // Organizers: done — only their own features remain.
-  if (!isSystem) return;
-
-  // 3) System role: append ONE canonical 系統管理 group.
-  var ICON = {
+  var IC = {
+    home: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>',
+    cal: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>',
+    ai: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>',
+    lic: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>',
     gear: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.13-1.3l2-1.5-2-3.4-2.3 1a7 7 0 00-2.27-1.3L13.6 2h-3.2l-.4 2.5a7 7 0 00-2.27 1.3l-2.3-1-2 3.4 2 1.5A7 7 0 005 12a7 7 0 00.13 1.3l-2 1.5 2 3.4 2.3-1a7 7 0 002.27 1.3l.4 2.5h3.2l.4-2.5a7 7 0 002.27-1.3l2.3 1 2-3.4-2-1.5A7 7 0 0019 12z"/></svg>',
+    sys: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
     log: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>',
-    sup: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l4 4-4 4M16 6H4M12 22l4-4-4-4M16 18H4"/></svg>'
+    out: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+    chev: '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>'
   };
-  var path = location.pathname;
-  function item(href, label, icon) {
-    var on = (path === href || path === href.replace('.html', '')) ? ' on' : '';
-    return '<a class="nav-it' + on + '" href="' + href + '">' + icon + label + '</a>';
-  }
-  // 平台總覽 (Super Admin) is now a tab inside 系統設定, so the nav only needs
-  // two entries. We still strip any old standalone "Super Admin" links above.
-  var grp = document.createElement('div');
-  grp.className = 'nav-grp';
-  grp.innerHTML =
-    '<div class="l-grp">系統管理</div>' +
-    item('/admin/system.html', '系統設定', ICON.gear) +
-    item('/admin/audit.html', '操作日誌', ICON.log);
 
-  // Insert before the sidebar footer (usage card / logout) when present,
-  // otherwise append to the end of the sidebar.
-  var foot = side.querySelector('.side-foot');
-  if (foot) side.insertBefore(grp, foot);
-  else side.appendChild(grp);
+  function item(href, label, icon, extra) {
+    return '<a class="nav-it' + (active(href) ? ' on' : '') + '" href="' + href + '">' + icon +
+      '<span>' + esc(label) + '</span>' + (extra || '') + '</a>';
+  }
+
+  var html =
+    '<a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div>' +
+      '<div class="nm">RegMaster<small>' + (isSystem ? '系統管理員' : '主辦後台') + '</small></div>' +
+      '<button class="side-collapse-btn" type="button" title="收合側欄" aria-label="收合側欄">' + IC.chev + '</button>' +
+    '</a>' +
+    '<div class="org-switcher"><div class="av" id="orgAv">' + esc(initial) + '</div>' +
+      '<div class="body"><h6 id="orgName">' + esc(name) + '</h6><p id="orgPlan">' + roleLabel + '</p></div></div>' +
+    '<div class="nav-grp"><div class="l-grp">概覽</div>' +
+      item('/admin/', '儀表板', IC.home) +
+      item('/admin/events/', '所有活動', IC.cal, '<span class="ct" id="navCompCount"></span>') +
+      item('/admin/ai.html', 'AI 助理', IC.ai) +
+    '</div>' +
+    '<div class="nav-grp"><div class="l-grp">管理</div>' +
+      item('/admin/license.html', '方案與授權', IC.lic) +
+      item('/admin/settings.html', '設定', IC.gear) +
+    '</div>' +
+    (isSystem ?
+      '<div class="nav-grp"><div class="l-grp">系統管理</div>' +
+        item('/admin/system.html', '系統設定', IC.sys) +
+        item('/admin/audit.html', '操作日誌', IC.log) +
+      '</div>' : '') +
+    '<div class="side-foot">' +
+      '<div class="usage-card"><h6>目前方案</h6><div class="nm-p" id="planBadge">FREE</div>' +
+        '<div class="bar"><div id="usageBar" style="width:0%"></div></div>' +
+        '<div class="meta-u"><span id="usageText">免費方案</span><span id="usagePct"></span></div>' +
+        '<a class="upgrade-link" href="/admin/license.html">升級方案 →</a></div>' +
+      '<a class="nav-it" id="logoutBtn" href="/login.html">' + IC.out + '<span>登出</span></a>' +
+    '</div>';
+
+  side.innerHTML = html;
+
+  // --- Logout ---
+  var logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      try { if (window.AppState) AppState.setMe(null); else localStorage.removeItem('regmaster_me'); } catch (x) {}
+      location.href = '/login.html';
+    });
+  }
+
+  // --- Plan badge: FREE unless the account holds a valid (paid) license ---
+  if (me && me.sessionToken && window.google && window.google.script && window.google.script.run) {
+    try {
+      google.script.run.withSuccessHandler(function (res) {
+        var badge = document.getElementById('planBadge');
+        var ut = document.getElementById('usageText');
+        if (!badge) return;
+        if (res && res.hasValid) {
+          badge.textContent = '付費方案';
+          if (ut) ut.textContent = res.message || '已啟用';
+        } else {
+          badge.textContent = 'FREE';
+          if (ut) ut.textContent = '免費方案 — 升級解鎖更多';
+        }
+      }).withFailureHandler(function () {}).getLicenseStatus();
+    } catch (x) {}
+  }
+
+  // --- Collapse (desktop, persisted) ---
+  var LS_COLLAPSE = 'regmaster_side_collapsed';
+  try { if (localStorage.getItem(LS_COLLAPSE) === '1') document.body.classList.add('side-collapsed'); } catch (x) {}
+  var collapseBtn = side.querySelector('.side-collapse-btn');
+  if (collapseBtn) {
+    collapseBtn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var c = document.body.classList.toggle('side-collapsed');
+      try { localStorage.setItem(LS_COLLAPSE, c ? '1' : '0'); } catch (x) {}
+    });
+  }
+
+  // --- Mobile drawer: hamburger in the topbar + backdrop ---
+  function closeDrawer() { document.body.classList.remove('side-open'); }
+  var backdrop = document.createElement('div');
+  backdrop.className = 'side-backdrop';
+  backdrop.addEventListener('click', closeDrawer);
+  document.body.appendChild(backdrop);
+
+  var head = document.querySelector('.head');
+  if (head && !head.querySelector('.side-hamburger')) {
+    var burger = document.createElement('button');
+    burger.type = 'button';
+    burger.className = 'side-hamburger';
+    burger.setAttribute('aria-label', '選單');
+    burger.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
+    burger.addEventListener('click', function () { document.body.classList.toggle('side-open'); });
+    head.insertBefore(burger, head.firstChild);
+  }
+  // Close the drawer after navigating (link click) on mobile.
+  side.addEventListener('click', function (e) {
+    if (e.target.closest('a.nav-it') && window.matchMedia('(max-width: 768px)').matches) closeDrawer();
+  });
 })();
