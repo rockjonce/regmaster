@@ -6,6 +6,23 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "headers": [
+      {
+        "_comment": "Static media may be cached for a day.",
+        "source": "**/*.@(jpg|jpeg|png|gif|svg|webp|ico|woff|woff2|ttf)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+      },
+      {
+        "_comment": "HTML / JS / CSS must always revalidate so fixes ship immediately (304 when unchanged). Prevents stale cached pages.",
+        "source": "**/*.@(html|js|css)",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+      },
+      {
+        "_comment": "Clean-URL admin routes (served via rewrites) — also no-cache.",
+        "source": "/admin/**",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+      }
+    ],
     "rewrites": [
       {
         "source": "/admin/events/*/edit",

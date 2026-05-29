@@ -261,11 +261,10 @@
   function parseDate(s) { if (!s) return null; var d = new Date(s); if (!isNaN(d.getTime())) return d; var m = String(s).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3])); return null; }
   function showErr(msg) { var b = document.getElementById('errorBanner'); b.innerHTML = msg; b.style.display = 'block'; }
 
-  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
-  document.getElementById('meName').textContent = me.displayName || me.username;
-  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
-  document.getElementById('orgName').textContent = me.displayName || me.username;
-  document.getElementById('orgPlan').textContent = me.role === 'system' ? '系統管理員' : '主辦方';
+  var _ini = (me.displayName || me.username || '?').charAt(0).toUpperCase();
+  setTxt('meAv', _ini); setTxt('meName', me.displayName || me.username);
+  setTxt('orgAv', _ini); setTxt('orgName', me.displayName || me.username);
+  setTxt('orgPlan', me.role === 'system' ? '系統管理員' : '主辦方');
 
   var ALL = [];
   var STATE = { filter: 'all', q: '' };
