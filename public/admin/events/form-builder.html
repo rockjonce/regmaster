@@ -642,7 +642,7 @@ body { background:var(--bg); overflow:hidden; }
       ]});
     }
     render(); markDirty();
-  });
+  }
   function typeForLegacy(k) {
     return ({ email: 'email', phone: 'tel', birthday: 'date', dietary: 'select', tshirt: 'select', idNumber: 'idnumber' })[k] || 'text';
   }
