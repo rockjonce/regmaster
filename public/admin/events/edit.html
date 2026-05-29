@@ -70,6 +70,27 @@
 .datemode-opt .dm-body small { font:400 11.5px/1.45 var(--f-tc); color:var(--muted); }
 @media (max-width:560px){ .datemode-grp { grid-template-columns:1fr; } }
 
+/* 收費 tab — fee items + discount codes, aligned to the settings design language */
+.fee-add { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.fee-add select { flex:1; min-width:180px; padding:10px 14px; background:var(--surface); border:1px solid var(--line); border-radius:9px; font:400 14px/1.4 var(--f-tc); color:var(--ink); }
+.fee-add select:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
+.fee-add .add-row { width:auto; padding:10px 18px; flex-shrink:0; }
+.fee-total { display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding:13px 16px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:10px; }
+.fee-total .l { font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); }
+.fee-total .v { font:700 18px/1 var(--f-display); color:var(--ink); letter-spacing:-.01em; }
+.dc-form { margin-top:14px; padding:16px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:10px; }
+.dc-form .fld { margin-bottom:12px; }
+.dc-form .actions-r { display:flex; justify-content:flex-end; }
+.dc-form .actions-r .btn { width:auto; padding:9px 20px; }
+.dc-row { display:flex; align-items:center; gap:12px; padding:11px 13px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; }
+.dc-row .code { font:600 13px/1 var(--f-mono); color:var(--ink); flex:1; letter-spacing:.04em; }
+.dc-row .disc { font:600 12px/1 var(--f-tc); color:var(--acc); white-space:nowrap; }
+.dc-row .meta { font:400 11px/1.4 var(--f-mono); color:var(--muted); white-space:nowrap; }
+.dc-row .rm { width:26px; height:26px; border-radius:6px; display:grid; place-items:center; color:var(--muted); cursor:pointer; flex-shrink:0; }
+.dc-row .rm:hover { background:rgba(239,68,68,.1); color:var(--err-700); }
+.dc-empty { color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:6px 2px; }
+@media (max-width:560px){ .dc-row .meta { display:none; } }
+
 .list-grp { display:flex; flex-direction:column; gap:8px; }
 .list-row { display:flex; gap:10px; align-items:center; padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; }
 .list-row .grip { color:var(--muted); cursor:grab; }
@@ -263,8 +284,8 @@
               <div><h3>收費項目</h3><p>可新增多個收費項目，報名者需支付所有項目加總；沒有任何項目即為免費活動</p></div>
             </div>
             <div class="list-grp" id="feeItemsList"></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
-              <select id="feePreset" style="flex:1; min-width:160px; padding:9px 12px; background:var(--surface); border:1px solid var(--line); border-radius:8px; font:400 13px/1.4 var(--f-tc); color:var(--ink)">
+            <div class="fee-add">
+              <select id="feePreset">
                 <option value="">＋ 從範例加入…</option>
                 <option value="報名費">報名費</option>
                 <option value="材料費">材料費</option>
@@ -273,11 +294,11 @@
                 <option value="住宿費">住宿費</option>
                 <option value="服裝費">服裝費</option>
               </select>
-              <button type="button" class="add-row" id="addFeeCustomBtn" style="width:auto; padding:9px 16px">＋ 自訂項目</button>
+              <button type="button" class="add-row" id="addFeeCustomBtn">＋ 自訂項目</button>
             </div>
-            <div class="fld" style="margin-top:16px; margin-bottom:0">
-              <div class="lbl">收費總額（自動加總）</div>
-              <div id="feeTotal" style="font:700 20px/1 var(--f-display); color:var(--ink)">NT$ 0</div>
+            <div class="fee-total">
+              <span class="l">收費總額（自動加總）</span>
+              <span class="v" id="feeTotal">NT$ 0</span>
             </div>
             <div class="toggle-row" style="margin-top:14px">
               <div class="body"><h6>啟用線上付款 (PayUni 信用卡)</h6><p>開啟後報名者可直接線上刷卡，付款成功自動對帳</p></div>
@@ -303,8 +324,8 @@
             </div>
           </div>
 
-          <!-- Item 10a: group-tier auto discount -->
-          <div class="sec">
+          <!-- Item 10a: group-tier auto discount — hidden for now (to be folded into discount codes later) -->
+          <div class="sec" id="groupDiscSec" style="display:none">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4"/></svg></div>
               <div><h3>團報優惠</h3><p>依「單筆報名人數」自動折扣，系統取符合條件的最高級距（報名者免輸入折扣碼）</p></div>
@@ -317,20 +338,20 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01"/></svg></div>
-              <div><h3>折扣碼</h3><p>產生折扣代碼供報名者結帳時輸入；可設使用上限與有效期限（也可作推薦獎勵碼）</p></div>
+              <div><h3>折扣碼</h3><p>產生折扣代碼供報名者結帳時輸入；可設折抵金額或百分比、使用上限與有效期限（也可作團報或推薦獎勵碼）</p></div>
             </div>
-            <div class="list-grp" id="discCodeList"><div style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:6px 0">載入中⋯</div></div>
-            <div style="margin-top:12px; padding:14px; background:var(--surface-2); border:1px dashed var(--line); border-radius:9px">
+            <div class="list-grp" id="discCodeList"><div class="dc-empty">載入中⋯</div></div>
+            <div class="dc-form">
               <div class="row3">
-                <div class="fld" style="margin-bottom:8px"><div class="lbl">折扣碼</div><input id="dc-code" placeholder="如 EARLYBIRD"></div>
-                <div class="fld" style="margin-bottom:8px"><div class="lbl">類型</div><select id="dc-type"><option value="amount">折抵金額 (NT$)</option><option value="percent">百分比 (%)</option></select></div>
-                <div class="fld" style="margin-bottom:8px"><div class="lbl">折扣值</div><input type="number" id="dc-value" min="1"></div>
+                <div class="fld"><div class="lbl">折扣碼</div><input id="dc-code" placeholder="如 EARLYBIRD"></div>
+                <div class="fld"><div class="lbl">類型</div><select id="dc-type"><option value="amount">折抵金額 (NT$)</option><option value="percent">百分比 (%)</option></select></div>
+                <div class="fld"><div class="lbl">折扣值</div><input type="number" id="dc-value" min="1"></div>
               </div>
-              <div class="row3">
-                <div class="fld" style="margin-bottom:0"><div class="lbl">使用上限</div><input type="number" id="dc-max" min="0" placeholder="0 = 不限"></div>
+              <div class="row2">
+                <div class="fld"><div class="lbl">使用上限</div><input type="number" id="dc-max" min="0" placeholder="0 = 不限"></div>
                 <div class="fld" style="margin-bottom:0"><div class="lbl">有效期限</div><input type="date" id="dc-exp"></div>
-                <div class="fld" style="margin-bottom:0; display:flex; align-items:flex-end"><button type="button" class="btn btn-primary" id="dc-create" style="width:100%">建立折扣碼</button></div>
               </div>
+              <div class="actions-r"><button type="button" class="btn btn-primary" id="dc-create">建立折扣碼</button></div>
             </div>
           </div>
         </div>
@@ -667,16 +688,15 @@
   function loadDiscCodes() {
     google.script.run.withSuccessHandler(function (codes) {
       var el = document.getElementById('discCodeList');
-      if (!codes || !codes.length) { el.innerHTML = '<div style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:6px 0">尚無折扣碼</div>'; return; }
+      if (!codes || !codes.length) { el.innerHTML = '<div class="dc-empty">尚無折扣碼</div>'; return; }
       el.innerHTML = codes.map(function (c) {
-        var disc = c.type === 'percent' ? (c.value + '%') : ('NT$ ' + c.value);
+        var disc = c.type === 'percent' ? ('折 ' + c.value + '%') : ('折抵 NT$ ' + c.value);
         var uses = (c.maxUses > 0) ? ((c.usedCount || 0) + ' / ' + c.maxUses) : ((c.usedCount || 0) + ' / ∞');
         var exp = c.expiresAt ? ('至 ' + c.expiresAt) : '無期限';
-        return '<div class="list-row" style="display:grid; grid-template-columns:1fr auto auto auto auto; gap:12px; align-items:center">' +
-          '<b style="font:600 13px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(c.code) + '</b>' +
-          '<span style="font:500 12px/1 var(--f-tc); color:var(--acc)">' + disc + '</span>' +
-          '<span style="font:400 11.5px/1 var(--f-mono); color:var(--muted)">用量 ' + uses + '</span>' +
-          '<span style="font:400 11.5px/1 var(--f-tc); color:var(--muted)">' + exp + '</span>' +
+        return '<div class="dc-row">' +
+          '<span class="code">' + escapeHtml(c.code) + '</span>' +
+          '<span class="disc">' + disc + '</span>' +
+          '<span class="meta">用量 ' + uses + ' · ' + exp + '</span>' +
           '<span class="rm" data-rm-dc="' + escapeHtml(c.code) + '">×</span>' +
         '</div>';
       }).join('');
