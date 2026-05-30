@@ -208,6 +208,19 @@ body { background:var(--bg); }
               <div class="fld"><label class="lbl">HashIV</label><input id="p-hashiv" type="password" autocomplete="off"></div>
             </div>
             <label style="font:400 12px/1.4 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; gap:7px"><input type="checkbox" id="p-reveal" style="width:15px;height:15px"> 顯示金鑰</label>
+
+            <!-- DD1: PayUNI handling fee % charged to each tier of organiser when their
+                 registrants pay via PayUNI. Used by 帳務 (EE/FF) to compute payouts. -->
+            <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--line-2)">
+              <h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:4px">PayUNI 金流手續費（%）</h4>
+              <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-bottom:14px">針對各方案主辦方收取的手續費比例；報名者用 PayUNI 付款時，這個 % 會從報名費中扣除作為代收費，銀行轉帳免收。</p>
+              <div class="row-4" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px">
+                <div class="fld"><label class="lbl">Free 方案</label><input id="p-fee-free" type="number" min="0" max="100" step="0.1" placeholder="例：3.5"></div>
+                <div class="fld"><label class="lbl">Starter 方案</label><input id="p-fee-starter" type="number" min="0" max="100" step="0.1" placeholder="例：2.8"></div>
+                <div class="fld"><label class="lbl">Pro 方案</label><input id="p-fee-pro" type="number" min="0" max="100" step="0.1" placeholder="例：2.2"></div>
+                <div class="fld"><label class="lbl">Team 方案</label><input id="p-fee-team" type="number" min="0" max="100" step="0.1" placeholder="例：1.8"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; max-width:none">
@@ -429,6 +442,12 @@ body { background:var(--bg); }
       document.getElementById('p-hashkey').value = cfg.payuniHashKey || '';
       document.getElementById('p-hashiv').value = cfg.payuniHashIV || '';
       document.getElementById('p-mode').value = cfg.payuniMode || '';
+      // DD1: per-tier PayUNI fee %
+      var fees = cfg.payuniFeeByTier || {};
+      document.getElementById('p-fee-free').value = fees.free != null ? fees.free : '';
+      document.getElementById('p-fee-starter').value = fees.starter != null ? fees.starter : '';
+      document.getElementById('p-fee-pro').value = fees.pro != null ? fees.pro : '';
+      document.getElementById('p-fee-team').value = fees.team != null ? fees.team : '';
     }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getSalesConfig();
   }
   document.getElementById('p-reveal').addEventListener('change', function () {
@@ -446,7 +465,14 @@ body { background:var(--bg); }
       payuniMerID: document.getElementById('p-merid').value.trim(),
       payuniHashKey: document.getElementById('p-hashkey').value.trim(),
       payuniHashIV: document.getElementById('p-hashiv').value.trim(),
-      payuniMode: document.getElementById('p-mode').value
+      payuniMode: document.getElementById('p-mode').value,
+      // DD1: per-tier fee % stored together so the org plans page can read in one trip.
+      payuniFeeByTier: {
+        free:    parseFloat(document.getElementById('p-fee-free').value)    || 0,
+        starter: parseFloat(document.getElementById('p-fee-starter').value) || 0,
+        pro:     parseFloat(document.getElementById('p-fee-pro').value)     || 0,
+        team:    parseFloat(document.getElementById('p-fee-team').value)    || 0
+      }
     };
     var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
     google.script.run.withSuccessHandler(function (r) {

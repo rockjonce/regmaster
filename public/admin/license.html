@@ -186,6 +186,9 @@
   ];
   function renderPlans(curTier, cfg) {
     var priceOf = { free: 0, starter: Number(cfg.starterPrice) || 0, pro: Number(cfg.proPrice) || 0, team: Number(cfg.teamPrice) || 0 };
+    // EE1: surface PayUNI fee % so organisers see the deduction up-front per tier.
+    var feeBy = cfg.payuniFeeByTier || {};
+    var feePct = { free: feeBy.free || 0, starter: feeBy.starter || 0, pro: feeBy.pro || 0, team: feeBy.team || 0 };
     var grid = document.getElementById('plansGrid');
     grid.innerHTML = TIER_DEFS.map(function (t) {
       var isCur = (curTier || 'free') === t.id;
@@ -196,9 +199,10 @@
       else if (t.id === 'free') btn = '<div class="btn-plan" style="opacity:.45">免費</div>';
       else if (price <= 0) btn = '<div class="btn-plan" style="opacity:.45" title="尚未設定價格">未開放</div>';
       else btn = '<button class="btn-plan" data-buy="' + t.id + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買 →</button>';
+      var feeRow = '<li style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:6px"><b>PayUNI 金流手續費：' + feePct[t.id].toFixed(1) + '%</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">報名者線上付款扣除；銀行轉帳免收</span></li>';
       return '<div class="plan' + (isCur ? ' cur' : '') + '"><h4>' + t.name + '</h4><p class="tag">' + t.tag + '</p>' +
         '<div class="price"><span class="num">' + priceStr + '</span><span class="per">' + (price > 0 ? '/年' : '') + '</span></div>' +
-        '<ul>' + t.feats.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul>' + btn + '</div>';
+        '<ul>' + t.feats.map(function (f) { return '<li>' + f + '</li>'; }).join('') + feeRow + '</ul>' + btn + '</div>';
     }).join('');
     grid.querySelectorAll('[data-buy]').forEach(function (b) {
       b.addEventListener('click', function () { purchaseTier(b.dataset.buy); });

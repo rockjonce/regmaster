@@ -18,8 +18,12 @@
 <style>
 /* Hero */
 .evt-hero { background:linear-gradient(135deg, #0E1C42 0%, #3D6BFF 60%, #1F3FB8 100%); color:white; padding:32px 32px 24px; position:relative; overflow:hidden; }
-.evt-hero::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px); background-size:32px 32px; }
-.evt-hero::after { content:''; position:absolute; top:-50%; right:-10%; width:50%; height:200%; background:radial-gradient(circle, rgba(61,107,255,.25), transparent 70%); }
+/* AA3: decorative overlays must NOT capture clicks; the .r action bar lives behind them
+   in stacking-context terms, so without this the 公開頁 / 分享連結 buttons appear visible
+   but feel "dead" because the gradient overlay swallows the mousedown. */
+.evt-hero::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px); background-size:32px 32px; pointer-events:none; }
+.evt-hero::after { content:''; position:absolute; top:-50%; right:-10%; width:50%; height:200%; background:radial-gradient(circle, rgba(61,107,255,.25), transparent 70%); pointer-events:none; }
+.hero-inner .r { position:relative; z-index:2; }
 .evt-hero.c1 { background:linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%); }
 .evt-hero.c2 { background:linear-gradient(135deg, #0E1C42, #3D6BFF, #1F3FB8); }
 .evt-hero.c3 { background:linear-gradient(135deg, #16A34A, #14532D); }

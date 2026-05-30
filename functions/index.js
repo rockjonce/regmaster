@@ -3505,11 +3505,13 @@ exports.getSalesConfig = authCallable(["system","competition"], async (data, req
   const doc = await db.collection("config").doc("sales").get();
   const cfg = doc.exists ? doc.data() : { singlePrice: 500, yearlyPrice: 3000, taxRate: 5, bulkDiscounts: [], payuniMerID: "", payuniHashKey: "", payuniHashIV: "", payuniMode: "t" };
   if (request.authUser.role === "competition") {
-    // Organizers see tier prices (to upgrade) but never the PayUni secrets.
+    // Organizers see tier prices (to upgrade) + PayUNI fee % (so they know how much
+    // gets deducted from their registrations) but never the PayUni secrets.
     return {
       starterPrice: cfg.starterPrice || 0, proPrice: cfg.proPrice || 0, teamPrice: cfg.teamPrice || 0,
       singlePrice: cfg.singlePrice, yearlyPrice: cfg.yearlyPrice,
-      taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || []
+      taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || [],
+      payuniFeeByTier: cfg.payuniFeeByTier || { free: 0, starter: 0, pro: 0, team: 0 }
     };
   }
   return cfg;

@@ -408,7 +408,14 @@
       var pmc = STATS.paymentMethodCounts || {};
       var pmcKeys = Object.keys(pmc);
       // pretty labels
-      var labelMap = { payuni: 'PayUNI 線上付款', atm: '銀行 / ATM 轉帳' };
+      // AA2: backend writes "onlinePayment" once PayUNI auto-confirms a paid order;
+      // we surface it as 銀行轉帳付款 (most PayUNI flow paths are virtual ATM).
+      var labelMap = {
+        payuni: 'PayUNI 線上付款',
+        onlinePayment: '銀行轉帳付款',
+        atm: '銀行 / ATM 轉帳',
+        discount: '折扣全免'
+      };
       destroyChart('method');
       charts.method = donut('chartMethod', pmcKeys.map(function (k) { return labelMap[k] || k; }), pmcKeys.map(function (k) { return pmc[k]; }));
     }
@@ -776,9 +783,12 @@
         google.script.run
           .withSuccessHandler(function (res) {
             a.innerHTML = origText;
-            if (!res || !res.success) { uiAlert('無法載入檔案'); return; }
-            var dataUri = res.dataUri || (res.base64 ? ('data:' + (res.mimeType || 'application/octet-stream') + ';base64,' + res.base64) : '');
-            if (!dataUri) { uiAlert('檔案內容遺失'); return; }
+            if (!res || !res.success) { uiAlert('無法載入檔案：' + ((res && res.message) || '')); return; }
+            // AA1: backend returns `dataUrl` (not dataUri). Accept either, plus a raw
+            // base64 + mimeType pair as a final fallback.
+            var dataUri = res.dataUrl || res.dataUri ||
+              (res.base64 ? ('data:' + (res.mimeType || 'application/octet-stream') + ';base64,' + res.base64) : '');
+            if (!dataUri) { uiAlert('檔案內容遺失（後端未回傳檔案資料）'); return; }
             openFilePreview(fileName, dataUri, res.mimeType || '');
           })
           .withFailureHandler(function (e) { a.innerHTML = origText; uiAlert('載入失敗：' + (e && e.message)); })
