@@ -687,16 +687,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     STU_DEFS = studentFieldDefs();
     TCH_DEFS = teacherFieldDefs();
     CUSTOM_DEFS = customFieldDefs();
-    // Section count is the SOLE source of truth. The backend always returns a formSchema
-    // (createCompetition initialises one from eventType; getRegistrationBundle auto-derives
-    // one for any legacy activity), so SCHEMA is never null here.
+    // Strict rule: 1 區塊 = 1 人. Card count is the section count; `repeat` is ignored.
     var stuSecs = sectionsByRole('student');
-    var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-    var mCount = Math.max(1, stuSecRepeatTotal);
+    var mCount = Math.max(1, stuSecs.length);
     STU_DEFS_PER_CARD = studentFieldDefsPerCard(mCount);
     var tchSecs = sectionsByRole('teacher');
-    var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-    var tCount = tchSecRepeatTotal;
+    var tCount = tchSecs.length;
     TCH_DEFS_PER_CARD = teacherFieldDefsPerCard(tCount);
     document.getElementById('studentCount').textContent = '共 ' + mCount + ' 位';
     var sList = document.getElementById('studentList');
@@ -762,19 +758,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
   function legacyDefs(keys) { return (keys || []).map(function (k) { LABEL_MAP[k] = FIELD_LABELS[k] || k; return { key: k, label: FIELD_LABELS[k] || k, type: inferType(k), opts: optsFor(k), req: true, help: '', logic: null }; }); }
   function studentFieldDefs() { if (SCHEMA) { var s = sectionsByRole('student')[0]; return s ? (s.fields || []).map(toDef) : []; } return legacyDefs(CFG.studentFields || ['chineseName']); }
-  // Build [section, section, …] of length N by walking each role-section and replicating
-  // it `repeat` times, then padding with the last section if N > sum(repeat).
-  // Used for both 學員 and 指導者 cards.
+  // 1 區塊 = 1 人. Build [section, …] of length N straight from section order;
+  // pad with the last section if N > section count (defensive — shouldn't happen).
   function sectionMapForRole(role, count) {
-    var map = [];
-    if (SCHEMA) {
-      sectionsByRole(role).forEach(function (s) {
-        var rep = Math.max(1, parseInt(s.repeat, 10) || 1);
-        for (var i = 0; i < rep; i++) map.push(s);
-      });
-    }
+    var map = SCHEMA ? sectionsByRole(role).slice(0, count) : [];
     while (map.length < count) map.push(map[map.length - 1] || null);
-    return map.slice(0, count);
+    return map;
   }
   function defsForCardByRole(role, count, legacyFallbackDefs) {
     var out = [];
@@ -1092,9 +1081,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       STATE.students = [];
       // Derive counts the same way the renderer did, so each card reads with its own defs
       var stuSecs = sectionsByRole('student');
-      var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-      // Section count is the sole source of truth (backend always supplies a schema).
-      var mCount = Math.max(1, stuSecRepeatTotal);
+      // 1 區塊 = 1 人 — section count is the card count.
+      var mCount = Math.max(1, stuSecs.length);
       var defsPerCard = STU_DEFS_PER_CARD.length ? STU_DEFS_PER_CARD : studentFieldDefsPerCard(mCount);
       for (var i = 0; i < mCount; i++) {
         var s = readMember(defsPerCard[i] || STU_DEFS, 'student_' + i + '_', '學員 ' + (i + 1));
@@ -1103,8 +1091,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       }
       STATE.teachers = [];
       var tchSecs = sectionsByRole('teacher');
-      var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-      var tCount = tchSecRepeatTotal;
+      var tCount = tchSecs.length;
       var tchDefsPerCard = TCH_DEFS_PER_CARD.length ? TCH_DEFS_PER_CARD : teacherFieldDefsPerCard(tCount);
       if (tCount > 0) {
         for (var j = 0; j < tCount; j++) {

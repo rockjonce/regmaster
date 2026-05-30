@@ -666,6 +666,41 @@ exports.listCompetitions = authCallable(["system","competition"], async (data, r
   return results;
 });
 
+// Strict rule: 1 區塊 = 1 人. Any section with repeat > 1 from older data gets split
+// into N sections of repeat=1 with disambiguating titles, so frontends can count
+// sections directly without ever looking at `repeat`.
+function _normaliseSchemaSections(schema) {
+  if (!schema || !Array.isArray(schema.sections)) return schema;
+  const out = [];
+  let stuIdx = 0, tchIdx = 0;
+  for (const sec of schema.sections) {
+    const rep = parseInt(sec.repeat, 10) || 1;
+    if (rep <= 1 || sec.role === 'custom') {
+      const copy = Object.assign({}, sec, { repeat: 1 });
+      out.push(copy);
+      if (sec.role === 'student') stuIdx++;
+      if (sec.role === 'teacher') tchIdx++;
+      continue;
+    }
+    // Split repeat=N into N sections
+    for (let i = 0; i < rep; i++) {
+      const titleSuffix = ' ' + (i + 1);
+      out.push({
+        id: (sec.id || 'sec') + '_' + i,
+        title: (sec.title || (sec.role === 'student' ? '學員' : '指導者')) + titleSuffix,
+        desc: sec.desc || '',
+        role: sec.role,
+        repeat: 1,
+        // Each split section gets its own copy of the fields (with disambiguated ids)
+        fields: (sec.fields || []).map((f, fi) => Object.assign({}, f, { id: (f.id || 'f') + '_s' + i + '_' + fi }))
+      });
+      if (sec.role === 'student') stuIdx++;
+      if (sec.role === 'teacher') tchIdx++;
+    }
+  }
+  return { version: schema.version || 'v3', sections: out };
+}
+
 // Build an initial formSchema for a new activity, driven entirely by eventType.
 // One section per person — so register.html (which counts cards from section count)
 // renders the right number of students/teachers without any other config.
@@ -1019,6 +1054,9 @@ exports.getRegistrationBundle = callable(async (data) => {
   if (!cfg.formSchema || !Array.isArray(cfg.formSchema.sections) || cfg.formSchema.sections.length === 0) {
     cfg.formSchema = buildFormSchemaFromLegacy(cfg);
   }
+  // Strict rule: 1 區塊 = 1 人. Normalise any historical repeat>1 sections into
+  // N individual sections so frontends count sections directly.
+  cfg.formSchema = _normaliseSchemaSections(cfg.formSchema);
   // Strip sensitive keys before returning to public client
   ['payuniMerID','payuniHashKey','payuniHashIV','payuniMode'].forEach(k => delete cfg[k]);
   const stats = await getCompStats(data.compId);
@@ -4791,14 +4829,12 @@ function deriveLegacyFromFormSchema(formSchema) {
 
   const seenStudent = new Set();
   const seenTeacher = new Set();
-  // Bug fix (報名 #1): count student/teacher cards = SUM of repeat across all student/teacher
-  // sections, not max. Two student sections (each repeat=1) → 2 student cards on the form.
+  // Strict rule: 1 區塊 = 1 人. Counts are simple section counts; repeat is ignored.
   let stuTotal = 0, tchTotal = 0;
   for (const sec of formSchema.sections) {
     const role = sec.role || 'custom';
-    const repeat = parseInt(sec.repeat, 10) || 1;
-    if (role === 'student') stuTotal += repeat;
-    if (role === 'teacher') tchTotal += repeat;
+    if (role === 'student') stuTotal += 1;
+    if (role === 'teacher') tchTotal += 1;
     for (const f of (sec.fields || [])) {
       if (!f || !f.type) continue;
       if (role === 'student' && f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) {
@@ -4849,26 +4885,44 @@ function buildFormSchemaFromLegacy(cfg) {
     invoiceType: 'select', invoiceTitle: 'text', taxId: 'text', accommodation: 'select', lineId: 'text'
   };
 
+  // Strict rule: 1 區塊 = 1 人. Split legacy memberCount=N into N student sections
+  // (instead of 1 section with repeat=N). Each section gets its own field-id namespace.
+  const stuCount = Math.max(1, parseInt(cfg.memberCount, 10) || 1);
   if (studentFields.length > 0) {
-    sections.push({
-      id: 'sec_student', title: '學員資料', desc: '請填寫每位學員的資訊', role: 'student',
-      repeat: cfg.memberCount || 1,
-      fields: studentFields.map((k, i) => ({
-        id: 'student_' + k, type: FIELD_TYPES[k] || 'text', label: FIELD_LABELS[k] || k,
-        legacyKey: k, req: true,
-        opts: k === 'dietary' ? (cfg.dietaryOptions || []) : k === 'tshirt' ? (cfg.tshirtOptions || []) : []
-      }))
-    });
+    for (let i = 0; i < stuCount; i++) {
+      sections.push({
+        id: 'sec_student_' + i,
+        title: stuCount > 1 ? ('學員 ' + (i + 1)) : '學員資料',
+        desc: '請填寫每位學員的資訊',
+        role: 'student',
+        repeat: 1,
+        fields: studentFields.map((k, fi) => ({
+          id: 'student_' + i + '_' + k,
+          type: FIELD_TYPES[k] || 'text',
+          label: FIELD_LABELS[k] || k,
+          legacyKey: k, req: true,
+          opts: k === 'dietary' ? (cfg.dietaryOptions || []) : k === 'tshirt' ? (cfg.tshirtOptions || []) : []
+        }))
+      });
+    }
   }
-  if (teacherFields.length > 0 && (cfg.teacherCount || 0) > 0) {
-    sections.push({
-      id: 'sec_teacher', title: '指導老師', desc: '老師的聯絡資訊', role: 'teacher',
-      repeat: cfg.teacherCount || 1,
-      fields: teacherFields.map((k, i) => ({
-        id: 'teacher_' + k, type: FIELD_TYPES[k] || 'text', label: FIELD_LABELS[k] || k,
-        legacyKey: k, req: true, opts: []
-      }))
-    });
+  const tchCount = parseInt(cfg.teacherCount, 10) || 0;
+  if (teacherFields.length > 0 && tchCount > 0) {
+    for (let i = 0; i < tchCount; i++) {
+      sections.push({
+        id: 'sec_teacher_' + i,
+        title: tchCount > 1 ? ('指導者 ' + (i + 1)) : '指導老師',
+        desc: '老師的聯絡資訊',
+        role: 'teacher',
+        repeat: 1,
+        fields: teacherFields.map((k, fi) => ({
+          id: 'teacher_' + i + '_' + k,
+          type: FIELD_TYPES[k] || 'text',
+          label: FIELD_LABELS[k] || k,
+          legacyKey: k, req: true, opts: []
+        }))
+      });
+    }
   }
   if (customQuestions.length > 0) {
     sections.push({
@@ -4888,10 +4942,10 @@ exports.getFormSchema = compAuthCallable(async (data) => {
   if (!doc.exists) return { success: false, message: "找不到活動" };
   const cfg = (doc.data().config) || {};
   if (cfg.formSchema && Array.isArray(cfg.formSchema.sections)) {
-    return { success: true, schema: cfg.formSchema, source: 'v3' };
+    return { success: true, schema: _normaliseSchemaSections(cfg.formSchema), source: 'v3' };
   }
   // Fallback: synthesize from legacy fields
-  return { success: true, schema: buildFormSchemaFromLegacy(cfg), source: 'legacy' };
+  return { success: true, schema: _normaliseSchemaSections(buildFormSchemaFromLegacy(cfg)), source: 'legacy' };
 });
 
 exports.saveFormSchema = compAuthCallable(async (data, request) => {
@@ -4909,7 +4963,8 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
         title: String(sec.title || '').slice(0, 80),
         desc: String(sec.desc || '').slice(0, 200),
         role: ['student','teacher','custom'].includes(sec.role) ? sec.role : 'custom',
-        repeat: Math.max(1, Math.min(20, parseInt(sec.repeat, 10) || 1)),
+        // 1 區塊 = 1 人 (always). The legacy `repeat` field is kept but pinned to 1 on save.
+        repeat: 1,
         fields: (sec.fields || []).slice(0, 50).map(f => {
           const cleanF = {
             id: String(f.id || '').slice(0, 40),
