@@ -389,36 +389,44 @@
     if (cfg.deadline) {
       var dl = parseDate(cfg.deadline);
       var daysLeft = dl ? Math.ceil((dl - Date.now()) / 86400000) : null;
-      metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>截止 <b>' + escapeHtml(cfg.deadline) + (daysLeft !== null && daysLeft > 0 ? '（還有 ' + daysLeft + ' 天）' : '') + '</b></div>';
+      // W1: human-readable date — "2026-05-30T12:00" → "2026-05-30 12:00".
+      var dlPretty = String(cfg.deadline).replace('T', ' ').slice(0, 16);
+      metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>截止 <b>' + escapeHtml(dlPretty) + (daysLeft !== null && daysLeft > 0 ? '（還有 ' + daysLeft + ' 天）' : '') + '</b></div>';
     }
     metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg>已報名 <b>' + (TEAMS.length || 0) + '</b> 人</div>';
     document.getElementById('heroMeta').innerHTML = metaHtml;
 
-    // Hero actions
+    // Hero actions — W3: 匯出 CSV moved to 報名管理 → 報名列表.
+    var publicUrl = location.origin + '/events/detail.html?id=' + encodeURIComponent(compId);
     document.getElementById('heroActions').innerHTML =
-      '<a class="btn-h" href="/events/detail.html?id=' + encodeURIComponent(compId) + '" target="_blank"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7"/></svg>公開頁</a>' +
-      '<button class="btn-h" id="copyShareBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>分享連結</button>' +
-      '<button class="btn-h pri" id="exportBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>匯出 CSV</button>';
+      '<a class="btn-h" id="publicLinkBtn" href="' + publicUrl + '" target="_blank" rel="noopener"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/></svg>公開頁</a>' +
+      '<button class="btn-h" id="copyShareBtn" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>分享連結</button>';
 
+    // W2: hardened share button. navigator.clipboard fails on insecure origins / older
+    // browsers, so fall back to execCommand and a uiPrompt to copy manually.
     document.getElementById('copyShareBtn').addEventListener('click', function () {
-      var url = location.origin + '/events/detail.html?id=' + encodeURIComponent(compId);
-      navigator.clipboard.writeText(url).then(function () { this.textContent = '✓ 已複製'; setTimeout(function () { document.getElementById('copyShareBtn').innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>分享連結'; }, 1500); }.bind(this));
-    });
-    document.getElementById('exportBtn').addEventListener('click', function () {
-      var btn = this; btn.disabled = true; btn.textContent = '匯出中⋯';
-      google.script.run
-        .withSuccessHandler(function (csv) {
-          btn.disabled = false; btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>匯出 CSV';
-          // Add BOM for Excel
-          var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-          var url = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href = url; a.download = (cfg.competitionName || 'export') + '-' + new Date().toISOString().slice(0,10) + '.csv';
-          a.click();
-          URL.revokeObjectURL(url);
-        })
-        .withFailureHandler(function (err) { btn.disabled = false; btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>匯出 CSV'; alert('匯出失敗：' + ((err && err.message) || '')); })
-        .exportTeamsCSV(compId);
+      var btn = this;
+      var restore = function () { btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>分享連結'; };
+      var copied = function () { btn.textContent = '✓ 已複製連結'; setTimeout(restore, 1500); };
+      var failed = function () {
+        // Last resort: show the URL in a uiPrompt so the user can copy manually.
+        if (window.uiPrompt) { uiPrompt('請複製以下連結：', publicUrl, { title: '分享活動連結' }); }
+        else { window.prompt('請複製以下連結：', publicUrl); }
+        restore();
+      };
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(publicUrl).then(copied).catch(failed);
+        } else {
+          // Fallback: hidden textarea + execCommand
+          var ta = document.createElement('textarea');
+          ta.value = publicUrl; ta.style.position = 'fixed'; ta.style.top = '-1000px';
+          document.body.appendChild(ta); ta.select();
+          var ok = document.execCommand('copy');
+          ta.remove();
+          if (ok) copied(); else failed();
+        }
+      } catch (e) { failed(); }
     });
 
     // KPIs
@@ -444,7 +452,7 @@
     }
     if (cfg.competitionDate) info.push({ k: '活動日期', v: escapeHtml(cfg.competitionDate) });
     if (cfg.openDate) info.push({ k: '開放日期', v: escapeHtml(cfg.openDate) });
-    if (cfg.deadline) info.push({ k: '截止日期', v: escapeHtml(cfg.deadline) });
+    if (cfg.deadline) info.push({ k: '截止日期', v: escapeHtml(String(cfg.deadline).replace('T', ' ').slice(0, 16)) });
     var fee = cfg.registrationFee || 0;
     info.push({ k: '報名費', v: fee > 0 ? 'NT$ ' + fee.toLocaleString() : '免費' });
     if ((cfg.groups || []).length) info.push({ k: '組別', v: cfg.groups.map(function (g) { return escapeHtml(typeof g === 'string' ? g : (g.name || g.label || '?')); }).join('、') });

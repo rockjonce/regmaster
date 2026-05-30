@@ -198,6 +198,7 @@
         <div class="search-row">
           <input id="searchInp" placeholder="搜尋編號 / 隊名 / 狀態⋯">
           <span class="help" id="listCount">共 — 筆</span>
+          <button class="btn btn-primary btn-sm" id="exportListBtn" style="margin-left:auto">⬇️ 匯出所有報名資料</button>
         </div>
         <div class="tbl-wrap">
           <table class="tbl">
@@ -616,6 +617,56 @@
     }));
   });
 
+  // V2: 匯出所有報名資料 — internal modal letting organiser pick CSV or Excel.
+  // Backend exportTeamsCSV returns a single CSV string; we add UTF-8 BOM so both
+  // Excel and Google Sheets render Chinese correctly, then change extension/mime
+  // depending on the chosen format.
+  document.getElementById('exportListBtn').addEventListener('click', function () {
+    var inner =
+      '<p style="margin-bottom:14px; color:var(--ink-2)">請選擇要匯出的檔案格式：</p>' +
+      '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">' +
+        '<button class="fmt-btn" data-fmt="csv" style="padding:18px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left">' +
+          '<div style="font:700 14px/1.3 var(--f-display); margin-bottom:4px">📄 CSV 檔</div>' +
+          '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">通用格式 (UTF-8)，可在 Google Sheets / Numbers 直接開啟。</div>' +
+        '</button>' +
+        '<button class="fmt-btn" data-fmt="xls" style="padding:18px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left">' +
+          '<div style="font:700 14px/1.3 var(--f-display); margin-bottom:4px">📊 Excel 檔</div>' +
+          '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">.xls 副檔名，雙擊可直接以 Microsoft Excel 開啟。</div>' +
+        '</button>' +
+      '</div>' +
+      '<div id="exportStatus" style="font:400 12px/1.4 var(--f-tc); color:var(--muted); margin-top:14px; min-height:18px"></div>';
+    openModal('匯出所有報名資料', inner, function (ov, close) {
+      ov.querySelectorAll('.fmt-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var fmt = b.dataset.fmt;
+          ov.querySelectorAll('.fmt-btn').forEach(function (x) { x.disabled = true; x.style.opacity = '0.55'; });
+          ov.querySelector('#exportStatus').textContent = '正在匯出⋯（資料量大時可能需要 5–10 秒）';
+          google.script.run
+            .withSuccessHandler(function (csv) {
+              if (!csv) { ov.querySelector('#exportStatus').textContent = '匯出失敗或無資料'; return; }
+              // BOM so Excel reads UTF-8 instead of guessing Big5
+              var blob = new Blob(['﻿' + csv], { type: fmt === 'xls' ? 'application/vnd.ms-excel' : 'text/csv;charset=utf-8' });
+              var url = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              var stamp = new Date().toISOString().slice(0, 10);
+              var safeName = (CFG.competitionName || 'export').replace(/[\\\/:*?"<>|]/g, '_').slice(0, 40);
+              a.href = url;
+              a.download = safeName + '_報名資料_' + stamp + '.' + (fmt === 'xls' ? 'xls' : 'csv');
+              document.body.appendChild(a); a.click(); a.remove();
+              URL.revokeObjectURL(url);
+              ov.querySelector('#exportStatus').textContent = '✓ 已下載 ' + a.download;
+              setTimeout(close, 1200);
+            })
+            .withFailureHandler(function (e) {
+              ov.querySelector('#exportStatus').textContent = '匯出失敗：' + ((e && e.message) || '網路錯誤');
+              ov.querySelectorAll('.fmt-btn').forEach(function (x) { x.disabled = false; x.style.opacity = ''; });
+            })
+            .exportTeamsCSV(compId);
+        });
+      });
+    });
+  });
+
   // ---------- MODAL helpers ----------
   function openModal(title, innerHtml, onMount) {
     var ov = document.createElement('div');
@@ -641,6 +692,7 @@
         .withSuccessHandler(function (t) {
           if (!t) { ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">查無此筆報名</p>'; return; }
           ov.querySelector('.modal-body').innerHTML = renderTeamDetailHtml(t);
+          wireRegFileLinks(ov.querySelector('.modal-body'));
         })
         .withFailureHandler(function (e) {
           ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml((e && e.message) || '') + '</p>';
@@ -672,9 +724,33 @@
     (t.teachers || []).forEach(function (s, i) {
       html += '<div class="group"><h5>指導者 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
     });
+    // V1: team-level 附加問題 (separate from member-level customAnswers)
+    var teamAns = t.customAnswers || {};
+    var teamAnsKeys = Object.keys(teamAns).filter(function (k) { return teamAns[k] !== '' && teamAns[k] != null; });
+    if (teamAnsKeys.length > 0) {
+      html += '<div class="group"><h5>附加問題</h5><div class="kv">' +
+        teamAnsKeys.map(function (k) { return kv(k, teamAns[k]); }).join('') +
+      '</div></div>';
+    }
+    // Async-wire file viewers after innerHTML insertion (see openTeamDetail)
     return html;
   }
-  function kv(k, v) { if (v === undefined || v === null || v === '') return ''; return '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + escapeHtml(String(v)) + '</div>'; }
+  // V1: render a value cell — if the value looks like a regfile placeholder,
+  // emit a clickable link that lazily fetches + opens/downloads the file.
+  function valueCell(v) {
+    if (v === undefined || v === null || v === '') return '';
+    var s = String(v);
+    var m = s.match(/^regfile:([^|]+)\|(.+)$/);
+    if (m) {
+      var fileId = m[1], fileName = m[2];
+      return '<a class="file-link" href="javascript:void(0)" data-regfile="' + escapeHtml(fileId) + '" data-name="' + escapeHtml(fileName) + '">📎 ' + escapeHtml(fileName) + ' <span style="color:var(--muted); font-size:11px">（點擊預覽 / 下載）</span></a>';
+    }
+    return escapeHtml(s);
+  }
+  function kv(k, v) {
+    if (v === undefined || v === null || v === '') return '';
+    return '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + valueCell(v) + '</div>';
+  }
   function memberKVs(m) {
     var fields = [
       ['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
@@ -688,6 +764,42 @@
       Object.keys(m.customAnswers).forEach(function (k) { rows += kv(k, m.customAnswers[k]); });
     }
     return rows;
+  }
+  // V1: after team-detail modal renders, wire any regfile links to fetch + show
+  function wireRegFileLinks(scopeEl) {
+    scopeEl.querySelectorAll('[data-regfile]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        var fileId = a.dataset.regfile;
+        var fileName = a.dataset.name || 'file';
+        var origText = a.innerHTML;
+        a.innerHTML = '⏳ 載入中⋯';
+        google.script.run
+          .withSuccessHandler(function (res) {
+            a.innerHTML = origText;
+            if (!res || !res.success) { uiAlert('無法載入檔案'); return; }
+            var dataUri = res.dataUri || (res.base64 ? ('data:' + (res.mimeType || 'application/octet-stream') + ';base64,' + res.base64) : '');
+            if (!dataUri) { uiAlert('檔案內容遺失'); return; }
+            openFilePreview(fileName, dataUri, res.mimeType || '');
+          })
+          .withFailureHandler(function (e) { a.innerHTML = origText; uiAlert('載入失敗：' + (e && e.message)); })
+          .getRegFileData(fileId);
+      });
+    });
+  }
+  function openFilePreview(fileName, dataUri, mimeType) {
+    var lower = (fileName || '').toLowerCase();
+    var isImg = /^image\//.test(mimeType) || /\.(png|jpe?g|gif|webp|bmp)$/.test(lower);
+    var isPdf = mimeType === 'application/pdf' || /\.pdf$/.test(lower);
+    var preview;
+    if (isImg) {
+      preview = '<div style="text-align:center"><img src="' + dataUri + '" alt="" style="max-width:100%; max-height:65vh; border-radius:8px"></div>';
+    } else if (isPdf) {
+      preview = '<iframe src="' + dataUri + '" style="width:100%; height:70vh; border:0; border-radius:8px"></iframe>';
+    } else {
+      preview = '<p style="color:var(--muted); margin-bottom:12px">這個檔案類型無法預覽，請使用下方按鈕下載查看。</p>';
+    }
+    var dl = '<div style="margin-top:14px; display:flex; justify-content:flex-end"><a class="btn btn-primary btn-sm" download="' + escapeHtml(fileName) + '" href="' + dataUri + '">⬇️ 下載 ' + escapeHtml(fileName) + '</a></div>';
+    openModal(fileName || '檔案預覽', preview + dl);
   }
 
   function openEmailComposer(tid) {

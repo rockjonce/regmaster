@@ -197,7 +197,7 @@
       <div class="toolbar">
         <div class="search-w">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
-          <input id="filterInput" placeholder="篩選名稱、類別⋯">
+          <input id="filterInput" placeholder="篩選名稱、類別、主辦方帳號⋯">
         </div>
       </div>
 
@@ -301,8 +301,11 @@
     var q = (STATE.q || '').toLowerCase();
     var filtered = ALL.filter(function (c) {
       if (STATE.filter !== 'all' && classifyComp(c) !== STATE.filter) return false;
-      if (q && (c.name + ' ' + (c.category || '')).toLowerCase().indexOf(q) === -1) return false;
-      return true;
+      if (!q) return true;
+      // Z2: system admin can also search by 主辦方帳號 (c.creator).
+      var haystack = c.name + ' ' + (c.category || '');
+      if (me.role === 'system' && c.creator) haystack += ' ' + c.creator;
+      return haystack.toLowerCase().indexOf(q) !== -1;
     });
 
     // Sort: live first, then upcoming, then by created
@@ -358,10 +361,16 @@
     var coverInner = '<div class="ph-bg"></div>';
     // We don't have posterUrl in listCompetitions result, so just use gradients
 
+    // Z1: 主辦方帳號 tag — only the system role sees this; protects organiser privacy in shared screenshots.
+    var creatorTag = '';
+    if (me.role === 'system' && c.creator) {
+      creatorTag = '<div style="margin-bottom:10px"><span style="display:inline-flex; align-items:center; gap:4px; padding:3px 9px; font:600 10.5px/1.4 var(--f-mono); background:color-mix(in srgb, var(--acc) 14%, var(--surface-2)); color:var(--acc); border-radius:5px">👤 ' + escapeHtml(c.creator) + '</span></div>';
+    }
     return '<a class="evt-card" data-id="' + escapeHtml(c.compId) + '">' +
       '<div class="cover ' + coverClass + '">' + coverInner + statusHtml + dateBlock + countdown + '</div>' +
       '<div class="body">' +
         '<h3>' + escapeHtml(c.name) + '</h3>' +
+        creatorTag +
         '<div class="meta-evt">' +
           '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml(c.deadline || '尚未設定截止日') + '</div>' +
           '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + (c.teamCount || 0) + '</b> 報名' + (max > 0 ? ' / ' + max : '') + '</div>' +
@@ -371,11 +380,7 @@
           '<div class="bar-p ' + pctClass + '"><div style="width:' + pct + '%"></div></div>' +
         '</div>' +
       '</div>' +
-      '<div class="quick-row">' +
-        '<a href="/events/detail.html?id=' + encodeURIComponent(c.compId) + '" target="_blank">公開頁 ↗</a>' +
-        '<a onclick="event.stopPropagation();" href="javascript:void(0)" data-action="toggle-open" data-id="' + escapeHtml(c.compId) + '" data-current="' + (c.isOpen ? '1' : '0') + '">' + (c.isOpen ? '⏸ 關閉' : '▶ 開放') + '</a>' +
-        '<a onclick="event.stopPropagation();" href="javascript:void(0)" data-action="duplicate" data-id="' + escapeHtml(c.compId) + '" data-name="' + escapeHtml(c.name) + '">📋 複製</a>' +
-      '</div>' +
+      // Y1: removed the inline 公開頁 / 開放 / 複製 footer — these actions live inside the event hub.
     '</a>';
   }
 

@@ -1061,6 +1061,26 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (specialErr) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的「' + specialErr + '」'); return false; }
       if (v) obj[def.key] = v;
     }
+    // X1: cross-check ID number's gender digit (2nd char) against the gender field.
+    //   - TW 國民身分證: position 2 is 1 (男) or 2 (女)
+    //   - 居留證: same rule
+    //   - 新式統一證號 (BB1234567X / BC1234567X): position 2 is 8 (男) or 9 (女)
+    // Only enforce when BOTH idNumber and gender came in from this card.
+    var idStr = String(obj.idNumber || '').toUpperCase();
+    var gen = String(obj.gender || '');
+    if (idStr && gen) {
+      var idGender = null;
+      if (/^[A-Z][12]\d{8}$/.test(idStr))      idGender = idStr[1] === '1' ? '男' : '女';
+      else if (/^[A-Z][AB][89]\d{7}$/.test(idStr)) idGender = idStr[2] === '8' ? '男' : '女';   // 新式居留證
+      else if (/^[A-Z][89]\d{8}$/.test(idStr)) idGender = idStr[1] === '8' ? '男' : '女';        // 舊式居留證 (legacy)
+      if (idGender && idGender !== gen) {
+        var idDef = defs.filter(function (d) { return d.legacyKey === 'idNumber' || d.type === 'idnumber'; })[0];
+        var w = idDef ? fieldWrap(idDef, prefix) : null;
+        if (w) w.classList.add('error');
+        showErr(who + ' 的身分證性別碼為「' + idGender + '」，但性別欄選擇「' + gen + '」，請確認。');
+        return false;
+      }
+    }
     return obj;
   }
   function readCustom() {
