@@ -751,7 +751,9 @@
     // S3: pdf initial state
     refreshPdfStatus();
 
-    document.getElementById('adv-maxTeams').value = COMP.config.maxCapacityLimit || COMP.config.maxTeams || 0;
+    // Populate from the ORGANISER'S setting (top-level maxTeams synced into cfg),
+    // not the tier ceiling (maxCapacityLimit) — those two are different concepts.
+    document.getElementById('adv-maxTeams').value = COMP.config.maxTeams || 0;
     document.getElementById('adv-allowWaitlist').value = (CFG.allowWaitlist !== false) ? 'true' : 'false';
     updateCapacityField();   // multi mode → overwrite with session sum + lock
 
@@ -1415,6 +1417,11 @@
         (data.bankEnabled && data.bankInfo.accountNumber ? 'atm' : null)
       ].filter(Boolean),
       allowWaitlist: data.allowWaitlist,
+      // ROOT-CAUSE FIX for bug "maxTeams 設定後又變 0":
+      // We previously only sent maxCapacityLimit (which isn't in the saveCompetitionConfig
+      // jk whitelist and gets stripped), and forgot to pass maxTeams. The backend then
+      // wrote `maxTeams: config.maxTeams || 0` → top-level became 0 on every save.
+      maxTeams: data.maxTeams,
       maxCapacityLimit: data.maxTeams
     });
     var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';

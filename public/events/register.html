@@ -644,6 +644,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     if (sessions.length === 0) {
       document.getElementById('sessionSection').style.display = 'none';
     } else {
+      // BUG FIX: the markup defaults to display:none; without un-hiding here the section
+      // stays hidden but step-1 validation still requires a selection → user is stuck.
+      document.getElementById('sessionSection').style.display = '';
       var multi = CFG.sessionSelectMode === 'multiple';
       document.getElementById('sessionMode').textContent = multi ? '(可複選)' : '(單選)';
       var grid = document.getElementById('sessionGrid');
