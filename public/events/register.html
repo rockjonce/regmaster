@@ -262,13 +262,36 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         </div>
       </div>
 
-      <!-- STEP 4: 確認 -->
+      <!-- STEP 4: 確認 + 繳交報名費 (auto-skipped when no fee or no payment method) -->
       <div class="pane" data-pane="4">
         <div class="page-eyebrow">STEP 04</div>
-        <h1 class="page-title">確認資料並送出</h1>
-        <p class="page-sub">送出後將無法修改主要欄位，請仔細檢查。</p>
+        <h1 class="page-title" id="step4Title">確認資料並送出</h1>
+        <p class="page-sub" id="step4Sub">送出後將無法修改主要欄位，請仔細檢查。</p>
 
         <div id="reviewArea"><!-- generated on entry --></div>
+
+        <!-- Q2/Q3/Q4: payment method block — only rendered when fee>0 AND paymentMethods.length>0 -->
+        <div id="paymentBlock" style="display:none">
+          <div class="review-section" style="border-color:var(--acc-soft); background:color-mix(in srgb, var(--acc) 5%, var(--surface))">
+            <h5 style="border-bottom-color:var(--acc-soft)">選擇付款方式</h5>
+            <div id="payMethodCards" style="display:flex; flex-direction:column; gap:10px"></div>
+            <div id="atmFields" style="display:none; margin-top:14px; padding:14px; border:1px solid var(--line); border-radius:9px; background:var(--surface)">
+              <div class="fields-2">
+                <div class="fld">
+                  <div class="lbl">轉出銀行 <span class="req">*</span></div>
+                  <select id="payBank"><option value="">請選擇銀行</option></select>
+                  <div class="err">請選擇銀行</div>
+                </div>
+                <div class="fld">
+                  <div class="lbl">轉出帳號後 5 碼 <span class="req">*</span></div>
+                  <input type="text" id="payAcctTail" maxlength="5" inputmode="numeric" placeholder="供主辦方對帳用">
+                  <div class="err">請輸入 5 碼數字</div>
+                </div>
+              </div>
+              <p style="font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-top:8px">送出報名後，您會在「我的報名」看到匯款資訊。請於 3 個工作天內完成轉帳，主辦方將自動對帳。</p>
+            </div>
+          </div>
+        </div>
 
         <div class="policy">
           <strong>送出即代表同意</strong>
@@ -363,6 +386,21 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   document.getElementById('crumbDetail').href = '/events/detail.html?id=' + encodeURIComponent(compId);
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  // Q4: 台灣金融機構代碼清單（CBC 三碼）— 涵蓋主要銀行與郵局
+  var TW_BANKS = [
+    ['004','臺灣銀行'], ['005','土地銀行'], ['006','合作金庫商業銀行'], ['007','第一商業銀行'],
+    ['008','華南商業銀行'], ['009','彰化商業銀行'], ['011','上海商業儲蓄銀行'],
+    ['012','台北富邦商業銀行'], ['013','國泰世華商業銀行'], ['016','高雄銀行'],
+    ['017','兆豐國際商業銀行'], ['021','花旗（台灣）商業銀行'], ['050','臺灣中小企業銀行'],
+    ['052','渣打國際商業銀行'], ['053','台中商業銀行'], ['054','京城商業銀行'],
+    ['081','匯豐（台灣）商業銀行'], ['101','瑞興商業銀行'], ['102','華泰商業銀行'],
+    ['103','臺灣新光商業銀行'], ['108','陽信商業銀行'], ['118','板信商業銀行'],
+    ['147','三信商業銀行'], ['700','中華郵政'],
+    ['803','聯邦商業銀行'], ['805','遠東國際商業銀行'], ['806','元大商業銀行'],
+    ['807','永豐商業銀行'], ['808','玉山商業銀行'], ['809','凱基商業銀行'],
+    ['810','星展（台灣）商業銀行'], ['812','台新國際商業銀行'], ['815','日盛國際商業銀行'],
+    ['816','安泰商業銀行'], ['822','中國信託商業銀行']
+  ];
   // FB7: allow plain text + simple inline HTML (a / b / strong / em / i / u / br / span)
   // for field help. Strip all attributes except href on <a>. No style, no class, no script.
   function sanitizeHelpInline(html) {
@@ -407,8 +445,19 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     teamNameEN: '',
     students: [],
     teachers: [],
-    customAnswers: {}
+    customAnswers: {},
+    payMethod: ''
   };
+  // Q2/Q3/Q4: payment computed after CFG loads
+  var TOTAL_FEE = 0, NEEDS_PAYMENT = false, AVAILABLE_METHODS = [];
+  function updateSubmitButtonLabel() {
+    var btn = document.getElementById('submitBtn');
+    if (!btn) return;
+    if (NEEDS_PAYMENT && STATE.payMethod === 'payuni') btn.textContent = '前往 PayUNI 付款 →';
+    else if (NEEDS_PAYMENT && STATE.payMethod === 'atm') btn.textContent = '送出報名（稍後轉帳）→';
+    else if (NEEDS_PAYMENT) btn.textContent = '請先選擇付款方式';
+    else btn.textContent = '送出報名 →';
+  }
 
   // ---- Load competition ----
   google.script.run
@@ -482,6 +531,65 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     }
     document.getElementById('totalAmt').textContent = sum > 0 ? ('NT$ ' + sum.toLocaleString()) : 'NT$ 0';
 
+    // Q2/Q3/Q4: capture fee + decide whether step 4 needs a payment block.
+    TOTAL_FEE = sum;
+    var methods = Array.isArray(CFG.paymentMethods) ? CFG.paymentMethods.slice() : [];
+    // Sanity: ATM is only valid when bank transfer is enabled and bank info is set
+    methods = methods.filter(function (m) {
+      if (m === 'payuni') return CFG.payuniEnabled === true;
+      if (m === 'atm')    return CFG.bankTransferEnabled === true && CFG.bankInfo && CFG.bankInfo.accountNumber;
+      return false;
+    });
+    NEEDS_PAYMENT = TOTAL_FEE > 0 && methods.length > 0;
+    AVAILABLE_METHODS = methods;
+    if (NEEDS_PAYMENT) {
+      document.getElementById('step4Title').textContent = '確認資料並繳交報名費';
+      document.getElementById('step4Sub').textContent = '檢查資料後選擇付款方式，PayUNI 將跳轉至安全付款頁。';
+      // Pre-render payment method cards
+      var cardsHtml = methods.map(function (m) {
+        if (m === 'payuni') return '<label class="method-card" data-method="payuni" style="display:flex; gap:12px; align-items:center; padding:14px; border:2px solid var(--line); border-radius:10px; cursor:pointer; background:var(--surface)"><input type="radio" name="payMethod" value="payuni" style="margin:0"><div style="flex:1"><h6 style="margin:0; font:600 14px/1.3 var(--f-display)">線上付款（PayUNI）</h6><p style="margin:3px 0 0; font:400 12px/1.4 var(--f-tc); color:var(--muted)">信用卡 · ATM · 超商代碼 · LINE Pay，立即完成付款</p></div></label>';
+        if (m === 'atm')    return '<label class="method-card" data-method="atm" style="display:flex; gap:12px; align-items:center; padding:14px; border:2px solid var(--line); border-radius:10px; cursor:pointer; background:var(--surface)"><input type="radio" name="payMethod" value="atm" style="margin:0"><div style="flex:1"><h6 style="margin:0; font:600 14px/1.3 var(--f-display)">銀行轉帳 / ATM</h6><p style="margin:3px 0 0; font:400 12px/1.4 var(--f-tc); color:var(--muted)">' + (CFG.bankInfo && CFG.bankInfo.bankName ? escapeHtml(CFG.bankInfo.bankName) + ' · 帳號 ' + escapeHtml(CFG.bankInfo.accountNumber) : '主辦方銀行帳戶') + '</p></div></label>';
+        return '';
+      }).join('');
+      document.getElementById('payMethodCards').innerHTML = cardsHtml;
+      document.getElementById('paymentBlock').style.display = 'block';
+      // Populate bank dropdown
+      var bankSel = document.getElementById('payBank');
+      TW_BANKS.forEach(function (b) {
+        var o = document.createElement('option');
+        o.value = b[0] + ' ' + b[1];
+        o.textContent = b[0] + ' ' + b[1];
+        bankSel.appendChild(o);
+      });
+      // Wire method-card clicks → highlight selected + reveal/hide ATM fields
+      document.querySelectorAll('.method-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+          document.querySelectorAll('.method-card').forEach(function (c) { c.style.borderColor = 'var(--line)'; });
+          card.style.borderColor = 'var(--acc)';
+          var radio = card.querySelector('input[type="radio"]');
+          radio.checked = true;
+          STATE.payMethod = radio.value;
+          document.getElementById('atmFields').style.display = (STATE.payMethod === 'atm') ? 'block' : 'none';
+          updateSubmitButtonLabel();
+        });
+      });
+      // Auto-select if only one method available
+      if (methods.length === 1) {
+        var only = document.querySelector('.method-card');
+        if (only) only.click();
+      }
+    } else {
+      document.getElementById('paymentBlock').style.display = 'none';
+    }
+    // Hide step-4 indicator + bar when not needed; step navigation will skip.
+    if (!NEEDS_PAYMENT) {
+      var step4Dot = document.querySelector('.step-item[data-step="4"]');
+      if (step4Dot) step4Dot.style.display = 'none';
+      // Show 3 steps in footer count instead of 4
+      var totalSteps = document.getElementById('footMeta');
+      if (totalSteps) totalSteps.innerHTML = '步驟 <b id="curStep">1</b> / 3';
+    }
+
     // Groups
     var groups = CFG.groups || [];
     var groupRadio = document.getElementById('groupRadio');
@@ -553,26 +661,32 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     STU_DEFS = studentFieldDefs();
     TCH_DEFS = teacherFieldDefs();
     CUSTOM_DEFS = customFieldDefs();
-    // P1: each formSchema student-role section becomes one card; otherwise CFG.memberCount drives count.
+    // 報名 #1 fix: card count = max(config.memberCount, sum of student-section repeats).
+    // Each card uses its own section's fields so two student blocks render as two distinct cards.
     var stuSecs = SCHEMA ? sectionsByRole('student') : [];
-    var mCount = Math.max(CFG.memberCount || 1, stuSecs.length, 1);
+    var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
+    var mCount = Math.max(CFG.memberCount || 1, stuSecRepeatTotal, 1);
     STU_DEFS_PER_CARD = studentFieldDefsPerCard(mCount);
-    var tCount = CFG.teacherCount || 0;
+    var tchSecs = SCHEMA ? sectionsByRole('teacher') : [];
+    var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
+    var tCount = Math.max(CFG.teacherCount || 0, tchSecRepeatTotal);
+    TCH_DEFS_PER_CARD = teacherFieldDefsPerCard(tCount);
     document.getElementById('studentCount').textContent = '共 ' + mCount + ' 位';
     var sList = document.getElementById('studentList');
     sList.innerHTML = '';
     for (var i = 0; i < mCount; i++) {
-      // When multiple student sections are designed, show each section's own title so the
-      // registrant can tell them apart (e.g. 學員 1 / 學員 2 or 隊長 / 副隊長).
-      var t = (stuSecs.length > 1 && stuSecs[i]) ? stuSecs[i].title : null;
-      sList.appendChild(buildMemberCard('student', i, STU_DEFS_PER_CARD[i], t));
+      var stuTitle = cardTitleForRole('student', i, '學員 ' + (i + 1));
+      sList.appendChild(buildMemberCard('student', i, STU_DEFS_PER_CARD[i] || STU_DEFS, stuTitle));
     }
-    if (tCount > 0 && TCH_DEFS.length) {
+    if (tCount > 0 && (TCH_DEFS.length || (TCH_DEFS_PER_CARD[0] && TCH_DEFS_PER_CARD[0].length))) {
       document.getElementById('teacherSection').style.display = 'block';
       document.getElementById('teacherCount').textContent = '共 ' + tCount + ' 位';
       var tList = document.getElementById('teacherList');
       tList.innerHTML = '';
-      for (var j = 0; j < tCount; j++) tList.appendChild(buildMemberCard('teacher', j, TCH_DEFS));
+      for (var j = 0; j < tCount; j++) {
+        var tchTitle = cardTitleForRole('teacher', j, '指導者 ' + (j + 1));
+        tList.appendChild(buildMemberCard('teacher', j, TCH_DEFS_PER_CARD[j] || TCH_DEFS, tchTitle));
+      }
     } else {
       document.getElementById('teacherSection').style.display = 'none';
     }
@@ -599,7 +713,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   var COUNTRY_OPTS = ['台灣 Taiwan','中國 China','香港 Hong Kong','澳門 Macau','日本 Japan','韓國 South Korea','美國 United States','加拿大 Canada','英國 United Kingdom','法國 France','德國 Germany','義大利 Italy','西班牙 Spain','葡萄牙 Portugal','荷蘭 Netherlands','比利時 Belgium','瑞士 Switzerland','奧地利 Austria','瑞典 Sweden','挪威 Norway','丹麥 Denmark','芬蘭 Finland','冰島 Iceland','愛爾蘭 Ireland','波蘭 Poland','捷克 Czech Republic','匈牙利 Hungary','希臘 Greece','土耳其 Turkey','俄羅斯 Russia','烏克蘭 Ukraine','澳洲 Australia','紐西蘭 New Zealand','新加坡 Singapore','馬來西亞 Malaysia','泰國 Thailand','越南 Vietnam','菲律賓 Philippines','印尼 Indonesia','印度 India','巴基斯坦 Pakistan','孟加拉 Bangladesh','斯里蘭卡 Sri Lanka','緬甸 Myanmar','柬埔寨 Cambodia','寮國 Laos','蒙古 Mongolia','北韓 North Korea','尼泊爾 Nepal','以色列 Israel','阿聯酋 UAE','沙烏地阿拉伯 Saudi Arabia','卡達 Qatar','科威特 Kuwait','巴林 Bahrain','阿曼 Oman','伊朗 Iran','伊拉克 Iraq','約旦 Jordan','黎巴嫩 Lebanon','敘利亞 Syria','埃及 Egypt','南非 South Africa','奈及利亞 Nigeria','肯亞 Kenya','迦納 Ghana','摩洛哥 Morocco','突尼西亞 Tunisia','衣索比亞 Ethiopia','坦尚尼亞 Tanzania','墨西哥 Mexico','巴西 Brazil','阿根廷 Argentina','智利 Chile','哥倫比亞 Colombia','秘魯 Peru','委內瑞拉 Venezuela','厄瓜多 Ecuador','古巴 Cuba','巴拿馬 Panama','哥斯大黎加 Costa Rica','多明尼加 Dominican Republic','牙買加 Jamaica','盧森堡 Luxembourg','摩納哥 Monaco','列支敦斯登 Liechtenstein','馬爾他 Malta','克羅埃西亞 Croatia','塞爾維亞 Serbia','斯洛維尼亞 Slovenia','斯洛伐克 Slovakia','羅馬尼亞 Romania','保加利亞 Bulgaria','立陶宛 Lithuania','拉脫維亞 Latvia','愛沙尼亞 Estonia','喬治亞 Georgia','亞美尼亞 Armenia','亞塞拜然 Azerbaijan','哈薩克 Kazakhstan','烏茲別克 Uzbekistan','汶萊 Brunei','斐濟 Fiji','帛琉 Palau','馬紹爾群島 Marshall Islands','東帝汶 Timor-Leste','不丹 Bhutan','馬爾地夫 Maldives','巴布亞紐幾內亞 Papua New Guinea','其他 Other'];
 
   // ---- formSchema-aware field engine (V3 independent) ----
-  var SCHEMA = null, STU_DEFS = [], STU_DEFS_PER_CARD = [], TCH_DEFS = [], CUSTOM_DEFS = [], LABEL_MAP = {};
+  var SCHEMA = null, STU_DEFS = [], STU_DEFS_PER_CARD = [], TCH_DEFS = [], TCH_DEFS_PER_CARD = [], CUSTOM_DEFS = [], LABEL_MAP = {};
   function sectionsByRole(role) { return SCHEMA ? SCHEMA.sections.filter(function (s) { return (s.role || 'custom') === role; }) : []; }
   function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', invoiceType:'select', healthNote:'textarea', idNumber:'idnumber' })[k] || 'text'; }
   function optsFor(k) {
@@ -621,24 +735,42 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
   function legacyDefs(keys) { return (keys || []).map(function (k) { LABEL_MAP[k] = FIELD_LABELS[k] || k; return { key: k, label: FIELD_LABELS[k] || k, type: inferType(k), opts: optsFor(k), req: true, help: '', logic: null }; }); }
   function studentFieldDefs() { if (SCHEMA) { var s = sectionsByRole('student')[0]; return s ? (s.fields || []).map(toDef) : []; } return legacyDefs(CFG.studentFields || ['chineseName']); }
-  // P1: when multiple student-role sections exist in formSchema, each section drives its own member card.
-  // Returns an array of defs-lists, one per student card.
-  function studentFieldDefsPerCard(count) {
+  // Build [section, section, …] of length N by walking each role-section and replicating
+  // it `repeat` times, then padding with the last section if N > sum(repeat).
+  // Used for both 學員 and 指導者 cards.
+  function sectionMapForRole(role, count) {
+    var map = [];
     if (SCHEMA) {
-      var secs = sectionsByRole('student');
-      if (secs.length > 1) {
-        var out = [];
-        for (var i = 0; i < count; i++) {
-          var s = secs[i] || secs[secs.length - 1];   // overflow → repeat last section's shape
-          out.push((s.fields || []).map(toDef));
-        }
-        return out;
-      }
+      sectionsByRole(role).forEach(function (s) {
+        var rep = Math.max(1, parseInt(s.repeat, 10) || 1);
+        for (var i = 0; i < rep; i++) map.push(s);
+      });
     }
-    // Single section (or legacy): every card uses the same defs
-    var shared = studentFieldDefs();
-    var arr = []; for (var k = 0; k < count; k++) arr.push(shared);
-    return arr;
+    while (map.length < count) map.push(map[map.length - 1] || null);
+    return map.slice(0, count);
+  }
+  function defsForCardByRole(role, count, legacyFallbackDefs) {
+    var out = [];
+    var map = sectionMapForRole(role, count);
+    for (var i = 0; i < count; i++) {
+      var s = map[i];
+      out.push(s ? (s.fields || []).map(toDef) : legacyFallbackDefs);
+    }
+    return out;
+  }
+  function studentFieldDefsPerCard(count) {
+    return defsForCardByRole('student', count, legacyDefs(CFG.studentFields || ['chineseName']));
+  }
+  function teacherFieldDefsPerCard(count) {
+    return defsForCardByRole('teacher', count, legacyDefs(CFG.teacherFields || ['chineseName']));
+  }
+  // Title for the i-th student/teacher card (uses section.title when distinct sections exist).
+  function cardTitleForRole(role, i, fallback) {
+    if (!SCHEMA) return fallback;
+    var secs = sectionsByRole(role);
+    if (secs.length <= 1) return fallback;
+    var map = sectionMapForRole(role, Math.max(i + 1, secs.length));
+    return (map[i] && map[i].title) ? map[i].title : fallback;
   }
   function teacherFieldDefs() { if (SCHEMA) { var s = sectionsByRole('teacher')[0]; return s ? (s.fields || []).map(toDef) : []; } return legacyDefs(CFG.teacherFields || ['chineseName']); }
   function customFieldDefs() {
@@ -775,9 +907,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     });
     document.getElementById('curStep').textContent = n;
     document.getElementById('prevBtn').disabled = (n === 1);
-    document.getElementById('nextBtn').style.display = (n < 4 ? '' : 'none');
-    document.getElementById('submitBtn').style.display = (n === 4 ? '' : 'none');
-    if (n === 4) renderReview();
+    // Q2: when no payment is needed we skip step 4 entirely → submit appears on step 3.
+    var lastStep = NEEDS_PAYMENT ? 4 : 3;
+    document.getElementById('nextBtn').style.display = (n < lastStep ? '' : 'none');
+    document.getElementById('submitBtn').style.display = (n === lastStep ? '' : 'none');
+    if (n === 4 || (n === 3 && !NEEDS_PAYMENT)) renderReview();
+    updateSubmitButtonLabel();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -928,9 +1063,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     } else if (n === 2) {
       // Collect students/teachers from the schema-driven cards
       STATE.students = [];
-      // P1: derive count the same way the renderer did, so each card reads with its own defs
-      var sStudentSections = SCHEMA ? sectionsByRole('student').length : 0;
-      var mCount = Math.max(CFG.memberCount || 1, sStudentSections, 1);
+      // Derive counts the same way the renderer did, so each card reads with its own defs
+      var stuSecs = SCHEMA ? sectionsByRole('student') : [];
+      var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
+      var mCount = Math.max(CFG.memberCount || 1, stuSecRepeatTotal, 1);
       var defsPerCard = STU_DEFS_PER_CARD.length ? STU_DEFS_PER_CARD : studentFieldDefsPerCard(mCount);
       for (var i = 0; i < mCount; i++) {
         var s = readMember(defsPerCard[i] || STU_DEFS, 'student_' + i + '_', '學員 ' + (i + 1));
@@ -938,10 +1074,13 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         STATE.students.push(s);
       }
       STATE.teachers = [];
-      var tCount = CFG.teacherCount || 0;
-      if (tCount > 0 && TCH_DEFS.length) {
+      var tchSecs = SCHEMA ? sectionsByRole('teacher') : [];
+      var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
+      var tCount = Math.max(CFG.teacherCount || 0, tchSecRepeatTotal);
+      var tchDefsPerCard = TCH_DEFS_PER_CARD.length ? TCH_DEFS_PER_CARD : teacherFieldDefsPerCard(tCount);
+      if (tCount > 0) {
         for (var j = 0; j < tCount; j++) {
-          var t = readMember(TCH_DEFS, 'teacher_' + j + '_', '指導者 ' + (j + 1));
+          var t = readMember(tchDefsPerCard[j] || TCH_DEFS, 'teacher_' + j + '_', '指導者 ' + (j + 1));
           if (t === false) return false;
           STATE.teachers.push(t);
         }
@@ -971,6 +1110,19 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     } else if (n === 3) {
       STATE.customAnswers = {};
       if (readCustom() === false) return false;
+    } else if (n === 4) {
+      // Q2/Q3/Q4: payment selection + bank-transfer fields
+      if (NEEDS_PAYMENT) {
+        if (!STATE.payMethod) { showErr('請選擇付款方式'); return false; }
+        if (STATE.payMethod === 'atm') {
+          var bank = (document.getElementById('payBank').value || '').trim();
+          var tail = (document.getElementById('payAcctTail').value || '').trim();
+          if (!bank) { showErr('請選擇轉出銀行'); return false; }
+          if (!/^\d{5}$/.test(tail)) { showErr('請輸入轉出帳號後 5 碼數字'); return false; }
+          STATE.remitterBank = bank;
+          STATE.remitterAccountTail = tail;
+        }
+      }
     }
     return true;
   }
@@ -1028,7 +1180,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   });
 
   document.getElementById('submitBtn').addEventListener('click', function () {
-    if (!validateStep(4)) return;
+    // Validate the step the submit button lives on (3 when no payment needed, 4 otherwise)
+    var submitStep = NEEDS_PAYMENT ? 4 : 3;
+    if (!validateStep(submitStep)) return;
     var btn = this;
     btn.disabled = true; btn.textContent = '送出中⋯⋯';
     var fd = {
@@ -1040,20 +1194,62 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       students: STATE.students,
       teachers: STATE.teachers,
       customAnswers: STATE.customAnswers,
-      paymentMethod: '',  // chosen on payment page
-      remitterName: '', remitterBank: '', remitterAccount: '', creditCardOrderNo: ''
+      paymentMethod: STATE.payMethod || '',
+      remitterName: '',
+      remitterBank: STATE.payMethod === 'atm' ? (STATE.remitterBank || '') : '',
+      remitterAccount: STATE.payMethod === 'atm' ? (STATE.remitterAccountTail || '') : '',
+      creditCardOrderNo: ''
     };
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
+          // Q3: PayUNI selected → create order + auto-submit to PayUNI billing URL
+          if (NEEDS_PAYMENT && STATE.payMethod === 'payuni') {
+            btn.textContent = '建立 PayUNI 訂單中⋯⋯';
+            google.script.run
+              .withSuccessHandler(function (p) {
+                if (!p || !p.success) {
+                  btn.disabled = false; updateSubmitButtonLabel();
+                  showErr((p && p.message) || '無法建立 PayUNI 訂單');
+                  // Show success page anyway so user has their teamId/password
+                  showSuccess(res);
+                  return;
+                }
+                if (p.freeAfterDiscount) {
+                  // Fully discounted → no PayUNI hop needed; show success
+                  showSuccess(res);
+                  return;
+                }
+                // POST hidden form to PayUNI
+                var f = document.createElement('form');
+                f.method = 'POST';
+                f.action = p.payuni.action;
+                ['MerID','Version','EncryptInfo','HashInfo'].forEach(function (k) {
+                  var inp = document.createElement('input');
+                  inp.type = 'hidden'; inp.name = k; inp.value = p.payuni[k];
+                  f.appendChild(inp);
+                });
+                try { localStorage.setItem('regmaster_last_order', p.orderId); } catch (e) {}
+                document.body.appendChild(f);
+                f.submit();
+              })
+              .withFailureHandler(function (err) {
+                btn.disabled = false; updateSubmitButtonLabel();
+                showErr((err && err.message) || '無法建立 PayUNI 訂單');
+                showSuccess(res);
+              })
+              .createRegistrationPayment(compId, res.teamId, '');
+            return;
+          }
+          // No payment OR ATM transfer → straight to success page
           showSuccess(res);
         } else {
-          btn.disabled = false; btn.textContent = '送出報名 →';
+          btn.disabled = false; updateSubmitButtonLabel();
           showErr((res && res.message) || '送出失敗');
         }
       })
       .withFailureHandler(function (err) {
-        btn.disabled = false; btn.textContent = '送出報名 →';
+        btn.disabled = false; updateSubmitButtonLabel();
         showErr((err && err.message) || '網路錯誤');
       })
       .submitRegistration(compId, fd);

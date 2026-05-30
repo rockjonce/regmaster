@@ -4616,11 +4616,14 @@ function deriveLegacyFromFormSchema(formSchema) {
 
   const seenStudent = new Set();
   const seenTeacher = new Set();
+  // Bug fix (報名 #1): count student/teacher cards = SUM of repeat across all student/teacher
+  // sections, not max. Two student sections (each repeat=1) → 2 student cards on the form.
+  let stuTotal = 0, tchTotal = 0;
   for (const sec of formSchema.sections) {
     const role = sec.role || 'custom';
     const repeat = parseInt(sec.repeat, 10) || 1;
-    if (role === 'student' && repeat > out.memberCount) out.memberCount = repeat;
-    if (role === 'teacher' && repeat > out.teacherCount) out.teacherCount = repeat;
+    if (role === 'student') stuTotal += repeat;
+    if (role === 'teacher') tchTotal += repeat;
     for (const f of (sec.fields || [])) {
       if (!f || !f.type) continue;
       if (role === 'student' && f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) {
@@ -4636,6 +4639,8 @@ function deriveLegacyFromFormSchema(formSchema) {
       }
     }
   }
+  if (stuTotal > 0) out.memberCount = stuTotal;
+  if (tchTotal > 0) out.teacherCount = tchTotal;
   return out;
 }
 
