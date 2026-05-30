@@ -363,6 +363,40 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   document.getElementById('crumbDetail').href = '/events/detail.html?id=' + encodeURIComponent(compId);
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  // FB7: allow plain text + simple inline HTML (a / b / strong / em / i / u / br / span)
+  // for field help. Strip all attributes except href on <a>. No style, no class, no script.
+  function sanitizeHelpInline(html) {
+    var ALLOWED = { A: ['href'], B: [], STRONG: [], EM: [], I: [], U: [], BR: [], SPAN: [] };
+    var tmp = document.createElement('div');
+    tmp.innerHTML = String(html || '');
+    function walk(node) {
+      var children = Array.prototype.slice.call(node.childNodes);
+      children.forEach(function (n) {
+        if (n.nodeType === 3) return;                               // text — keep
+        if (n.nodeType !== 1) { n.remove(); return; }               // comments / misc — strip
+        var tag = n.tagName;
+        if (!ALLOWED.hasOwnProperty(tag)) {
+          // Unwrap: keep text content, drop tag
+          while (n.firstChild) node.insertBefore(n.firstChild, n);
+          n.remove();
+          return;
+        }
+        // Whitelist attributes
+        Array.prototype.slice.call(n.attributes).forEach(function (a) {
+          if (ALLOWED[tag].indexOf(a.name.toLowerCase()) === -1) n.removeAttribute(a.name);
+        });
+        if (tag === 'A') {
+          var href = n.getAttribute('href') || '';
+          if (!/^(https?:|mailto:|tel:|\/)/i.test(href)) n.removeAttribute('href');
+          n.setAttribute('rel', 'noopener noreferrer');
+          n.setAttribute('target', '_blank');
+        }
+        walk(n);
+      });
+    }
+    walk(tmp);
+    return tmp.innerHTML;
+  }
 
   var CFG = null;       // competition config
   var STATE = {
@@ -570,13 +604,35 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   // Render one field's input HTML (without wrapper). domId is the element id.
+  // FB2: ITU-T E.164 country dial codes (label + code). Default = 台灣 +886.
+  var COUNTRY_CODES = [
+    ['台灣', '+886'], ['中國', '+86'], ['香港', '+852'], ['澳門', '+853'], ['日本', '+81'], ['韓國', '+82'],
+    ['新加坡', '+65'], ['馬來西亞', '+60'], ['泰國', '+66'], ['越南', '+84'], ['菲律賓', '+63'], ['印尼', '+62'],
+    ['印度', '+91'], ['澳洲', '+61'], ['紐西蘭', '+64'],
+    ['美國 / 加拿大', '+1'], ['英國', '+44'], ['法國', '+33'], ['德國', '+49'], ['義大利', '+39'], ['西班牙', '+34'],
+    ['葡萄牙', '+351'], ['荷蘭', '+31'], ['比利時', '+32'], ['瑞士', '+41'], ['奧地利', '+43'], ['瑞典', '+46'],
+    ['挪威', '+47'], ['丹麥', '+45'], ['芬蘭', '+358'], ['愛爾蘭', '+353'], ['波蘭', '+48'], ['捷克', '+420'],
+    ['希臘', '+30'], ['俄羅斯', '+7'], ['土耳其', '+90'], ['以色列', '+972'], ['阿聯酋', '+971'], ['沙烏地', '+966'],
+    ['埃及', '+20'], ['南非', '+27'], ['奈及利亞', '+234'], ['肯亞', '+254'],
+    ['墨西哥', '+52'], ['巴西', '+55'], ['阿根廷', '+54'], ['智利', '+56'], ['哥倫比亞', '+57'], ['秘魯', '+51']
+  ];
   function renderInput(def, domId) {
     var t = def.type;
     if (t === 'select') { return '<select id="' + domId + '"><option value="">請選擇</option>' + (def.opts || []).map(function (o) { return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + '</option>'; }).join('') + '</select>'; }
     if (t === 'radio') { return '<div class="opt-group">' + (def.opts || []).map(function (o) { return '<label class="opt-pill"><input type="radio" name="' + domId + '" value="' + escapeHtml(o) + '"> ' + escapeHtml(o) + '</label>'; }).join('') + '</div>'; }
     if (t === 'checkbox') { return '<div class="opt-group">' + (def.opts || []).map(function (o) { return '<label class="opt-pill"><input type="checkbox" data-cbgroup="' + domId + '" value="' + escapeHtml(o) + '"> ' + escapeHtml(o) + '</label>'; }).join('') + '</div>'; }
     if (t === 'textarea') { return '<textarea id="' + domId + '" rows="3"></textarea>'; }
-    if (t === 'file') { return '<input type="file" id="' + domId + '_f"><input type="hidden" id="' + domId + '"><div class="file-stat" id="' + domId + '_s" style="font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin-top:4px"></div>'; }
+    if (t === 'file') {
+      // FB4: file constraints — accept attr from def.acceptTypes (or custom ext list); size validated at change
+      var accept = '';
+      if (def.acceptTypes && def.acceptTypes.length) accept = ' accept="' + escapeHtml(def.acceptTypes.join(',')) + '"';
+      return '<input type="file" id="' + domId + '_f"' + accept + '><input type="hidden" id="' + domId + '"><div class="file-stat" id="' + domId + '_s" style="font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin-top:4px"></div>';
+    }
+    if (t === 'phoneIntl') {
+      // FB2: country-code dropdown + tel input. Value is "+CC NNNNNNN" joined on submit.
+      var ccOpts = COUNTRY_CODES.map(function (c) { return '<option value="' + escapeHtml(c[1]) + '"' + (c[1] === '+886' ? ' selected' : '') + '>' + escapeHtml(c[0]) + ' ' + escapeHtml(c[1]) + '</option>'; }).join('');
+      return '<div style="display:flex; gap:6px"><select id="' + domId + '_cc" style="width:170px; flex-shrink:0">' + ccOpts + '</select><input type="tel" id="' + domId + '_num" style="flex:1" placeholder="例：912345678" inputmode="tel"><input type="hidden" id="' + domId + '"></div>';
+    }
     var it = (t === 'email') ? 'email' : (t === 'tel') ? 'tel' : (t === 'date') ? 'date' : (t === 'number') ? 'number' : 'text';
     return '<input type="' + it + '" id="' + domId + '">';
   }
@@ -585,7 +641,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var domId = prefix + def.key;
     var isFull = (def.type === 'textarea' || def.type === 'file' || def.key === 'address' || def.key === 'nationality');
     var req = def.req ? ' <span class="req">*</span>' : '';
-    var help = def.help ? '<div class="help-f" style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:3px">' + escapeHtml(def.help) + '</div>' : '';
+    var help = def.help ? '<div class="help-f" style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:3px">' + sanitizeHelpInline(def.help) + '</div>' : '';
     return '<div class="fld' + (isFull ? ' field-full' : '') + '" data-fld-key="' + escapeHtml(def.key) + '"><div class="lbl">' + escapeHtml(def.label) + req + '</div>' + renderInput(def, domId) + help + '<div class="err">請填寫此欄位</div></div>';
   }
   // Wire file uploads + conditional show/hide within a container (prefix scopes ids)
@@ -598,7 +654,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (!fInp) return;
       fInp.addEventListener('change', function () {
         var file = this.files[0]; if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { stat.textContent = '檔案過大（上限 5MB）'; stat.style.color = 'var(--err-700)'; this.value = ''; return; }
+        // FB4: per-field size + extension constraints (default 5MB, no ext restriction)
+        var maxMB = (def.maxFileSize && def.maxFileSize > 0) ? def.maxFileSize : 5;
+        if (file.size > maxMB * 1024 * 1024) { stat.textContent = '檔案過大（上限 ' + maxMB + 'MB）'; stat.style.color = 'var(--err-700)'; this.value = ''; return; }
+        if (def.acceptTypes && def.acceptTypes.length) {
+          var name = file.name.toLowerCase();
+          var ext = name.slice(name.lastIndexOf('.'));
+          var ok = def.acceptTypes.some(function (e) { return String(e).trim().toLowerCase() === ext; });
+          if (!ok) { stat.textContent = '不允許的檔案類型，僅接受：' + def.acceptTypes.join(', '); stat.style.color = 'var(--err-700)'; this.value = ''; return; }
+        }
         stat.textContent = '上傳中⋯'; stat.style.color = 'var(--muted)';
         var r = new FileReader();
         r.onload = function (e) {
@@ -681,10 +745,20 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var domId = prefix + def.key;
     if (def.type === 'radio') { var r = document.querySelector('[name="' + domId + '"]:checked'); return r ? r.value : ''; }
     if (def.type === 'checkbox') { return Array.prototype.slice.call(document.querySelectorAll('[data-cbgroup="' + domId + '"]:checked')).map(function (c) { return c.value; }).join(', '); }
+    if (def.type === 'phoneIntl') {
+      // FB2: join country code + number, e.g. "+886 912345678"
+      var cc = document.getElementById(domId + '_cc'); var num = document.getElementById(domId + '_num');
+      var ccv = cc ? (cc.value || '+886') : '+886';
+      var nv = num ? (num.value || '').trim().replace(/^0+/, '') : '';
+      return nv ? (ccv + ' ' + nv) : '';
+    }
     var el = document.getElementById(domId); return el ? (el.value || '').trim() : '';
   }
   function fieldWrap(def, prefix) {
-    var inp = document.getElementById(prefix + def.key) || document.querySelector('[name="' + prefix + def.key + '"]') || document.querySelector('[data-cbgroup="' + prefix + def.key + '"]');
+    var inp = document.getElementById(prefix + def.key)
+      || document.getElementById(prefix + def.key + '_num')         // phoneIntl uses *_num for the visible input
+      || document.querySelector('[name="' + prefix + def.key + '"]')
+      || document.querySelector('[data-cbgroup="' + prefix + def.key + '"]');
     return (inp && inp.closest) ? inp.closest('.fld') : null;
   }
   // Taiwan national ID checksum (item 4). Non-TW-ID formats (e.g. passport) pass through.
