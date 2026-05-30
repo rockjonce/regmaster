@@ -1,1341 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RegMaster 主辦方操作手冊 — 線上活動報名系統完整教學 | Organiser Manual</title>
+<meta name="description" content="RegMaster 主辦方操作手冊：從建立活動、設計報名表單、收費與線上付款（PayUNI）、報名管理與統計、帳務與平台代收轉付、公告群發、評分、QR 報到到 AI 助理的完整教學。中英文雙語。A complete bilingual guide for event organisers.">
+<meta name="keywords" content="RegMaster,活動報名系統,線上報名,報名管理,活動管理平台,報名表單設計,PayUNI 金流,QR 報到,活動帳務,報名統計,主辦方手冊,event registration,organiser manual">
+<meta name="author" content="Kuang-Tien International Co., Ltd. 廣天國際有限公司">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://regmaster-v3.web.app/Manual.html">
+<link rel="alternate" hreflang="zh-Hant" href="https://regmaster-v3.web.app/Manual.html">
+<link rel="alternate" hreflang="en" href="https://regmaster-v3.web.app/Manual.html">
+<link rel="alternate" hreflang="x-default" href="https://regmaster-v3.web.app/Manual.html">
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="RegMaster">
+<meta property="og:title" content="RegMaster 主辦方操作手冊 | Organiser Manual">
+<meta property="og:description" content="從建立活動到管理報名、帳務與報到的完整操作指南。中英文雙語。">
+<meta property="og:url" content="https://regmaster-v3.web.app/Manual.html">
+<meta property="og:image" content="https://regmaster-v3.web.app/favicon.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RegMaster 主辦方操作手冊 | Organiser Manual">
+<meta name="twitter:description" content="從建立活動到管理報名、帳務與報到的完整操作指南。中英文雙語。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+
+<!-- ===== AEO / SEO structured data ===== -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "RegMaster 主辦方操作手冊 / Organiser Operation Manual",
+  "description": "RegMaster 線上活動報名系統的主辦方完整操作指南，涵蓋活動建立、報名表單、收費與 PayUNI 金流、報名管理、帳務與平台代收轉付、公告、評分、QR 報到與 AI 助理。",
+  "inLanguage": ["zh-Hant","en"],
+  "datePublished": "2026-05-30",
+  "dateModified": "2026-05-30",
+  "author": { "@type": "Organization", "name": "Kuang-Tien International Co., Ltd. 廣天國際有限公司" },
+  "publisher": { "@type": "Organization", "name": "RegMaster", "logo": { "@type": "ImageObject", "url": "https://regmaster-v3.web.app/favicon.png" } },
+  "about": { "@type": "SoftwareApplication", "name": "RegMaster", "applicationCategory": "BusinessApplication", "operatingSystem": "Web" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "如何在 RegMaster 建立並上線一場活動",
+  "description": "從建立活動到開放報名的五個步驟。",
+  "step": [
+    { "@type": "HowToStep", "position": 1, "name": "建立活動", "text": "登入主辦後台，點「建立活動」，輸入活動名稱、類別與活動形式（個人/團體、是否含指導者）。" },
+    { "@type": "HowToStep", "position": 2, "name": "設定時間與組別", "text": "在「設定」頁填寫開放報名與截止時間、活動日期或多梯次，並新增組別與年齡規則。" },
+    { "@type": "HowToStep", "position": 3, "name": "設計報名表單", "text": "進入「表單設計」，以 1 區塊=1 人原則安排學員與指導者欄位，並設定附加問題。" },
+    { "@type": "HowToStep", "position": 4, "name": "設定收費與付款", "text": "在「收費」頁設定報名費，啟用 PayUNI 線上付款或填寫銀行/ATM 轉帳帳戶。" },
+    { "@type": "HowToStep", "position": 5, "name": "開放報名並分享", "text": "於「進階」開啟可見性與開放報名，複製公開連結對外分享。" }
+  ]
+}
+</script>
+<script type="application/ld+json" id="faq-jsonld">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "報名上限存檔後數字會不見嗎？", "acceptedAnswer": { "@type": "Answer", "text": "不會。報名上限（maxTeams）會被正確保存；在多梯次模式下，上限為各梯次名額的加總，需於「場次/梯次」區塊調整各梯次。" } },
+    { "@type": "Question", "name": "銀行轉帳的款項會被平台代收嗎？", "acceptedAnswer": { "@type": "Answer", "text": "不會。銀行/ATM 轉帳由報名者直接匯入主辦方帳戶，不經平台、不計入平台代收轉付。只有 PayUNI 線上付款由平台代收，扣除手續費後再依週期匯款給主辦方。" } },
+    { "@type": "Question", "name": "快速銀行對帳要輸入幾碼？", "acceptedAnswer": { "@type": "Answer", "text": "輸入銀行帳號末 5 碼，系統會自動把帳號末碼相符且尚未確認的隊伍標記為已確認。" } },
+    { "@type": "Question", "name": "平台多久匯款一次給主辦方？", "acceptedAnswer": { "@type": "Answer", "text": "依平台轉帳週期：每週（每週四）或每月（每月 5 日，遇假日順延至下個工作日）。主辦方可在「帳務 → 平台代收轉付」看到下次預計匯款日。" } }
+  ]
+}
+</script>
+
 <style>
-.m-hdr{background:linear-gradient(135deg,#062845,#0A437A,#0D5BA8);padding:32px 24px 26px;text-align:center;color:#fff;border-radius:14px;margin-bottom:20px;position:relative;overflow:hidden}
-.m-hdr::before{content:'';position:absolute;top:-30%;right:-8%;width:300px;height:300px;background:radial-gradient(circle,rgba(244,145,33,.12),transparent 70%);border-radius:50%}
-.m-hdr h1{font-size:26px;font-weight:900;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
-.m-hdr p{opacity:.55;font-size:13px;position:relative;margin-top:4px}
-.m-hdr .ver{display:inline-block;background:rgba(244,145,33,.25);color:#F49121;padding:2px 12px;border-radius:16px;font-size:11px;font-weight:700;margin-top:6px;position:relative}
-.m-lang{text-align:center;margin-bottom:16px}
-.m-lang button{padding:8px 20px;border:2px solid #0A437A;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin:0 4px;background:#fff;color:#0A437A;transition:.2s}
-.m-lang button.active{background:#0A437A;color:#fff}
-.m-section{background:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;border:1px solid #e2e8f0;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.m-section h2{font-size:20px;font-weight:800;color:#0A437A;margin-bottom:12px;padding-bottom:8px;border-bottom:3px solid #E8F0F8;display:flex;align-items:center;gap:8px}
-.m-section h3{font-size:15px;font-weight:700;color:#0f172a;margin:14px 0 6px;padding:8px 12px;background:linear-gradient(90deg,#E8F0F8,transparent);border-radius:8px;border-left:4px solid #0A437A}
-.m-section h4{font-size:14px;font-weight:700;margin:10px 0 4px;color:#475569}
-.m-section p,.m-section li{margin-bottom:5px;font-size:14px;line-height:1.75;color:#1e293b}
-.m-section ul,.m-section ol{padding-left:18px;margin:6px 0 8px}
-.m-step{display:flex;gap:10px;margin:8px 0;align-items:flex-start}
-.m-step .num{min-width:28px;height:28px;border-radius:50%;background:#0A437A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0}
-.m-step .cnt{flex:1;padding-top:3px;font-size:14px}
-.m-step .cnt b{color:#0A437A}
-.m-tip{background:#E8F0F8;border-left:4px solid #0A437A;padding:8px 12px;border-radius:0 8px 8px 0;margin:8px 0;font-size:13px}
-.m-warn{background:#FFF7ED;border-left:4px solid #F49121;padding:8px 12px;border-radius:0 8px 8px 0;margin:8px 0;font-size:13px}
-.m-danger{background:#fef2f2;border-left:4px solid #ef4444;padding:8px 12px;border-radius:0 8px 8px 0;margin:8px 0;font-size:13px}
-.m-section code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:12px;color:#0A437A}
-.m-section kbd{background:#0f172a;color:#fff;padding:2px 7px;border-radius:4px;font-size:11px;font-family:monospace}
-.m-section table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;border:1px solid #e2e8f0}
-.m-section th{background:#E8F0F8;padding:8px 10px;text-align:left;font-weight:700;font-size:11px;color:#0A437A}
-.m-section td{padding:8px 10px;border-top:1px solid #e2e8f0;vertical-align:top}
-.m-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:8px 0;font-size:13px}
-.m-flow .arrow{color:#0A437A;font-weight:700}
-.m-flow .box{background:#0A437A;color:#fff;padding:3px 10px;border-radius:6px;font-weight:600;font-size:12px}
-.m-flow .box.alt{background:#10b981}.m-flow .box.wrn{background:#F49121;color:#fff}
-.en{display:none}
-.m-toc{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin-bottom:16px}
-.m-toc h3{margin:0 0 8px;font-size:15px;font-weight:800;color:#0A437A}
-.m-toc a{display:inline-block;padding:3px 10px;margin:2px;background:#E8F0F8;color:#0A437A;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;transition:.15s}
-.m-toc a:hover{background:#0A437A;color:#fff}
-.m-ui{border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;margin:10px 0;background:#f8fafc}
-.m-ui .m-ui-bar{background:linear-gradient(135deg,#0A437A,#0D5BA8);padding:6px 12px;display:flex;align-items:center;gap:6px}
-.m-ui .m-ui-bar span{width:8px;height:8px;border-radius:50%;display:inline-block}
-.m-ui .m-ui-bar span:nth-child(1){background:#ef4444}
-.m-ui .m-ui-bar span:nth-child(2){background:#f59e0b}
-.m-ui .m-ui-bar span:nth-child(3){background:#10b981}
-.m-ui .m-ui-bar .m-ui-title{color:rgba(255,255,255,.7);font-size:11px;margin-left:6px}
-.m-ui .m-ui-body{padding:14px;font-size:13px;line-height:1.6}
-.m-ui .m-ui-body .m-mock-btn{display:inline-block;padding:5px 14px;border-radius:8px;font-size:12px;font-weight:700;margin:2px 3px;cursor:default}
-.m-ui .m-ui-body .m-mock-btn.pri{background:#0A437A;color:#fff}
-.m-ui .m-ui-body .m-mock-btn.out{background:#fff;color:#0A437A;border:1.5px solid #0A437A}
-.m-ui .m-ui-body .m-mock-btn.ok{background:#10b981;color:#fff}
-.m-ui .m-ui-body .m-mock-btn.wrn{background:#F49121;color:#fff}
-.m-ui .m-ui-body .m-mock-input{display:inline-block;padding:6px 12px;border:1.5px solid #cbd5e1;border-radius:8px;background:#fff;color:#94a3b8;font-size:12px;min-width:140px}
-.m-ui .m-ui-body .m-mock-toggle{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
-.m-ui .m-ui-body .m-mock-toggle.on{background:#dcfce7;color:#166534}
-.m-ui .m-ui-body .m-mock-toggle.off{background:#fef2f2;color:#991b1b}
-.m-ui .m-ui-body .m-mock-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin:6px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.m-ui .m-ui-body .m-mock-tab{display:inline-block;padding:5px 12px;border-radius:8px 8px 0 0;font-size:11px;font-weight:700;margin-right:2px;cursor:default}
-.m-ui .m-ui-body .m-mock-tab.on{background:#0A437A;color:#fff}
-.m-ui .m-ui-body .m-mock-tab.off{background:#e2e8f0;color:#64748b}
-.m-ui .m-ui-body .m-mock-stat{display:inline-flex;flex-direction:column;align-items:center;padding:8px 14px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;min-width:70px}
-.m-ui .m-ui-body .m-mock-stat .val{font-size:20px;font-weight:800;color:#0A437A}
-.m-ui .m-ui-body .m-mock-stat .lbl{font-size:10px;color:#64748b}
-.m-kbd-row{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;flex-wrap:wrap}
+/* ===== RegMaster Manual — themed on the new site design tokens ===== */
+.m-wrap{max-width:980px;margin:0 auto;padding:28px 20px 80px;color:var(--ink);font-family:var(--f-tc)}
+.m-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--ink),#16224a 60%,#1d2f63);color:#fff;border-radius:18px;padding:40px 32px 34px;margin-bottom:18px}
+.m-hero::before{content:'';position:absolute;top:-40%;right:-6%;width:340px;height:340px;background:radial-gradient(circle,rgba(61,107,255,.28),transparent 70%);border-radius:50%}
+.m-hero::after{content:'';position:absolute;bottom:-50%;left:-8%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.05),transparent 70%);border-radius:50%}
+.m-hero .brand{display:flex;align-items:center;gap:10px;position:relative;margin-bottom:14px}
+.m-hero .brand .logo{width:34px;height:34px;border-radius:9px;overflow:hidden;flex-shrink:0}
+.m-hero .brand .logo img{width:100%;height:100%;object-fit:cover;display:block}
+.m-hero .brand b{font:800 17px/1 var(--f-display);letter-spacing:-.01em}
+.m-hero h1{font:800 30px/1.18 var(--f-display);letter-spacing:-.022em;position:relative;margin:0 0 8px}
+.m-hero p{position:relative;font:400 14.5px/1.6 var(--f-tc);color:rgba(255,255,255,.72);max-width:60ch;margin:0}
+.m-hero .ver{display:inline-block;position:relative;margin-top:14px;background:rgba(61,107,255,.26);color:#cdd9ff;border:1px solid rgba(123,156,255,.4);padding:4px 13px;border-radius:20px;font:700 11px/1 var(--f-mono);letter-spacing:.04em}
+
+/* language toggle */
+.m-lang{display:flex;justify-content:center;gap:8px;margin:0 0 18px}
+.m-lang button{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink-2);font:700 13px/1 var(--f-display);cursor:pointer;transition:.16s}
+.m-lang button:hover{border-color:var(--ink-3)}
+.m-lang button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* table of contents */
+.m-toc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:18px}
+.m-toc h2{font:700 14px/1 var(--f-display);color:var(--ink);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.m-toc-grid{display:flex;flex-wrap:wrap;gap:7px}
+.m-toc a{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line-2);border-radius:8px;font:600 12.5px/1 var(--f-tc);text-decoration:none;transition:.15s}
+.m-toc a:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.m-toc a svg{width:14px;height:14px;flex-shrink:0}
+
+/* sections */
+.m-sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-bottom:16px;scroll-margin-top:16px}
+.m-sec>h2{font:800 21px/1.25 var(--f-display);letter-spacing:-.018em;color:var(--ink);margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.m-sec>h2 .ic{width:30px;height:30px;border-radius:9px;background:var(--acc-soft);color:var(--acc);display:grid;place-items:center;flex-shrink:0}
+.m-sec>h2 .ic svg{width:18px;height:18px}
+.m-sec .lead{font:400 14px/1.7 var(--f-tc);color:var(--ink-3);margin:0 0 16px;max-width:72ch}
+.m-sec h3{font:700 15.5px/1.4 var(--f-display);color:var(--ink);margin:22px 0 8px;padding-left:11px;border-left:3px solid var(--acc)}
+.m-sec h4{font:700 13.5px/1.4 var(--f-display);color:var(--ink-2);margin:16px 0 6px}
+.m-sec p,.m-sec li{font:400 13.5px/1.72 var(--f-tc);color:var(--ink-2)}
+.m-sec p{margin:0 0 8px}
+.m-sec ul,.m-sec ol{margin:6px 0 12px;padding-left:20px}
+.m-sec li{margin-bottom:5px}
+.m-sec strong,.m-sec b{color:var(--ink);font-weight:700}
+.m-sec a{color:var(--acc);text-decoration:none;border-bottom:1px solid transparent}
+.m-sec a:hover{border-bottom-color:var(--acc)}
+.m-sec code{font:500 12px/1.5 var(--f-mono);background:var(--surface-2);border:1px solid var(--line-2);padding:1px 6px;border-radius:5px;color:var(--ink-2)}
+
+/* feature rows with icon */
+.m-feat{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line-2)}
+.m-feat:first-of-type{border-top:0}
+.m-feat .fi{width:30px;height:30px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--acc);display:grid;place-items:center;flex-shrink:0}
+.m-feat .fi svg{width:16px;height:16px}
+.m-feat .fb{flex:1;min-width:0}
+.m-feat .fb h4{margin:0 0 2px;font:700 13.5px/1.4 var(--f-display);color:var(--ink)}
+.m-feat .fb p{margin:0;font:400 12.8px/1.6 var(--f-tc);color:var(--ink-3)}
+
+/* numbered steps */
+.m-steps{counter-reset:st;margin:10px 0}
+.m-step{display:flex;gap:12px;align-items:flex-start;margin:9px 0}
+.m-step .n{counter-increment:st;min-width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font:800 12px/1 var(--f-mono);flex-shrink:0}
+.m-step .n::before{content:counter(st)}
+.m-step .c{flex:1;padding-top:3px;font:400 13.5px/1.65 var(--f-tc);color:var(--ink-2)}
+
+/* callouts */
+.m-note,.m-warn,.m-danger,.m-ok{border-radius:0 10px 10px 0;padding:11px 15px;margin:12px 0;font:400 13px/1.65 var(--f-tc)}
+.m-note{background:var(--acc-soft);border-left:4px solid var(--acc);color:var(--ink-2)}
+.m-warn{background:var(--warn-100);border-left:4px solid var(--warn-500);color:var(--warn-700)}
+.m-danger{background:var(--err-100);border-left:4px solid var(--err-500);color:var(--err-700)}
+.m-ok{background:var(--ok-100);border-left:4px solid var(--ok-500);color:var(--ok-700)}
+.m-note b,.m-warn b,.m-danger b,.m-ok b{color:inherit}
+
+/* tables */
+.m-tbl{width:100%;border-collapse:collapse;margin:10px 0;font:400 12.8px/1.5 var(--f-tc);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.m-tbl th{background:var(--surface-2);padding:9px 12px;text-align:left;font:700 11px/1.3 var(--f-mono);letter-spacing:.03em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.m-tbl td{padding:9px 12px;border-top:1px solid var(--line-2);color:var(--ink-2);vertical-align:top}
+.m-tbl tr:first-child td{border-top:0}
+
+/* flow chips */
+.m-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0}
+.m-flow .box{background:var(--ink);color:#fff;padding:5px 11px;border-radius:7px;font:600 12px/1 var(--f-tc)}
+.m-flow .box.acc{background:var(--acc)}
+.m-flow .box.ok{background:var(--ok-500)}
+.m-flow .box.wrn{background:var(--warn-500)}
+.m-flow .arr{color:var(--muted);font-weight:700}
+
+/* inline icon button chips (按鈕做成圖示) */
+.btnchip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;font:700 12px/1.5 var(--f-tc);vertical-align:middle;white-space:nowrap}
+.btnchip svg{width:13px;height:13px}
+.btnchip.pri{background:var(--ink);color:#fff}
+.btnchip.acc{background:var(--acc);color:#fff}
+.btnchip.ok{background:var(--ok-500);color:#fff}
+.btnchip.wrn{background:var(--warn-500);color:#fff}
+.btnchip.dgr{background:var(--surface);color:var(--err-700);border:1px solid var(--err-500)}
+.btnchip.gho{background:var(--surface);color:var(--ink-2);border:1px solid var(--line)}
+.tg{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font:700 11px/1.6 var(--f-mono)}
+.tg.on{background:var(--ok-100);color:var(--ok-700)}
+.tg.off{background:var(--surface-2);color:var(--muted)}
+
+/* UI mockup ("screenshot") */
+.m-ui{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0;background:var(--surface-2)}
+.m-ui .bar{background:var(--ink);padding:7px 13px;display:flex;align-items:center;gap:6px}
+.m-ui .bar i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.m-ui .bar i:nth-child(1){background:#ff5f57}.m-ui .bar i:nth-child(2){background:#febc2e}.m-ui .bar i:nth-child(3){background:#28c840}
+.m-ui .bar .t{color:rgba(255,255,255,.6);font:500 11px/1 var(--f-mono);margin-left:8px}
+.m-ui .body{padding:16px}
+.m-ui .uitab{display:inline-block;padding:6px 13px;font:700 12px/1 var(--f-display);border-bottom:2px solid transparent;color:var(--muted)}
+.m-ui .uitab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.m-ui .uicard{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin:7px 0}
+.m-ui .kpi{display:inline-flex;flex-direction:column;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 14px;min-width:96px;margin:4px}
+.m-ui .kpi .v{font:800 19px/1 var(--f-display);color:var(--ink)}
+.m-ui .kpi .l{font:600 10px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.m-ui .kpi.feat{background:linear-gradient(135deg,var(--ink),#16224a);border-color:var(--ink)}
+.m-ui .kpi.feat .v{color:#fff}.m-ui .kpi.feat .l{color:rgba(255,255,255,.65)}
+.m-ui .fieldrow{display:flex;align-items:center;gap:8px;margin:6px 0}
+.m-ui .field{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 11px;font:400 12px/1.4 var(--f-tc);color:var(--muted)}
+.m-ui .lbl{font:600 11px/1.4 var(--f-mono);color:var(--ink-3);min-width:78px}
+.m-ui .row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.m-ui .mtbl{width:100%;border-collapse:collapse;font:400 11.5px/1.4 var(--f-tc)}
+.m-ui .mtbl th{background:var(--surface);text-align:left;padding:6px 9px;font:700 9.5px/1 var(--f-mono);text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.m-ui .mtbl td{padding:6px 9px;border-bottom:1px solid var(--line-2);color:var(--ink-2)}
+.m-ui .cap{font:400 11.5px/1.5 var(--f-tc);color:var(--muted);text-align:center;padding:6px 12px 2px}
+
+.m-foot{text-align:center;padding:22px 0 0;margin-top:8px;border-top:1px solid var(--line);font:400 11.5px/1.7 var(--f-tc);color:var(--muted)}
+.m-foot b{color:var(--ink-2)}
+
+/* language visibility — only HIDE the inactive language so the active one keeps its natural display */
+body[data-lang="zh"] .en{display:none !important}
+body[data-lang="en"] .zh{display:none !important}
+
+@media (max-width:640px){
+  .m-wrap{padding:18px 13px 64px}
+  .m-hero{padding:28px 20px 24px}
+  .m-hero h1{font-size:23px}
+  .m-sec{padding:20px 17px}
+  .m-sec>h2{font-size:18px}
+  .m-ui .body{padding:12px}
+}
 </style>
-
-
-<div class="m-lang"><button class="active" data-l="zh" onclick="switchLang('zh')">🇹🇼 中文</button><button data-l="en" onclick="switchLang('en')">🇺🇸 English</button></div>
-
-<!-- ==================== HEADER ==================== -->
-<div class="m-hdr zh"><h1><svg width="36" height="36" viewBox="0 0 400 350" fill="none"><path d="M120 80V240H160V170H180L210 240H255L215 155C235 145 245 125 245 105C245 85 235 80 210 80H120ZM160 115H200C205 115 208 118 208 122C208 126 205 130 200 130H160V115Z" fill="#fff"/><path d="M140 165L175 200L275 90" stroke="#F49121" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg> 活動管理者操作手冊</h1><p>RegMaster 專業線上活動報名平台 — 從建立活動到管理報名的完整操作指南</p><div class="ver">v5.4 Firebase Edition — 2026</div></div>
-<div class="m-hdr en"><h1><svg width="36" height="36" viewBox="0 0 400 350" fill="none"><path d="M120 80V240H160V170H180L210 240H255L215 155C235 145 245 125 245 105C245 85 235 80 210 80H120ZM160 115H200C205 115 208 118 208 122C208 126 205 130 200 130H160V115Z" fill="#fff"/><path d="M140 165L175 200L275 90" stroke="#F49121" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg> Activity Manager Handbook</h1><p>RegMaster — Complete Guide for Creating and Managing Events</p><div class="ver">v5.4 Firebase Edition — 2026</div></div>
-
-<!-- ==================== TOC ==================== -->
-<div class="m-toc zh">
-<h3>📑 目錄導覽</h3>
-<a href="#sec-quick">🚀 快速建立活動</a>
-<a href="#sec-account">🔑 帳號與授權</a>
-<a href="#sec-settings">⚙️ 活動設定詳解</a>
-<a href="#sec-toggles">📡 系統開關</a>
-<a href="#sec-sessions">📅 時間與梯次</a>
-<a href="#sec-groups">🏷️ 組別設定</a>
-<a href="#sec-fields">👥 學員與角色欄位</a>
-<a href="#sec-payment">💳 付款設定</a>
-<a href="#sec-payuni">💰 線上付款 PAYUNi</a>
-<a href="#sec-desc">📄 說明/海報/規則</a>
-<a href="#sec-ai">🤖 AI 功能</a>
-<a href="#sec-admin-ai">⚙️ 管理 AI 助理</a>
-<a href="#sec-announce">📢 公告管理</a>
-<a href="#sec-share">🔗 分享與上線</a>
-<a href="#sec-dashboard">📋 Dashboard</a>
-<a href="#sec-teamlist">📋 報名列表</a>
-<a href="#sec-email">📨 信件與通知</a>
-<a href="#sec-reconcile">🏦 匯款對帳</a>
-<a href="#sec-import">📥 批次匯入</a>
-<a href="#sec-export">📤 匯出 CSV</a>
-<a href="#sec-score">🏅 成績登錄</a>
-<a href="#sec-checkin">📱 QR 報到</a>
-<a href="#sec-regcontrol">📡 報名控制</a>
-<a href="#sec-duplicate">📋 複製活動</a>
-<a href="#sec-registrant">👤 報名者端操作</a>
-<a href="#sec-faq">❓ 常見問題</a>
-</div>
-<div class="m-toc en">
-<h3>📑 Table of Contents</h3>
-<a href="#sec-quick">🚀 Quick Start</a>
-<a href="#sec-account">🔑 Account & License</a>
-<a href="#sec-settings">⚙️ Activity Settings</a>
-<a href="#sec-toggles">📡 System Toggles</a>
-<a href="#sec-sessions">📅 Dates & Sessions</a>
-<a href="#sec-groups">🏷️ Groups</a>
-<a href="#sec-fields">👥 Participant Fields</a>
-<a href="#sec-payment">💳 Payment</a>
-<a href="#sec-payuni">💰 Online Payment</a>
-<a href="#sec-desc">📄 Description/Poster/Rules</a>
-<a href="#sec-ai">🤖 AI Features</a>
-<a href="#sec-admin-ai">⚙️ Admin AI Assistant</a>
-<a href="#sec-announce">📢 Announcements</a>
-<a href="#sec-share">🔗 Sharing & Go Live</a>
-<a href="#sec-dashboard">📋 Dashboard</a>
-<a href="#sec-teamlist">📋 Team List</a>
-<a href="#sec-email">📨 Email & Notifications</a>
-<a href="#sec-reconcile">🏦 Reconciliation</a>
-<a href="#sec-import">📥 Batch Import</a>
-<a href="#sec-export">📤 CSV Export</a>
-<a href="#sec-score">🏅 Scores</a>
-<a href="#sec-checkin">📱 QR Check-in</a>
-<a href="#sec-regcontrol">📡 Registration Control</a>
-<a href="#sec-duplicate">📋 Duplicate</a>
-<a href="#sec-registrant">👤 Registrant Guide</a>
-<a href="#sec-faq">❓ FAQ</a>
-</div>
-
-<!-- ==================== QUICK START ==================== -->
-<div class="m-section zh" id="sec-quick"><h2>🚀 五分鐘快速建立活動</h2>
-<p>只要五個步驟，您就能從零開始建立一個完整的線上報名活動。以下是從登入到活動上線的完整流程：</p>
-<div class="m-flow"><span class="box">登入</span><span class="arrow">→</span><span class="box">建立活動</span><span class="arrow">→</span><span class="box alt">上傳規則</span><span class="arrow">→</span><span class="box wrn">設定梯次</span><span class="arrow">→</span><span class="box">海報+AI配色</span><span class="arrow">→</span><span class="box alt">儲存→開放報名</span></div>
-
-<div class="m-step"><div class="num">1</div><div class="cnt"><b>登入管理後台</b> — 點擊網頁右上角 <kbd>🔑 活動管理者登入</kbd>，輸入帳號與密碼。首次使用請先點擊「✨ 申請新帳號」完成註冊流程（詳見帳號章節），帳號開通後系統會自動寄送一組免費授權碼至您的信箱。</div></div>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">RegMaster — 登入畫面</span></div>
-<div class="m-ui-body" style="text-align:center;padding:20px">
-<div style="font-size:22px;font-weight:800;color:#0A437A;margin-bottom:14px">🔑 活動管理者登入</div>
-<div style="margin-bottom:8px"><span class="m-mock-input" style="min-width:220px">帳號</span></div>
-<div style="margin-bottom:12px"><span class="m-mock-input" style="min-width:220px">密碼</span></div>
-<span class="m-mock-btn pri" style="width:220px">登入</span>
-<div style="margin-top:12px;font-size:11px;color:#64748b">還沒有帳號？ <span style="color:#0A437A;font-weight:700">✨ 申請新帳號</span></div>
-</div></div>
-
-<div class="m-step"><div class="num">2</div><div class="cnt"><b>建立新活動</b> — 在管理首頁點擊 <kbd>＋ 建立新活動</kbd>，依序：<br>① 輸入活動名稱（如「2026 全國機器人大賽」）<br>② 選擇「活動分類」：競賽、夏令營、研討會、工作坊、展覽、教育訓練<br>③ 選擇「活動類型」：單人報名或多人團隊，是否含教練/家長/指導老師角色<br>系統會自動導入活動設定頁面。</div></div>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">建立新活動 — 對話框</span></div>
-<div class="m-ui-body">
-<div style="font-weight:700;color:#0A437A;margin-bottom:8px">建立新活動</div>
-<div style="margin-bottom:6px"><span style="font-size:12px;color:#64748b">活動名稱</span><br><span class="m-mock-input" style="min-width:100%">2026 全國機器人大賽</span></div>
-<div style="display:flex;gap:8px;margin-bottom:6px">
-<div style="flex:1"><span style="font-size:12px;color:#64748b">活動分類</span><br><span class="m-mock-input" style="width:100%">🏆 競賽</span></div>
-<div style="flex:1"><span style="font-size:12px;color:#64748b">活動類型</span><br><span class="m-mock-input" style="width:100%">👥 多人（含教練）</span></div>
-</div>
-<div style="text-align:right"><span class="m-mock-btn pri">✅ 確認建立</span></div>
-</div></div>
-
-<div class="m-step"><div class="num">3</div><div class="cnt"><b>設定內容</b> — 在活動設定頁面完成以下操作：<br>① 在「說明/海報/規則」區塊上傳規則 PDF<br>② 上傳海報圖片（上限 10MB）<br>③ 點擊 <kbd>🎨 AI 配色</kbd> 自動分析海報，產生 5 色專業主題<br>④ 填寫活動說明文字（可點 <kbd>🔄 自動轉換 HTML</kbd> 美化純文字）</div></div>
-
-<div class="m-step"><div class="num">4</div><div class="cnt"><b>設定活動規則</b> — <br>① 設定活動梯次（至少一組開始與結束日期）<br>② 設定付款方式（匯款/信用卡/現金/線上付款）<br>③ 勾選學員與教練/家長/指導老師需填寫的欄位（飲食限制、T-shirt 尺寸等附加欄位）<br>④ 設定組別名稱與年齡限制（如適用）</div></div>
-
-<div class="m-step"><div class="num">5</div><div class="cnt"><b>上線！</b> — 點擊 <kbd>💾 儲存設定</kbd> → 回到系統開關將「報名開關」切換為<b>開放報名</b> → 複製「分享連結」發送給報名者 → 完成上線！🎉</div></div>
-
-<div class="m-tip">💡 <b>專業提示：</b>若您的活動說明是純文字，點擊 <kbd>🔄 自動轉換為 HTML</kbd>，系統會自動加入表情符號 emoji、將網址轉為美觀按鈕、自動分段。轉換適用於「活動說明」「付款說明」「檔案上傳說明」三個欄位。</div>
-</div>
-
-<div class="m-section en" id="sec-quick"><h2>🚀 Set Up in 5 Minutes</h2>
-<p>Just five steps to create a fully functional online registration event from scratch:</p>
-<div class="m-flow"><span class="box">Login</span><span class="arrow">→</span><span class="box">Create</span><span class="arrow">→</span><span class="box alt">Upload Rules</span><span class="arrow">→</span><span class="box wrn">Set Sessions</span><span class="arrow">→</span><span class="box">Poster + AI Color</span><span class="arrow">→</span><span class="box alt">Save → Go Live</span></div>
-<div class="m-step"><div class="num">1</div><div class="cnt"><b>Log In</b> — Click <kbd>🔑 Activity Manager Login</kbd> (top-right). First-time users: click "✨ Create Account" to register. A free license code is emailed upon activation.</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt"><b>Create Event</b> — Click <kbd>+ Create Activity</kbd>. Enter event name, choose category (Competition/Camp/Seminar/Workshop/Exhibition/Training) and type (individual or team, with or without coach/parent/instructor).</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt"><b>Add Content</b> — Upload rules PDF → Upload poster image (max 10MB) → Click <kbd>🎨 AI Color</kbd> to auto-generate a matching 5-color theme → Fill in event description (use <kbd>🔄 Auto-Convert to HTML</kbd> for plain text).</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt"><b>Configure Rules</b> — Set sessions (at least one start + end date), payment methods (transfer/card/cash/online), participant fields (dietary, T-shirt, etc.), and groups with age limits as needed.</div></div>
-<div class="m-step"><div class="num">5</div><div class="cnt"><b>Go Live!</b> — Click <kbd>💾 Save Settings</kbd> → Toggle registration to <b>Open</b> → Copy share link → Done! 🎉</div></div>
-<div class="m-tip">💡 <b>Pro Tip:</b> Click <kbd>🔄 Auto-Convert to HTML</kbd> to auto-format plain text with emojis and styled URL buttons. Works for "Activity Description", "Payment Note", and "File Upload Description".</div>
-</div>
-
-<!-- ==================== ACCOUNT & LICENSE ==================== -->
-<div class="m-section zh" id="sec-account"><h2>🔑 帳號與授權碼</h2>
-
-<h3>申請帳號流程</h3>
-<p>首次使用 RegMaster，您需要申請一個活動管理者帳號。以下是完整流程：</p>
-<div class="m-step"><div class="num">1</div><div class="cnt">點擊登入頁下方「✨ 申請新帳號」</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">填寫真實姓名、登入帳號（英數字）、登入密碼、Email、聯絡電話</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">點擊「寄送驗證碼」→ 系統發送 6 位數 OTP 至您的 Email</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">在 15 分鐘內輸入驗證碼 → 點擊「✅ 驗證並啟用」</div></div>
-<div class="m-step"><div class="num">5</div><div class="cnt">帳號啟用成功！系統自動寄送一組<b>免費單次活動授權碼</b>至您的信箱 🎁</div></div>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">Email 驗證 — OTP 輸入</span></div>
-<div class="m-ui-body" style="text-align:center">
-<div style="font-size:16px;font-weight:700;color:#0A437A;margin-bottom:8px">✉️ Email 驗證</div>
-<div style="font-size:12px;color:#64748b;margin-bottom:10px">驗證碼已寄至您的信箱，請於 15 分鐘內填寫</div>
-<div style="letter-spacing:10px;font-size:28px;font-weight:900;color:#0A437A;border:2px solid #cbd5e1;border-radius:10px;padding:10px;display:inline-block;min-width:180px">● ● ● ● ● ●</div>
-<div style="margin-top:10px"><span class="m-mock-btn ok" style="width:180px">✅ 驗證並啟用</span></div>
-</div></div>
-
-<h3>帳號管理</h3>
-<ul>
-<li><b>修改密碼：</b>登入後，點擊管理後台右上角 <kbd>🔑</kbd> 按鈕，輸入舊密碼與新密碼即可更新。</li>
-<li><b>忘記密碼：</b>登入視窗點擊「忘記密碼？」→ 輸入註冊時使用的 Email → 系統自動發送新密碼。</li>
-</ul>
-
-<h3>授權碼類型</h3>
-<p>建立新活動時系統會自動扣除授權額度。RegMaster 提供兩種授權碼：</p>
-<table><tr><th>類型</th><th>圖示</th><th>說明與計費方式</th></tr>
-<tr><td><b style="color:#0A437A">訂閱型<br>(Subscription)</b></td><td style="text-align:center;font-size:20px">📆</td><td>在有效期限內（如 1 年）可<b>無限次建立活動</b>。啟用多組訂閱授權碼時，系統自動找出最晚到期日並<b>向後疊加</b>時間，確保您的權益不浪費。</td></tr>
-<tr><td><b style="color:#F49121">次數型<br>(Count)</b></td><td style="text-align:center;font-size:20px">🔢</td><td>每建立一個新活動扣 1 次額度。啟用多組次數授權碼時，系統自動<b>加總</b>剩餘次數。</td></tr></table>
-
-<div class="m-tip">💡 <b>智慧扣抵保護：</b>同時擁有訂閱型與次數型授權時，系統<b>優先使用訂閱期限，絕不扣除次數</b>。直到訂閱到期後才會開始消耗次數額度，確保您的利益最大化。</div>
-
-<h3>授權狀態查看</h3>
-<p>管理首頁頂部狀態列會顯示您目前的授權方案。您可以：</p>
-<ul>
-<li>點擊 <kbd>📄 查看明細</kbd> 開啟歷史視窗，查看所有授權碼的啟用日期、到期日、剩餘次數</li>
-<li>點擊 <kbd>🔑 管理授權碼</kbd> 輸入新的授權代碼來延長訂閱或增加次數</li>
-</ul>
-<div class="m-warn">⚠️ 當訂閱即將到期（剩餘 30 天內）或次數僅剩最後 1 次時，系統會自動寄發 Email 提醒。</div>
-</div>
-
-<div class="m-section en" id="sec-account"><h2>🔑 Account & License</h2>
-<h3>Registration Flow</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">Click "✨ Create Account" on the login page</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">Fill in name, username (alphanumeric), password, email, and phone</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">Click "Send OTP" → A 6-digit verification code is sent to your email</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">Enter the OTP within 15 minutes → Click "✅ Verify & Activate"</div></div>
-<div class="m-step"><div class="num">5</div><div class="cnt">Account activated! A <b>free single-use license code</b> is automatically emailed to you 🎁</div></div>
-<h3>Account Management</h3>
-<ul><li><b>Change Password:</b> Click <kbd>🔑</kbd> in the admin header to update your password.</li>
-<li><b>Forgot Password:</b> Click "Forgot Password?" on the login page → Enter your email → A new password is sent automatically.</li></ul>
-<h3>License Types</h3>
-<table><tr><th>Type</th><th>Description</th></tr>
-<tr><td><b style="color:#0A437A">Subscription</b></td><td><b>Unlimited events</b> during the valid period (e.g. 1 year). Multiple codes stack their expiry dates.</td></tr>
-<tr><td><b style="color:#F49121">Count-based</b></td><td>Each new event uses 1 credit. Multiple codes sum up remaining credits.</td></tr></table>
-<div class="m-tip">💡 <b>Smart Priority:</b> When you have both types, subscription is consumed first — count credits are preserved until subscription expires.</div>
-<h3>License Status</h3>
-<p>The admin home displays your current plan. Click <kbd>📄 View Details</kbd> for full history. Email reminders are sent when subscription is expiring or credits are running low.</p>
-</div>
-
-<!-- ==================== ACTIVITY SETTINGS ==================== -->
-<div class="m-section zh" id="sec-settings"><h2>⚙️ 活動設定詳解</h2>
-<p>建立活動後，系統會自動進入設定頁面。設定頁面分為多個區塊，左側提供快速導覽（跳至對應區塊），以下逐一說明每個設定區塊。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">活動設定頁面 — 側邊快速導覽</span></div>
-<div class="m-ui-body" style="display:flex;gap:10px">
-<div style="min-width:120px;background:#f1f5f9;border-radius:8px;padding:8px">
-<div style="font-size:11px;font-weight:700;color:#0A437A;margin-bottom:4px">快速導覽</div>
-<div style="font-size:10px;color:#475569;line-height:2.2">
-📡 系統開關<br>📅 時間<br>🏷️ 組別<br>👥 學員欄位<br>👨‍🏫 教練欄位<br>💳 付款<br>📄 說明/海報<br>📢 公告<br>🔗 分享連結<br>💾 儲存設定
-</div></div>
-<div style="flex:1"><div style="font-size:12px;color:#64748b">各設定區塊的詳細內容...</div></div>
-</div></div>
-
-<div class="m-warn">⚠️ <b>重要：</b>所有設定修改完成後，必須點擊頁面最下方的 <kbd>💾 儲存設定</kbd> 按鈕，設定才會正式生效。未儲存的修改會在離開頁面後遺失。</div>
-</div>
-
-<div class="m-section en" id="sec-settings"><h2>⚙️ Activity Settings — Detailed Guide</h2>
-<p>After creating an event, you'll enter the settings page. It has a sidebar for quick navigation to each section. All changes must be saved with <kbd>💾 Save Settings</kbd> at the bottom.</p>
-<div class="m-warn">⚠️ <b>Important:</b> All changes require clicking <kbd>💾 Save Settings</kbd> at the bottom of the page to take effect.</div>
-</div>
-
-<!-- ==================== SYSTEM TOGGLES ==================== -->
-<div class="m-section zh" id="sec-toggles"><h2>📡 系統開關</h2>
-<p>活動設定頁面頂部有三個重要的開關，控制活動的狀態：</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">系統開關區塊</span></div>
-<div class="m-ui-body" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
-<span class="m-mock-toggle on">🟢 開放報名</span>
-<span class="m-mock-toggle on">🟢 AI 助理</span>
-<span class="m-mock-toggle off">🔴 隱藏活動</span>
-</div></div>
-
-<table><tr><th>開關</th><th>開啟時</th><th>關閉時</th></tr>
-<tr><td><b>開放報名 / 關閉報名</b></td><td>報名表正常運作，報名者可填寫送出</td><td>報名頁面顯示「尚未開放」訊息，無法報名</td></tr>
-<tr><td><b>開啟 AI 助理 / 關閉 AI 助理</b></td><td>報名頁面右下角出現 🤖 浮動按鈕，報名者可即時詢問活動問題</td><td>不顯示 AI 按鈕</td></tr>
-<tr><td><b>公開顯示 / 隱藏</b></td><td>活動會出現在首頁活動列表中</td><td>首頁<b>不會</b>列出此活動，但擁有「分享連結」的人仍可直接進入報名。適合內部或邀請制活動</td></tr></table>
-</div>
-
-<div class="m-section en" id="sec-toggles"><h2>📡 System Toggles</h2>
-<p>Three toggles at the top of settings control the event's state:</p>
-<table><tr><th>Toggle</th><th>When ON</th><th>When OFF</th></tr>
-<tr><td><b>Registration</b></td><td>Form is accessible, registrants can submit</td><td>Shows "Not open" message</td></tr>
-<tr><td><b>AI Assistant</b></td><td>🤖 floating button appears on registration page</td><td>No AI button shown</td></tr>
-<tr><td><b>Public / Hidden</b></td><td>Event appears on the homepage</td><td>Hidden from homepage; only accessible via direct share link. Ideal for internal events</td></tr></table>
-</div>
-
-<!-- ==================== SESSIONS ==================== -->
-<div class="m-section zh" id="sec-sessions"><h2>📅 時間與梯次設定</h2>
-
-<h3>開放與截止日期</h3>
-<table><tr><th>欄位</th><th>說明</th></tr>
-<tr><td><b>開放日期</b></td><td>勾選「即日起」表示立即開放報名；也可指定未來的日期與時間，時間一到系統會自動開啟報名開關。</td></tr>
-<tr><td><b>截止日期</b></td><td>報名截止日期。到期後系統自動關閉報名，首頁顯示「已截止」狀態。</td></tr></table>
-
-<h3>活動梯次（必填）</h3>
-<p>每個活動至少需要設定一組梯次，每組梯次包含「開始日期」和「結束日期」。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">梯次設定範例</span></div>
-<div class="m-ui-body">
-<div class="m-mock-card">
-<div style="font-size:12px;font-weight:700;color:#0A437A;margin-bottom:4px">梯次 1</div>
-<div style="display:flex;gap:8px"><span class="m-mock-input">2026-07-01</span><span style="color:#64748b;font-size:12px;padding-top:6px">至</span><span class="m-mock-input">2026-07-03</span></div>
-</div>
-<div class="m-mock-card">
-<div style="font-size:12px;font-weight:700;color:#0A437A;margin-bottom:4px">梯次 2</div>
-<div style="display:flex;gap:8px"><span class="m-mock-input">2026-08-01</span><span style="color:#64748b;font-size:12px;padding-top:6px">至</span><span class="m-mock-input">2026-08-03</span></div>
-</div>
-<div style="margin-top:6px"><span class="m-mock-btn out">＋ 增加梯次</span></div>
-</div></div>
-
-<ul>
-<li>點擊「＋ 增加梯次」可新增更多梯次</li>
-<li>設定多梯次時，報名者在報名表中須<b>選擇</b>欲參加的梯次</li>
-<li>報名成功後，報名者可點擊「📅 加入行事曆」將所選梯次日期加入 Google 日曆</li>
-</ul>
-
-<h3>梯次選擇模式（單選 / 複選）</h3>
-<p>當活動有 <b>2 個（含）以上梯次</b>時，系統會在梯次設定區右側自動出現「單選 / 複選」下拉選單：</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">梯次選擇模式 — 管理端設定</span></div>
-<div class="m-ui-body">
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-<span style="font-size:13px;font-weight:700;color:#0A437A">📅 活動梯次</span>
-<span style="padding:6px 14px;border:1.5px solid #0A437A;border-radius:8px;font-size:12px;font-weight:700;background:#E8F0F8;color:#0A437A">單選 ▾</span>
-</div>
-<div class="m-mock-card"><div style="font-size:12px"><b style="color:#0A437A">梯次 1</b>　2026-07-01 至 2026-07-03</div></div>
-<div class="m-mock-card"><div style="font-size:12px"><b style="color:#0A437A">梯次 2</b>　2026-08-01 至 2026-08-03</div></div>
-</div></div>
-
-<table><tr><th>模式</th><th>報名者畫面</th><th>Google 日曆</th></tr>
-<tr><td><b>單選</b>（預設）</td><td>以 Radio Button（圓形選取鈕）呈現，報名者只能選擇一個梯次</td><td>將選中的單一梯次加入 Google 日曆</td></tr>
-<tr><td><b>複選</b></td><td>以 Checkbox（方形勾選框）呈現，報名者可勾選一個或多個梯次，標題會顯示「（可複選）」提示</td><td>每個選中的梯次各自獨立加入 Google 日曆（系統會逐一開啟行事曆視窗）</td></tr></table>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">報名者畫面比較 — 單選 vs 複選</span></div>
-<div class="m-ui-body" style="display:flex;gap:14px;flex-wrap:wrap">
-<div style="flex:1;min-width:140px">
-<div style="font-size:11px;font-weight:700;color:#0A437A;margin-bottom:6px">單選模式</div>
-<div style="font-size:12px;line-height:2.2">
-<span style="color:#0A437A">◉</span> 梯次 1：2026-07-01<br>
-<span style="color:#94a3b8">○</span> 梯次 2：2026-08-01
-</div>
-</div>
-<div style="flex:1;min-width:140px">
-<div style="font-size:11px;font-weight:700;color:#0A437A;margin-bottom:6px">複選模式（可複選）</div>
-<div style="font-size:12px;line-height:2.2">
-<span style="color:#0A437A">☑</span> 梯次 1：2026-07-01<br>
-<span style="color:#0A437A">☑</span> 梯次 2：2026-08-01
-</div>
-</div>
-</div></div>
-
-<div class="m-tip">💡 <b>提示：</b>梯次不足 2 個時，下拉選單自動隱藏。新增或刪除梯次時，選單會即時顯示或隱藏。複選模式下，報名者至少須選擇一個梯次才能進入下一步。</div>
-
-<h3>最大報名數與備取</h3>
-<table><tr><th>設定</th><th>說明</th></tr>
-<tr><td><b>最大報名數</b></td><td>設為 0 表示不限制人數。設定數字後，報名滿額時依據下方備取設定決定行為。</td></tr>
-<tr><td><b>允許備取</b></td><td><b>開啟：</b>滿額後繼續接受報名，但標記為「備取」狀態。<br><b>關閉：</b>滿額後直接拒絕新報名。</td></tr></table>
-</div>
-
-<div class="m-section en" id="sec-sessions"><h2>📅 Dates & Sessions</h2>
-<h3>Open & Deadline Dates</h3>
-<table><tr><th>Field</th><th>Description</th></tr>
-<tr><td><b>Open Date</b></td><td>Check "Open Now" for immediate access, or set a future date/time for auto-opening.</td></tr>
-<tr><td><b>Deadline</b></td><td>Registration auto-closes at this date/time.</td></tr></table>
-<h3>Event Sessions (Required)</h3>
-<p>At least one session with start and end dates. Click "+ Add Session" for more. Google Calendar integration is available after registration.</p>
-<h3>Session Select Mode (Single / Multi)</h3>
-<p>When 2 or more sessions exist, a "Single / Multi" dropdown appears next to the session label:</p>
-<table><tr><th>Mode</th><th>Registrant View</th><th>Google Calendar</th></tr>
-<tr><td><b>Single</b> (default)</td><td>Radio buttons — pick one session</td><td>Adds the selected session to Google Calendar</td></tr>
-<tr><td><b>Multi</b></td><td>Checkboxes with "(select one or more)" hint — pick multiple</td><td>Opens a separate Google Calendar window for each selected session</td></tr></table>
-<div class="m-tip">💡 The dropdown auto-hides when fewer than 2 sessions exist and reappears dynamically as sessions are added or removed.</div>
-<h3>Max Registrations & Waitlist</h3>
-<table><tr><th>Setting</th><th>Description</th></tr>
-<tr><td><b>Max Registrations</b></td><td>0 = unlimited. When set, overflow depends on waitlist settings.</td></tr>
-<tr><td><b>Allow Waitlist</b></td><td><b>ON:</b> Accept registrations as "waitlisted". <b>OFF:</b> Reject new registrations.</td></tr></table>
-</div>
-
-<!-- ==================== GROUPS ==================== -->
-<div class="m-section zh" id="sec-groups"><h2>🏷️ 組別設定</h2>
-<p>若您的活動有多個組別（如國小組、國中組、高中組、普高組、技高組、大專／社會組、教師組、公開組等），可在此區塊設定。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">組別設定範例</span></div>
-<div class="m-ui-body">
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 國小組</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 國中組</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 高中組</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 普高組</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 技高組</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 大專／社會組</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 教師組</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 公開組</span>
-</div>
-</div></div>
-
-<h4>各組別年齡預設值</h4>
-<table><tr><th>組別</th><th>年齡預設範圍</th></tr>
-<tr><td>國小組</td><td>7 ~ 12 歲</td></tr>
-<tr><td>國中組</td><td>13 ~ 15 歲</td></tr>
-<tr><td>高中組 / 普高組 / 技高組</td><td>16 ~ 18 歲</td></tr>
-<tr><td>大專／社會組 / 教師組 / 公開組</td><td>不限年齡</td></tr></table>
-
-<ul>
-<li>勾選需要的組別，報名者在報名表中會看到對應的組別選項</li>
-<li>勾選組別後，系統會自動顯示<b>年齡限制設定區</b></li>
-<li>國小組/國中組/高中組/普高組/技高組會自動帶入台灣學制的預設年齡範圍（可手動調整）</li>
-<li>大專／社會組、教師組、公開組預設不限年齡</li>
-<li>教練/家長/指導老師固定須年滿 18 歲</li>
-<li>Dashboard 的圓餅圖會依組別統計報名分布</li>
-</ul>
-
-<div class="m-tip">💡 <b>彈性設定：</b>組別名稱可自由命名，不限於學制分類。例如「初級班/進階班」「上午場/下午場」都可以。</div>
-</div>
-
-<div class="m-section en" id="sec-groups"><h2>🏷️ Group Settings</h2>
-<p>If your event has multiple groups (Elementary / Junior High / Senior High / General High / Vocational High / College-Adult / Teacher / Open), configure them here. Selecting groups auto-shows age limit settings. Default ages: Elementary 7-12, Junior High 13-15, Senior/General/Vocational High 16-18, College-Adult/Teacher/Open unlimited. Coaches/parents must be 18+. Group names are fully customizable.</p>
-</div>
-
-<!-- ==================== FIELDS ==================== -->
-<div class="m-section zh" id="sec-fields"><h2>👥 學員與教練/家長/指導老師欄位</h2>
-<p>在此區塊，您可以勾選報名表中需要填寫的欄位。「中文姓名」為固定必填，其餘欄位均可自由開關。</p>
-
-<h3>可用欄位一覽</h3>
-<table><tr><th>類別</th><th>欄位名稱</th><th>說明</th></tr>
-<tr><td rowspan="10"><b>基本個資</b></td><td>中文姓名</td><td>固定必填，不可關閉</td></tr>
-<tr><td>英文姓名</td><td>護照、國際交流使用</td></tr>
-<tr><td>護照號碼</td><td>國際活動使用</td></tr>
-<tr><td>國籍</td><td>含搜尋式下拉選單</td></tr>
-<tr><td>身分證字號</td><td>台灣身分證/居留證</td></tr>
-<tr><td>出生日期</td><td>配合年齡限制自動驗證</td></tr>
-<tr><td>學校/單位</td><td>所屬學校或機構名稱</td></tr>
-<tr><td>年級/職稱</td><td>學生年級或成人職稱</td></tr>
-<tr><td>地址</td><td>通訊地址</td></tr>
-<tr><td>手機/Email</td><td>聯絡方式</td></tr>
-<tr><td rowspan="4"><b>附加欄位</b></td><td>便當葷素</td><td>可自訂選項：豬肉/牛肉/雞肉/海鮮/全素</td></tr>
-<tr><td>飲食限制</td><td>8 種選項：一般/蛋奶素/全素/不吃牛/清真 Halal/海鮮過敏/堅果過敏/麩質過敏</td></tr>
-<tr><td>T-shirt 尺寸</td><td>可自訂尺寸範圍（XS~7XL）</td></tr>
-<tr><td>住宿需求</td><td>勾選即可</td></tr>
-<tr><td><b>自訂欄位</b></td><td>自由新增</td><td>支援三種題型：<b>簡答題</b>（自由填寫）、<b>單選題</b>（選一）、<b>複選題</b>（多選）。可設定為必填。匯出 CSV 時自動展開為獨立欄位。</td></tr></table>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">欄位勾選範例 — 學員</span></div>
-<div class="m-ui-body">
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-<span style="padding:4px 10px;border:1.5px solid #10b981;border-radius:8px;font-size:11px;font-weight:700;background:#dcfce7;color:#166534">☑ 中文姓名 (必填)</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 英文姓名</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 出生日期</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ Email</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 飲食限制</span>
-<span style="padding:4px 10px;border:1.5px solid #0A437A;border-radius:8px;font-size:11px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ T-shirt</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 護照號碼</span>
-<span style="padding:4px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:11px;color:#94a3b8">☐ 住宿需求</span>
-</div>
-</div></div>
-
-<div class="m-warn">⚠️ <b>強烈建議勾選 Email 欄位！</b>否則報名者將無法收到系統自動通知（報名確認信、繳費確認信、群發通知等）。</div>
-<div class="m-tip">💡 教練/家長/指導老師的欄位設定與學員相同，但獨立管理。多人團隊報名時，每位學員和教練都需要各自填寫這些欄位。</div>
-</div>
-
-<div class="m-section en" id="sec-fields"><h2>👥 Participant & Role Fields</h2>
-<p>"Chinese Name" is always mandatory. All other fields are toggleable:</p>
-<table><tr><th>Category</th><th>Fields</th></tr>
-<tr><td><b>Basic Info</b></td><td>English name, passport, nationality, ID number, birthday, school, grade/title, address, phone, email</td></tr>
-<tr><td><b>Add-ons</b></td><td>Meal preference (customizable), dietary restriction (8 options), T-shirt size (XS–7XL), accommodation</td></tr>
-<tr><td><b>Custom</b></td><td>Text / radio / checkbox questions, optional "required" flag, auto-expanded in CSV export</td></tr></table>
-<div class="m-warn">⚠️ <b>Enable the Email field</b> so registrants receive automatic notifications and payment confirmations.</div>
-</div>
-
-<!-- ==================== PAYMENT ==================== -->
-<div class="m-section zh" id="sec-payment"><h2>💳 付款設定</h2>
-<p>支援四種付款方式（可複選），勾選後會出現「付款說明」欄位（支援 HTML），向報名者顯示繳費須知。</p>
-
-<table><tr><th>方式</th><th>報名者操作</th><th>管理者對帳</th></tr>
-<tr><td><b>🏦 匯款</b></td><td>系統顯示銀行資訊，報名者填寫匯款人姓名、銀行名稱、帳號後五碼</td><td>可用 Dashboard「匯款對帳」功能自動比對後五碼</td></tr>
-<tr><td><b>💳 信用卡</b></td><td>報名者點擊第三方付款連結，完成後回填訂單號碼</td><td>手動確認或核對訂單號</td></tr>
-<tr><td><b>💵 現金付款</b></td><td>報名者於活動現場繳交，報名表僅顯示提示訊息</td><td>活動現場核對並確認</td></tr>
-<tr><td><b>💰 線上付款</b></td><td>報名送出後自動導向 PAYUNi 安全付款頁面（詳見下方章節）</td><td>款項直接進入您的 PAYUNi 帳戶</td></tr></table>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">付款方式勾選畫面</span></div>
-<div class="m-ui-body">
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-<span style="padding:6px 12px;border:1.5px solid #0A437A;border-radius:8px;font-size:12px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 🏦 匯款</span>
-<span style="padding:6px 12px;border:1.5px solid #0A437A;border-radius:8px;font-size:12px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 💳 信用卡</span>
-<span style="padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#94a3b8">☐ 💵 現金付款</span>
-<span style="padding:6px 12px;border:1.5px solid #10b981;border-radius:8px;font-size:12px;font-weight:700;background:#dcfce7;color:#166534">☑ 💰 線上付款</span>
-</div>
-<div style="margin-top:8px;font-size:11px;color:#64748b">勾選後下方出現「付款說明」HTML 編輯區...</div>
-</div></div>
-
-<div class="m-tip">💡 勾選付款方式後，在「付款說明」欄位中填入銀行帳戶資訊、繳費期限等注意事項。可使用 <kbd>🔄 自動轉換 HTML</kbd> 美化純文字。</div>
-</div>
-
-<div class="m-section en" id="sec-payment"><h2>💳 Payment Settings</h2>
-<p>Four payment methods (multi-select). A "Payment Note" HTML field appears when enabled:</p>
-<table><tr><th>Method</th><th>Registrant Action</th><th>Manager Reconciliation</th></tr>
-<tr><td><b>Bank Transfer</b></td><td>Fills remitter name, bank, last 5 digits</td><td>Auto-match in Dashboard reconciliation</td></tr>
-<tr><td><b>Credit Card</b></td><td>External payment link, enters order number</td><td>Manual verification</td></tr>
-<tr><td><b>Cash</b></td><td>Pay at venue</td><td>On-site confirmation</td></tr>
-<tr><td><b>Online Payment</b></td><td>Auto-redirect to PAYUNi after submission</td><td>Funds go to your PAYUNi account</td></tr></table>
-</div>
-
-<!-- ==================== PAYUNI ==================== -->
-<div class="m-section zh" id="sec-payuni"><h2>💰 線上付款 PAYUNi 設定</h2>
-<p>啟用線上付款後，報名者送出報名表時會自動跳轉至 PAYUNi 安全付款頁面，完成支付後返回 RegMaster。款項直接進入<b>您自己的 PAYUNi 商店帳戶</b>。</p>
-
-<h3>設定步驟</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">在付款設定區勾選 <kbd>💳 啟用線上付款 (PAYUNi)</kbd></div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">填入 PAYUNi 商店的 <b>MerchantID</b>（商店代號）</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">填入 <b>Hash Key</b> 和 <b>Hash IV</b>（PAYUNi 後台取得）</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">設定報名費金額（如 NT$ 500）和費用名稱（如「報名費」）</div></div>
-
-<div class="m-warn">⚠️ 若您尚未擁有 PAYUNi 商店帳戶，請先前往 <b>payuni.com.tw</b> 申請。Hash Key / Hash IV 是加密用金鑰，請妥善保管。</div>
-</div>
-
-<div class="m-section en" id="sec-payuni"><h2>💰 Online Payment (PAYUNi)</h2>
-<p>When enabled, registrants are redirected to PAYUNi's secure payment page after form submission. Funds go directly to your PAYUNi merchant account.</p>
-<h3>Setup</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">Check <kbd>💳 Enable Online Payment (PAYUNi)</kbd></div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">Enter your PAYUNi <b>MerchantID</b></div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">Enter <b>Hash Key</b> and <b>Hash IV</b> (from your PAYUNi dashboard)</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">Set registration fee amount and label</div></div>
-</div>
-
-<!-- ==================== DESC / POSTER / RULES ==================== -->
-<div class="m-section zh" id="sec-desc"><h2>📄 說明 / 海報 / 規則・規章</h2>
-
-<h3>活動說明</h3>
-<p>支援一般純文字或 HTML 格式。若您只有純文字說明，點擊 <kbd>🔄 自動轉換為 HTML</kbd> 可智慧美化，效果包含：</p>
-<ul>
-<li>自動偵測關鍵字並加入 emoji（如「注意」→⚠️、「日期」→📅、「費用」→💰）</li>
-<li>網址自動轉為美觀的按鈕樣式</li>
-<li>自動加入適當的標題分段與格式</li>
-</ul>
-
-<h3>海報上傳</h3>
-<p>上傳圖片（<b>上限 10MB</b>），格式支援 JPG、PNG、GIF、WebP。海報會顯示在：</p>
-<ul>
-<li>首頁活動卡片的縮圖（帶倒數計時標籤）</li>
-<li>報名頁面頂部的大圖</li>
-</ul>
-<p>上傳後可使用 <kbd>🎨 AI 配色</kbd> 自動分析海報主色調，產生 5 色專業主題（詳見 AI 功能章節）。</p>
-
-<h3>規則/規章 PDF</h3>
-<p>點擊 <kbd>📤 上傳規則/規章</kbd> 上傳 PDF 檔案。功能特點：</p>
-<ul>
-<li>上傳新檔案會自動覆蓋舊檔</li>
-<li>報名頁面會自動出現「📕 查看規則/規章 PDF」按鈕和「已閱讀規則」勾選框</li>
-<li>AI 助理會自動讀取規則全文作為知識庫，報名者可透過 AI 詢問規則內容</li>
-</ul>
-
-<h3>檔案上傳要求</h3>
-<p>若您需要報名者在報名時上傳文件（如報名表 PDF、作品集等），可勾選「報名時要求上傳 PDF」。勾選後：</p>
-<ul>
-<li>右側會出現「<b>必填</b> / <b>選填</b>」下拉選單（預設為必填）</li>
-<li>出現「檔案上傳說明」欄位（支援 HTML），向報名者說明需上傳的文件內容</li>
-<li>取消勾選時，下拉選單和說明欄位會自動隱藏</li>
-</ul>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">檔案上傳設定 — 管理端畫面</span></div>
-<div class="m-ui-body">
-<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-<span style="padding:6px 14px;border:1.5px solid #0A437A;border-radius:8px;font-size:12px;font-weight:700;background:#E8F0F8;color:#0A437A">☑ 報名時要求上傳 PDF</span>
-<span style="padding:6px 14px;border:1.5px solid #0A437A;border-radius:8px;font-size:12px;font-weight:700;background:#fff;color:#0A437A">必填 ▾</span>
-</div>
-<div style="font-size:12px;color:#64748b">說明文字：<span class="m-mock-input" style="min-width:200px">請上傳報名表 PDF 檔案</span></div>
-</div></div>
-
-<table><tr><th>選項</th><th>報名者行為</th></tr>
-<tr><td><b>必填</b>（預設）</td><td>報名者在翻頁（下一步）時，系統會檢查是否已上傳檔案，<b>未上傳則無法進入下一步</b></td></tr>
-<tr><td><b>選填</b></td><td>報名者可以選擇性上傳檔案，<b>未上傳也可正常完成報名</b></td></tr></table>
-
-<div class="m-tip">💡 <b>提示：</b>未勾選「報名時要求上傳 PDF」時，下拉選單和說明欄位不會出現。勾選後預設為「必填」，可手動切換為「選填」。此設定儲存後會正確保留。</div>
-</div>
-
-<div class="m-section en" id="sec-desc"><h2>📄 Description / Poster / Rules</h2>
-<h3>Activity Description</h3>
-<p>Supports plain text or HTML. Use <kbd>🔄 Auto-Convert to HTML</kbd> for smart formatting with emojis, styled URL buttons, and auto-sectioned headings.</p>
-<h3>Poster Upload</h3>
-<p>Upload an image (max 10MB). Shown on homepage thumbnails (with countdown) and registration page header. Use <kbd>🎨 AI Color</kbd> to auto-generate a matching theme.</p>
-<h3>Rules PDF</h3>
-<p>Upload PDF → auto-replaces old file → shows "View Rules PDF" button and "I have read the rules" checkbox on registration page. AI assistant uses the full rules text as knowledge base.</p>
-<h3>File Upload Requirement</h3>
-<p>When enabled, a "Required / Optional" dropdown appears next to the checkbox (default: Required):</p>
-<table><tr><th>Option</th><th>Registrant Behavior</th></tr>
-<tr><td><b>Required</b></td><td>Must upload a PDF to proceed to the next step</td></tr>
-<tr><td><b>Optional</b></td><td>Can skip the upload and complete registration without a file</td></tr></table>
-<p>A description field (HTML) lets you explain what to upload. The dropdown and description field hide when the checkbox is unchecked.</p>
-</div>
-
-<!-- ==================== AI ==================== -->
-<div class="m-section zh" id="sec-ai"><h2>🤖 AI 功能</h2>
-
-<h3>AI 助理（報名者端）</h3>
-<p>在系統開關開啟 AI 助理後，報名頁面右下角會出現 🤖 浮動按鈕。報名者可用中文或英文即時詢問活動相關問題。</p>
-<div class="m-warn">⚠️ <b>重要：</b>AI 助理僅在報名者處於該活動的報名頁面時顯示。一旦離開報名頁面（返回首頁、進入管理介面等），AI 助理按鈕及對話視窗會立即關閉消失。活動管理員和系統管理員在報名頁面上不會看到報名者 AI 助理。</div>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">AI 助理 — 報名者視角</span></div>
-<div class="m-ui-body">
-<div style="display:flex;flex-direction:column;gap:6px;max-width:280px">
-<div style="align-self:flex-start;background:#E8F0F8;padding:6px 12px;border-radius:10px;font-size:12px;color:#0A437A">🤖 您好！有問題嗎？</div>
-<div style="align-self:flex-end;background:#0A437A;color:#fff;padding:6px 12px;border-radius:10px;font-size:12px">請問報名截止日期是什麼時候？</div>
-<div style="align-self:flex-start;background:#E8F0F8;padding:6px 12px;border-radius:10px;font-size:12px;color:#0A437A">🤖 根據活動設定，報名截止日期為 2026/06/30。</div>
-</div>
-</div></div>
-
-<p><b>AI 知識來源包含：</b></p>
-<ul>
-<li>規則/規章 PDF 全文內容</li>
-<li>活動說明 HTML 內容</li>
-<li>活動名稱、梯次日期、截止日期等基本設定</li>
-</ul>
-
-<h3>🎨 AI 配色分析</h3>
-<p>上傳海報圖片後，點擊 <kbd>🎨 AI 配色</kbd>，系統會使用 AI 分析海報的色彩組成，自動產生 5 種顏色：</p>
-<table><tr><th>色彩</th><th>用途</th></tr>
-<tr><td><b>主色 (Primary)</b></td><td>按鈕、標題、主要強調色</td></tr>
-<tr><td><b>輔色 (Secondary)</b></td><td>副標題、卡片邊框</td></tr>
-<tr><td><b>強調色 (Accent)</b></td><td>重要提示、圖標</td></tr>
-<tr><td><b>背景色 (Background)</b></td><td>頁面背景</td></tr>
-<tr><td><b>文字色 (Text)</b></td><td>正文文字</td></tr></table>
-<p>產生的配色會<b>即時套用</b>到該活動的報名頁面，讓頁面與海報視覺風格一致。</p>
-
-<h3>🔄 自動轉換 HTML</h3>
-<p>一鍵將以下三個欄位的純文字自動轉換為美觀 HTML 格式：</p>
-<ul>
-<li>活動說明</li>
-<li>付款說明</li>
-<li>檔案上傳說明</li>
-</ul>
-<p>轉換效果包含自動偵測 emoji、網址自動轉為按鈕樣式、標題自動分段。</p>
-</div>
-
-<div class="m-section en" id="sec-ai"><h2>🤖 AI Features</h2>
-<h3>AI Assistant (Registrant)</h3>
-<p>Toggle per activity. When enabled, a 🤖 floating button appears on the registration page. Supports Chinese and English queries. Knowledge sources: rules PDF + description HTML + event config.</p>
-<div class="m-warn">⚠️ The registrant AI assistant only appears while the registrant is on the registration page. It immediately disappears upon navigating away.</div>
-<h3>🎨 AI Color Analysis</h3>
-<p>Analyzes uploaded poster to generate 5 colors (primary, secondary, accent, background, text) applied instantly to the registration page.</p>
-<h3>🔄 Auto-Convert to HTML</h3>
-<p>One-click conversion of "Activity Description", "Payment Note", and "File Upload Description" from plain text to styled HTML with auto-emoji and URL-to-button conversion.</p>
-</div>
-
-<!-- ==================== ADMIN AI ASSISTANT ==================== -->
-<div class="m-section zh" id="sec-admin-ai"><h2>⚙️ 管理 AI 助理</h2>
-<p>活動管理員和系統管理員進入管理介面後，右下角會自動出現<b>紫色 ⚙️ 管理助理</b>按鈕（與報名者端的 🤖 AI 助理是完全獨立的系統）。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">管理 AI 助理 — 管理端畫面</span></div>
-<div class="m-ui-body">
-<div style="display:flex;flex-direction:column;gap:6px;max-width:300px">
-<div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700">⚙️ 管理助理</div>
-<div style="align-self:flex-start;background:#f3f0ff;padding:6px 12px;border-radius:10px;font-size:12px;color:#5b21b6">⚙️ 您好！我是 RegMaster 管理助理，可以回答您關於平台設定與操作的任何問題。</div>
-<div style="align-self:flex-end;background:#7c3aed;color:#fff;padding:6px 12px;border-radius:10px;font-size:12px">如何設定複選梯次？</div>
-<div style="align-self:flex-start;background:#f3f0ff;padding:6px 12px;border-radius:10px;font-size:12px;color:#5b21b6">⚙️ 設定複選梯次的步驟如下：<br>1、先建立 2 個以上的活動梯次<br>2、梯次設定區右側會出現「單選/複選」下拉選單<br>3、將下拉選單切換為「複選」<br>4、點擊「儲存設定」即完成<br><br>報名者在報名頁面會看到 Checkbox 勾選框，可同時選擇多個梯次。</div>
-</div>
-</div></div>
-
-<h3>與報名者 AI 助理的差異</h3>
-<table><tr><th>特性</th><th>🤖 報名者 AI 助理</th><th>⚙️ 管理 AI 助理</th></tr>
-<tr><td><b>對象</b></td><td>報名者（一般訪客）</td><td>活動管理員、系統管理員</td></tr>
-<tr><td><b>圖示/顏色</b></td><td>🤖 藍色按鈕</td><td>⚙️ 紫色漸層按鈕</td></tr>
-<tr><td><b>出現時機</b></td><td>在報名頁面時顯示，離開即消失</td><td>進入管理介面時顯示，離開即消失</td></tr>
-<tr><td><b>知識來源</b></td><td>活動規則 PDF + 活動說明 + 活動設定</td><td>操作手冊 (Manual.html) + 系統功能說明 + 當前活動設定</td></tr>
-<tr><td><b>回答內容</b></td><td>回答活動相關問題（日期、規則、費用等）</td><td>回答平台設定與操作問題（如何設定梯次、付款、欄位等）</td></tr>
-<tr><td><b>回答風格</b></td><td>依問題語言回答，簡潔</td><td>純文字格式（無 Markdown 符號），列點以數字加頓號呈現，系統化結構</td></tr></table>
-
-<h3>管理助理可以回答的問題範例</h3>
-<ul>
-<li>「如何設定複選梯次？」</li>
-<li>「檔案上傳的必填和選填有什麼差別？」</li>
-<li>「如何啟用 PAYUNi 線上付款？」</li>
-<li>「如何群發通知給所有報名者？」</li>
-<li>「如何設定組別年齡限制？」</li>
-<li>「匯出 CSV 有亂碼怎麼辦？」</li>
-<li>「目前這個活動設定了幾個梯次？」（管理助理可讀取當前活動設定）</li>
-</ul>
-
-<h3>RAG 智慧搜尋技術</h3>
-<p>管理助理內建 RAG（Retrieval-Augmented Generation）技術，運作方式如下：</p>
-<div class="m-step"><div class="num">1</div><div class="cnt"><b>載入知識庫</b> — 系統自動從 Manual.html（本操作手冊）擷取文字內容，切割為段落區塊並快取 1 小時</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt"><b>關鍵字比對</b> — 管理員發問時，系統擷取問題中的關鍵字，與知識庫段落進行相關性評分</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt"><b>精準回答</b> — 取出最相關的 5 個段落注入 AI context，搭配系統功能說明及當前活動設定，產出精準回答</div></div>
-
-<div class="m-tip">💡 <b>提示：</b>管理助理不會使用 Markdown 符號（如 #、*、`），所有回答皆為純文字格式，方便閱讀。需要強調的內容會以「」括住，列點使用「1、2、3、」格式。</div>
-</div>
-
-<div class="m-section en" id="sec-admin-ai"><h2>⚙️ Admin AI Assistant</h2>
-<p>When activity managers or system administrators enter the admin interface, a <b>purple ⚙️ Admin Assistant</b> button automatically appears in the bottom-right corner. This is completely separate from the registrant 🤖 AI Assistant.</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">Admin AI Assistant — Interface</span></div>
-<div class="m-ui-body">
-<div style="display:flex;flex-direction:column;gap:6px;max-width:300px">
-<div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:700">⚙️ Admin Assistant</div>
-<div style="align-self:flex-start;background:#f3f0ff;padding:6px 12px;border-radius:10px;font-size:12px;color:#5b21b6">⚙️ Hello! I'm the RegMaster Admin Assistant. Ask me anything about platform settings and operations.</div>
-<div style="align-self:flex-end;background:#7c3aed;color:#fff;padding:6px 12px;border-radius:10px;font-size:12px">How do I enable multi-select sessions?</div>
-</div>
-</div></div>
-
-<h3>Comparison with Registrant AI</h3>
-<table><tr><th>Feature</th><th>🤖 Registrant AI</th><th>⚙️ Admin AI</th></tr>
-<tr><td><b>Audience</b></td><td>Registrants (visitors)</td><td>Activity managers, system admins</td></tr>
-<tr><td><b>Icon/Color</b></td><td>🤖 Blue button</td><td>⚙️ Purple gradient button</td></tr>
-<tr><td><b>Visibility</b></td><td>Only on registration page</td><td>Only in admin interface</td></tr>
-<tr><td><b>Knowledge</b></td><td>Rules PDF + description + config</td><td>Operation manual (Manual.html) + system features + current activity config</td></tr>
-<tr><td><b>Response style</b></td><td>Matches question language, concise</td><td>Plain text (no Markdown), numbered lists with "1, 2, 3," format</td></tr></table>
-
-<h3>Example Questions</h3>
-<ul>
-<li>"How do I set up multi-select sessions?"</li>
-<li>"What's the difference between required and optional file upload?"</li>
-<li>"How do I enable PAYUNi online payment?"</li>
-<li>"How do I send bulk notifications?"</li>
-<li>"How many sessions does my current event have?"</li>
-</ul>
-
-<h3>RAG Technology</h3>
-<p>The Admin AI uses Retrieval-Augmented Generation (RAG): it loads this operation manual, splits it into sections, matches your question keywords against those sections, and injects the top 5 most relevant passages into the AI context for precise answers.</p>
-</div>
-
-<!-- ==================== ANNOUNCEMENTS ==================== -->
-<div class="m-section zh" id="sec-announce"><h2>📢 公告管理</h2>
-<p>在活動設定頁面的「公告」區塊，您可以新增活動公告。公告會顯示在報名頁面的「📢 公告欄」區塊，讓報名者即時看到最新資訊。</p>
-
-<h3>新增公告</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">選擇日期（日期欄位）</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">輸入公告標題/項目名稱</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">點擊 <kbd>新增</kbd> 按鈕</div></div>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">公告管理區塊</span></div>
-<div class="m-ui-body">
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-<span class="m-mock-input" style="min-width:100px">2026-06-15</span>
-<span class="m-mock-input" style="flex:1">場地變更通知</span>
-<span class="m-mock-btn out">新增</span>
-</div>
-<div class="m-mock-card" style="display:flex;justify-content:space-between;align-items:center">
-<span style="font-size:12px"><b style="color:#0A437A">2026-06-10</b> — 報名費調降至 NT$300</span>
-<span style="color:#ef4444;cursor:pointer;font-size:12px">✕</span>
-</div>
-<div class="m-mock-card" style="display:flex;justify-content:space-between;align-items:center">
-<span style="font-size:12px"><b style="color:#0A437A">2026-06-01</b> — 開放報名</span>
-<span style="color:#ef4444;cursor:pointer;font-size:12px">✕</span>
-</div>
-</div></div>
-
-<p>點擊公告右側的 ✕ 可刪除該則公告。公告按日期排列顯示。</p>
-</div>
-
-<div class="m-section en" id="sec-announce"><h2>📢 Announcements</h2>
-<p>Add announcements in the settings page. They appear on the registration page's "Announcements" section. Select a date, enter a title, and click "Add". Click ✕ to delete.</p>
-</div>
-
-<!-- ==================== SHARE LINK ==================== -->
-<div class="m-section zh" id="sec-share"><h2>🔗 分享連結與上線</h2>
-<p>活動設定完成並儲存後，頁面底部會出現「分享連結」區塊，顯示該活動的專屬報名網址。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">分享連結區塊</span></div>
-<div class="m-ui-body" style="text-align:center">
-<div style="font-size:14px;font-weight:700;color:#0A437A;margin-bottom:6px">🔗 分享連結</div>
-<div style="display:flex;gap:6px;align-items:center;justify-content:center">
-<span class="m-mock-input" style="font-size:10px;min-width:220px;color:#0A437A;font-weight:600">https://regmaster-pro.web.app/?c=XXXXX</span>
-<span class="m-mock-btn pri">複製</span>
-</div>
-</div></div>
-
-<p>點擊「複製」即可複製分享連結，透過 LINE、Email、社群媒體等管道發送給潛在報名者。收到連結的人直接開啟即可進入該活動的報名頁面。</p>
-<div class="m-tip">💡 即使活動設定為「隱藏」（不在首頁顯示），擁有分享連結的人仍可直接進入報名頁面，適合內部活動或邀請制活動。</div>
-</div>
-
-<div class="m-section en" id="sec-share"><h2>🔗 Share Link & Go Live</h2>
-<p>After saving settings, a share link is generated at the bottom. Click "Copy" to share via LINE, email, or social media. Even hidden events are accessible via the direct link.</p>
-</div>
-
-<!-- ==================== DASHBOARD ==================== -->
-<div class="m-section zh" id="sec-dashboard"><h2>📋 Dashboard 控制面板</h2>
-<p>在管理首頁點擊任一活動的卡片（或「📊」按鈕），即可進入該活動的 Dashboard。Dashboard 是管理報名資料的核心頁面，採用<b>三大頁籤（Tab）</b>架構，將統計分析與日常管理清楚分離。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">Dashboard — 三大主頁籤</span></div>
-<div class="m-ui-body" style="text-align:center">
-<span class="m-mock-tab on">📊 報名總攬</span>
-<span class="m-mock-tab off">📈 報名情況</span>
-<span class="m-mock-tab off">📋 報名管理</span>
-</div></div>
-
-<h3>📊 Tab 1：報名總攬</h3>
-<p>提供活動報名的即時數據總覽，所有數字均帶有<b>從 0 漸增的動畫效果</b>。數據卡片會依活動設定<b>動態顯隱</b>：</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">報名總攬 — 統計卡片</span></div>
-<div class="m-ui-body">
-<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px">
-<span class="m-mock-stat"><span class="val">42</span><span class="lbl">報名數</span></span>
-<span class="m-mock-stat"><span class="val" style="color:#10b981">38</span><span class="lbl">正取數</span></span>
-<span class="m-mock-stat"><span class="val" style="color:#F49121">4</span><span class="lbl">備取數 *</span></span>
-<span class="m-mock-stat"><span class="val" style="color:#ef4444">3</span><span class="lbl">待付款 *</span></span>
-</div>
-<div style="font-size:11px;color:#94a3b8;text-align:center">* 備取數僅在活動設定勾選「允許備取」時顯示；待付款僅在設定付款方式時顯示</div>
-</div></div>
-
-<p><b>各組別統計直方圖：</b>X 軸為各組別名稱（國小組、國中組、高中組、普高組、技高組、大專/社會組、教師組、公開組等），每組顯示報名數、正取數、備取數、待付款等柱狀數據。圖表帶有 1.2 秒緩出動畫。</p>
-
-<p><b>各組數據表：</b>直方圖下方為表格，欄位包含組別、總報名數、正取數（如有備取）、備取數（如有備取）、待付款（如有付款設定）。</p>
-
-<p><b>各梯次報名人數圖表：</b>當活動設定有 2 個以上梯次時，自動顯示梯次柱狀圖，X 軸為各梯次（含日期標籤），Y 軸為該梯次的報名人數。</p>
-
-<h3>📈 Tab 2：報名情況</h3>
-<p>提供報名趨勢分析，支援歷史資料對比。頂部有「X 軸」切換選單：</p>
-
-<table><tr><th>X 軸模式</th><th>說明</th></tr>
-<tr><td><b>日期</b></td><td>以實際日期（如 06/15、06/16）為 X 軸標籤</td></tr>
-<tr><td><b>倒數日</b></td><td>以報名截止日（或活動日期）為第 0 天，往前推算倒數日（-100、-99、...、-2、-1、0）。此模式<b>可與歷史資料對齊比較</b></td></tr></table>
-
-<p><b>報名趨勢圖（累計）：</b>顯示報名數隨時間的累積增長折線圖，藍色填充區域。如有匯入歷史資料，會以灰色虛線疊加顯示歷史趨勢供對比。</p>
-
-<p><b>每日報名數圖：</b>顯示每天新增的報名數柱狀圖。同樣支援歷史資料疊加對比。</p>
-
-<div class="m-step"><div class="num">1</div><div class="cnt"><b>匯出本次每日報名數 CSV</b> — 點擊按鈕下載 CSV，欄位包含：日期、總報名數、各組別報名數。此檔案可在<b>下一屆活動</b>中匯入作為歷史資料。</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt"><b>匯入過往每日報名數 CSV</b> — 選擇上屆匯出的 CSV 檔案，系統自動將日期轉換為倒數日並對齊。匯入後切換至「倒數日」模式即可看到歷史趨勢虛線疊加在當前數據上。</div></div>
-
-<div class="m-tip">💡 <b>趨勢對比用途：</b>透過匯出/匯入每日報名數，管理者可以跨年度比較報名趨勢，例如判斷「距離截止日還有 30 天時，報名進度是否落後去年？」，進而決定是否需要額外推廣。</div>
-
-<h3>📋 Tab 3：報名管理</h3>
-<p>包含所有日常管理功能，以子頁籤呈現：</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">報名管理 — 子頁籤</span></div>
-<div class="m-ui-body" style="text-align:center">
-<span class="m-mock-tab on">📋 報名列表</span>
-<span class="m-mock-tab off">✉️ 範本</span>
-<span class="m-mock-tab off">📥 匯入</span>
-<span class="m-mock-tab off">🏦 對帳</span>
-<span class="m-mock-tab off">🏆 成績</span>
-<span class="m-mock-tab off">💾 匯出</span>
-<span class="m-mock-tab off">📱 報到</span>
-</div></div>
-
-<table><tr><th>子頁籤</th><th>功能說明</th></tr>
-<tr><td><b>📋 報名列表</b></td><td>查看/搜尋所有報名資料。支援依編號、隊名、學員姓名、指導者姓名搜尋。支援依付款狀態、梯次篩選。操作按鈕以圖示呈現（🔍 檢視 ✉️ 寄信 ✅ 確認付款 🗑 刪除），滑鼠懸停顯示提示文字。</td></tr>
-<tr><td><b>✉️ 信件範本</b></td><td>建立/管理 Email 範本，支援模板變數。含群發通知功能。<br><b>注意：</b>發信前系統會檢查是否已在活動設定中勾選 Email 欄位，未勾選時會提示「請先開啟 Email 欄位」。</td></tr>
-<tr><td><b>📥 批次匯入</b></td><td>以 CSV 格式批次匯入報名資料。匯入欄位格式會依活動設定動態產生，包含所有學員欄位、SCQ、教練欄位、TCQ、通用自訂問題、梯次、付款方式等。</td></tr>
-<tr><td><b>🏦 匯款對帳</b></td><td>輸入帳號後五碼自動匹配報名者，批次確認付款</td></tr>
-<tr><td><b>🏆 成績登錄</b></td><td>依報名編號登錄分數/排名/評語</td></tr>
-<tr><td><b>💾 匯出</b></td><td>匯出 CSV 或 Excel (.xlsx)。匯出欄位完整包含：ID、組別、隊名、狀態、付款資訊、匯款資訊、訂單號、檔案連結、報名時間、參加梯次、所有學員欄位 + SCQ、所有教練欄位 + TCQ、通用自訂問題回答</td></tr>
-<tr><td><b>📱 QR 報到</b></td><td>活動現場掃描 QR Code 或輸入報名編號完成報到</td></tr></table>
-
-<h3>檢視詳情</h3>
-<p>在報名列表中點擊 🔍 按鈕，彈出視窗顯示該筆報名的完整資訊。欄位會依活動設定<b>動態產生</b>，只顯示有勾選的欄位。包含：</p>
-<ul>
-<li>基本資訊（編號、密碼、時間、組別、隊名、狀態、付款）</li>
-<li>參加梯次（多梯次時顯示）</li>
-<li>通用自訂問題回答</li>
-<li>學員表格（依 studentFields 動態欄位 + SCQ 自訂欄位）</li>
-<li>教練/指導者表格（依 teacherFields 動態欄位 + TCQ 自訂欄位）</li>
-</ul>
-</div>
-
-<div class="m-section en" id="sec-dashboard"><h2>📋 Dashboard</h2>
-<p>The Dashboard uses a <b>3-tab architecture</b> for clear separation of analytics and management:</p>
-
-<h3>📊 Tab 1: Overview</h3>
-<p>Real-time stats cards with counting animations. Cards dynamically show/hide based on settings (waitlist count appears only when waitlist is enabled; pending payment only when payment methods are configured). Includes a group bar chart with per-group breakdowns, a data table, and session enrollment chart (when 2+ sessions exist).</p>
-
-<h3>📈 Tab 2: Trends</h3>
-<p>Registration trend analysis with X-axis toggle (Date / Countdown Days). Countdown mode uses deadline or event date as Day 0 and counts backwards. Two charts: cumulative trend (line) and daily count (bar). Supports historical data overlay via CSV import/export for cross-year comparison.</p>
-<ul>
-<li><b>Export Daily CSV</b> — Downloads daily registration counts by group for use in future events</li>
-<li><b>Import Historical CSV</b> — Overlays past year's trend as a dashed gray line for comparison</li>
-</ul>
-
-<h3>📋 Tab 3: Management</h3>
-<p>Contains 7 sub-tabs: Team List (with search by ID/name/student/teacher, filter by payment/session), Templates (email check before send), Import (complete field format), Reconciliation, Scores, Export (CSV/Excel with all fields including SCQ/TCQ), QR Check-in.</p>
-
-<h3>View Details</h3>
-<p>Click 🔍 on any registration to see all data. Fields are dynamically generated based on activity settings — only enabled fields are shown. Includes student table with SCQ fields and teacher table with TCQ fields.</p>
-</div>
-
-<!-- ==================== TEAM LIST ==================== -->
-<div class="m-section zh" id="sec-teamlist"><h2>📋 報名列表操作</h2>
-<p>報名列表是 Dashboard 的預設分頁，顯示所有報名者/團隊的基本資訊與操作按鈕。</p>
-
-<h3>搜尋與篩選</h3>
-<p>頂部搜尋列可輸入報名編號、隊名、學員姓名等關鍵字即時篩選。</p>
-
-<h3>每筆報名的操作</h3>
-<table><tr><th>按鈕</th><th>功能</th></tr>
-<tr><td><span class="m-mock-btn ok" style="font-size:11px;padding:2px 8px">✓</span></td><td><b>確認付款</b> — 點擊後標記該筆報名為「已繳費」。已確認的會顯示 ✅ 標記。</td></tr>
-<tr><td><span class="m-mock-btn out" style="font-size:11px;padding:2px 8px">詳</span></td><td><b>查看詳細</b> — 開啟彈出視窗，顯示該筆報名的所有填寫資料（學員名單、教練資料、付款資訊、上傳檔案等）。</td></tr>
-<tr><td><span class="m-mock-btn pri" style="font-size:11px;padding:2px 8px">✉️</span></td><td><b>個別發信</b> — 對該筆報名的聯絡 Email 發送通知信件（可選範本）。</td></tr>
-<tr><td><span style="color:#ef4444;font-weight:700;font-size:13px">✕</span></td><td><b>刪除</b> — 刪除該筆報名資料（會要求二次確認）。</td></tr></table>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">報名列表範例</span></div>
-<div class="m-ui-body">
-<div class="m-mock-card" style="display:flex;align-items:center;gap:8px;font-size:12px">
-<span style="font-weight:800;color:#0A437A;min-width:70px">T1A2B3C</span>
-<span style="flex:1">台灣小英雄隊 — 國小組</span>
-<span style="color:#10b981">✅</span>
-<span class="m-mock-btn out" style="font-size:10px;padding:2px 6px">詳</span>
-<span class="m-mock-btn pri" style="font-size:10px;padding:2px 6px">✉️</span>
-</div>
-<div class="m-mock-card" style="display:flex;align-items:center;gap:8px;font-size:12px">
-<span style="font-weight:800;color:#0A437A;min-width:70px">T4D5E6F</span>
-<span style="flex:1">創新科技隊 — 國中組</span>
-<span style="color:#F49121">⏳</span>
-<span class="m-mock-btn ok" style="font-size:10px;padding:2px 6px">✓</span>
-<span class="m-mock-btn out" style="font-size:10px;padding:2px 6px">詳</span>
-<span class="m-mock-btn pri" style="font-size:10px;padding:2px 6px">✉️</span>
-</div>
-</div></div>
-
-<div class="m-tip">💡 確認付款後，系統會自動發送繳費確認信給報名者（前提是報名者有填寫 Email 欄位）。</div>
-</div>
-
-<div class="m-section en" id="sec-teamlist"><h2>📋 Team List Operations</h2>
-<p>Default dashboard tab showing all registrations with search, payment confirmation (✓), view details, individual email (✉️), and delete (✕) actions. Payment confirmation auto-sends a confirmation email.</p>
-</div>
-
-<!-- ==================== EMAIL ==================== -->
-<div class="m-section zh" id="sec-email"><h2>📨 信件範本與通知</h2>
-
-<h3>信件範本管理</h3>
-<p>在「✉️ 信件範本」分頁中，您可以建立常用的 Email 範本，避免重複撰寫。每個範本包含名稱、主旨、內容。</p>
-
-<h3>模板變數</h3>
-<p>在信件主旨和內容中，您可以使用以下模板變數，系統會在發送時自動替換為對應的實際值：</p>
-<table><tr><th>變數</th><th>說明</th><th>範例值</th></tr>
-<tr><td><code>{{競賽名稱}}</code></td><td>活動名稱</td><td>2026 全國機器人大賽</td></tr>
-<tr><td><code>{{報名編號}}</code></td><td>報名編號</td><td>T1A2B3C</td></tr>
-<tr><td><code>{{組別}}</code></td><td>報名組別</td><td>國小組</td></tr>
-<tr><td><code>{{中文隊名}}</code></td><td>中文隊名</td><td>台灣小英雄隊</td></tr></table>
-
-<h3>個別發信</h3>
-<p>在報名列表中點擊 <kbd>✉️</kbd> 按鈕，可對單筆報名的聯絡 Email 發送通知。可選擇已建立的範本自動帶入內容，或撰寫自訂信件。</p>
-
-<h3>群發通知</h3>
-<p>在信件範本分頁中使用「📨 群發通知」功能，可以 BCC 方式同時發送通知給<b>所有報名者</b>。支援選擇範本或自訂內容。</p>
-
-<div class="m-warn">⚠️ 群發通知會寄給所有已填寫 Email 的報名者，請確認內容無誤後再發送。</div>
-</div>
-
-<div class="m-section en" id="sec-email"><h2>📨 Email Templates & Notifications</h2>
-<h3>Templates</h3>
-<p>Create reusable email templates with name, subject, and body. Variables auto-replace: <code>{{competition}}</code>, <code>{{teamId}}</code>, <code>{{group}}</code>, <code>{{teamName}}</code>.</p>
-<h3>Individual Email</h3>
-<p>Click ✉️ on any registration to send a notification with template or custom content.</p>
-<h3>Bulk Notification</h3>
-<p>BCC-send to all registrants at once. Use templates or custom content.</p>
-</div>
-
-<!-- ==================== RECONCILE ==================== -->
-<div class="m-section zh" id="sec-reconcile"><h2>🏦 匯款對帳</h2>
-<p>當報名者選擇「匯款」付款方式時，會在報名表中填寫匯款帳號後五碼。在「匯款對帳」分頁中，您可以快速比對並確認付款。</p>
-
-<div class="m-step"><div class="num">1</div><div class="cnt">在搜尋欄輸入帳號後五碼（如 <code>12345</code>）</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">系統自動列出所有帳號後五碼匹配的報名者</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">核對金額與匯款人資訊</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">點擊確認按鈕，批次標記為「已繳費」</div></div>
-
-<div class="m-tip">💡 對帳確認後，系統同樣會自動發送繳費確認信給對應的報名者。</div>
-</div>
-
-<div class="m-section en" id="sec-reconcile"><h2>🏦 Payment Reconciliation</h2>
-<p>Enter the last 5 digits of a bank account → system auto-matches registrants → confirm to batch-mark as paid. Confirmation emails are sent automatically.</p>
-</div>
-
-<!-- ==================== IMPORT ==================== -->
-<div class="m-section zh" id="sec-import"><h2>📥 批次匯入</h2>
-<p>若您有現有的報名資料（如紙本收集的報名表），可以使用 CSV 格式批次匯入到系統中。</p>
-
-<h3>使用方式</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">切換到「📥 匯入」分頁</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">系統會依照活動的欄位設定，自動顯示 CSV 格式範例（欄位名稱列）</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">複製範例格式 → 在 Excel 或 Google Sheets 中填入資料 → 另存為 CSV</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">將 CSV 內容貼入輸入區 → 點擊匯入</div></div>
-
-<div class="m-warn">⚠️ CSV 欄位順序必須與範例一致。第一列為標題列。每列為一筆報名資料。</div>
-</div>
-
-<div class="m-section en" id="sec-import"><h2>📥 Batch Import</h2>
-<p>Import existing registrations via CSV. The system auto-generates a column format example based on your activity's field configuration. Paste CSV content and click import.</p>
-</div>
-
-<!-- ==================== EXPORT ==================== -->
-<div class="m-section zh" id="sec-export"><h2>📤 匯出 CSV</h2>
-<p>點擊「💾 匯出」分頁中的匯出按鈕，即可下載完整的報名資料 CSV 檔案。</p>
-
-<h3>匯出特點</h3>
-<ul>
-<li><b>含 BOM 標記</b> — Excel 開啟不會出現中文亂碼</li>
-<li><b>全欄位展開</b> — 所有學員、教練的每個欄位都展開為獨立 CSV 欄位</li>
-<li><b>自訂問題回答</b> — 自訂欄位的回答也會展開為獨立欄位</li>
-<li><b>檔案連結</b> — 報名者上傳的 PDF 檔案會提供下載連結</li>
-<li><b>付款資訊</b> — 含付款方式、匯款帳號後五碼、確認狀態等</li>
-</ul>
-</div>
-
-<div class="m-section en" id="sec-export"><h2>📤 CSV Export</h2>
-<p>BOM-encoded CSV file (Excel-compatible Chinese). All fields expanded + custom question answers + uploaded file links + payment info.</p>
-</div>
-
-<!-- ==================== SCORE ==================== -->
-<div class="m-section zh" id="sec-score"><h2>🏅 成績登錄</h2>
-<p>在「🏆 成績」分頁中，您可以為每筆報名登錄成績資訊。</p>
-
-<h3>登錄方式</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">輸入或選擇報名編號</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">填寫項目名稱（如「初賽」「決賽」「創意設計」等）</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">填寫分數、排名、評語</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">點擊儲存</div></div>
-
-<p>同一個隊伍的同一個項目可以覆蓋更新。成績清單會顯示在下方，方便檢視與管理。</p>
-</div>
-
-<div class="m-section en" id="sec-score"><h2>🏅 Score Entry</h2>
-<p>Enter registration ID → fill in item name, score, rank, and comments → save. Same team + item can be overwritten. All scores display in a list below.</p>
-</div>
-
-<!-- ==================== CHECK-IN ==================== -->
-<div class="m-section zh" id="sec-checkin"><h2>📱 QR Code 報到</h2>
-<p>活動當天，您可以使用「📱 報到」分頁來管理現場報到。</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">QR Code 報到介面</span></div>
-<div class="m-ui-body">
-<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px">
-<span class="m-mock-stat"><span class="val" style="color:#10b981">28</span><span class="lbl">已報到</span></span>
-<span class="m-mock-stat"><span class="val" style="color:#F49121">14</span><span class="lbl">未報到</span></span>
-<span class="m-mock-stat"><span class="val">66%</span><span class="lbl">報到率</span></span>
-</div>
-<div style="display:flex;gap:6px;align-items:center;justify-content:center">
-<span class="m-mock-input" style="min-width:150px;text-transform:uppercase">T1A2B3C</span>
-<span class="m-mock-btn ok">✅ 報到</span>
-</div>
-</div></div>
-
-<h3>報到方式</h3>
-<ul>
-<li><b>手動輸入：</b>在輸入欄輸入報名編號（如 T1A2B3C），按下 <kbd>✅ 報到</kbd> 或按 Enter</li>
-<li><b>QR Code：</b>報名者在報名成功頁面會看到其報名編號的 QR Code，活動現場可用手機掃描後手動輸入</li>
-</ul>
-
-<h3>報到狀態</h3>
-<ul>
-<li>報到成功 → 顯示 ✅ 綠色確認畫面，含報名者資訊</li>
-<li>已報到（重複掃描）→ 顯示 ⚠️ 橘色提示「已報到」，含報到時間</li>
-<li>查無此編號 → 顯示紅色錯誤提示</li>
-</ul>
-
-<p>下方顯示報到紀錄列表，可即時查看哪些人已報到、報到時間。</p>
-</div>
-
-<div class="m-section en" id="sec-checkin"><h2>📱 QR Code Check-in</h2>
-<p>Enter registration ID or scan the registrant's QR Code. Shows check-in stats (checked in / not yet / rate). Success shows ✅, duplicate shows ⚠️, invalid shows error. Recent check-in history is displayed below.</p>
-</div>
-
-<!-- ==================== REGISTRATION CONTROL ==================== -->
-<div class="m-section zh" id="sec-regcontrol"><h2>📡 報名控制機制</h2>
-<p>RegMaster 提供多種機制來控制報名的開放與關閉：</p>
-
-<table><tr><th>機制</th><th>說明</th><th>設定位置</th></tr>
-<tr><td><b>手動開關</b></td><td>直接在系統開關中控制開放/關閉報名</td><td>設定頁 → 系統開關</td></tr>
-<tr><td><b>定時開放</b></td><td>設定未來日期，時間到系統自動開啟報名</td><td>設定頁 → 開放日期</td></tr>
-<tr><td><b>自動截止</b></td><td>截止日期到期後自動關閉報名</td><td>設定頁 → 截止日期</td></tr>
-<tr><td><b>滿額控制</b></td><td>達到最大報名數後，依設定轉入備取或直接拒絕</td><td>設定頁 → 最大報名數 + 備取開關</td></tr></table>
-
-<h3>首頁倒數計時</h3>
-<p>首頁活動卡片上會自動顯示倒數標籤，依活動狀態動態切換：</p>
-<div class="m-flow"><span class="box wrn">⏳ 未開放 → 「剩 X 天開始報名」</span></div>
-<div class="m-flow"><span class="box alt">🟢 報名中 → 「剩 X 天截止報名」</span></div>
-<div class="m-flow"><span class="box">📅 已截止 → 「剩 X 天開始活動」</span></div>
-</div>
-
-<div class="m-section en" id="sec-regcontrol"><h2>📡 Registration Control</h2>
-<table><tr><th>Mechanism</th><th>Description</th></tr>
-<tr><td>Manual Toggle</td><td>Direct open/close in System Controls</td></tr>
-<tr><td>Scheduled Open</td><td>Auto-opens at the specified future date</td></tr>
-<tr><td>Auto-Close</td><td>Closes at deadline</td></tr>
-<tr><td>Capacity Control</td><td>Auto-waitlist or reject when max reached</td></tr></table>
-<p><b>Homepage Countdown:</b> Before open → "X days until registration"; During → "X days left"; After close → "X days until event".</p>
-</div>
-
-<!-- ==================== DUPLICATE ==================== -->
-<div class="m-section zh" id="sec-duplicate"><h2>📋 複製活動</h2>
-<p>若您需要建立一個與既有活動設定相似的新活動，可以使用「複製活動」功能，節省重新設定的時間。</p>
-
-<h3>使用方式</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">在管理首頁找到要複製的活動卡片</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">點擊卡片上的 <kbd>📋</kbd> 複製按鈕</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">輸入新的活動名稱</div></div>
-<div class="m-step"><div class="num">4</div><div class="cnt">系統會複製原活動的所有設定（欄位、組別、付款方式等），但不含報名資料</div></div>
-
-<div class="m-tip">💡 複製後的活動仍需扣除一次授權額度。建議複製後進入設定頁面修改日期等資訊。</div>
-</div>
-
-<div class="m-section en" id="sec-duplicate"><h2>📋 Duplicate Activity</h2>
-<p>Click 📋 on any activity card → enter a new name → all settings are copied (fields, groups, payments, etc.) without registration data. Still consumes one license credit. Update dates and details after duplicating.</p>
-</div>
-
-<!-- ==================== REGISTRANT GUIDE ==================== -->
-<div class="m-section zh" id="sec-registrant"><h2>👤 報名者端操作說明</h2>
-<p>以下說明報名者在前台的操作流程，方便您在回答報名者問題時參考。</p>
-
-<h3>報名流程（Wizard 步驟式）</h3>
-<p>RegMaster 的報名表使用步驟式（Wizard）介面，將報名流程拆分為清晰的步驟：</p>
-
-<div class="m-ui">
-<div class="m-ui-bar"><span></span><span></span><span></span><span class="m-ui-title">報名表 — Wizard 步驟列</span></div>
-<div class="m-ui-body" style="text-align:center">
-<div style="display:flex;gap:4px;justify-content:center;margin-bottom:8px">
-<span style="width:24px;height:24px;border-radius:50%;background:#0A437A;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">1</span>
-<span style="width:40px;height:2px;background:#0A437A;margin-top:11px"></span>
-<span style="width:24px;height:24px;border-radius:50%;background:#0A437A;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">2</span>
-<span style="width:40px;height:2px;background:#e2e8f0;margin-top:11px"></span>
-<span style="width:24px;height:24px;border-radius:50%;background:#e2e8f0;color:#94a3b8;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">3</span>
-<span style="width:40px;height:2px;background:#e2e8f0;margin-top:11px"></span>
-<span style="width:24px;height:24px;border-radius:50%;background:#e2e8f0;color:#94a3b8;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">4</span>
-</div>
-<div style="font-size:11px;color:#64748b">隊伍基本資料 → 學員資料 → 付款資訊 → 確認送出</div>
-</div></div>
-
-<p>步驟內容依活動設定動態產生，可能包含：</p>
-<ul>
-<li><b>Step 1：</b>隊伍名稱（中英文）、組別選擇、梯次選擇</li>
-<li><b>Step 2：</b>學員個資填寫（可新增多位學員）</li>
-<li><b>Step 3：</b>教練/家長/指導老師資料（如適用）</li>
-<li><b>Step 4：</b>付款方式選擇與付款資訊填寫</li>
-<li><b>Step 5：</b>檔案上傳（如適用）+ 規則同意勾選 + 最終確認送出</li>
-</ul>
-
-<h3>報名成功頁面</h3>
-<p>報名送出後，系統顯示：</p>
-<ul>
-<li>✅ 報名成功訊息（或備取提示）</li>
-<li>報名編號（如 T1A2B3C）</li>
-<li>登入密碼（8 位數，用於日後修改資料）</li>
-<li>QR Code（報到用）</li>
-<li>📅 加入行事曆 按鈕（加入 Google 日曆）</li>
-<li>💳 線上付款按鈕（如啟用 PAYUNi）</li>
-</ul>
-
-<h3>修改已提交的資料</h3>
-<div class="m-step"><div class="num">1</div><div class="cnt">進入活動報名頁面 → 點擊「🔐 登入修改」</div></div>
-<div class="m-step"><div class="num">2</div><div class="cnt">輸入報名編號與密碼</div></div>
-<div class="m-step"><div class="num">3</div><div class="cnt">修改資料後重新送出</div></div>
-
-<h3>查詢報名狀態</h3>
-<p>在報名頁面的「🔍 查詢報名」區塊，輸入報名編號（如 T1A2B3C）即可查詢目前的報名狀態與繳費狀態。</p>
-</div>
-
-<div class="m-section en" id="sec-registrant"><h2>👤 Registrant Guide</h2>
-<h3>Registration Flow</h3>
-<p>Step-by-step wizard: Team info → Participant details → Coach/parent (if applicable) → Payment → File upload + rules agreement → Submit. Success page shows registration ID, password, QR Code, Google Calendar button, and online payment button (if enabled).</p>
-<h3>Edit Submitted Data</h3>
-<p>Click "🔐 Login / Edit" → Enter registration ID and password → Make changes → Resubmit.</p>
-<h3>Look Up Registration</h3>
-<p>Enter registration ID in the "🔍 Look Up" section to check status and payment.</p>
-</div>
-
-<!-- ==================== FAQ ==================== -->
-<div class="m-section zh" id="sec-faq"><h2>❓ 常見問題</h2>
-
-<h3>設定修改後沒生效？</h3>
-<p>請確認有點擊最下方的 <kbd>💾 儲存設定</kbd> 按鈕。修改後未儲存的設定不會生效。這是最常見的問題！</p>
-
-<h3>建立活動失敗，跳出「需要授權」？</h3>
-<p>代表您的授權碼已過期或次數額度已用盡。請至管理首頁點擊「🔑 管理授權碼」輸入新的授權代碼。</p>
-
-<h3>AI 配色功能失敗？</h3>
-<p>請確認已上傳海報圖片。若遇到 API 擁塞，請稍等 1 分鐘後重試。若仍無法使用，可能是 AI 金鑰未正確設定，請聯繫平台管理者。</p>
-
-<h3>AI 助理無法回答問題？</h3>
-<p>AI 的知識來源為規則 PDF 和活動說明。若尚未上傳規則 PDF 或活動說明為空，AI 可能無法提供有效回答。請確認：</p>
-<ul>
-<li>已上傳規則/規章 PDF</li>
-<li>活動說明欄位已填寫內容</li>
-<li>系統開關中 AI 助理已開啟</li>
-</ul>
-
-<h3>首頁看不見活動海報？</h3>
-<p>請確認已上傳海報圖片檔案（JPG/PNG/GIF/WebP，上限 10MB）。</p>
-
-<h3>報名者說看不到報名按鈕？</h3>
-<p>請確認：</p>
-<ul>
-<li>系統開關中「報名」已切換為「開放」</li>
-<li>截止日期尚未到期</li>
-<li>若有設定定時開放，開放日期是否已到達</li>
-<li>若有設定最大組數，名額是否已滿（且未啟用備取）</li>
-</ul>
-
-<h3>報名者如何修改已提交的資料？</h3>
-<p>請報名者至活動報名頁點擊「🔐 登入修改」→ 輸入報名編號與密碼 → 修改資料後重新送出。</p>
-
-<h3>如何查詢報名狀態？</h3>
-<p>在報名頁面的「🔍 查詢報名」區塊，輸入報名編號（格式如 T1A2B3C）即可查詢。</p>
-
-<h3>匯出的 CSV 在 Excel 中顯示亂碼？</h3>
-<p>RegMaster 匯出的 CSV 已內含 BOM 標記，正常情況下 Excel 可直接開啟且中文正確顯示。若仍有問題，請嘗試以 UTF-8 編碼開啟。</p>
-
-<h3>群發通知沒有送達？</h3>
-<p>請確認：</p>
-<ul>
-<li>報名者在報名時有填寫 Email 欄位</li>
-<li>信件可能進入垃圾郵件資料夾，請報名者檢查</li>
-<li>群發信件使用 BCC 方式發送，收件者不會看到其他人的 Email</li>
-</ul>
-
-<h3>可以修改活動分類或類型嗎？</h3>
-<p>活動分類和活動類型在建立時即決定，建立後無法修改。若需變更，建議使用「複製活動」功能建立新活動，再調整設定。</p>
-
-<h3>忘記登入密碼怎麼辦？</h3>
-<p>在登入視窗點擊「忘記密碼？」→ 輸入註冊時的 Email → 系統會自動發送新密碼到您的信箱。</p>
-
-<h3>如何更換海報圖片？</h3>
-<p>直接在設定頁面重新上傳新的海報圖片即可，新圖會覆蓋舊圖。上傳後建議重新點擊 <kbd>🎨 AI 配色</kbd> 更新配色主題。</p>
-
-<h3>如何設定梯次為複選模式？</h3>
-<p>首先確認活動已建立 2 個以上的梯次（點擊「＋ 增加梯次」），梯次區右側會自動出現「單選 / 複選」下拉選單，將其切換為「複選」後點擊 <kbd>💾 儲存設定</kbd> 即可。報名者會看到 Checkbox 勾選框，可同時選擇多個梯次。</p>
-
-<h3>複選梯次的 Google 日曆怎麼運作？</h3>
-<p>報名者選擇多個梯次並完成報名後，點擊「📅 加入行事曆」會依序為每個選中的梯次開啟一個 Google Calendar 視窗，每個梯次獨立建立日曆事件。</p>
-
-<h3>檔案上傳設為「選填」後儲存，重新開啟還是顯示「必填」？</h3>
-<p>此問題已在 v5.3 修復。若仍遇到問題，請確認後端程式碼已更新為最新版本（index.js 白名單需包含 <code>fileUploadLevel</code>）。</p>
-
-<h3>管理介面右下角的紫色 ⚙️ 按鈕是什麼？</h3>
-<p>那是「管理 AI 助理」，專為活動管理員和系統管理員設計。它可以回答所有關於 RegMaster 平台設定與操作的問題。知識來源包含操作手冊和系統功能說明。點擊即可開啟對話視窗。</p>
-
-<h3>儲存設定後離開仍跳出「尚未儲存」提示？</h3>
-<p>此問題已在 v5.3 修復。儲存成功後系統會正確重置變更追蹤狀態，不再誤報未儲存的提示。</p>
-
-<h3>系統管理員如何篩選操作日誌？</h3>
-<p>進入「📋 操作日誌」頁面後，頂部提供四種篩選條件：</p>
-<ul>
-<li><b>操作者：</b>輸入帳號關鍵字即時篩選</li>
-<li><b>動作：</b>下拉選單自動列出所有出現過的動作類型（如「建立活動」「確認付款」「報名」等）</li>
-<li><b>日期範圍：</b>選擇開始與結束日期，只顯示該期間的紀錄</li>
-</ul>
-<p>篩選條件可組合使用，下方會顯示「顯示 X / Y 筆」提示。點擊「✕ 清除篩選」可一鍵還原。</p>
-
-<h3>Dashboard 的報名情況 Tab 如何使用歷史資料對比？</h3>
-<p>操作步驟：</p>
-<ul>
-<li>在上屆活動的 Dashboard 報名情況 Tab 中，點擊「📤 匯出本次每日報名數 CSV」</li>
-<li>在本屆活動的 Dashboard 報名情況 Tab 中，點擊「📥 匯入過往每日報名數 CSV」並選擇上屆的 CSV 檔案</li>
-<li>將 X 軸切換為「倒數日」，即可看到歷史趨勢以灰色虛線疊加在當前數據上</li>
-</ul>
-
-<h3>如何嵌入報名表到自己的網站？</h3>
-<p>在活動設定頁面的「分享連結」區塊，點擊「🖥 內嵌程式碼」按鈕，系統會產生完整的 iframe HTML 程式碼，複製後貼入您的網頁即可嵌入報名表。</p>
-
-<h3>多人團隊報名，學員人數有上限嗎？</h3>
-<p>系統本身不限制學員人數，但建議根據實際活動需求在活動說明中說明人數限制。報名者可在報名表中動態新增學員。</p>
-</div>
-
-<div class="m-section en" id="sec-faq"><h2>❓ Frequently Asked Questions</h2>
-
-<h3>Settings not taking effect?</h3>
-<p>Make sure you clicked <kbd>💾 Save Settings</kbd> at the bottom. This is the most common issue!</p>
-
-<h3>"License Required" error?</h3>
-<p>Your license has expired or credits are exhausted. Click "🔑 Manage License" on the admin home to enter a new code.</p>
-
-<h3>AI Color analysis failed?</h3>
-<p>Ensure you've uploaded a poster image. Wait 1 minute and retry if the API is busy.</p>
-
-<h3>AI Assistant can't answer questions?</h3>
-<p>Upload a rules PDF and fill in the activity description. The AI draws knowledge from these sources.</p>
-
-<h3>Poster not showing on homepage?</h3>
-<p>Confirm you've uploaded a poster image (JPG/PNG/GIF/WebP, max 10MB).</p>
-
-<h3>Registrants can't see the registration button?</h3>
-<p>Check: registration toggle is "Open", deadline hasn't passed, scheduled open date has arrived, capacity isn't full.</p>
-
-<h3>How can registrants edit submitted data?</h3>
-<p>Click "🔐 Login / Edit" → Enter registration ID and password → Edit and resubmit.</p>
-
-<h3>How to check registration status?</h3>
-<p>Enter the registration ID (e.g. T1A2B3C) in the "🔍 Look Up" section.</p>
-
-<h3>CSV shows garbled characters in Excel?</h3>
-<p>RegMaster CSV includes BOM encoding for Excel compatibility. If issues persist, try opening with UTF-8 encoding.</p>
-
-<h3>Bulk notifications not delivered?</h3>
-<p>Ensure registrants provided email addresses. Check spam folders. BCC is used for privacy.</p>
-
-<h3>Can I change activity category or type after creation?</h3>
-<p>No — these are set at creation. Use "Duplicate Activity" to create a new one with different settings.</p>
-
-<h3>Forgot login password?</h3>
-<p>Click "Forgot Password?" → Enter your email → A new password is sent automatically.</p>
-
-<h3>How do I set up multi-select sessions?</h3>
-<p>Create 2+ sessions → A "Single / Multi" dropdown appears next to the session label → Switch to "Multi" → Save Settings. Registrants will see checkboxes to select multiple sessions.</p>
-
-<h3>How does Google Calendar work with multi-select sessions?</h3>
-<p>After registration, clicking "📅 Add to Calendar" opens a separate Google Calendar window for each selected session.</p>
-
-<h3>File upload "Optional" not saving correctly?</h3>
-<p>Fixed in v5.3. Ensure your backend (index.js) is updated to the latest version with <code>fileUploadLevel</code> in the config whitelist.</p>
-
-<h3>What is the purple ⚙️ button in the admin interface?</h3>
-<p>That's the Admin AI Assistant — designed for activity managers and system admins. It answers questions about RegMaster platform settings and operations using the operation manual as its knowledge base.</p>
-
-<h3>"Unsaved changes" alert after saving?</h3>
-<p>Fixed in v5.3. The dirty tracking flag now resets correctly after a successful save.</p>
-
-<h3>How do system admins filter audit logs?</h3>
-<p>The audit log page provides filters for: operator (text search), action type (dropdown auto-populated from log data), and date range. Filters combine and show "Showing X / Y entries". Click "✕ Clear" to reset.</p>
-
-<h3>How to compare registration trends across years?</h3>
-<p>Export daily registration CSV from last year's Dashboard → Import it into this year's Dashboard → Switch X-axis to "Countdown Days" to see historical overlay as a dashed gray line.</p>
-
-<h3>How to embed the registration form on my website?</h3>
-<p>In the share link section, click "🖥 Embed Code" to get a ready-to-use iframe HTML snippet. Copy and paste it into your webpage.</p>
-</div>
-
-<!-- ==================== FOOTER ==================== -->
-<div style="text-align:center;padding:14px 0;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;margin-top:10px">
-<b>RegMaster</b> v5.4 — Copyright © 2026 Kuang-Tien International CO., Ltd. (廣天國際有限公司)<br>
-<span style="font-size:10px">本手冊適用於活動管理者角色。如有任何技術問題，請聯繫平台管理者。</span>
-</div>
+</head>
+<body data-lang="zh">
+<div class="m-wrap">
+
+  <!-- language toggle -->
+  <div class="m-lang">
+    <button data-l="zh" class="active" onclick="switchLang('zh')">🇹🇼 中文</button>
+    <button data-l="en" onclick="switchLang('en')">🇬🇧 English</button>
+  </div>
+
+  <!-- hero -->
+  <header class="m-hero">
+    <div class="brand"><span class="logo"><img src="/favicon.png" alt="RegMaster"></span><b>RegMaster</b></div>
+    <h1 class="zh">主辦方操作手冊</h1>
+    <h1 class="en">Organiser Operation Manual</h1>
+    <p class="zh">給活動主辦方／管理者的完整系統操作指南 — 從建立活動、設計報名表單、收費與線上付款，到報名管理、帳務、報到與 AI 助理。</p>
+    <p class="en">A complete guide for event organisers — from creating an event and designing the registration form to payments, registration management, billing, check-in, and the AI assistant.</p>
+    <span class="ver">RegMaster v3 · 2026</span>
+  </header>
+
+  <!-- TOC -->
+  <nav class="m-toc">
+    <h2 class="zh">📑 目錄</h2>
+    <h2 class="en">📑 Table of Contents</h2>
+    <div class="m-toc-grid zh">
+      <a href="#s-intro">開始使用</a>
+      <a href="#s-plan">方案與授權</a>
+      <a href="#s-account">帳戶設定</a>
+      <a href="#s-dashboard">主辦儀表板</a>
+      <a href="#s-events">活動列表與總覽</a>
+      <a href="#s-settings">活動設定詳解</a>
+      <a href="#s-form">報名表單設計</a>
+      <a href="#s-valid">欄位驗證規則</a>
+      <a href="#s-reg">報名管理與統計</a>
+      <a href="#s-billing">帳務與代收轉付</a>
+      <a href="#s-announce">公告與 EDM</a>
+      <a href="#s-score">評分</a>
+      <a href="#s-checkin">QR 報到</a>
+      <a href="#s-ai">AI 助理</a>
+      <a href="#s-registrant">報名者端體驗</a>
+      <a href="#s-faq">常見問題</a>
+    </div>
+    <div class="m-toc-grid en">
+      <a href="#s-intro">Getting Started</a>
+      <a href="#s-plan">Plans & License</a>
+      <a href="#s-account">Account Settings</a>
+      <a href="#s-dashboard">Dashboard</a>
+      <a href="#s-events">Events & Hub</a>
+      <a href="#s-settings">Activity Settings</a>
+      <a href="#s-form">Form Builder</a>
+      <a href="#s-valid">Field Validation</a>
+      <a href="#s-reg">Registrations & Stats</a>
+      <a href="#s-billing">Billing & Payouts</a>
+      <a href="#s-announce">Announcements & EDM</a>
+      <a href="#s-score">Scoring</a>
+      <a href="#s-checkin">QR Check-In</a>
+      <a href="#s-ai">AI Assistant</a>
+      <a href="#s-registrant">Registrant Experience</a>
+      <a href="#s-faq">FAQ</a>
+    </div>
+  </nav>
+
+  <!-- ============ 1. Getting Started ============ -->
+  <section class="m-sec" id="s-intro">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></span><span class="zh">開始使用</span><span class="en">Getting Started</span></h2>
+    <p class="lead zh">RegMaster 是專業的線上活動報名平台。本手冊寫給<strong>主辦方／活動管理者</strong>，帶你走完從登入、建立活動到活動結束報到的完整流程。（平台系統管理員功能不在本手冊範圍。）</p>
+    <p class="lead en">RegMaster is a professional online event-registration platform. This handbook is for <strong>organisers / activity managers</strong> and walks through the entire journey from login and event creation to event-day check-in. (Platform system-admin features are out of scope.)</p>
+
+    <h3 class="zh">登入後台</h3><h3 class="en">Logging in</h3>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">前往登入頁，輸入帳號與密碼。若已啟用兩步驟驗證（2FA），再輸入驗證器 App 顯示的 6 位數驗證碼。</span><span class="c en">Open the login page and enter your username and password. If two-factor authentication (2FA) is enabled, also enter the 6-digit code from your authenticator app.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">登入後進入<strong>主辦後台</strong>。左側為導覽列：上方是「儀表板／所有活動／AI 助理」，下方是「方案與授權／設定」。</span><span class="c en">After login you land in the <strong>Organiser Dashboard</strong>. The left sidebar holds Dashboard / All Events / AI Assistant at the top and Plans & License / Settings at the bottom.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">進入任一活動後，左側會出現「本活動」分組：總覽、設定、表單設計、報名管理、公告、帳務、評分、報到。</span><span class="c en">Inside an event, the sidebar shows a "This Event" group: Hub, Settings, Form Builder, Registrations, Announcements, Payments, Scoring, Check-In.</span></div>
+    </div>
+    <div class="m-note"><span class="zh"><b>提示：</b>手機與平板上，左側導覽列會收合為漢堡選單（☰），點擊即可展開。</span><span class="en"><b>Tip:</b> On phones and tablets the sidebar collapses into a hamburger menu (☰); tap to open it.</span></div>
+
+    <h3 class="zh">主辦方能做什麼</h3><h3 class="en">What organisers can do</h3>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><div class="fb"><h4 class="zh">建立與管理自己的活動</h4><h4 class="en">Create and manage your own events</h4><p class="zh">您只能看到並管理自己建立的活動，彼此互不干擾。</p><p class="en">You can only see and manage events you created; organisers are isolated from one another.</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span><div class="fb"><h4 class="zh">完整報名生命週期</h4><h4 class="en">Full registration lifecycle</h4><p class="zh">報名表單設計、收費、付款確認、統計、公告、評分、QR 報到一站完成。</p><p class="en">Form design, fees, payment confirmation, statistics, announcements, scoring and QR check-in — all in one place.</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20"/></svg></span><div class="fb"><h4 class="zh">線上金流與帳務透明</h4><h4 class="en">Online payments & transparent billing</h4><p class="zh">支援 PayUNI 線上付款與銀行轉帳；平台代收的款項扣手續費後依週期匯給您，明細一筆一筆看得到。</p><p class="en">Supports PayUNI online payment and bank transfer; platform-collected funds (minus fees) are wired to you on a cycle, with every order itemised.</p></div></div>
+  </section>
+
+  <!-- ============ 2. Plans & License ============ -->
+  <section class="m-sec" id="s-plan">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></span><span class="zh">方案與授權</span><span class="en">Plans & License</span></h2>
+    <p class="lead zh">在左側「方案與授權」頁管理您的方案層級、啟用授權碼，並查看每個方案的功能與金流手續費。</p>
+    <p class="lead en">Manage your plan tier, activate license codes, and view each plan's features and payment-processing fee on the "Plans & License" page.</p>
+
+    <h3 class="zh">目前方案</h3><h3 class="en">Current plan</h3>
+    <p class="zh">頁面上方的深色卡片顯示您目前的<strong>方案層級</strong>、<strong>狀態</strong>（已啟用／免費）、<strong>到期日</strong>與剩餘額度。</p>
+    <p class="en">The dark hero card at the top shows your current <strong>tier</strong>, <strong>status</strong> (active / free), <strong>expiry date</strong> and remaining quota.</p>
+
+    <h3 class="zh">四種方案</h3><h3 class="en">Four tiers</h3>
+    <table class="m-tbl">
+      <tr><th class="zh">方案</th><th class="en">Tier</th><th class="zh">適合</th><th class="en">For</th><th class="zh">重點功能</th><th class="en">Key features</th></tr>
+      <tr><td>Free</td><td class="zh">小型活動入門</td><td class="en">Small events</td><td class="zh">基本報名表、活動管理、Email 通知</td><td class="en">Basic form, event management, email notifications</td></tr>
+      <tr><td>Starter</td><td class="zh">單一活動主辦</td><td class="en">Single event</td><td class="zh">進階報名表、金流整合、匯出報表</td><td class="en">Advanced form, payment integration, report export</td></tr>
+      <tr><td>Pro</td><td class="zh">完整功能</td><td class="en">Full features</td><td class="zh">AI 助理、多評審評分、名牌/證書、公告群發</td><td class="en">AI assistant, multi-judge scoring, badges/certs, EDM</td></tr>
+      <tr><td>Team</td><td class="zh">大型機構</td><td class="en">Large orgs</td><td class="zh">全部 Pro 功能、專屬支援、SLA、優先客服</td><td class="en">All Pro features, dedicated support, SLA, priority service</td></tr>
+    </table>
+    <div class="m-note"><span class="zh"><b>PayUNI 金流手續費依方案而定：</b>每張方案卡都會標示「報名者線上付款扣除的手續費 %」，<strong>銀行轉帳免收</strong>。費率由平台設定，可能因方案不同而異。</span><span class="en"><b>PayUNI fee depends on tier:</b> each plan card shows the % deducted from a registrant's online payment. <strong>Bank transfer is free.</strong> Rates are set by the platform and vary by tier.</span></div>
+
+    <h3 class="zh">啟用授權碼</h3><h3 class="en">Activate a license code</h3>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">在「輸入授權碼」欄位貼上代碼（格式如 <code>RM-XXXX-XXXX-XXXX-XXXX</code>）。</span><span class="c en">Paste your code (e.g. <code>RM-XXXX-XXXX-XXXX-XXXX</code>) into the activation field.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">點 <span class="btnchip acc">啟用</span>。每組授權碼只能啟用一次。成功後會顯示到期日並自動綁定到您的帳號。</span><span class="c en">Click <span class="btnchip acc">Activate</span>. Each code can be used once. On success it shows the expiry date and binds to your account.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">也可直接點方案卡的 <span class="btnchip pri">立即購買 →</span> 以 PayUNI 線上刷卡購買（1 年），付款成功後自動綁定。</span><span class="c en">Or click <span class="btnchip pri">Buy now →</span> on a plan card to purchase (1 year) via PayUNI; it binds automatically after payment.</span></div>
+    </div>
+    <p class="zh">下方的「授權碼歷史」表格列出您啟用過的所有授權碼、類型、額度、狀態（<span class="tg on">已啟用</span>／<span class="tg off">已過期</span>）與到期日。</p>
+    <p class="en">The "License history" table below lists every code you activated with its type, quota, status (<span class="tg on">Active</span> / <span class="tg off">Expired</span>) and expiry.</p>
+  </section>
+
+  <!-- ============ 3. Account Settings ============ -->
+  <section class="m-sec" id="s-account">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span class="zh">帳戶設定</span><span class="en">Account Settings</span></h2>
+    <p class="lead zh">左側「設定」頁分為五個分頁：個人資料、通知偏好、安全與登入、登入裝置、帳戶。</p>
+    <p class="lead en">The "Settings" page has five tabs: Profile, Notifications, Security & Login, Devices, and Account.</p>
+
+    <h3 class="zh">① 個人資料</h3><h3 class="en">① Profile</h3>
+    <p class="zh">填寫<strong>顯示名稱</strong>、<strong>機構名稱</strong>（例：廣天國際有限公司）、Email 與電話。這些資訊會顯示在報名頁、發票與 Email 通知上。帳號與角色不可變更。填完按 <span class="btnchip pri">儲存變更</span>。</p>
+    <p class="en">Fill in <strong>Display name</strong>, <strong>Organisation name</strong>, Email and Phone. These appear on the registration page, invoices and email notifications. Username and role are read-only. Click <span class="btnchip pri">Save changes</span>.</p>
+
+    <h3 class="zh">② 收款帳戶（重要）</h3><h3 class="en">② Payout account (important)</h3>
+    <p class="zh">這是<strong>平台把您 PayUNI 線上報名費（扣手續費後）匯入的帳戶</strong>，請務必正確填寫，否則平台無法匯款給您。</p>
+    <p class="en">This is the account <strong>the platform wires your PayUNI net (after fees) to</strong>. Fill it accurately or the platform cannot pay you.</p>
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">設定 · 收款帳戶 / Settings · Payout Account</span></div>
+      <div class="body">
+        <div class="fieldrow"><span class="lbl zh">銀行</span><span class="lbl en">Bank</span><span class="field">017 兆豐國際商業銀行 ▾</span><span class="lbl zh">分行</span><span class="lbl en">Branch</span><span class="field">0170170 城中分行 ▾</span></div>
+        <div class="fieldrow"><span class="lbl zh">帳號</span><span class="lbl en">Account</span><span class="field">銀行存款帳號</span><span class="lbl zh">戶名</span><span class="lbl en">Name</span><span class="field">須與存摺一致</span></div>
+        <div class="row" style="justify-content:flex-end;margin-top:6px"><span class="btnchip pri">儲存收款帳戶 / Save</span></div>
+      </div>
+      <div class="cap zh">▲ 銀行為下拉選單（含全台銀行代碼）；選定銀行後，分行下拉會自動帶出該行所有分行。</div>
+      <div class="cap en">▲ Bank is a dropdown (all Taiwan bank codes); after selecting a bank, the branch dropdown auto-fills that bank's branches.</div>
+    </div>
+    <div class="m-warn"><span class="zh"><b>注意：</b>收款帳戶（此處）與「活動收費頁的銀行帳戶」是<strong>兩個不同帳戶</strong>。前者是平台匯款給您的去向；後者是報名者 ATM 直接匯入的帳戶。</span><span class="en"><b>Note:</b> This payout account and the "bank account on an event's Fees tab" are <strong>two different accounts</strong>. The former is where the platform pays you; the latter is where registrants ATM-transfer directly.</span></div>
+
+    <h3 class="zh">③ 通知偏好</h3><h3 class="en">③ Notification preferences</h3>
+    <p class="zh">以開關控制 Email 通知：<strong>新報名通知</strong>（每筆報名即時寄）、<strong>付款成功通知</strong>、<strong>每日摘要</strong>（每早 8:00）、<strong>每週報表</strong>（每週一）。SMS／LINE 通道規劃中。設定後按 <span class="btnchip pri">儲存通知偏好</span>。</p>
+    <p class="en">Toggle email notifications: <strong>New registration</strong> (instant), <strong>Payment received</strong>, <strong>Daily digest</strong> (8 AM), <strong>Weekly report</strong> (Mondays). SMS/LINE channels are planned. Click <span class="btnchip pri">Save preferences</span>.</p>
+
+    <h3 class="zh">④ 安全與登入</h3><h3 class="en">④ Security & Login</h3>
+    <p class="zh"><strong>變更密碼：</strong>輸入目前密碼與新密碼（至少 10 字元）兩次後送出。</p>
+    <p class="en"><strong>Change password:</strong> enter current password and the new password (min 10 chars) twice, then submit.</p>
+    <p class="zh"><strong>兩步驟驗證（2FA／TOTP）：</strong>點 <span class="btnchip gho">啟用</span> 後，用 Google Authenticator / Authy 掃描 QR Code（或手動輸入密鑰），再輸入 App 顯示的 6 位數驗證碼按 <span class="btnchip pri">確認啟用</span>。停用時需再次輸入驗證碼。啟用後每次登入都需要驗證碼，強烈建議開啟。</p>
+    <p class="en"><strong>2FA (TOTP):</strong> click <span class="btnchip gho">Enable</span>, scan the QR code with Google Authenticator / Authy (or enter the key manually), then enter the 6-digit code and click <span class="btnchip pri">Confirm</span>. Disabling requires a code too. Once on, every login needs a code — strongly recommended.</p>
+
+    <h3 class="zh">⑤ 登入裝置 / 帳戶</h3><h3 class="en">⑤ Devices / Account</h3>
+    <p class="zh"><strong>登入裝置</strong>分頁列出目前登入中的瀏覽器與裝置，當前裝置標示「當前裝置」。<strong>帳戶</strong>分頁可<span class="btnchip gho">立即登出</span>，或在危險區域<span class="btnchip dgr">刪除帳戶</span>（永久且無法復原）。</p>
+    <p class="en">The <strong>Devices</strong> tab lists active sessions (your current one is tagged). The <strong>Account</strong> tab lets you <span class="btnchip gho">Log out now</span> or, in the danger zone, <span class="btnchip dgr">Delete account</span> (permanent, irreversible).</p>
+  </section>
+
+  <!-- ============ 4. Dashboard ============ -->
+  <section class="m-sec" id="s-dashboard">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V8h-8zM3 21h8v-5H3z"/></svg></span><span class="zh">主辦儀表板</span><span class="en">Organiser Dashboard</span></h2>
+    <p class="lead zh">登入後的首頁，綜覽您所有活動的關鍵數據、報名趨勢、AI 洞察與待辦事項。</p>
+    <p class="lead en">Your home page after login: an overview of key metrics across all your events, registration trends, AI insights and to-dos.</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">主辦後台 · 儀表板 / Dashboard</span></div>
+      <div class="body">
+        <div class="row"><span class="kpi feat"><span class="v">1,248</span><span class="l zh">總報名</span><span class="l en">Total</span></span><span class="kpi"><span class="v">912</span><span class="l zh">已付款</span><span class="l en">Paid</span></span><span class="kpi"><span class="v">336</span><span class="l zh">待處理</span><span class="l en">Pending</span></span><span class="kpi"><span class="v">5</span><span class="l zh">活動數</span><span class="l en">Events</span></span></div>
+        <div class="uicard" style="margin-top:8px"><b class="zh" style="font:700 12px/1 var(--f-display)">📈 報名趨勢</b><b class="en" style="font:700 12px/1 var(--f-display)">📈 Registration trend</b> &nbsp;<span class="row" style="display:inline-flex"><span class="btnchip gho" style="font-size:10px">7天</span><span class="btnchip pri" style="font-size:10px">30天</span><span class="btnchip gho" style="font-size:10px">90天</span></span></div>
+      </div>
+    </div>
+
+    <h3 class="zh">主要區塊</h3><h3 class="en">Main blocks</h3>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><div class="fb"><h4 class="zh">KPI 卡片（4 張）</h4><h4 class="en">KPI cards (4)</h4><p class="zh">總報名、已付款、待處理、活動數，各附小型趨勢線。</p><p class="en">Total registrations, paid, pending, and event count — each with a sparkline.</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg></span><div class="fb"><h4 class="zh">報名趨勢圖</h4><h4 class="en">Registration trend chart</h4><p class="zh">可切換 7／30／90 天，顯示每日新增報名與同期成長 %。</p><p class="en">Switch between 7 / 30 / 90 days; shows daily new registrations and period-over-period growth %.</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></span><div class="fb"><h4 class="zh">AI 洞察</h4><h4 class="en">AI insights</h4><p class="zh">自動提醒待付款累積、名額接近額滿、報名偏低等（Pro 以上方案）。</p><p class="en">Auto alerts for pending-payment buildup, near-capacity, low registration, etc. (Pro+).</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z"/></svg></span><div class="fb"><h4 class="zh">進行中的活動 + 待辦事項</h4><h4 class="en">Ongoing events + to-dos</h4><p class="zh">活動卡顯示報名進度條（額滿度顏色提示）；待辦清單可勾選完成。</p><p class="en">Event cards show a fill progress bar (colour-coded); the to-do list can be checked off.</p></div></div>
+  </section>
+
+  <!-- ============ 5. Events list & Hub ============ -->
+  <section class="m-sec" id="s-events">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></span><span class="zh">活動列表與總覽</span><span class="en">Events List & Hub</span></h2>
+    <p class="lead zh">「所有活動」頁列出您的全部活動，並可建立新活動；點進任一活動即進入該活動的「總覽」。</p>
+    <p class="lead en">"All Events" lists every event you own and lets you create new ones; click any event to open its "Hub".</p>
+
+    <h3 class="zh">建立活動</h3><h3 class="en">Create an event</h3>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">在「所有活動」頁點 <span class="btnchip pri">＋ 建立活動</span>。</span><span class="c en">On "All Events" click <span class="btnchip pri">＋ Create event</span>.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">輸入<strong>活動名稱</strong>、選擇<strong>類別</strong>與<strong>活動形式</strong>：個人報名／個人＋指導者／團體報名／團體＋指導者。形式決定報名表是否需要分學員與指導者角色。</span><span class="c en">Enter the <strong>name</strong>, pick a <strong>category</strong> and <strong>format</strong>: individual / individual+coach / team / team+coach. The format decides whether the form separates student and coach roles.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">建立後系統會依形式自動產生一份初始報名表，您再到「設定」與「表單設計」細調。</span><span class="c en">After creation the system generates a starter form based on the format; refine it in "Settings" and "Form Builder".</span></div>
+    </div>
+
+    <h3 class="zh">活動總覽（Hub）</h3><h3 class="en">Event Hub</h3>
+    <p class="zh">單一活動的儀表板，包含：</p>
+    <p class="en">A single event's dashboard, containing:</p>
+    <ul>
+      <li class="zh"><strong>狀態橫幅</strong>：LIVE·報名中／已關閉、類別、活動標題、日期與截止倒數、已報名人數。</li>
+      <li class="en"><strong>Status banner</strong>: LIVE/closed, category, title, dates and deadline countdown, registration count.</li>
+      <li class="zh"><strong>5 張 KPI</strong>：總報名、正取、備取、待付款、已報到。</li>
+      <li class="en"><strong>5 KPIs</strong>: total, accepted, waitlist, payment-pending, checked-in.</li>
+      <li class="zh"><strong>活動資訊卡</strong>：活動編號（可複製）、形式、日期、報名費、組別、場次數、報名狀態。</li>
+      <li class="en"><strong>Info card</strong>: event code (copyable), format, dates, fee, groups, session count, registration status.</li>
+      <li class="zh"><strong>最近報名</strong>與快速工具磚（設定／報名與付款／公告／報到）。</li>
+      <li class="en"><strong>Recent registrations</strong> and quick-tool tiles (Settings / Payments / Announcements / Check-In).</li>
+    </ul>
+    <p class="zh">右側可一鍵 <span class="btnchip gho">⏸ 關閉報名</span> /  <span class="btnchip ok">▶ 開放報名</span>、<span class="btnchip gho">公開頁</span> 與 <span class="btnchip gho">複製公開連結</span>。</p>
+    <p class="en">On the right you can toggle <span class="btnchip gho">⏸ Close</span> / <span class="btnchip ok">▶ Open</span> registration, open the <span class="btnchip gho">Public page</span>, and <span class="btnchip gho">Copy public link</span>.</p>
+  </section>
+
+  <!-- ============ 6. Activity Settings ============ -->
+  <section class="m-sec" id="s-settings">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.3 2.5h4l.3-2.5a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6a7 7 0 00.1-1z"/></svg></span><span class="zh">活動設定詳解</span><span class="en">Activity Settings</span></h2>
+    <p class="lead zh">「設定」頁是活動的核心，以分頁組織：基本資訊、組別、報名表單、收費、通知、進階。改完任何欄位，頁面頂端會顯示「有未儲存變更」，務必按 <span class="btnchip pri">儲存</span>。</p>
+    <p class="lead en">"Settings" is the heart of an event, organised into tabs: Basics, Groups, Form, Fees, Notifications, Advanced. After any change the header shows "Unsaved changes" — always click <span class="btnchip pri">Save</span>.</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">活動設定 / Activity Settings</span></div>
+      <div class="body"><span class="uitab on zh">基本資訊</span><span class="uitab zh">組別</span><span class="uitab zh">報名表單</span><span class="uitab zh">收費</span><span class="uitab zh">通知</span><span class="uitab zh">進階</span><span class="uitab on en">Basics</span><span class="uitab en">Groups</span><span class="uitab en">Form</span><span class="uitab en">Fees</span><span class="uitab en">Notify</span><span class="uitab en">Advanced</span></div>
+    </div>
+
+    <h3 class="zh">📋 基本資訊</h3><h3 class="en">📋 Basics</h3>
+    <ul>
+      <li class="zh"><strong>活動名稱、類別、活動形式</strong>：用於所有通知與公開頁；形式決定學員/指導者角色。</li>
+      <li class="en"><strong>Name, category, format</strong>: used across notifications and the public page; format drives student/coach roles.</li>
+      <li class="zh"><strong>活動描述</strong>：支援基本 HTML，呈現於公開頁「關於這場活動」。可按 <span class="btnchip gho">🔄 一鍵轉內聯 HTML</span> 把純文字／Markdown 式內容自動轉成排版。</li>
+      <li class="en"><strong>Description</strong>: supports basic HTML, shown in "About this activity". Click <span class="btnchip gho">🔄 To inline HTML</span> to auto-format plain/Markdown text.</li>
+      <li class="zh"><strong>時間設定</strong>：開放報名時間（可勾「即日起，立即開放」）、報名截止時間（必填）。</li>
+      <li class="en"><strong>Timing</strong>: registration open time (or tick "Open now"), and a required deadline.</li>
+      <li class="zh"><strong>活動日期模式</strong>：「單次／單日」（填活動日與起訖時間）或「多梯次／多日」（於下方場次區塊設定）。</li>
+      <li class="en"><strong>Date mode</strong>: "Single day" (one date + start/end time) or "Multi-session" (configured in the sessions block).</li>
+    </ul>
+
+    <h4 class="zh">場次／梯次（多梯次模式）</h4><h4 class="en">Sessions (multi-session mode)</h4>
+    <p class="zh">每個梯次可設名稱、起訖日期時間與<strong>名額上限</strong>（各梯次獨立計算）。模式可選<strong>單選</strong>（一人只能選一梯次）或<strong>多選</strong>。按 <span class="btnchip gho">＋ 新增場次</span> 增列，可拖曳排序。</p>
+    <p class="en">Each session has a name, start/end date-time and a <strong>capacity</strong> (counted independently). Mode is <strong>single-pick</strong> or <strong>multi-pick</strong>. Click <span class="btnchip gho">＋ Add session</span>; rows are drag-sortable.</p>
+
+    <h4 class="zh">活動海報（AI 配色）與簡章 PDF（AI 預填）</h4><h4 class="en">Poster (AI palette) & Brochure PDF (AI autofill)</h4>
+    <p class="zh">上傳海報後可按 <span class="btnchip gho">🎨 AI 配色</span> 自動擷取主視覺色彩套用到公開頁，並顯示色票。上傳活動簡章 PDF 後可按 <span class="btnchip gho">🤖 用簡章 AI 自動填寫設定</span> 讓 AI 解析內容預填欄位（仍需人工審查）；該 PDF 也會成為活動 AI 小幫手的知識庫。兩者皆可 <span class="btnchip gho">🔍 預覽</span>。</p>
+    <p class="en">After uploading a poster, click <span class="btnchip gho">🎨 AI palette</span> to extract its colours into the public page (with swatches). After uploading a brochure PDF, click <span class="btnchip gho">🤖 Autofill from PDF</span> to let AI parse it and pre-fill fields (review before saving); the PDF also feeds the event AI helper. Both support <span class="btnchip gho">🔍 Preview</span>.</p>
+
+    <h3 class="zh">🏷️ 組別</h3><h3 class="en">🏷️ Groups</h3>
+    <p class="zh">新增組別並可套用<strong>預設組別</strong>（國小／國中／高中／大專／社會／教師／公開組…）或自訂。每組可設<strong>年齡規則</strong>：不限年齡、年齡區間，或出生日期區間。報名時系統會依選手生日自動驗證。團體活動還可開啟<strong>要求中文／英文隊名</strong>。</p>
+    <p class="en">Add groups using <strong>presets</strong> (elementary / junior / senior high / college / adult / teacher / open…) or custom names. Each group can have an <strong>age rule</strong>: none, age range, or birth-date range — validated against the registrant's birthday automatically. Team events can also require a <strong>Chinese / English team name</strong>.</p>
+
+    <h3 class="zh">💳 收費</h3><h3 class="en">💳 Fees</h3>
+    <ul>
+      <li class="zh"><strong>收費項目</strong>：可新增多個項目（報名費／材料費／保證金…），系統自動加總顯示「收費總額」。</li>
+      <li class="en"><strong>Fee items</strong>: add multiple items (registration / materials / deposit…); the total is summed automatically.</li>
+      <li class="zh"><strong>啟用線上付款（PayUNI）</strong>：開關開啟後報名者可線上刷卡，付款成功自動對帳。</li>
+      <li class="en"><strong>Enable PayUNI</strong>: lets registrants pay by card online; payments auto-reconcile on success.</li>
+      <li class="zh"><strong>銀行 / ATM 轉帳</strong>：開啟「啟用銀行轉帳收款與對帳」後，填寫<strong>銀行（下拉）→ 分行代號（下拉自動帶出）→ 帳號 → 戶名</strong>。此帳戶會顯示給報名者直接匯款，且「帳務」頁的快速銀行對帳才會啟用。</li>
+      <li class="en"><strong>Bank / ATM transfer</strong>: enable it, then fill <strong>Bank (dropdown) → Branch (auto-filled dropdown) → Account → Holder</strong>. This account is shown to registrants for direct transfer, and it unlocks Quick Bank Reconciliation on the Payments page.</li>
+      <li class="zh"><strong>折扣碼</strong>：建立折抵金額或百分比的代碼，可設使用上限與有效期限，供報名者結帳時輸入。</li>
+      <li class="en"><strong>Discount codes</strong>: create fixed-amount or percentage codes with usage limits and expiry for registrants to enter at checkout.</li>
+    </ul>
+    <div class="m-warn"><span class="zh"><b>金流分流：</b>PayUNI 由平台代收（扣手續費後依週期匯給您）；銀行/ATM 轉帳由報名者<strong>直接匯入您填的帳戶</strong>，平台不經手。</span><span class="en"><b>Money split:</b> PayUNI is collected by the platform (paid to you on a cycle after fees); bank/ATM transfers go <strong>directly into your account</strong> and never touch the platform.</span></div>
+
+    <h3 class="zh">📢 通知</h3><h3 class="en">📢 Notifications</h3>
+    <p class="zh">可開關<strong>自動 Email 通知</strong>（關閉後新報名者不收確認信）。此分頁也內含<strong>活動公告</strong>編輯器：填日期、標題、內容後按 <span class="btnchip gho">＋ 新增公告</span>，公告會即時顯示在公開頁「公告」區（由新到舊）。需要群發 EDM 請見「公告與 EDM」章節。</p>
+    <p class="en">Toggle <strong>automatic email notifications</strong> (off = new registrants get no confirmation email). This tab also has an inline <strong>announcement</strong> editor: fill date/title/content and click <span class="btnchip gho">＋ Add announcement</span>; it appears instantly on the public page (newest first). For mass EDM see the Announcements chapter.</p>
+
+    <h3 class="zh">⚙️ 進階</h3><h3 class="en">⚙️ Advanced</h3>
+    <ul>
+      <li class="zh"><strong>報名上限</strong>（0 = 無上限）與<strong>允許候補</strong>（是＝額滿後寫「備取」；否＝額滿即停收）。多梯次模式下，上限為各梯次加總、唯讀。</li>
+      <li class="en"><strong>Capacity</strong> (0 = unlimited) and <strong>Waitlist</strong> (Yes = overflow becomes "waitlist"; No = stop when full). In multi-session mode this is the read-only sum of per-session caps.</li>
+      <li class="zh"><strong>可見性</strong>：「於公開瀏覽頁顯示」與「開放報名」兩個開關。</li>
+      <li class="en"><strong>Visibility</strong>: "Show on public listing" and "Open for registration" toggles.</li>
+      <li class="zh"><strong>危險區域</strong>：<span class="btnchip gho">複製活動</span>（複製設定但不含報名）與 <span class="btnchip dgr">刪除活動</span>（需輸入活動名稱二次確認，永久且不可復原）。</li>
+      <li class="en"><strong>Danger zone</strong>: <span class="btnchip gho">Duplicate</span> (copies settings, not registrations) and <span class="btnchip dgr">Delete</span> (type the event name to confirm; permanent).</li>
+    </ul>
+  </section>
+
+  <!-- ============ 7. Form Builder ============ -->
+  <section class="m-sec" id="s-form">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0H5a2 2 0 01-2-2v-4m6 6h10a2 2 0 002-2v-4"/></svg></span><span class="zh">報名表單設計</span><span class="en">Form Builder</span></h2>
+    <p class="lead zh">表單設計器分三欄：左側<strong>欄位調色盤</strong>、中央<strong>表單畫布</strong>、右側<strong>檢查器</strong>。從左側拖曳或點擊把欄位加入區塊，點欄位即可在右側設定。</p>
+    <p class="lead en">The builder has three columns: a <strong>field palette</strong> (left), the <strong>canvas</strong> (centre), and an <strong>inspector</strong> (right). Drag or click fields from the palette into a block; click a field to configure it on the right.</p>
+
+    <div class="m-note"><span class="zh"><b>核心原則：1 區塊 = 1 人。</b>每個「學員」或「指導者」區塊代表一位報名者；要收幾位就放幾個區塊。「附加問題」區塊<strong>限一個</strong>，放團隊層級的額外問題。</span><span class="en"><b>Core rule: 1 block = 1 person.</b> Each "Student" or "Teacher" block represents one registrant; add as many blocks as people. The "Additional questions" block is <strong>limited to one</strong> for team-level extra questions.</span></div>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">表單設計器 / Form Builder</span></div>
+      <div class="body">
+        <div class="uicard"><span class="row" style="justify-content:space-between"><b style="font:700 12px/1.4 var(--f-display)">01 · <span class="zh">學員 1</span><span class="en">Student 1</span></b><span class="row"><span class="btnchip gho" style="font-size:10px">↑</span><span class="btnchip gho" style="font-size:10px">↓</span><span class="btnchip gho" style="font-size:10px">📋</span><span class="btnchip dgr" style="font-size:10px">🗑</span></span></span>
+          <div class="fieldrow"><span class="lbl zh">中文姓名*</span><span class="lbl en">Name*</span><span class="field">text</span></div>
+          <div class="fieldrow"><span class="lbl zh">身分證</span><span class="lbl en">ID No.</span><span class="field">idnumber · <span class="zh">自動驗證</span><span class="en">auto-validated</span></span></div>
+        </div>
+        <span class="btnchip gho">＋ <span class="zh">新增欄位</span><span class="en">Add field</span></span> <span class="btnchip pri">＋ <span class="zh">新增區塊</span><span class="en">Add block</span></span>
+      </div>
+    </div>
+
+    <h3 class="zh">欄位類型</h3><h3 class="en">Field types</h3>
+    <p class="zh"><strong>通用欄位：</strong>單行文字、多行文字、下拉選單、單選、複選、日期、數字、<strong>上傳檔案</strong>（可設大小上限與允許副檔名）。</p>
+    <p class="en"><strong>General:</strong> single-line text, paragraph, dropdown, radio, checkbox, date, number, and <strong>file upload</strong> (set max size and allowed extensions).</p>
+    <p class="zh"><strong>特殊欄位（內建驗證）：</strong>中文/英文姓名、性別、生日、Email、電話、<strong>手機含國碼</strong>、身分證、護照號碼/發照日/截止日、國籍、<strong>出生地</strong>、郵遞區號、地址、緊急聯絡、飲食/過敏、T-shirt、血型、發票類型/抬頭/<strong>統一編號</strong>、住宿需求等。</p>
+    <p class="en"><strong>Special (built-in validation):</strong> Chinese/English name, gender, birthday, email, phone, <strong>mobile with country code</strong>, national ID, passport no./issue/expiry, nationality, <strong>birthplace</strong>, postal code, address, emergency contact, dietary/allergy, T-shirt, blood type, invoice type/title/<strong>tax ID</strong>, accommodation, and more.</p>
+
+    <h3 class="zh">檢查器設定</h3><h3 class="en">Inspector settings</h3>
+    <ul>
+      <li class="zh"><strong>標籤文字</strong>與<strong>說明文字</strong>（說明文字支援少量安全標籤如 <code>&lt;a&gt; &lt;b&gt; &lt;br&gt;</code>）。</li>
+      <li class="en"><strong>Label</strong> and <strong>help text</strong> (help text allows a few safe tags like <code>&lt;a&gt; &lt;b&gt; &lt;br&gt;</code>).</li>
+      <li class="zh"><strong>選項編輯器</strong>（下拉/單選/複選）：逐列新增選項。</li>
+      <li class="en"><strong>Options editor</strong> (dropdown/radio/checkbox): add options row by row.</li>
+      <li class="zh"><strong>檔案上傳</strong>：設定大小上限（MB）與允許類型（PDF/Word/圖片…或自訂副檔名）。</li>
+      <li class="en"><strong>File upload</strong>: set max size (MB) and allowed types (PDF/Word/image… or custom extensions).</li>
+      <li class="zh"><strong>必填</strong>（預設開啟）與<strong>系統內建驗證</strong>徽章（特殊欄位顯示，無法關閉）。</li>
+      <li class="en"><strong>Required</strong> (on by default) and a <strong>built-in validation</strong> badge for special fields (cannot be disabled).</li>
+      <li class="zh"><strong>顯示條件（進階）</strong>：可設「當同區塊某欄位 等於/不等於/大於/小於 某值才顯示」，做出連動問卷。</li>
+      <li class="en"><strong>Conditional display</strong>: show a field only when another field in the same block equals / differs / is greater / less than a value.</li>
+    </ul>
+    <p class="zh">區塊可<span class="btnchip gho">↑</span><span class="btnchip gho">↓</span>排序、<span class="btnchip gho">📋 複製</span>、<span class="btnchip dgr">🗑 刪除</span>；游標在畫布編輯時不會跳掉（surgical 更新）。</p>
+    <p class="en">Blocks can be reordered <span class="btnchip gho">↑</span><span class="btnchip gho">↓</span>, <span class="btnchip gho">📋 duplicated</span>, or <span class="btnchip dgr">🗑 deleted</span>; the cursor stays put while editing (surgical canvas updates).</p>
+  </section>
+
+  <!-- ============ 8. Field Validation ============ -->
+  <section class="m-sec" id="s-valid">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></span><span class="zh">欄位驗證規則</span><span class="en">Field Validation Rules</span></h2>
+    <p class="lead zh">系統會在報名送出時自動把關以下欄位，確保資料正確。這些驗證由系統強制執行，無法在表單關閉。</p>
+    <p class="lead en">The system enforces the following checks at submission to keep data clean. These are mandatory and cannot be turned off.</p>
+    <table class="m-tbl">
+      <tr><th class="zh">欄位</th><th class="en">Field</th><th class="zh">規則</th><th class="en">Rule</th></tr>
+      <tr><td class="zh">身分證</td><td class="en">National ID</td><td class="zh">中華民國身分證／居留證字號格式 + 檢查碼</td><td class="en">Taiwan ID / ARC format + checksum</td></tr>
+      <tr><td class="zh">身分證 ↔ 性別</td><td class="en">ID ↔ gender</td><td class="zh">身分證性別碼需與所選性別一致（國民證第 2 碼 1=男 2=女；新式居留證第 3 碼 8=男 9=女）</td><td class="en">ID gender digit must match selected gender (2nd digit 1=M 2=F; new ARC 3rd digit 8=M 9=F)</td></tr>
+      <tr><td>Email</td><td>Email</td><td class="zh">須為 user@domain.tld 格式</td><td class="en">Must be user@domain.tld</td></tr>
+      <tr><td class="zh">電話 / 手機</td><td class="en">Phone / mobile</td><td class="zh">台灣電話格式；手機含國碼則驗證國碼 + 純數字</td><td class="en">Taiwan phone format; mobile validates country code + digits</td></tr>
+      <tr><td class="zh">統一編號</td><td class="en">Tax ID</td><td class="zh">8 碼 + 檢查碼</td><td class="en">8 digits + checksum</td></tr>
+      <tr><td class="zh">郵遞區號</td><td class="en">Postal code</td><td class="zh">3 或 5 碼</td><td class="en">3 or 5 digits</td></tr>
+      <tr><td class="zh">生日 / 護照發照日</td><td class="en">Birthday / issue date</td><td class="zh">不可為未來日期</td><td class="en">Cannot be a future date</td></tr>
+      <tr><td class="zh">護照截止日</td><td class="en">Passport expiry</td><td class="zh">須晚於今日</td><td class="en">Must be later than today</td></tr>
+      <tr><td class="zh">護照號碼</td><td class="en">Passport no.</td><td class="zh">6–9 碼英數字</td><td class="en">6–9 alphanumeric chars</td></tr>
+    </table>
+    <div class="m-note"><span class="zh"><b>重複檢查：</b>同一筆報名不可有重複身分證；已報名的身分證／（護照＋國籍）不可在其他隊伍再報名。團體活動的「隊名＋身分證」也會做重複檢查。</span><span class="en"><b>Duplicate checks:</b> no duplicate IDs within one registration; an already-used ID / (passport+nationality) cannot register again in another team. Team events also check team-name + ID duplicates.</span></div>
+  </section>
+
+  <!-- ============ 9. Registrations & Stats ============ -->
+  <section class="m-sec" id="s-reg">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.9M9 20H4v-2a4 4 0 013-3.9m6-1.1a4 4 0 10-4-4 4 4 0 004 4zm6-2a3 3 0 10-3-3"/></svg></span><span class="zh">報名管理與統計</span><span class="en">Registrations & Statistics</span></h2>
+    <p class="lead zh">「報名管理」頁有兩個分頁：<strong>報名統計</strong>（圖表）與<strong>報名列表</strong>（逐筆管理）。</p>
+    <p class="lead en">"Registrations" has two tabs: <strong>Statistics</strong> (charts) and <strong>Registration list</strong> (per-team management).</p>
+
+    <h3 class="zh">📊 報名統計</h3><h3 class="en">📊 Statistics</h3>
+    <p class="zh">上方 4 張 KPI（總報名隊伍／已付款／待付款／組別數）。下方圖表會依活動設定自動顯示或隱藏：</p>
+    <p class="en">Four KPIs on top (teams / paid / unpaid / group count). Charts below auto-show/hide based on your event setup:</p>
+    <ul>
+      <li class="zh">各組別報名數、性別比例、正取/備取、付款狀態、各梯次分布、學員年齡分布、付款方式偏好。</li>
+      <li class="en">By group, gender ratio, accepted/waitlist, payment status, by session, age distribution, payment-method preference.</li>
+      <li class="zh">每日新增報名、每日入帳金額、<strong>報名累計趨勢</strong>（可切換 X 軸為「日期」或「距截止天數 D-N」）、累積收費金額。</li>
+      <li class="en">Daily new registrations, daily revenue, <strong>cumulative trend</strong> (X-axis: date or "days-to-deadline D-N"), cumulative revenue.</li>
+      <li class="zh"><strong>報名時段熱力圖</strong>（星期 × 小時）：找出報名高峰，挑選最佳公告時機。</li>
+      <li class="en"><strong>Time-of-week heatmap</strong> (day × hour): spot peaks and pick the best time to send announcements.</li>
+    </ul>
+
+    <h3 class="zh">📋 報名列表</h3><h3 class="en">📋 Registration list</h3>
+    <p class="zh">可即時<strong>搜尋</strong>編號／隊名／狀態。每列三個動作：</p>
+    <p class="en">Live <strong>search</strong> by code / team / status. Each row has three actions:</p>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></span><div class="fb"><h4 class="zh"><span class="btnchip pri">檢視詳情</span></h4><h4 class="en"><span class="btnchip pri">View details</span></h4><p class="zh">彈出視窗顯示隊伍資訊、每位學員/指導者完整欄位、<strong>附加問題</strong>答案，以及上傳檔案連結（圖片/PDF 可在視窗內預覽，其餘可下載）。</p><p class="en">A modal shows team info, every student/coach field, <strong>custom-question</strong> answers, and uploaded files (images/PDF preview inline; others download).</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg></span><div class="fb"><h4 class="zh"><span class="btnchip gho">寄送信件</span></h4><h4 class="en"><span class="btnchip gho">Send email</span></h4><p class="zh">針對單一隊伍寄信：可改主旨與內容，收件人為該隊全部成員。</p><p class="en">Email a single team: edit subject/body; recipients are all members of that team.</p></div></div>
+    <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></span><div class="fb"><h4 class="zh"><span class="btnchip dgr">刪除</span></h4><h4 class="en"><span class="btnchip dgr">Delete</span></h4><p class="zh">永久刪除該隊伍與其成員資料、上傳檔（需確認）。</p><p class="en">Permanently delete the team, its members and uploads (with confirmation).</p></div></div>
+    <p class="zh">右上 <span class="btnchip pri">⬇️ 匯出所有報名資料</span> 可選 <strong>CSV</strong>（UTF-8，適合 Google Sheets）或 <strong>Excel</strong>（.xls）。</p>
+    <p class="en">Top-right <span class="btnchip pri">⬇️ Export all</span> offers <strong>CSV</strong> (UTF-8, for Google Sheets) or <strong>Excel</strong> (.xls).</p>
+  </section>
+
+  <!-- ============ 10. Billing & Payouts ============ -->
+  <section class="m-sec" id="s-billing">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h18M3 10l2-5h14l2 5M3 10v9a1 1 0 001 1h16a1 1 0 001-1v-9M7 15h4"/></svg></span><span class="zh">帳務與平台代收轉付</span><span class="en">Billing & Platform Payouts</span></h2>
+    <p class="lead zh">「帳務」頁有兩個分頁：<strong>報名費</strong>（收款與對帳）與<strong>平台代收轉付</strong>（PayUNI 款項何時、如何匯給您）。</p>
+    <p class="lead en">"Payments" has two tabs: <strong>Fees</strong> (collection & reconciliation) and <strong>Platform payouts</strong> (when and how PayUNI money reaches you).</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">帳務 / Payments</span></div>
+      <div class="body"><span class="uitab on zh">報名費</span><span class="uitab zh">平台代收轉付</span><span class="uitab on en">Fees</span><span class="uitab en">Platform payouts</span>
+        <div class="row" style="margin-top:8px"><span class="kpi feat"><span class="v">NT$ 240k</span><span class="l zh">應收</span><span class="l en">Due</span></span><span class="kpi"><span class="v">NT$ 182k</span><span class="l zh">已收</span><span class="l en">Collected</span></span><span class="kpi"><span class="v">NT$ 58k</span><span class="l zh">待收</span><span class="l en">Pending</span></span><span class="kpi"><span class="v">76%</span><span class="l zh">收款率</span><span class="l en">Rate</span></span></div>
+      </div>
+    </div>
+
+    <h3 class="zh">💳 報名費分頁</h3><h3 class="en">💳 Fees tab</h3>
+    <ul>
+      <li class="zh">上方 4 張 KPI：應收總額、已收、待收、收款率。</li>
+      <li class="en">Four KPIs: total due, collected, pending, collection rate.</li>
+      <li class="zh">隊伍表格每列可 <span class="btnchip pri">確認付款</span>（手動標記已確認）、<span class="btnchip gho">查看</span>、<span class="btnchip dgr">刪除</span>。</li>
+      <li class="en">Each team row offers <span class="btnchip pri">Confirm payment</span>, <span class="btnchip gho">View</span>, <span class="btnchip dgr">Delete</span>.</li>
+    </ul>
+    <h4 class="zh">快速銀行對帳</h4><h4 class="en">Quick bank reconciliation</h4>
+    <p class="zh">當活動有啟用銀行轉帳時出現。輸入收到匯款的<strong>銀行帳號末 5 碼</strong>，按 <span class="btnchip acc">執行對帳</span>，系統會把匯款帳號末 5 碼相符且尚未確認的隊伍自動標記為「已確認」。（PayUNI 線上付款會自動對帳，無需手動。）</p>
+    <p class="en">Appears when bank transfer is enabled. Enter the <strong>last 5 digits</strong> of the remitter's account and click <span class="btnchip acc">Reconcile</span>; the system auto-marks matching unconfirmed teams as confirmed. (PayUNI online payments reconcile automatically.)</p>
+    <div class="m-note"><span class="zh">報名者在報名時會填寫「轉出帳號後 5 碼」，這就是對帳比對的依據。</span><span class="en">Registrants enter their "account last 5 digits" at sign-up — that is what reconciliation matches against.</span></div>
+
+    <h3 class="zh">💸 平台代收轉付分頁</h3><h3 class="en">💸 Platform payouts tab</h3>
+    <p class="zh">此分頁為<strong>唯讀檢視</strong>，讓您清楚平台代收的 PayUNI 款項。包含：</p>
+    <p class="en">This tab is <strong>read-only</strong> and shows the PayUNI money the platform collects on your behalf. It includes:</p>
+    <ul>
+      <li class="zh"><strong>收款帳戶</strong>：平台匯款的去向（於「設定 → 收款帳戶」填寫）。未設定會以黃色警示。</li>
+      <li class="en"><strong>Payout account</strong>: where the platform wires money (set under Settings → Payout). A yellow warning shows if unset.</li>
+      <li class="zh"><strong>轉帳週期</strong>與<strong>下次預計匯款日</strong>：每週（每週四）或每月（每月 5 日，遇假日順延），由平台統一設定。</li>
+      <li class="en"><strong>Payout cycle</strong> and <strong>next payout date</strong>: weekly (Thursdays) or monthly (5th, rolling forward on weekends), set platform-wide.</li>
+      <li class="zh"><strong>收款摘要</strong>：PayUNI 收款、扣除手續費、實領合計、平台已轉、尚未轉付。</li>
+      <li class="en"><strong>Summary</strong>: PayUNI gross, fee deducted, net total, already paid out, still pending.</li>
+      <li class="zh"><strong>各隊收款明細</strong>：每筆 PayUNI 訂單的報名費、手續費、實領金額，與轉付狀態（<span class="tg on">✓ 已轉</span>／<span class="tg off">待轉付</span>）。</li>
+      <li class="en"><strong>Per-team detail</strong>: each PayUNI order's fee, processing fee, net, and payout status (<span class="tg on">✓ Paid</span> / <span class="tg off">Pending</span>).</li>
+      <li class="zh"><strong>平台匯款紀錄</strong>：平台每次結算匯款給您的批次編號、時間、筆數與金額。</li>
+      <li class="en"><strong>Payout records</strong>: each settlement batch the platform wired to you — ID, time, count and amount.</li>
+    </ul>
+    <h4 class="zh">金額怎麼算？</h4><h4 class="en">How amounts are computed</h4>
+    <div class="m-flow"><span class="box acc zh">報名費</span><span class="box acc en">Fee</span><span class="arr">−</span><span class="box wrn zh">手續費 %</span><span class="box wrn en">Fee %</span><span class="arr">=</span><span class="box ok zh">每筆實領</span><span class="box ok en">Net / order</span><span class="arr">→</span><span class="box zh">累計實領 − NT$15 匯費 = 實際匯款</span><span class="box en">Σ net − NT$15 wire fee = payout</span></div>
+    <div class="m-note"><span class="zh"><b>銀行轉帳不在此列。</b>報名者 ATM 直接匯入您帳戶的款項已在您手上，平台不代收、不重複匯款。每筆 PayUNI 訂單只會被結算匯款一次。</span><span class="en"><b>Bank transfers are excluded.</b> ATM funds go straight to your account and are already yours — the platform neither collects nor re-pays them. Each PayUNI order is settled exactly once.</span></div>
+  </section>
+
+  <!-- ============ 11. Announcements & EDM ============ -->
+  <section class="m-sec" id="s-announce">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 11-5.8-1.6"/></svg></span><span class="zh">公告與 EDM 群發</span><span class="en">Announcements & EDM</span></h2>
+    <p class="lead zh">「公告」頁是 Email 群發工具（三欄：Campaign 列表／編輯器／收件人）。和「設定 → 通知」的活動公告不同——後者顯示在公開頁，這裡是主動寄信給報名者。</p>
+    <p class="lead en">The "Announcements" page is an email-campaign tool (three columns: campaign list / editor / recipients). Unlike the public announcements under Settings → Notifications, this proactively emails registrants.</p>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">點 <span class="btnchip pri">＋ 新增 Campaign</span> 建立草稿。</span><span class="c en">Click <span class="btnchip pri">＋ New campaign</span> to create a draft.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">填 Campaign 標題、主旨；選<strong>收件對象</strong>：所有報名者／已付款／未付款／候補（右側即時顯示符合的 Email 數）。</span><span class="c en">Fill the title and subject; choose <strong>recipients</strong>: all / paid / unpaid / waitlist (the right panel shows the live count).</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">撰寫信件標題與內容（純文字，換行保留；系統自動套用含 Logo 與頁尾的 Email 範本）。</span><span class="c en">Write the email title and body (plain text, line breaks kept; auto-wrapped in a branded template with logo and footer).</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">按 <span class="btnchip gho">儲存草稿</span> 隨時保存；確認後按 <span class="btnchip pri">立即發送 →</span>，確認收件人數後送出。狀態會變為「已發送」。</span><span class="c en">Click <span class="btnchip gho">Save draft</span> anytime; when ready click <span class="btnchip pri">Send now →</span>, confirm the recipient count, and send. Status becomes "Sent".</span></div>
+    </div>
+    <div class="m-note"><span class="zh">目前提供 Email 通道；SMS／LINE 規劃中。已發送的 Campaign 不能重送，避免重複打擾。</span><span class="en">Email channel is available now; SMS/LINE are planned. Sent campaigns can't be re-sent to avoid spamming.</span></div>
+  </section>
+
+  <!-- ============ 12. Scoring ============ -->
+  <section class="m-sec" id="s-score">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM5 4H3v2a3 3 0 003 3M19 4h2v2a3 3 0 01-3 3"/></svg></span><span class="zh">評分</span><span class="en">Scoring</span></h2>
+    <p class="lead zh">給競賽型活動的評審計分工具（Pro 以上方案）。左側是<strong>即時排行榜</strong>，中央是<strong>計分表</strong>。</p>
+    <p class="lead en">A judging tool for competitions (Pro+). The left shows a <strong>live leaderboard</strong>; the centre is the <strong>score sheet</strong>.</p>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">在左側排行榜點選一支隊伍。</span><span class="c en">Pick a team from the leaderboard on the left.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">在四個面向輸入分數（創意／技術／呈現／影響，各 0–25），系統即時加總「總分／100」。</span><span class="c en">Enter scores in four criteria (creativity / technical / presentation / impact, 0–25 each); the total /100 updates live.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">可填寫<strong>評審評語</strong>（選填），按 <span class="btnchip pri">提交評分</span>。</span><span class="c en">Optionally add <strong>judge comments</strong>, then click <span class="btnchip pri">Submit score</span>.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">排行榜即時更新（多位評審各自計分，取平均排名；前三名以金／銀／銅標示）。</span><span class="c en">The leaderboard updates instantly (multiple judges score independently; ranked by average; top 3 in gold/silver/bronze).</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 13. QR Check-In ============ -->
+  <section class="m-sec" id="s-checkin">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v7M14 20h7"/></svg></span><span class="zh">QR 報到</span><span class="en">QR Check-In</span></h2>
+    <p class="lead zh">活動當天用的報到系統（三欄：即時統計／掃描區／報到紀錄）。掃描區採深色介面，適合現場使用。</p>
+    <p class="lead en">An event-day check-in system (three columns: live stats / scanner / history). The scanner uses a dark theme for on-site use.</p>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">按 <span class="btnchip pri">📷 開啟相機掃描</span> 用手機/電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</span><span class="c en">Click <span class="btnchip pri">📷 Open camera</span> to scan a registrant's QR code; the code auto-fills and checks in (allow camera access).</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">或在輸入框手動輸入隊伍編號（例 <code>T4F000</code>）按 <span class="btnchip pri">確認報到 →</span>。</span><span class="c en">Or type the team code (e.g. <code>T4F000</code>) and click <span class="btnchip pri">Confirm →</span>.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">成功顯示綠色「✓ 報到成功」，左側統計（已報到／未報到／報到率）即時更新，右側列出最近報到紀錄。</span><span class="c en">A green "✓ Checked in" appears; left stats (checked-in / not / rate) update live and the right panel logs recent check-ins.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 14. AI Assistant ============ -->
+  <section class="m-sec" id="s-ai">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></span><span class="zh">AI 助理</span><span class="en">AI Assistant</span></h2>
+    <p class="lead zh">主辦後台的對話式 AI（由 Gemini 驅動），協助活動規劃、報名問題與數據分析。對話紀錄會自動保存。</p>
+    <p class="lead en">A conversational AI in the organiser dashboard (powered by Gemini) for event planning, registration questions and data analysis. Conversations auto-save.</p>
+    <ul>
+      <li class="zh"><strong>查詢範圍</strong>：可選「主辦後台」（系統操作與設定問題，以本操作手冊為知識庫）或「特定活動」（以該活動的規則、說明、場次、截止日為依據）。</li>
+      <li class="en"><strong>Scope</strong>: "Organiser" (operational/setup questions, using this manual as its knowledge base) or "Specific event" (grounded in that event's rules, description, sessions, deadline).</li>
+      <li class="zh">左側為對話歷史，可 <span class="btnchip pri">＋ 新對話</span> 或刪除舊對話；中央輸入問題（Enter 送出，Shift+Enter 換行）。</li>
+      <li class="en">The left lists conversations (<span class="btnchip pri">＋ New</span> or delete); type in the centre (Enter to send, Shift+Enter for a new line).</li>
+    </ul>
+    <div class="m-note"><span class="zh">報名者在<strong>活動公開頁</strong>也有專屬的「AI 活動小幫手」，只回答該活動相關問題（時間、組別、費用、規章）。</span><span class="en">Registrants also get a dedicated "AI helper" on the <strong>public event page</strong> that only answers that event's questions (dates, groups, fees, rules).</span></div>
+  </section>
+
+  <!-- ============ 15. Registrant Experience ============ -->
+  <section class="m-sec" id="s-registrant">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span class="zh">報名者端體驗</span><span class="en">Registrant Experience</span></h2>
+    <p class="lead zh">了解報名者看到什麼，有助於您設計更順暢的報名流程。</p>
+    <p class="lead en">Understanding what registrants see helps you design a smoother flow.</p>
+
+    <h3 class="zh">活動公開頁</h3><h3 class="en">Public event page</h3>
+    <p class="zh">顯示活動標題、<strong>AI 產生的活動摘要</strong>、主辦單位名稱、日期/名額/截止倒數、海報，以及條件式的「公告／海報／規章」分頁。右下角有 <strong>AI 活動小幫手</strong>。報名開放時顯示 <span class="btnchip ok">立即報名 →</span>。</p>
+    <p class="en">Shows the title, an <strong>AI-generated summary</strong>, host name, date/capacity/countdown, poster, and conditional About/Announcements/Poster/Rules tabs, plus an <strong>AI helper</strong> bottom-right. When open it shows <span class="btnchip ok">Register now →</span>.</p>
+
+    <h3 class="zh">四步驟報名精靈</h3><h3 class="en">Four-step registration wizard</h3>
+    <div class="m-flow"><span class="box acc zh">① 組別/場次</span><span class="box acc en">① Group/Session</span><span class="arr">→</span><span class="box zh">② 學員資料</span><span class="box en">② Members</span><span class="arr">→</span><span class="box zh">③ 附加問題</span><span class="box en">③ Questions</span><span class="arr">→</span><span class="box ok zh">④ 確認 + 付款</span><span class="box ok en">④ Confirm + Pay</span></div>
+    <ul>
+      <li class="zh">步驟 1 會在沒有組別/場次/隊名時自動略過；步驟 4 在免費活動時略過付款。</li>
+      <li class="en">Step 1 auto-skips when there are no groups/sessions/team-name; step 4 skips payment for free events.</li>
+      <li class="zh">每位學員/指導者一張卡（對應您表單的區塊數）；送出前集中驗證所有欄位（含身分證↔性別交叉檢查、隊名+身分證重複檢查）。</li>
+      <li class="en">One card per student/coach (matching your form blocks); all fields are validated before submit (incl. ID↔gender cross-check and team-name+ID duplicate check).</li>
+      <li class="zh">步驟 4 選付款方式：<strong>PayUNI 線上付款</strong>（轉跳安全付款頁，完成後自動返回）或<strong>銀行/ATM 轉帳</strong>（填轉出帳號末 5 碼供您對帳）。</li>
+      <li class="en">Step 4 chooses payment: <strong>PayUNI</strong> (redirect to a secure page, auto-returning) or <strong>bank/ATM</strong> (enter the account's last 5 digits for your reconciliation).</li>
+    </ul>
+    <p class="zh">報名成功後，報名者會看到<strong>隊伍編號、登入密碼、報名狀態</strong>，並收到確認信；ATM 付款者會看到您的銀行匯款資訊（含分行）。</p>
+    <p class="en">On success registrants see their <strong>team code, password and status</strong> and get a confirmation email; ATM payers see your bank details (including branch).</p>
+  </section>
+
+  <!-- ============ 16. FAQ ============ -->
+  <section class="m-sec" id="s-faq">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01"/></svg></span><span class="zh">常見問題</span><span class="en">FAQ</span></h2>
+
+    <h3 class="zh">快速銀行對帳要輸入幾碼？</h3><h3 class="en">How many digits for quick bank reconciliation?</h3>
+    <p class="zh">輸入銀行帳號<strong>末 5 碼</strong>，與報名者填寫的「轉出帳號後 5 碼」比對，自動標記相符且未確認的隊伍為「已確認」。</p>
+    <p class="en">Enter the account's <strong>last 5 digits</strong>; it matches the "account last 5 digits" registrants provide and marks matching unconfirmed teams as confirmed.</p>
+
+    <h3 class="zh">平台多久匯款一次？銀行轉帳也會被平台代收嗎？</h3><h3 class="en">How often does the platform pay out? Are bank transfers collected too?</h3>
+    <p class="zh">平台依<strong>轉帳週期</strong>匯款：每週（每週四）或每月（每月 5 日，遇假日順延）。只有 <strong>PayUNI 線上付款</strong>由平台代收並扣手續費後匯給您；<strong>銀行/ATM 轉帳由報名者直接匯入您帳戶</strong>，不計入平台代收轉付。下次匯款日可在「帳務 → 平台代收轉付」查看。</p>
+    <p class="en">The platform pays out on a <strong>cycle</strong>: weekly (Thursdays) or monthly (5th, rolling forward on weekends). Only <strong>PayUNI</strong> is collected by the platform (paid to you after fees); <strong>bank/ATM transfers go directly into your account</strong> and aren't part of payouts. See the next date under Payments → Platform payouts.</p>
+
+    <h3 class="zh">報名上限存檔後數字會不見嗎？</h3><h3 class="en">Does the capacity reset after saving?</h3>
+    <p class="zh">不會，會正確保留。多梯次模式下，總上限是各梯次名額的加總（唯讀），需到「場次/梯次」調整。</p>
+    <p class="en">No, it persists. In multi-session mode the total is the read-only sum of per-session caps — adjust them in the Sessions block.</p>
+
+    <h3 class="zh">為什麼一張卡片只能填一位？</h3><h3 class="en">Why one person per block?</h3>
+    <p class="zh">RegMaster 採「1 區塊 = 1 人」原則，讓人數計算與資料驗證更精準。要收多位就在表單設計器新增多個學員/指導者區塊。附加問題區塊則固定只有一個。</p>
+    <p class="en">RegMaster uses "1 block = 1 person" for accurate counting and validation. Add more student/coach blocks in the Form Builder for more people. The additional-questions block is always single.</p>
+
+    <h3 class="zh">收款帳戶和活動收費的銀行帳戶有什麼不同？</h3><h3 class="en">Payout account vs. event bank account?</h3>
+    <p class="zh"><strong>收款帳戶</strong>（設定頁）= 平台把 PayUNI 實領匯給您的帳戶。<strong>活動收費的銀行帳戶</strong>（活動設定→收費）= 報名者 ATM 直接匯入的帳戶。兩者用途不同，請分別填寫。</p>
+    <p class="en">The <strong>payout account</strong> (Settings) is where the platform wires your PayUNI net. The <strong>event bank account</strong> (Settings→Fees) is where registrants transfer directly. They serve different purposes — fill both as needed.</p>
+
+    <h3 class="zh">如何把報名表嵌入我的網站？</h3><h3 class="en">How do I share or embed the form?</h3>
+    <p class="zh">在活動總覽或設定頁點 <span class="btnchip gho">複製公開連結</span> 即可分享報名頁網址。</p>
+    <p class="en">Click <span class="btnchip gho">Copy public link</span> in the Hub or Settings to share the registration URL.</p>
+  </section>
+
+  <footer class="m-foot">
+    <p class="zh"><b>RegMaster</b> v3 — 主辦方操作手冊 · 本手冊僅涵蓋主辦方／活動管理者功能。<br>Copyright © 2026 廣天國際有限公司 Kuang-Tien International Co., Ltd.</p>
+    <p class="en"><b>RegMaster</b> v3 — Organiser Manual · This handbook covers organiser / activity-manager features only.<br>Copyright © 2026 Kuang-Tien International Co., Ltd.</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  function switchLang(l){
+    document.body.dataset.lang = l;
+    try{ localStorage.setItem('rm_manual_lang', l); }catch(e){}
+    document.documentElement.lang = (l === 'en') ? 'en' : 'zh-Hant';
+    document.querySelectorAll('.m-lang button').forEach(function(b){
+      b.classList.toggle('active', b.dataset.l === l);
+    });
+  }
+  window.switchLang = switchLang;
+  // restore saved preference
+  try{
+    var saved = localStorage.getItem('rm_manual_lang');
+    if(saved === 'en' || saved === 'zh') switchLang(saved);
+  }catch(e){}
+  // smooth-scroll for TOC anchors
+  document.querySelectorAll('.m-toc a').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var id = a.getAttribute('href');
+      var el = id && document.querySelector(id);
+      if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth', block:'start'}); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
