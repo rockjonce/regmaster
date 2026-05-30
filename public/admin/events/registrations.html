@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>報名管理 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/ui-dialog.js"></script>
+<style>
+/* Tabs bar — same visual rhythm as event-hub navbar */
+.tabs-bar { display:flex; gap:4px; padding:0 0 14px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+.tabs-bar a { padding:10px 16px; font:600 13px/1 var(--f-tc); color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; text-decoration:none; }
+.tabs-bar a.on { color:var(--ink); border-bottom-color:var(--ink); }
+.tab-pane { display:none; }
+.tab-pane.on { display:block; }
+
+/* Stats — KPI cards reuse payments.html .sum-card visual */
+.sum-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:20px; }
+.sum-card { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.sum-card.featured { background:linear-gradient(135deg, var(--ink), #1a2e52); color:white; border-color:var(--ink); }
+.sum-card.featured .l { color:rgba(255,255,255,.65); }
+.sum-card .l { font:500 11px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.sum-card .v { font:700 28px/1 var(--f-display); letter-spacing:-.018em; }
+.sum-card .v em { font-style:normal; font-size:14px; color:var(--muted); margin-left:4px; font-weight:500; }
+.sum-card .sub { font:400 11.5px/1.5 var(--f-tc); color:var(--ink-3); margin-top:6px; }
+.sum-card.featured .sub { color:rgba(255,255,255,.6); }
+
+/* Chart cards */
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.chart-card { padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.chart-card.full { grid-column:1 / -1; }
+.chart-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+.chart-head h4 { font:700 14px/1.3 var(--f-display); color:var(--ink); }
+.chart-head .help { font:400 11.5px/1.5 var(--f-tc); color:var(--muted); }
+.chart-toggle { display:flex; gap:4px; }
+.chart-toggle button { padding:5px 10px; font:500 11.5px/1 var(--f-tc); background:var(--surface-2); border:1px solid var(--line); border-radius:5px; color:var(--ink-2); cursor:pointer; }
+.chart-toggle button.on { background:var(--ink); color:white; border-color:var(--ink); }
+.chart-box { position:relative; height:240px; }
+.chart-box.tall { height:280px; }
+
+/* Tables for list tab — same look as payments.html */
+.tbl-wrap { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow-x:auto; }
+.tbl { min-width:760px; }
+.tbl { width:100%; border-collapse:collapse; font:400 13px/1.5 var(--f-tc); }
+.tbl thead th { text-align:left; padding:11px 14px; background:var(--surface-2); border-bottom:1px solid var(--line); font:600 10.5px/1 var(--f-mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.tbl tbody td { padding:12px 14px; border-bottom:1px solid var(--line-2); color:var(--ink-2); vertical-align:middle; }
+.tbl tbody tr:hover td { background:var(--surface-2); }
+.tbl tbody tr:last-child td { border-bottom:0; }
+.pay-pill { padding:2px 7px; border-radius:4px; font:600 10.5px/1.4 var(--f-mono); display:inline-flex; align-items:center; gap:4px; }
+.pay-pill.confirmed { background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); }
+.pay-pill.pending { background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--warn-700); }
+.action-btn { padding:5px 9px; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; font:500 11px/1 var(--f-tc); color:var(--ink-2); cursor:pointer; margin-right:4px; }
+.action-btn:hover { background:var(--surface); border-color:var(--ink-3); }
+.action-btn.primary { background:var(--ink); color:white; border-color:var(--ink); }
+.action-btn.danger { background:var(--surface); border-color:color-mix(in srgb, var(--err-500) 40%, var(--line)); color:var(--err-700); }
+.action-btn.danger:hover { background:color-mix(in srgb, var(--err-500) 8%, var(--surface)); }
+
+/* Search row */
+.search-row { display:flex; gap:10px; margin-bottom:14px; align-items:center; }
+.search-row input { flex:1; max-width:340px; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font:400 13px/1.4 var(--f-tc); background:var(--surface); color:var(--ink); }
+.search-row .help { font:400 11.5px/1.4 var(--f-tc); color:var(--muted); }
+
+/* Modal (shared layout — internal viewer for team detail / email composer) */
+.modal-bg { position:fixed; inset:0; background:rgba(11,28,61,.55); display:grid; place-items:center; z-index:9999; padding:20px; }
+.modal-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; max-width:880px; width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:var(--sh-lg); }
+.modal-h { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.modal-h h3 { font:700 15px/1.3 var(--f-display); color:var(--ink); }
+.modal-body { padding:18px; overflow:auto; }
+.modal-body .group { padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; margin-bottom:12px; }
+.modal-body .group h5 { font:700 13px/1.3 var(--f-display); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+.modal-body .kv { display:grid; grid-template-columns:120px 1fr; gap:6px 12px; font:400 12.5px/1.5 var(--f-tc); }
+.modal-body .kv .k { color:var(--muted); }
+.modal-body .kv .v { color:var(--ink-2); word-break:break-all; }
+.modal-body .file-link { color:var(--acc); text-decoration:underline; }
+.modal-body .fld { margin-bottom:12px; }
+.modal-body .fld .lbl { font:500 12.5px/1.4 var(--f-mono); color:var(--ink-2); margin-bottom:4px; }
+.modal-body .fld input, .modal-body .fld textarea { width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font:400 13px/1.5 var(--f-tc); background:var(--surface); color:var(--ink); resize:vertical; }
+.modal-body .fld textarea { min-height:160px; }
+
+@media (max-width:900px){
+  .sum-row { grid-template-columns:1fr 1fr; gap:10px; }
+  .chart-grid { grid-template-columns:1fr; }
+  .modal-body .kv { grid-template-columns:1fr; }
+}
+@media (max-width:480px){ .sum-row { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="side"></aside>
+  <main>
+    <header class="head">
+      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>報名管理</b></div>
+      <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+    </header>
+    <div id="loadingState" class="loading-c">載入報名資料⋯</div>
+
+    <div class="main-c" id="content" style="display:none">
+      <!-- TABS -->
+      <div class="tabs-bar">
+        <a data-tab="stats" class="on">📊 報名統計</a>
+        <a data-tab="list">📋 報名列表</a>
+      </div>
+
+      <!-- TAB 1: STATISTICS -->
+      <div class="tab-pane on" data-pane="stats">
+        <div class="sum-row" id="kpiRow"></div>
+
+        <div class="chart-grid">
+          <!-- 各組別報名數量 (only when groups exist) -->
+          <div class="chart-card" id="groupCardWrap" style="display:none">
+            <div class="chart-head">
+              <h4>各組別報名數量</h4>
+              <span class="help">隊伍 / 組別</span>
+            </div>
+            <div class="chart-box"><canvas id="chartGroup"></canvas></div>
+          </div>
+
+          <!-- 男女性別比例 -->
+          <div class="chart-card" id="genderCardWrap">
+            <div class="chart-head">
+              <h4>性別比例</h4>
+              <span class="help">所有成員（學員 + 指導者）</span>
+            </div>
+            <div class="chart-box"><canvas id="chartGender"></canvas></div>
+          </div>
+
+          <!-- 每日報名數（長條圖） -->
+          <div class="chart-card full">
+            <div class="chart-head">
+              <h4>每日新增報名數</h4>
+              <span class="help">每日完成報名的隊伍數量</span>
+            </div>
+            <div class="chart-box tall"><canvas id="chartDaily"></canvas></div>
+          </div>
+
+          <!-- 報名趨勢（累計） — X 軸切換 -->
+          <div class="chart-card full">
+            <div class="chart-head">
+              <h4>報名累計趨勢</h4>
+              <div class="chart-toggle">
+                <button data-trend-x="date" class="on">日期</button>
+                <button data-trend-x="countdown">距截止天數 (D-N)</button>
+              </div>
+            </div>
+            <div class="chart-box tall"><canvas id="chartTrend"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LIST -->
+      <div class="tab-pane" data-pane="list">
+        <div class="search-row">
+          <input id="searchInp" placeholder="搜尋編號 / 隊名 / 狀態⋯">
+          <span class="help" id="listCount">共 — 筆</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>編號</th><th>中文隊名</th><th>英文隊名</th><th>狀態</th><th>付款狀態</th><th>動作</th></tr></thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Chart.js (CDN) — bundled UMD build, ~210 KB. Used only on this page. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/shared/app-state.js"></script>
+<script src="/shared/admin-nav.js"></script>
+<script>
+(function () {
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
+  var compId = '';
+  var m = location.pathname.match(/\/admin\/events\/([^/]+)\/registrations/);
+  if (m) compId = decodeURIComponent(m[1]);
+  if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
+  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('meName').textContent = me.displayName || me.username;
+
+  var CFG = {}, TEAMS = [], STATS = {};
+  var charts = {};      // Chart.js instances keyed by id (so we can destroy & re-render)
+  var TREND_MODE = 'date';
+
+  // ---------- LOAD ----------
+  document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+  Promise.all([
+    new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationBundle(compId); }),
+    new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r([]); }).getAllTeams(compId); }),
+    new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationStats(compId); })
+  ]).then(function (results) {
+    var bundle = results[0] || {};
+    CFG = bundle.config || {};
+    TEAMS = results[1] || [];
+    STATS = results[2] || {};
+    document.getElementById('crumbHub').textContent = CFG.competitionName || compId;
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    renderKPIs();
+    renderCharts();
+    renderList(TEAMS);
+  });
+
+  // ---------- TABS ----------
+  document.querySelectorAll('.tabs-bar a').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      document.querySelectorAll('.tabs-bar a').forEach(function (x) { x.classList.remove('on'); });
+      a.classList.add('on');
+      document.querySelectorAll('.tab-pane').forEach(function (p) {
+        p.classList.toggle('on', p.dataset.pane === a.dataset.tab);
+      });
+    });
+  });
+
+  // ---------- STATS TAB ----------
+  function renderKPIs() {
+    var team = STATS.teamTotal || 0;
+    var paid = (STATS.paymentCounts && STATS.paymentCounts.paid) || 0;
+    var pending = (STATS.paymentCounts && STATS.paymentCounts.pending) || 0;
+    var students = STATS.studentTotal || 0;
+    var teachers = STATS.teacherTotal || 0;
+    document.getElementById('kpiRow').innerHTML =
+      '<div class="sum-card featured"><div class="l">總報名隊伍</div><div class="v">' + team + '<em>隊</em></div><div class="sub">學員 ' + students + ' 位 · 指導者 ' + teachers + ' 位</div></div>' +
+      '<div class="sum-card"><div class="l">已付款</div><div class="v" style="color:var(--ok-700)">' + paid + '<em>隊</em></div><div class="sub">' + (team > 0 ? Math.round(paid / team * 100) : 0) + '% 完成付款</div></div>' +
+      '<div class="sum-card"><div class="l">待付款</div><div class="v" style="color:var(--warn-700)">' + pending + '<em>隊</em></div><div class="sub">尚未確認付款</div></div>' +
+      '<div class="sum-card"><div class="l">組別數量</div><div class="v">' + Object.keys(STATS.groupCounts || {}).length + '<em>組</em></div><div class="sub">' + (CFG.dateMode === 'multi' ? '多梯次活動' : '單次活動') + '</div></div>';
+  }
+
+  // Common Chart.js options — grid lines + hover tooltips + clean axis ticks.
+  // (使用者要求「每個圖表都要有檢查線」→ tooltip hover crosshair + grid lines.)
+  var BASE_OPTS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'inherit', size: 11.5 }, color: '#5a6478' } },
+      tooltip: { backgroundColor: '#0b1c3d', titleFont: { size: 12 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6 }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { font: { family: 'inherit', size: 11 } } },
+      y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { font: { family: 'inherit', size: 11 }, precision: 0 }, beginAtZero: true }
+    },
+    interaction: { mode: 'index', intersect: false }
+  };
+  var PIE_COLORS = ['#3d6bff', '#e94560', '#9b6bff', '#10b981', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899', '#6b7280'];
+
+  function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+  function renderCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    // 1. 組別報名數量 — 顯示條件: groupCounts 有任何 key 且不是空陣列
+    var groupCounts = STATS.groupCounts || {};
+    var groupKeys = Object.keys(groupCounts);
+    if (groupKeys.length > 0) {
+      document.getElementById('groupCardWrap').style.display = '';
+      destroyChart('group');
+      charts.group = new Chart(document.getElementById('chartGroup').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: groupKeys,
+          datasets: [{
+            label: '報名隊伍數',
+            data: groupKeys.map(function (k) { return groupCounts[k]; }),
+            backgroundColor: groupKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }),
+            borderRadius: 5
+          }]
+        },
+        options: Object.assign({}, BASE_OPTS, { plugins: Object.assign({}, BASE_OPTS.plugins, { legend: { display: false } }) })
+      });
+    }
+
+    // 2. 性別比例 圓餅圖
+    var genderCounts = STATS.genderCounts || {};
+    var genderKeys = Object.keys(genderCounts);
+    if (genderKeys.length > 0) {
+      destroyChart('gender');
+      charts.gender = new Chart(document.getElementById('chartGender').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: genderKeys,
+          datasets: [{
+            data: genderKeys.map(function (k) { return genderCounts[k]; }),
+            backgroundColor: genderKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }),
+            borderColor: '#fff', borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '60%',
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11.5 } } }, tooltip: BASE_OPTS.plugins.tooltip }
+        }
+      });
+    }
+
+    // 3. 每日新增 — 長條圖
+    var daily = STATS.dailyCounts || {};
+    var sortedDays = Object.keys(daily).sort();
+    destroyChart('daily');
+    charts.daily = new Chart(document.getElementById('chartDaily').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: sortedDays,
+        datasets: [{
+          label: '新增報名',
+          data: sortedDays.map(function (d) { return daily[d]; }),
+          backgroundColor: '#3d6bff',
+          borderRadius: 4
+        }]
+      },
+      options: Object.assign({}, BASE_OPTS, { plugins: Object.assign({}, BASE_OPTS.plugins, { legend: { display: false } }) })
+    });
+
+    // 4. 累計趨勢 — 折線圖，X 軸可切換 (日期 / D-N)
+    drawTrend();
+  }
+
+  function drawTrend() {
+    if (typeof Chart === 'undefined') return;
+    var daily = STATS.dailyCounts || {};
+    var sortedDays = Object.keys(daily).sort();
+    if (sortedDays.length === 0) {
+      destroyChart('trend');
+      return;
+    }
+    // Compute cumulative
+    var cum = 0;
+    var points = sortedDays.map(function (d) { cum += daily[d]; return { date: d, cum: cum }; });
+    var labels;
+    if (TREND_MODE === 'countdown' && CFG.deadline) {
+      // Compute D-N for each day (positive number = days BEFORE deadline)
+      var dl = String(CFG.deadline).slice(0, 10);
+      var dlMs = new Date(dl).getTime();
+      labels = points.map(function (p) {
+        var diff = Math.round((dlMs - new Date(p.date).getTime()) / 86400000);
+        return diff > 0 ? ('D-' + diff) : (diff === 0 ? 'D-Day' : 'D+' + (-diff));
+      });
+    } else {
+      labels = points.map(function (p) { return p.date; });
+    }
+    destroyChart('trend');
+    charts.trend = new Chart(document.getElementById('chartTrend').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '累計報名',
+          data: points.map(function (p) { return p.cum; }),
+          borderColor: '#3d6bff',
+          backgroundColor: 'rgba(61,107,255,.08)',
+          fill: true, tension: 0.25,
+          pointRadius: 3, pointHoverRadius: 6,
+          pointBackgroundColor: '#3d6bff'
+        }]
+      },
+      options: Object.assign({}, BASE_OPTS, {
+        plugins: Object.assign({}, BASE_OPTS.plugins, { legend: { display: false } })
+      })
+    });
+  }
+
+  document.querySelectorAll('[data-trend-x]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-trend-x]').forEach(function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      TREND_MODE = btn.dataset.trendX;
+      drawTrend();
+    });
+  });
+
+  // ---------- LIST TAB ----------
+  function renderList(rows) {
+    rows = (rows || []).filter(function (t) { return t.status !== '已取消'; });
+    document.getElementById('listCount').textContent = '共 ' + rows.length + ' 筆';
+    if (rows.length === 0) {
+      document.getElementById('listBody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px">尚無報名資料</td></tr>';
+      return;
+    }
+    document.getElementById('listBody').innerHTML = rows.map(function (t) {
+      var paid = (t.paymentStatus || '').includes('已確認');
+      return '<tr>' +
+        '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
+        '<td><b>' + escapeHtml(t.teamNameCN || '—') + '</b></td>' +
+        '<td>' + escapeHtml(t.teamNameEN || '—') + '</td>' +
+        '<td>' + escapeHtml(t.status || '正取') + '</td>' +
+        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus || '待確認') + '</span></td>' +
+        '<td>' +
+          '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">檢視詳情</button>' +
+          '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">寄送信件</button>' +
+          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">刪除</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+    document.querySelectorAll('[data-act]').forEach(function (b) {
+      b.addEventListener('click', function () { handleAct(b.dataset.act, b.dataset.tid); });
+    });
+  }
+
+  function handleAct(act, tid) {
+    if (act === 'view') openTeamDetail(tid);
+    else if (act === 'email') openEmailComposer(tid);
+    else if (act === 'del') confirmDelete(tid);
+  }
+
+  document.getElementById('searchInp').addEventListener('input', function () {
+    var q = this.value.trim().toLowerCase();
+    if (!q) { renderList(TEAMS); return; }
+    renderList(TEAMS.filter(function (t) {
+      return (t.teamId || '').toLowerCase().indexOf(q) !== -1
+        || (t.teamNameCN || '').toLowerCase().indexOf(q) !== -1
+        || (t.teamNameEN || '').toLowerCase().indexOf(q) !== -1
+        || (t.status || '').toLowerCase().indexOf(q) !== -1
+        || (t.paymentStatus || '').toLowerCase().indexOf(q) !== -1;
+    }));
+  });
+
+  // ---------- MODAL helpers ----------
+  function openModal(title, innerHtml, onMount) {
+    var ov = document.createElement('div');
+    ov.className = 'modal-bg';
+    ov.innerHTML =
+      '<div class="modal-card">' +
+        '<div class="modal-h"><h3>' + escapeHtml(title) + '</h3>' +
+          '<button class="btn btn-ghost btn-sm" id="modalClose">關閉</button>' +
+        '</div>' +
+        '<div class="modal-body">' + innerHtml + '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#modalClose').addEventListener('click', close);
+    if (typeof onMount === 'function') onMount(ov, close);
+  }
+
+  function openTeamDetail(tid) {
+    var loadingHtml = '<p style="color:var(--muted)">載入中⋯</p>';
+    openModal('報名詳情 · ' + tid, loadingHtml, function (ov, close) {
+      google.script.run
+        .withSuccessHandler(function (t) {
+          if (!t) { ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">查無此筆報名</p>'; return; }
+          ov.querySelector('.modal-body').innerHTML = renderTeamDetailHtml(t);
+        })
+        .withFailureHandler(function (e) {
+          ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml((e && e.message) || '') + '</p>';
+        })
+        .getTeamDetail(tid);
+    });
+  }
+
+  function renderTeamDetailHtml(t) {
+    var html = '';
+    // 隊伍基本
+    html += '<div class="group"><h5>隊伍資訊</h5><div class="kv">' +
+      kv('編號', t.teamId) +
+      kv('中文隊名', t.teamNameCN) +
+      kv('英文隊名', t.teamNameEN) +
+      kv('組別', t.group) +
+      kv('狀態', t.status) +
+      kv('付款狀態', t.paymentStatus) +
+      kv('付款方式', t.paymentMethod) +
+      kv('匯款銀行', t.remitterBank) +
+      kv('匯款帳號末 5 碼', t.remitterAccount) +
+      kv('報名時間', t.registrationTime) +
+      (t.fileUrl ? '<div class="k">檔案</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">檢視 / 下載</a></div>' : '') +
+    '</div></div>';
+    // 學員們
+    (t.students || []).forEach(function (s, i) {
+      html += '<div class="group"><h5>學員 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
+    });
+    (t.teachers || []).forEach(function (s, i) {
+      html += '<div class="group"><h5>指導者 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
+    });
+    return html;
+  }
+  function kv(k, v) { if (v === undefined || v === null || v === '') return ''; return '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + escapeHtml(String(v)) + '</div>'; }
+  function memberKVs(m) {
+    var fields = [
+      ['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
+      ['身分證','idNumber'],['護照','passport'],['國籍','nationality'],
+      ['學校','school'],['系所','department'],['年級','grade'],['職稱','jobTitle'],['服務單位','organization'],
+      ['Email','email'],['電話','phone'],['郵遞區號','postalCode'],['地址','address'],
+      ['飲食','dietary'],['飲食限制','dietaryRestriction'],['T-shirt','tshirt'],['住宿','accommodation']
+    ];
+    var rows = fields.map(function (f) { return kv(f[0], m[f[1]]); }).join('');
+    if (m.customAnswers && typeof m.customAnswers === 'object') {
+      Object.keys(m.customAnswers).forEach(function (k) { rows += kv(k, m.customAnswers[k]); });
+    }
+    return rows;
+  }
+
+  function openEmailComposer(tid) {
+    var t = TEAMS.filter(function (x) { return x.teamId === tid; })[0] || {};
+    var teamLbl = t.teamNameCN || t.teamNameEN || tid;
+    var defaultBody = '您好，\n\n關於本活動「' + (CFG.competitionName || '') + '」，主辦方有重要訊息通知。\n\n[請於此處輸入訊息內容]\n\n— 主辦方 敬上';
+    openModal('寄送信件 · ' + teamLbl, '', function (ov, close) {
+      ov.querySelector('.modal-body').innerHTML =
+        '<div class="fld"><div class="lbl">主旨</div><input id="emSub" placeholder="信件主旨" value="關於「' + escapeHtml(CFG.competitionName || '活動') + '」的通知"></div>' +
+        '<div class="fld"><div class="lbl">內容（純文字，換行會保留）</div><textarea id="emBody">' + escapeHtml(defaultBody) + '</textarea></div>' +
+        '<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">' +
+          '<button class="btn btn-ghost btn-sm" id="emCancel">取消</button>' +
+          '<button class="btn btn-primary btn-sm" id="emSend">寄送</button>' +
+        '</div>';
+      ov.querySelector('#emCancel').addEventListener('click', close);
+      ov.querySelector('#emSend').addEventListener('click', function () {
+        var subject = ov.querySelector('#emSub').value.trim();
+        var body = ov.querySelector('#emBody').value.trim();
+        if (!subject || !body) { uiAlert('請填寫主旨與內容'); return; }
+        var btn = this; btn.disabled = true; btn.textContent = '寄送中⋯';
+        google.script.run
+          .withSuccessHandler(function (res) {
+            btn.disabled = false; btn.textContent = '寄送';
+            if (res && res.success) {
+              uiAlert('信件已排入寄送佇列（' + res.recipientCount + ' 位收件人）').then(close);
+            } else { uiAlert((res && res.message) || '寄送失敗'); }
+          })
+          .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '寄送'; uiAlert('寄送失敗：' + (e && e.message)); })
+          .sendTeamEmail(compId, tid, subject, body);
+      });
+    });
+  }
+
+  function confirmDelete(tid) {
+    var t = TEAMS.filter(function (x) { return x.teamId === tid; })[0] || {};
+    var teamLbl = t.teamNameCN || t.teamNameEN || tid;
+    uiConfirm('確定刪除隊伍「' + teamLbl + '」（' + tid + '）？此操作無法復原，隊伍的所有成員資料與上傳檔案也會一併刪除。', { title: '刪除報名', okText: '永久刪除', danger: true }).then(function (ok) {
+      if (!ok) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            uiAlert('已刪除「' + teamLbl + '」').then(function () { location.reload(); });
+          } else { uiAlert((res && res.message) || '刪除失敗'); }
+        })
+        .withFailureHandler(function (e) { uiAlert('刪除失敗：' + (e && e.message)); })
+        .deleteTeam(tid);
+    });
+  }
+})();
+</script>
+</body>
+</html>

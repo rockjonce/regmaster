@@ -129,6 +129,8 @@
     checkDuplicates:["compId","teamNameCN","idNumbers","passports","editTeamId"],
     getDashboardStats:["compId"],
     getAllTeams:["compId"],
+    getRegistrationStats:["compId"],
+    sendTeamEmail:["compId","teamId","subject","body"],
     getTeamDetail:["teamId"],
     confirmPayment:["teamId","user"],
     updateTeamStatus:["teamId","newStatus","user"],

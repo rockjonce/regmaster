@@ -1637,6 +1637,89 @@ exports.getAllTeams = compAuthCallable(async (data) => {
   });
 });
 
+// 報名管理: stats aggregation for the dashboard tab (group counts, gender pie,
+// daily registration trend, status/payment breakdowns). One callable, one round-trip.
+exports.getRegistrationStats = compAuthCallable(async (data) => {
+  const compId = data.compId;
+  const [tSnap, mSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("members").where("compId", "==", compId).get()
+  ]);
+  const groupCounts = {};
+  const statusCounts = {};
+  const paymentCounts = { paid: 0, pending: 0 };
+  const dailyCounts = {};
+  const sessionCounts = {};
+  let teamTotal = 0;
+  tSnap.docs.forEach(d => {
+    const t = d.data();
+    teamTotal++;
+    const g = t.group || "（未分組）";
+    groupCounts[g] = (groupCounts[g] || 0) + 1;
+    const st = t.status || "正取";
+    statusCounts[st] = (statusCounts[st] || 0) + 1;
+    const paid = String(t.paymentStatus || "").includes("已確認") || String(t.paymentStatus || "").toLowerCase().includes("paid");
+    if (paid) paymentCounts.paid++; else paymentCounts.pending++;
+    const rt = String(t.registrationTime || "");
+    // Accept "2026-05-30 14:00:00" or ISO; take first 10 chars
+    if (rt.length >= 10) {
+      const day = rt.slice(0, 10);
+      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+    }
+    if (Array.isArray(t.selectedSessions)) {
+      t.selectedSessions.forEach(idx => {
+        const key = String(idx);
+        sessionCounts[key] = (sessionCounts[key] || 0) + 1;
+      });
+    } else if (t.selectedSession !== undefined) {
+      const key = String(t.selectedSession);
+      sessionCounts[key] = (sessionCounts[key] || 0) + 1;
+    }
+  });
+  const genderCounts = {};
+  let memberTotal = 0, studentTotal = 0, teacherTotal = 0;
+  mSnap.docs.forEach(d => {
+    const m = d.data();
+    memberTotal++;
+    if (m.role === "學生") studentTotal++;
+    else teacherTotal++;
+    const g = m.gender || "未填";
+    genderCounts[g] = (genderCounts[g] || 0) + 1;
+  });
+  return {
+    teamTotal, memberTotal, studentTotal, teacherTotal,
+    groupCounts, genderCounts, statusCounts, paymentCounts,
+    dailyCounts,                                       // { 'YYYY-MM-DD': N }
+    sessionCounts                                      // { '<index>': N }
+  };
+});
+
+// 報名管理: send a custom email to all student emails on a team. Uses the Trigger
+// Email extension (`mail` collection). Subject + plain-text body; HTML is wrapped
+// by emailWrap so it carries the RegMaster header.
+exports.sendTeamEmail = compAuthCallable(async (data, request) => {
+  const { compId, teamId, subject, body } = data;
+  if (!teamId || !subject || !body) return { success: false, message: "缺少欄位" };
+  const teamDoc = await db.collection("teams").doc(teamId).get();
+  if (!teamDoc.exists || teamDoc.data().compId !== compId) return { success: false, message: "隊伍不存在或不屬於此活動" };
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const tos = [];
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    if (m.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email)) tos.push(m.email);
+  });
+  if (!tos.length) return { success: false, message: "此隊伍沒有可用的 Email 地址" };
+  // Plain-text body → light HTML (escape + line breaks); emailWrap adds the shell
+  const esc = s => String(s || "").replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const html = emailWrap(subject, '<p style="font:400 14.5px/1.7 system-ui,sans-serif;color:#222;margin:0 0 12px">' + esc(body).replace(/\n/g, '<br>') + '</p>');
+  await db.collection("mail").add({
+    to: tos,
+    message: { subject: String(subject).slice(0, 200), html }
+  });
+  await auditLog(request.authUser.username, "寄送主辦方信件", teamId, String(subject).slice(0, 60));
+  return { success: true, recipientCount: tos.length };
+});
+
 exports.getTeamDetail = compAuthCallable(async (data) => {
   const doc = await db.collection("teams").doc(data.teamId).get();
   if (!doc.exists) return null;

@@ -127,7 +127,7 @@
       <div class="l-grp">本活動</div>
       <a class="nav-it" data-tab="overview"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>總覽</a>
       <a class="nav-it" data-tab="settings"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-1 3l2 2"/></svg>設定</a>
-      <a class="nav-it" data-tab="registrations"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>報名管理 <span class="ct" id="navRegCt">0</span></a>
+      <a class="nav-it" id="registrationsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>報名管理 <span class="ct" id="navRegCt">0</span></a>
       <a class="nav-it" data-tab="announcements"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>公告</a>
       <a class="nav-it" data-tab="scoring"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
       <a class="nav-it" data-tab="checkin"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>QR 報到</a>
@@ -518,6 +518,7 @@
     document.querySelectorAll('[data-goto]').forEach(function (a) { a.href = base + a.dataset.goto; });
     document.getElementById('editLinkBtn').href = base + '/edit';
     document.getElementById('formBuilderLinkBtn').href = base + '/form-builder';
+    var regLink = document.getElementById('registrationsLink'); if (regLink) regLink.href = base + '/registrations';
     document.getElementById('legacyRegLink').href = base + '/payments';
     document.getElementById('legacyAnnLink').href = base + '/announcements';
     document.getElementById('legacyScoreLink').href = base + '/scoring';

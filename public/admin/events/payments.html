@@ -39,6 +39,21 @@
 .action-btn { padding:5px 9px; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; font:500 11px/1 var(--f-tc); color:var(--ink-2); cursor:pointer; margin-right:4px; }
 .action-btn:hover { background:var(--surface); border-color:var(--ink-3); }
 .action-btn.primary { background:var(--ink); color:white; border-color:var(--ink); }
+.action-btn.danger { background:var(--surface); border-color:color-mix(in srgb, var(--err-500) 40%, var(--line)); color:var(--err-700); }
+.action-btn.danger:hover { background:color-mix(in srgb, var(--err-500) 8%, var(--surface)); }
+/* Shared modal — same shell as registrations.html for consistency */
+.modal-bg { position:fixed; inset:0; background:rgba(11,28,61,.55); display:grid; place-items:center; z-index:9999; padding:20px; }
+.modal-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; max-width:880px; width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:var(--sh-lg); }
+.modal-h { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.modal-h h3 { font:700 15px/1.3 var(--f-display); color:var(--ink); }
+.modal-body { padding:18px; overflow:auto; }
+.modal-body .group { padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; margin-bottom:12px; }
+.modal-body .group h5 { font:700 13px/1.3 var(--f-display); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+.modal-body .kv { display:grid; grid-template-columns:120px 1fr; gap:6px 12px; font:400 12.5px/1.5 var(--f-tc); }
+.modal-body .kv .k { color:var(--muted); }
+.modal-body .kv .v { color:var(--ink-2); word-break:break-all; }
+.modal-body .file-link { color:var(--acc); text-decoration:underline; }
+@media (max-width:900px){ .modal-body .kv { grid-template-columns:1fr; } }
 
 .reconcile-bar { padding:18px; background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 8%, var(--surface)), var(--surface)); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--line)); border-radius:12px; display:flex; gap:14px; align-items:center; margin-bottom:14px; }
 .reconcile-bar .ic-r { width:36px; height:36px; border-radius:9px; background:var(--acc); color:white; display:grid; place-items:center; flex-shrink:0; }
@@ -104,7 +119,7 @@
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>隊伍編號</th><th>隊名</th><th>狀態</th><th>付款狀態</th><th>付款方式</th><th class="right">金額</th><th>動作</th></tr></thead>
+          <thead><tr><th>編號</th><th>隊名</th><th>狀態</th><th>付款狀態</th><th>付款方式</th><th class="right">金額</th><th>動作</th></tr></thead>
           <tbody id="tblBody"></tbody>
         </table>
       </div>
@@ -187,6 +202,7 @@
         '<td>' +
           (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">確認付款</button>' : '') +
           '<button class="action-btn" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">查看</button>' +
+          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">刪除</button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -202,9 +218,82 @@
               .confirmPayment(tid, me.username);
           });
         } else if (b.dataset.act === 'view') {
-          window.open('/events/payment.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(tid), '_blank');
+          openTeamDetail(tid);
+        } else if (b.dataset.act === 'del') {
+          confirmDelete(tid);
         }
       });
+    });
+  }
+
+  // ----- Internal team-detail modal (mirrors registrations.html behaviour) -----
+  function openModal(title, innerHtml) {
+    var ov = document.createElement('div');
+    ov.className = 'modal-bg';
+    ov.innerHTML =
+      '<div class="modal-card">' +
+        '<div class="modal-h"><h3>' + escapeHtml(title) + '</h3>' +
+          '<button class="btn btn-ghost btn-sm" id="modalClose">關閉</button>' +
+        '</div>' +
+        '<div class="modal-body">' + innerHtml + '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#modalClose').addEventListener('click', close);
+    return { ov: ov, close: close };
+  }
+  function kvHtml(k, v) { if (v === undefined || v === null || v === '') return ''; return '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + escapeHtml(String(v)) + '</div>'; }
+  function memberKVs(m) {
+    var fields = [
+      ['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
+      ['身分證','idNumber'],['護照','passport'],['國籍','nationality'],
+      ['學校','school'],['系所','department'],['年級','grade'],['職稱','jobTitle'],['服務單位','organization'],
+      ['Email','email'],['電話','phone'],['郵遞區號','postalCode'],['地址','address'],
+      ['飲食','dietary'],['飲食限制','dietaryRestriction'],['T-shirt','tshirt'],['住宿','accommodation']
+    ];
+    var rows = fields.map(function (f) { return kvHtml(f[0], m[f[1]]); }).join('');
+    if (m.customAnswers && typeof m.customAnswers === 'object') {
+      Object.keys(m.customAnswers).forEach(function (k) { rows += kvHtml(k, m.customAnswers[k]); });
+    }
+    return rows;
+  }
+  function openTeamDetail(tid) {
+    var modal = openModal('報名詳情 · ' + tid, '<p style="color:var(--muted)">載入中⋯</p>');
+    google.script.run
+      .withSuccessHandler(function (t) {
+        if (!t) { modal.ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">查無此筆報名</p>'; return; }
+        var html = '';
+        html += '<div class="group"><h5>隊伍資訊</h5><div class="kv">' +
+          kvHtml('編號', t.teamId) + kvHtml('中文隊名', t.teamNameCN) + kvHtml('英文隊名', t.teamNameEN) +
+          kvHtml('組別', t.group) + kvHtml('狀態', t.status) +
+          kvHtml('付款狀態', t.paymentStatus) + kvHtml('付款方式', t.paymentMethod) +
+          kvHtml('匯款銀行', t.remitterBank) + kvHtml('匯款帳號末 5 碼', t.remitterAccount) +
+          kvHtml('報名時間', t.registrationTime) +
+          (t.fileUrl ? '<div class="k">檔案</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">檢視 / 下載</a></div>' : '') +
+        '</div></div>';
+        (t.students || []).forEach(function (s, i) { html += '<div class="group"><h5>學員 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>'; });
+        (t.teachers || []).forEach(function (s, i) { html += '<div class="group"><h5>指導者 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>'; });
+        modal.ov.querySelector('.modal-body').innerHTML = html;
+      })
+      .withFailureHandler(function (e) {
+        modal.ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml((e && e.message) || '') + '</p>';
+      })
+      .getTeamDetail(tid);
+  }
+  function confirmDelete(tid) {
+    var t = TEAMS.filter(function (x) { return x.teamId === tid; })[0] || {};
+    var teamLbl = t.teamNameCN || t.teamNameEN || tid;
+    uiConfirm('確定刪除隊伍「' + teamLbl + '」（' + tid + '）？此操作無法復原，隊伍的所有成員資料與上傳檔案也會一併刪除。', { title: '刪除報名', okText: '永久刪除', danger: true }).then(function (ok) {
+      if (!ok) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) {
+            uiAlert('已刪除「' + teamLbl + '」').then(function () { load(); });
+          } else { uiAlert((res && res.message) || '刪除失敗'); }
+        })
+        .withFailureHandler(function (e) { uiAlert('刪除失敗：' + (e && e.message)); })
+        .deleteTeam(tid);
     });
   }
 

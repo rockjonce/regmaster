@@ -62,7 +62,7 @@
   // The per-page sidebars used to carry this; the unified shell now provides it
   // so navigating between an event's sub-pages keeps working.
   var evtNavHtml = '';
-  var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|announcements|payments|scoring|checkin))?\/?$/);
+  var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|registrations|announcements|payments|scoring|checkin))?\/?$/);
   if (em && em[1] && em[1] !== 'index.html') {
     var cid = em[1], sub = em[2] || 'hub';
     var eitem = function (suffix, label, key, icon, extra) {
@@ -74,6 +74,7 @@
         eitem('', '總覽', 'hub', IC.home, '<span class="ct" id="navRegCt"></span>') +
         eitem('/edit', '設定', 'edit', IC.gear) +
         eitem('/form-builder', '表單設計', 'form-builder', IC.cal) +
+        eitem('/registrations', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>') +
         eitem('/announcements', '公告', 'announcements', IC.log) +
         eitem('/payments', '付款', 'payments', IC.lic) +
         eitem('/scoring', '評分', 'scoring', IC.sys) +

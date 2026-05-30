@@ -41,6 +41,10 @@
         "destination": "/admin/events/payments.html"
       },
       {
+        "source": "/admin/events/*/registrations",
+        "destination": "/admin/events/registrations.html"
+      },
+      {
         "source": "/admin/events/*/scoring",
         "destination": "/admin/events/scoring.html"
       },
