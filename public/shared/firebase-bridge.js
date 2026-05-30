@@ -140,6 +140,7 @@
     markBillingAsRemitted:["creator","fromDate","toDate","actualWireAmount","wireFee","note"],
     listRemittanceHistory:["creator"],
     listOrganizerAccounts:[],
+    getUserAnalytics:["fromDate","toDate"],
     reconcilePayments:["compId","accountSuffix"],
     saveEmailTemplate:["compId","name","subject","body"],
     getEmailTemplates:["compId"],

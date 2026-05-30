@@ -11,6 +11,7 @@
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/shared/ui-dialog.js"></script>
 <style>
 body { background:var(--bg); }
@@ -114,6 +115,51 @@ body { background:var(--bg); }
 .modal .mf { padding:14px 22px; border-top:1px solid var(--line-2); display:flex; gap:10px; justify-content:flex-end; }
 .detail-row { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line-2); font:400 13px/1.5 var(--f-tc); }
 .detail-row .dk { width:110px; flex-shrink:0; color:var(--muted); font:500 12px/1.5 var(--f-tc); }
+
+/* CC1: user analytics — 5-tab dashboard */
+.ana-range-bar { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.ana-range-bar select, .ana-range-bar input[type=date] { padding:7px 10px; border:1px solid var(--line); border-radius:7px; font:500 12.5px/1.4 var(--f-tc); background:var(--surface); color:var(--ink); }
+.ana-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:18px; }
+.ana-kpis .k { padding:12px 14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; }
+.ana-kpis .k.featured { background:linear-gradient(135deg, var(--ink), #1a2e52); color:#fff; border-color:var(--ink); }
+.ana-kpis .k .l { font:500 10.5px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+.ana-kpis .k.featured .l { color:rgba(255,255,255,.7); }
+.ana-kpis .k .v { font:700 20px/1 var(--f-display); letter-spacing:-.018em; }
+.ana-kpis .k .sub { font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:3px; }
+.ana-kpis .k.featured .sub { color:rgba(255,255,255,.65); }
+.ana-subtabs { display:flex; gap:2px; padding:0 0 14px; border-bottom:1px solid var(--line); margin-bottom:18px; flex-wrap:wrap; }
+.ana-subtabs a { padding:9px 14px; font:600 12.5px/1 var(--f-tc); color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; text-decoration:none; }
+.ana-subtabs a.on { color:var(--ink); border-bottom-color:var(--ink); }
+.ana-sub { display:none; }
+.ana-sub.on { display:block; }
+.ana-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; }
+.ana-card { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:11px; }
+.ana-card.full { grid-column:1 / -1; }
+.ana-card h4 { font:700 13.5px/1.3 var(--f-display); margin-bottom:3px; }
+.ana-sub-desc { font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-bottom:14px; }
+.ana-canvas-box { position:relative; height:240px; }
+.ana-canvas-box.tall { height:340px; }
+/* CSS heatmap (re-used from registrations.html) */
+.ana-heatmap { display:grid; grid-template-columns:46px repeat(24, 1fr); gap:3px; padding:6px 0; }
+.ana-heatmap .h-col { font:500 9.5px/1 var(--f-mono); color:var(--muted); text-align:center; padding-bottom:2px; }
+.ana-heatmap .h-row { font:500 11px/1 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; justify-content:flex-end; padding-right:8px; }
+.ana-heatmap .h-cell { aspect-ratio:1; border-radius:3px; background:var(--surface-2); border:1px solid var(--line-2); min-height:18px; }
+.ana-heatmap .h-cell:hover { outline:2px solid var(--ink); z-index:2; }
+.ana-heatmap .h-legend { grid-column:1 / -1; margin-top:8px; display:flex; align-items:center; gap:6px; font:500 11px/1 var(--f-mono); color:var(--muted); justify-content:flex-end; }
+.ana-heatmap .h-legend .swatch { display:flex; gap:1px; }
+.ana-heatmap .h-legend .swatch span { width:14px; height:14px; border-radius:2px; border:1px solid var(--line-2); }
+@media (max-width: 720px) {
+  .ana-subtabs { gap:0; overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+  .ana-subtabs a { white-space:nowrap; padding:9px 10px; font-size:11.5px; }
+  .ana-range-bar { width:100%; }
+  .ana-range-bar select, .ana-range-bar input[type=date] { font-size:11.5px; padding:6px 8px; }
+  .ana-canvas-box { height:220px; }
+  .ana-canvas-box.tall { height:300px; }
+  .ana-kpis { grid-template-columns:repeat(2, 1fr); }
+  .ana-kpis .k .v { font-size:17px; }
+  .ana-heatmap { grid-template-columns:36px repeat(24, 1fr); gap:2px; }
+  .ana-heatmap .h-row { padding-right:4px; font-size:10px; }
+}
 </style>
 </head>
 <body>
@@ -309,20 +355,126 @@ body { background:var(--bg); }
         </div>
       </div>
 
-      <!-- ============ 使用者分析 ============ -->
+      <!-- ============ 使用者分析 (CC1: 5 sub-tabs) ============ -->
       <div class="pane" data-pane="analytics">
-        <div class="kpis">
-          <div class="kpi"><div class="l">總瀏覽</div><div class="v" id="a-total">—</div></div>
-          <div class="kpi"><div class="l">不重複 IP</div><div class="v" id="a-uips">—</div></div>
-          <div class="kpi"><div class="l">國家/地區</div><div class="v" id="a-countries">—</div></div>
-          <div class="kpi"><div class="l">活動曝光</div><div class="v" id="a-comps">—</div></div>
-        </div>
-        <div class="row-2" style="align-items:start">
-          <div class="card"><div class="ch"><div><h3>國家/地區</h3></div></div><div class="cb" id="a-country-list"><div class="empty">載入中⋯</div></div></div>
-          <div class="card"><div class="ch"><div><h3>熱門活動</h3></div></div><div class="cb" id="a-comp-list"><div class="empty">載入中⋯</div></div></div>
-        </div>
-        <div class="card"><div class="ch"><div><h3>近期訪客 IP</h3><p>最多 100 筆</p></div><button class="icon-btn" id="reloadAnaBtn">重新整理</button></div>
-          <div class="tbl-wrap"><table class="tbl"><thead><tr><th>IP</th><th>國家</th><th>城市</th><th>次數</th><th>最後造訪</th></tr></thead><tbody id="a-ip-body"><tr><td colspan="5" class="empty">載入中⋯</td></tr></tbody></table></div>
+        <div class="card">
+          <div class="ch">
+            <div><h3>使用者分析</h3><p>追蹤平台流量、帳號、收入、內容、安全等指標</p></div>
+            <div class="ana-range-bar">
+              <select id="ana-preset">
+                <option value="today">今天</option>
+                <option value="last3">近 3 日</option>
+                <option value="last7" selected>近 7 日</option>
+                <option value="last14">近 14 日</option>
+                <option value="last30">近 30 日</option>
+                <option value="last90">近 90 日</option>
+                <option value="lastYear">近一年</option>
+                <option value="all">全部期間</option>
+                <option value="custom">自訂期間</option>
+              </select>
+              <input type="date" id="ana-from" style="display:none">
+              <input type="date" id="ana-to"   style="display:none">
+              <button class="btn btn-ghost btn-sm" id="ana-reload">↻ 重新整理</button>
+            </div>
+          </div>
+          <div class="cb">
+            <!-- KPI strip — shown on all tabs -->
+            <div class="ana-kpis" id="ana-kpis"></div>
+
+            <!-- Sub-tabs bar -->
+            <div class="ana-subtabs">
+              <a data-sub="traffic" class="on">📊 流量</a>
+              <a data-sub="accounts">👥 帳號</a>
+              <a data-sub="revenue">💰 收入</a>
+              <a data-sub="content">🔥 內容</a>
+              <a data-sub="security">🔐 安全</a>
+            </div>
+
+            <!-- Tab: 流量 -->
+            <div class="ana-sub on" data-subpane="traffic">
+              <div class="ana-grid">
+                <div class="ana-card full">
+                  <h4>每日流量</h4>
+                  <p class="ana-sub-desc">總瀏覽數 + 不重複裝置數，兩條折線並列</p>
+                  <div class="ana-canvas-box"><canvas id="ana-daily"></canvas></div>
+                </div>
+                <div class="ana-card full">
+                  <h4>時段熱力圖</h4>
+                  <p class="ana-sub-desc">星期 × 24 小時，找出網站流量高峰時段</p>
+                  <div class="ana-heatmap" id="ana-heatmap"></div>
+                </div>
+                <div class="ana-card">
+                  <h4>裝置 / 瀏覽器分布</h4>
+                  <p class="ana-sub-desc">桌機 / 行動 / 平板 比例</p>
+                  <div class="ana-canvas-box"><canvas id="ana-device"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: 帳號 -->
+            <div class="ana-sub" data-subpane="accounts">
+              <div class="ana-grid">
+                <div class="ana-card full">
+                  <h4>新註冊主辦方數量</h4>
+                  <p class="ana-sub-desc">每日新建立的主辦方帳號</p>
+                  <div class="ana-canvas-box"><canvas id="ana-newreg"></canvas></div>
+                </div>
+                <div class="ana-card">
+                  <h4>方案分布</h4>
+                  <p class="ana-sub-desc">Free / Starter / Pro / Team 各帳號數量</p>
+                  <div class="ana-canvas-box"><canvas id="ana-tier"></canvas></div>
+                </div>
+                <div class="ana-card">
+                  <h4>流失分析（未登入天數）</h4>
+                  <p class="ana-sub-desc">超過 30/60/90 天未登入的帳號</p>
+                  <div class="ana-canvas-box"><canvas id="ana-inactive"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: 收入 -->
+            <div class="ana-sub" data-subpane="revenue">
+              <div class="ana-grid">
+                <div class="ana-card">
+                  <h4>付費轉換漏斗</h4>
+                  <p class="ana-sub-desc">訪客 → 註冊 → 付費，看升級率</p>
+                  <div class="ana-canvas-box"><canvas id="ana-funnel"></canvas></div>
+                </div>
+                <div class="ana-card full">
+                  <h4>月度收入 (ARPU/MRR)</h4>
+                  <p class="ana-sub-desc">每月平台收入（含報名手續費 + 授權碼購買）</p>
+                  <div class="ana-canvas-box"><canvas id="ana-mrr"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: 內容 -->
+            <div class="ana-sub" data-subpane="content">
+              <div class="ana-grid">
+                <div class="ana-card full">
+                  <h4>熱門活動 Top 10</h4>
+                  <p class="ana-sub-desc">依瀏覽數 + 報名數排名（並列雙條長條）</p>
+                  <div class="ana-canvas-box tall"><canvas id="ana-topevents"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: 安全 -->
+            <div class="ana-sub" data-subpane="security">
+              <div class="ana-grid">
+                <div class="ana-card">
+                  <h4>2FA 啟用率</h4>
+                  <p class="ana-sub-desc">啟用兩步驟驗證的帳號比例</p>
+                  <div class="ana-canvas-box"><canvas id="ana-totp"></canvas></div>
+                </div>
+                <div class="ana-card full">
+                  <h4>登入失敗熱力圖</h4>
+                  <p class="ana-sub-desc">星期 × 24 小時，潛在攻擊／撞庫熱點</p>
+                  <div class="ana-heatmap" id="ana-fail-heatmap"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -778,35 +930,203 @@ body { background:var(--bg); }
   document.getElementById('b-mark').addEventListener('click', markRemittedSys);
   loadBillingOrgs();
 
-  // ================= 使用者分析 =================
-  function loadAnalytics() {
-    google.script.run.withSuccessHandler(function (s) {
-      s = s || {};
-      var byCountry = s.byCountry || {}, ipList = s.ipList || [], compRanking = s.compRanking || [];
-      var uniqueIps = ipList.length;
-      document.getElementById('a-total').textContent = (s.totalVisits || 0).toLocaleString();
-      document.getElementById('a-uips').textContent = uniqueIps.toLocaleString();
-      document.getElementById('a-countries').textContent = Object.keys(byCountry).length;
-      document.getElementById('a-comps').textContent = compRanking.length;
-      // country bars
-      var countries = Object.entries(byCountry).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 10);
-      var maxC = countries.length ? countries[0][1] : 1;
-      document.getElementById('a-country-list').innerHTML = countries.length ? countries.map(function (c) {
-        return '<div class="bar-row"><div class="nm">' + esc(c[0]) + '</div><div class="bar"><i style="width:' + Math.round(c[1] / maxC * 100) + '%"></i></div><div class="vn">' + c[1] + '</div></div>';
-      }).join('') : '<div class="empty">尚無資料</div>';
-      // comp ranking
-      var maxV = compRanking.length ? compRanking[0].visits : 1;
-      document.getElementById('a-comp-list').innerHTML = compRanking.length ? compRanking.slice(0, 10).map(function (c) {
-        return '<div class="bar-row"><div class="nm">' + esc(c.name) + '</div><div class="bar"><i style="width:' + Math.round(c.visits / maxV * 100) + '%"></i></div><div class="vn">' + c.visits + '</div></div>';
-      }).join('') : '<div class="empty">尚無資料</div>';
-      // ip table
-      var b = document.getElementById('a-ip-body');
-      b.innerHTML = ipList.length ? ipList.map(function (v) {
-        return '<tr><td class="muted">' + esc(v.ip) + '</td><td>' + esc(v.country || '') + '</td><td>' + esc(v.city || '') + '</td><td>' + v.count + '</td><td class="muted">' + esc(v.lastDate || '') + '</td></tr>';
-      }).join('') : '<tr><td colspan="5" class="empty">尚無訪客紀錄</td></tr>';
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getVisitorStats();
+  // ================= 使用者分析 (CC1: 5-tab dashboard) =================
+  var ANA = null; var anaCharts = {};
+  function _anaToday() { var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function _anaBack(days) { var d=new Date(); d.setDate(d.getDate()-days+1); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function _anaRange(preset) {
+    if (preset === 'today')     return { from: _anaToday(), to: _anaToday() };
+    if (preset === 'last3')     return { from: _anaBack(3),   to: _anaToday() };
+    if (preset === 'last7')     return { from: _anaBack(7),   to: _anaToday() };
+    if (preset === 'last14')    return { from: _anaBack(14),  to: _anaToday() };
+    if (preset === 'last30')    return { from: _anaBack(30),  to: _anaToday() };
+    if (preset === 'last90')    return { from: _anaBack(90),  to: _anaToday() };
+    if (preset === 'lastYear')  return { from: _anaBack(365), to: _anaToday() };
+    if (preset === 'all')       return { from: '1970-01-01',  to: '9999-12-31' };
+    if (preset === 'custom')    return { from: document.getElementById('ana-from').value || '1970-01-01', to: document.getElementById('ana-to').value || _anaToday() };
+    return { from: _anaBack(7), to: _anaToday() };
   }
-  document.getElementById('reloadAnaBtn').addEventListener('click', loadAnalytics);
+  function _anaDestroy(id) { if (anaCharts[id]) { anaCharts[id].destroy(); delete anaCharts[id]; } }
+  var ANA_BASE = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { family: 'inherit', size: 11.5 }, color: '#5a6478' } },
+      tooltip: { backgroundColor: '#0b1c3d', titleFont: { size: 12 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6 }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { font: { family: 'inherit', size: 11 } } },
+      y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { font: { family: 'inherit', size: 11 }, precision: 0 }, beginAtZero: true }
+    },
+    interaction: { mode: 'index', intersect: false }
+  };
+  var ANA_PIE_COLORS = ['#3d6bff', '#e94560', '#9b6bff', '#10b981', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899', '#6b7280'];
+  function loadAnalytics() {
+    var preset = document.getElementById('ana-preset').value;
+    document.getElementById('ana-from').style.display = preset === 'custom' ? '' : 'none';
+    document.getElementById('ana-to').style.display   = preset === 'custom' ? '' : 'none';
+    var r = _anaRange(preset);
+    document.getElementById('ana-kpis').innerHTML = '<div class="k"><div class="l">載入中⋯</div></div>';
+    google.script.run
+      .withSuccessHandler(function (a) { ANA = a || {}; renderAnalytics(); })
+      .withFailureHandler(function (e) { document.getElementById('ana-kpis').innerHTML = '<div class="k"><div class="l">載入失敗：' + (e && e.message) + '</div></div>'; })
+      .getUserAnalytics(r.from, r.to);
+  }
+  function renderAnalytics() {
+    if (!ANA || typeof Chart === 'undefined') return;
+    var k = ANA.kpis || {};
+    document.getElementById('ana-kpis').innerHTML =
+      '<div class="k featured"><div class="l">總瀏覽</div><div class="v">' + (k.totalVisits || 0).toLocaleString() + '</div><div class="sub">期間內</div></div>' +
+      '<div class="k"><div class="l">不重複裝置</div><div class="v">' + (k.uniqueDevices || 0).toLocaleString() + '</div></div>' +
+      '<div class="k"><div class="l">總帳號</div><div class="v">' + (k.totalAccounts || 0).toLocaleString() + '</div><div class="sub">付費 ' + (k.paidAccounts || 0) + ' 帳號</div></div>' +
+      '<div class="k"><div class="l">當月收入 (MRR)</div><div class="v">NT$ ' + (k.mrr || 0).toLocaleString() + '</div></div>' +
+      '<div class="k"><div class="l">2FA 啟用率</div><div class="v">' + (k.twoFactorRate || 0) + '%</div></div>';
+    renderTraffic();
+    renderAccounts();
+    renderRevenue();
+    renderContent();
+    renderSecurity();
+  }
+  // ----- Tab: 流量 -----
+  function renderTraffic() {
+    // Daily traffic line
+    var daily = ANA.daily || [];
+    _anaDestroy('daily');
+    anaCharts.daily = new Chart(document.getElementById('ana-daily').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: daily.map(function (d) { return d.date; }),
+        datasets: [
+          { label: '總瀏覽數', data: daily.map(function (d) { return d.views; }), borderColor: '#3d6bff', backgroundColor: 'rgba(61,107,255,.08)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 },
+          { label: '不重複裝置', data: daily.map(function (d) { return d.uniqueDevices; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', fill: false, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 }
+        ]
+      },
+      options: ANA_BASE
+    });
+    // Heatmap
+    renderHeatmap('ana-heatmap', ANA.byHourOfWeek || {});
+    // Device donut
+    var dc = ANA.deviceCounts || {};
+    var dkeys = Object.keys(dc).filter(function (k) { return dc[k] > 0; });
+    _anaDestroy('device');
+    anaCharts.device = new Chart(document.getElementById('ana-device').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: dkeys, datasets: [{ data: dkeys.map(function (k) { return dc[k]; }), backgroundColor: dkeys.map(function (_, i) { return ANA_PIE_COLORS[i % ANA_PIE_COLORS.length]; }), borderColor: '#fff', borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: ANA_BASE.plugins.tooltip } }
+    });
+  }
+  // ----- Tab: 帳號 -----
+  function renderAccounts() {
+    var nr = ANA.newRegistrations || [];
+    _anaDestroy('newreg');
+    anaCharts.newreg = new Chart(document.getElementById('ana-newreg').getContext('2d'), {
+      type: 'bar',
+      data: { labels: nr.map(function (d) { return d.date; }), datasets: [{ label: '新註冊主辦方', data: nr.map(function (d) { return d.count; }), backgroundColor: '#9b6bff', borderRadius: 4 }] },
+      options: Object.assign({}, ANA_BASE, { plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }) })
+    });
+    var tc = ANA.tierCounts || {};
+    var tkeys = ['free', 'starter', 'pro', 'team'].filter(function (k) { return (tc[k] || 0) > 0; });
+    _anaDestroy('tier');
+    anaCharts.tier = new Chart(document.getElementById('ana-tier').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: tkeys.map(function (k) { return ({ free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' })[k]; }), datasets: [{ data: tkeys.map(function (k) { return tc[k]; }), backgroundColor: ['#6b7280', '#3d6bff', '#9b6bff', '#e94560'].slice(0, tkeys.length), borderColor: '#fff', borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: ANA_BASE.plugins.tooltip } }
+    });
+    var ia = ANA.inactiveCounts || {};
+    _anaDestroy('inactive');
+    anaCharts.inactive = new Chart(document.getElementById('ana-inactive').getContext('2d'), {
+      type: 'bar',
+      data: { labels: ['30 天未登入', '60 天未登入', '90 天以上'], datasets: [{ label: '帳號數', data: [ia.d30 || 0, ia.d60 || 0, ia.d90 || 0], backgroundColor: ['#f59e0b', '#e94560', '#7c2d12'], borderRadius: 4 }] },
+      options: Object.assign({}, ANA_BASE, { plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }) })
+    });
+  }
+  // ----- Tab: 收入 -----
+  function renderRevenue() {
+    var f = ANA.conversionFunnel || { visitors: 0, signups: 0, paid: 0 };
+    _anaDestroy('funnel');
+    anaCharts.funnel = new Chart(document.getElementById('ana-funnel').getContext('2d'), {
+      type: 'bar',
+      data: { labels: ['訪客', '註冊', '付費'], datasets: [{ label: '人數', data: [f.visitors, f.signups, f.paid], backgroundColor: ['#3d6bff', '#9b6bff', '#10b981'], borderRadius: 4 }] },
+      options: Object.assign({}, ANA_BASE, { indexAxis: 'y', plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }) })
+    });
+    var mr = ANA.monthlyRevenue || [];
+    _anaDestroy('mrr');
+    anaCharts.mrr = new Chart(document.getElementById('ana-mrr').getContext('2d'), {
+      type: 'line',
+      data: { labels: mr.map(function (m) { return m.month; }), datasets: [{ label: '月度收入', data: mr.map(function (m) { return m.revenue; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.10)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 }] },
+      options: Object.assign({}, ANA_BASE, {
+        plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false }, tooltip: Object.assign({}, ANA_BASE.plugins.tooltip, { callbacks: { label: function (ctx) { return 'NT$ ' + Number(ctx.parsed.y).toLocaleString(); } } }) }),
+        scales: { x: ANA_BASE.scales.x, y: Object.assign({}, ANA_BASE.scales.y, { ticks: Object.assign({}, ANA_BASE.scales.y.ticks, { callback: function (v) { return 'NT$ ' + Number(v).toLocaleString(); } }) }) }
+      })
+    });
+  }
+  // ----- Tab: 內容 -----
+  function renderContent() {
+    var te = ANA.topEvents || [];
+    _anaDestroy('topevents');
+    anaCharts.topevents = new Chart(document.getElementById('ana-topevents').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: te.map(function (e) { return e.name.length > 22 ? e.name.slice(0, 22) + '⋯' : e.name; }),
+        datasets: [
+          { label: '瀏覽數', data: te.map(function (e) { return e.views; }), backgroundColor: '#3d6bff', borderRadius: 3 },
+          { label: '報名數', data: te.map(function (e) { return e.regs; }), backgroundColor: '#10b981', borderRadius: 3 }
+        ]
+      },
+      options: Object.assign({}, ANA_BASE, { indexAxis: 'y' })
+    });
+  }
+  // ----- Tab: 安全 -----
+  function renderSecurity() {
+    var ts = ANA.totpStats || { enabled: 0, disabled: 0 };
+    _anaDestroy('totp');
+    anaCharts.totp = new Chart(document.getElementById('ana-totp').getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: ['已啟用 2FA', '未啟用 2FA'], datasets: [{ data: [ts.enabled, ts.disabled], backgroundColor: ['#10b981', '#e94560'], borderColor: '#fff', borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: ANA_BASE.plugins.tooltip } }
+    });
+    renderHeatmap('ana-fail-heatmap', ANA.loginFailHourOfWeek || {}, '#e94560');
+  }
+  // ----- Heatmap helper -----
+  function renderHeatmap(elId, byHour, baseColor) {
+    var max = 1;
+    Object.keys(byHour).forEach(function (k) { if (byHour[k] > max) max = byHour[k]; });
+    var DOW = ['週日','週一','週二','週三','週四','週五','週六'];
+    var c = (baseColor || '#3d6bff').replace('#', '');
+    var rgb = [parseInt(c.slice(0,2),16), parseInt(c.slice(2,4),16), parseInt(c.slice(4,6),16)];
+    var rgbStr = rgb.join(',');
+    var html = '<div class="h-col"></div>';
+    for (var h = 0; h < 24; h++) html += '<div class="h-col">' + (h % 3 === 0 ? h : '') + '</div>';
+    for (var dow = 0; dow < 7; dow++) {
+      html += '<div class="h-row">' + DOW[dow] + '</div>';
+      for (var hr = 0; hr < 24; hr++) {
+        var key = dow + '_' + hr;
+        var ct = byHour[key] || 0;
+        var pct = ct / max;
+        var bg = ct === 0 ? 'var(--surface-2)' : 'rgba(' + rgbStr + ',' + Math.max(0.12, pct).toFixed(2) + ')';
+        html += '<div class="h-cell" style="background:' + bg + '" title="' + DOW[dow] + ' ' + hr + ':00 — ' + ct + ' 筆"></div>';
+      }
+    }
+    html += '<div class="h-legend">少 <div class="swatch">' +
+      '<span style="background:rgba(' + rgbStr + ',.12)"></span>' +
+      '<span style="background:rgba(' + rgbStr + ',.30)"></span>' +
+      '<span style="background:rgba(' + rgbStr + ',.55)"></span>' +
+      '<span style="background:rgba(' + rgbStr + ',.85)"></span>' +
+      '<span style="background:rgba(' + rgbStr + ',1.00)"></span>' +
+    '</div> 多　·　最高 ' + max + ' 筆</div>';
+    document.getElementById(elId).innerHTML = html;
+  }
+  document.querySelectorAll('.ana-subtabs a').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      document.querySelectorAll('.ana-subtabs a').forEach(function (x) { x.classList.remove('on'); });
+      a.classList.add('on');
+      document.querySelectorAll('.ana-sub').forEach(function (p) { p.classList.toggle('on', p.dataset.subpane === a.dataset.sub); });
+    });
+  });
+  document.getElementById('ana-preset').addEventListener('change', loadAnalytics);
+  document.getElementById('ana-from').addEventListener('change', loadAnalytics);
+  document.getElementById('ana-to').addEventListener('change', loadAnalytics);
+  document.getElementById('ana-reload').addEventListener('click', loadAnalytics);
 
   // ================= 意見回饋 =================
   var fbCache = {}, fbCurrent = null;

@@ -4477,6 +4477,161 @@ exports.logVisit = callable(async (data) => {
   return { success: true };
 });
 
+// CC1: Comprehensive user analytics — feeds the 5-tab dashboard in system.html.
+// Returns daily / by-hour / device / tier / inactive / revenue / topEvents / security
+// in a single round trip so the page renders without N callable calls per tab.
+exports.getUserAnalytics = authCallable(["system"], async (data) => {
+  const fromDate = String((data && data.fromDate) || "1970-01-01").slice(0, 10);
+  const toDate   = String((data && data.toDate)   || "9999-12-31").slice(0, 10);
+
+  // ---------- 流量 ----------
+  const visitorSnap = await db.collection("visitors").orderBy("createdAt", "desc").limit(20000).get();
+  const dailyMap = {};                    // date → { views, uniqueDevices: Set }
+  const byHourOfWeek = {};                // "<dow>_<hr>" → count
+  const deviceCounts = { Desktop: 0, Mobile: 0, Tablet: 0, Other: 0 };
+  let totalVisits = 0;
+  const allDeviceKeys = new Set();
+  visitorSnap.docs.forEach(d => {
+    const v = d.data();
+    const date = v.date || "";
+    if (!date || date < fromDate || date > toDate) return;
+    totalVisits++;
+    if (!dailyMap[date]) dailyMap[date] = { views: 0, devices: new Set() };
+    dailyMap[date].views++;
+    dailyMap[date].devices.add(v.ip + "|" + (v.device || ""));
+    allDeviceKeys.add(v.ip + "|" + (v.device || ""));
+    // Classify device
+    const ua = String(v.device || "").toLowerCase();
+    if (/tablet|ipad/.test(ua)) deviceCounts.Tablet++;
+    else if (/mobile|android|iphone/.test(ua)) deviceCounts.Mobile++;
+    else if (/mozilla|chrome|safari|firefox|edge/.test(ua)) deviceCounts.Desktop++;
+    else deviceCounts.Other++;
+    // Hour of week
+    if (v.createdAt && v.createdAt.toDate) {
+      const dt = v.createdAt.toDate();
+      const key = dt.getDay() + "_" + dt.getHours();
+      byHourOfWeek[key] = (byHourOfWeek[key] || 0) + 1;
+    }
+  });
+  const daily = Object.keys(dailyMap).sort().map(date => ({
+    date, views: dailyMap[date].views, uniqueDevices: dailyMap[date].devices.size
+  }));
+  const uniqueDevices = allDeviceKeys.size;
+
+  // ---------- 帳號 ----------
+  const accSnap = await db.collection("accounts").get();
+  const newRegMap = {};                   // date → count
+  const tierCounts = { free: 0, starter: 0, pro: 0, team: 0, system: 0 };
+  let totpEnabledCount = 0;
+  const inactiveCounts = { d30: 0, d60: 0, d90: 0 };
+  const today = new Date();
+  const totalAccounts = accSnap.size;
+  for (const d of accSnap.docs) {
+    const a = d.data();
+    const created = String(a.createdAt || "").slice(0, 10);
+    if (created && created >= fromDate && created <= toDate) {
+      newRegMap[created] = (newRegMap[created] || 0) + 1;
+    }
+    if (a.totpEnabled) totpEnabledCount++;
+    // Tier classification — system role is separate
+    if (a.role === "system") tierCounts.system++;
+    else {
+      const tier = await getEffectiveTier(a.username);
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+    }
+    // Inactivity: lastLoginAt stored on the doc; fall back to createdAt
+    const lastLoginStr = a.lastLoginAt || a.createdAt;
+    if (lastLoginStr) {
+      const lastLogin = new Date(lastLoginStr);
+      if (!isNaN(lastLogin.getTime())) {
+        const daysSince = (today.getTime() - lastLogin.getTime()) / 86400000;
+        if (daysSince >= 90) inactiveCounts.d90++;
+        else if (daysSince >= 60) inactiveCounts.d60++;
+        else if (daysSince >= 30) inactiveCounts.d30++;
+      }
+    }
+  }
+  const newRegistrations = Object.keys(newRegMap).sort().map(date => ({ date, count: newRegMap[date] }));
+
+  // ---------- 收入 ----------
+  // Conversion funnel — visitors (estimated by unique device fingerprints), signups, paid
+  let signups = 0, paid = 0;
+  accSnap.docs.forEach(d => {
+    const a = d.data();
+    if (a.role === 'system') return;
+    const created = String(a.createdAt || "").slice(0, 10);
+    if (created && created >= fromDate && created <= toDate) signups++;
+  });
+  // Paid count: organisers with an effective tier > free
+  paid = tierCounts.starter + tierCounts.pro + tierCounts.team;
+  const conversionFunnel = { visitors: uniqueDevices, signups, paid };
+  // Monthly revenue from regPayments (paid status) — gross income to platform
+  const revMap = {};
+  const regPaySnap = await db.collection("regPayments").where("status", "==", "paid").get();
+  regPaySnap.docs.forEach(d => {
+    const p = d.data();
+    const paidDate = String(p.paidAt || "").slice(0, 10);
+    if (!paidDate || paidDate < fromDate || paidDate > toDate) return;
+    const month = paidDate.slice(0, 7);
+    revMap[month] = (revMap[month] || 0) + (parseInt(p.amount, 10) || 0);
+  });
+  // License purchases too (ordres collection)
+  try {
+    const orderSnap = await db.collection("orders").where("status", "==", "paid").get();
+    orderSnap.docs.forEach(d => {
+      const o = d.data();
+      const paidDate = String(o.paidAt || "").slice(0, 10);
+      if (!paidDate || paidDate < fromDate || paidDate > toDate) return;
+      const month = paidDate.slice(0, 7);
+      revMap[month] = (revMap[month] || 0) + (parseInt(o.total, 10) || 0);
+    });
+  } catch (e) { /* orders collection may not exist for new tenants */ }
+  const monthlyRevenue = Object.keys(revMap).sort().map(month => ({ month, revenue: revMap[month] }));
+  const mrr = monthlyRevenue.length ? monthlyRevenue[monthlyRevenue.length - 1].revenue : 0;
+
+  // ---------- 內容 ----------
+  // Top events by viewCount + registration count
+  const compSnap = await db.collection("competitions").get();
+  const topEvents = compSnap.docs.map(d => {
+    const c = d.data();
+    return { compId: d.id, name: c.name || "", views: c.viewCount || 0, regs: c.teamCount || 0 };
+  }).sort((a, b) => (b.views + b.regs) - (a.views + a.regs)).slice(0, 10);
+
+  // ---------- 安全 ----------
+  const totpStats = { enabled: totpEnabledCount, disabled: totalAccounts - totpEnabledCount };
+  // Login failures from audit logs — anything with action containing 失敗 OR specific "登入失敗"
+  const loginFailHourOfWeek = {};
+  try {
+    const auditSnap = await db.collection("auditLogs")
+      .orderBy("createdAt", "desc").limit(5000).get();
+    auditSnap.docs.forEach(d => {
+      const a = d.data();
+      const action = String(a.action || "");
+      if (!action.includes("失敗") && !action.toLowerCase().includes("fail")) return;
+      const ts = a.createdAt;
+      if (!ts || !ts.toDate) return;
+      const dt = ts.toDate();
+      const dateStr = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, '0') + "-" + String(dt.getDate()).padStart(2, '0');
+      if (dateStr < fromDate || dateStr > toDate) return;
+      const key = dt.getDay() + "_" + dt.getHours();
+      loginFailHourOfWeek[key] = (loginFailHourOfWeek[key] || 0) + 1;
+    });
+  } catch (e) { /* tolerate audit log access issues */ }
+
+  return {
+    period: { fromDate, toDate },
+    kpis: {
+      totalVisits, uniqueDevices, totalAccounts, paidAccounts: paid,
+      mrr, twoFactorRate: totalAccounts > 0 ? Math.round(totpEnabledCount / totalAccounts * 100) : 0
+    },
+    daily, byHourOfWeek, deviceCounts,
+    newRegistrations, tierCounts, inactiveCounts,
+    conversionFunnel, monthlyRevenue,
+    topEvents,
+    totpStats, loginFailHourOfWeek
+  };
+});
+
 exports.getVisitorStats = authCallable(["system"], async (data) => {
   const dateFrom = data.dateFrom || "";
   const dateTo = data.dateTo || "";
