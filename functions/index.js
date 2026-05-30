@@ -666,6 +666,47 @@ exports.listCompetitions = authCallable(["system","competition"], async (data, r
   return results;
 });
 
+// Build an initial formSchema for a new activity, driven entirely by eventType.
+// One section per person — so register.html (which counts cards from section count)
+// renders the right number of students/teachers without any other config.
+function _buildInitialSchemaForEventType(eventType) {
+  let stuCount = 1, tchCount = 0;
+  if (eventType === 'single_coach') { stuCount = 1; tchCount = 1; }
+  else if (eventType === 'single_no_coach') { stuCount = 1; tchCount = 0; }
+  else if (eventType === 'team_coach') { stuCount = 2; tchCount = 1; }
+  else if (eventType === 'team_no_coach') { stuCount = 2; tchCount = 0; }
+  const _stuField = (i) => ({
+    id: 'stu' + i + '_name', type: 'text', label: '中文姓名',
+    legacyKey: 'chineseName', req: true, opts: [], help: '', size: 'half'
+  });
+  const _tchField = (i) => ({
+    id: 'tch' + i + '_name', type: 'text', label: '中文姓名',
+    legacyKey: 'chineseName', req: true, opts: [], help: '', size: 'half'
+  });
+  const sections = [];
+  for (let i = 0; i < stuCount; i++) {
+    sections.push({
+      id: 'sec_stu_' + i,
+      title: stuCount > 1 ? ('學員 ' + (i + 1)) : '學員資料',
+      desc: '',
+      role: 'student',
+      repeat: 1,
+      fields: [_stuField(i)]
+    });
+  }
+  for (let i = 0; i < tchCount; i++) {
+    sections.push({
+      id: 'sec_tch_' + i,
+      title: tchCount > 1 ? ('指導者 ' + (i + 1)) : '指導者',
+      desc: '',
+      role: 'teacher',
+      repeat: 1,
+      fields: [_tchField(i)]
+    });
+  }
+  return { version: 'v3', sections };
+}
+
 exports.createCompetition = authCallable(["system","competition"], async (data, request) => {
   const { name, category, eventType } = data;
   const creator = request.authUser.username;
@@ -682,19 +723,21 @@ exports.createCompetition = authCallable(["system","competition"], async (data, 
     }
   }
 
-  let mCount = 1, tCount = 0;
-  if (eventType === 'single_coach') { mCount = 1; tCount = 1; }
-  else if (eventType === 'single_no_coach') { mCount = 1; tCount = 0; }
-  else if (eventType === 'team_coach') { mCount = 2; tCount = 1; }
-  else if (eventType === 'team_no_coach') { mCount = 2; tCount = 0; }
+  const effectiveEventType = eventType || 'single_no_coach';
+  const initialSchema = _buildInitialSchemaForEventType(effectiveEventType);
+  // memberCount / teacherCount are kept in sync from the schema so exports + legacy
+  // consumers (excel import/export) see the right counts.
+  const stuTotal = initialSchema.sections.filter(s => s.role === 'student').reduce((n, s) => n + (parseInt(s.repeat, 10) || 1), 0);
+  const tchTotal = initialSchema.sections.filter(s => s.role === 'teacher').reduce((n, s) => n + (parseInt(s.repeat, 10) || 1), 0);
 
   const cfg = {
-    competitionName: name, category: category || '研討會', eventType: eventType || 'single_no_coach',
+    competitionName: name, category: category || '研討會', eventType: effectiveEventType,
     isVisible: false,
     groups: [], requireTeamNameCN: false, requireTeamNameEN: false,
-    memberCount: mCount, studentFields: ["chineseName"], teacherCount: tCount, teacherFields: ["chineseName"],
+    memberCount: stuTotal, studentFields: ["chineseName"], teacherCount: tchTotal, teacherFields: ["chineseName"],
+    formSchema: initialSchema,                 // ← single source of truth for member counts
     // 【新增】：預設的附加選項與自訂問題空陣列
-    dietaryOptions: ["豬肉", "牛肉", "雞肉", "海鮮", "全素"], 
+    dietaryOptions: ["豬肉", "牛肉", "雞肉", "海鮮", "全素"],
     tshirtOptions: ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
     customQuestions: [],
     paymentMethods: [], bankInfo: {}, creditCardLink: "", description: "", posterUrl: "",
@@ -970,6 +1013,12 @@ exports.getRegistrationBundle = callable(async (data) => {
   cfg.maxTeams = r.maxTeams || 0;
   cfg.rulesPdfId = r.rulesPdfId || "";
   cfg.themeColors = r.themeColors || "";
+  // Backward compat: legacy activities (created before formSchema existed) get a
+  // derived schema so register.html can count sections without falling back to
+  // memberCount/teacherCount. Newer activities already have cfg.formSchema set.
+  if (!cfg.formSchema || !Array.isArray(cfg.formSchema.sections) || cfg.formSchema.sections.length === 0) {
+    cfg.formSchema = buildFormSchemaFromLegacy(cfg);
+  }
   // Strip sensitive keys before returning to public client
   ['payuniMerID','payuniHashKey','payuniHashIV','payuniMode'].forEach(k => delete cfg[k]);
   const stats = await getCompStats(data.compId);

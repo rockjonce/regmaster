@@ -687,15 +687,16 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     STU_DEFS = studentFieldDefs();
     TCH_DEFS = teacherFieldDefs();
     CUSTOM_DEFS = customFieldDefs();
-    // Section count is now the single source of truth: 學員區塊有 N 個 → 學員卡片就有 N 個.
-    // The legacy CFG.memberCount/teacherCount only kicks in for old activities without a formSchema.
-    var stuSecs = SCHEMA ? sectionsByRole('student') : [];
+    // Section count is the SOLE source of truth. The backend always returns a formSchema
+    // (createCompetition initialises one from eventType; getRegistrationBundle auto-derives
+    // one for any legacy activity), so SCHEMA is never null here.
+    var stuSecs = sectionsByRole('student');
     var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-    var mCount = SCHEMA ? Math.max(1, stuSecRepeatTotal) : (CFG.memberCount || 1);
+    var mCount = Math.max(1, stuSecRepeatTotal);
     STU_DEFS_PER_CARD = studentFieldDefsPerCard(mCount);
-    var tchSecs = SCHEMA ? sectionsByRole('teacher') : [];
+    var tchSecs = sectionsByRole('teacher');
     var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-    var tCount = SCHEMA ? tchSecRepeatTotal : (CFG.teacherCount || 0);
+    var tCount = tchSecRepeatTotal;
     TCH_DEFS_PER_CARD = teacherFieldDefsPerCard(tCount);
     document.getElementById('studentCount').textContent = '共 ' + mCount + ' 位';
     var sList = document.getElementById('studentList');
@@ -1090,10 +1091,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       // Collect students/teachers from the schema-driven cards
       STATE.students = [];
       // Derive counts the same way the renderer did, so each card reads with its own defs
-      var stuSecs = SCHEMA ? sectionsByRole('student') : [];
+      var stuSecs = sectionsByRole('student');
       var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-      // Section count is authoritative when a schema exists; legacy fallback only for old activities.
-      var mCount = SCHEMA ? Math.max(1, stuSecRepeatTotal) : (CFG.memberCount || 1);
+      // Section count is the sole source of truth (backend always supplies a schema).
+      var mCount = Math.max(1, stuSecRepeatTotal);
       var defsPerCard = STU_DEFS_PER_CARD.length ? STU_DEFS_PER_CARD : studentFieldDefsPerCard(mCount);
       for (var i = 0; i < mCount; i++) {
         var s = readMember(defsPerCard[i] || STU_DEFS, 'student_' + i + '_', '學員 ' + (i + 1));
@@ -1101,9 +1102,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         STATE.students.push(s);
       }
       STATE.teachers = [];
-      var tchSecs = SCHEMA ? sectionsByRole('teacher') : [];
+      var tchSecs = sectionsByRole('teacher');
       var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-      var tCount = SCHEMA ? tchSecRepeatTotal : (CFG.teacherCount || 0);
+      var tCount = tchSecRepeatTotal;
       var tchDefsPerCard = TCH_DEFS_PER_CARD.length ? TCH_DEFS_PER_CARD : teacherFieldDefsPerCard(tCount);
       if (tCount > 0) {
         for (var j = 0; j < tCount; j++) {

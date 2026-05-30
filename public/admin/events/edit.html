@@ -1199,9 +1199,14 @@
         return;
       }
       var total = schema.sections.reduce(function (n, s) { return n + (s.fields || []).length; }, 0);
-      var html = '<p style="margin-bottom:12px">共 <b>' + schema.sections.length + '</b> 個區塊、<b>' + total + '</b> 個欄位 — 僅供檢視，修改請按上方「開啟設計器」。</p>';
+      // Counts derive from sections — same rule as register.html.
+      var stuCount = schema.sections.filter(function (s) { return s.role === 'student'; }).reduce(function (n, s) { return n + (parseInt(s.repeat, 10) || 1); }, 0);
+      var tchCount = schema.sections.filter(function (s) { return s.role === 'teacher'; }).reduce(function (n, s) { return n + (parseInt(s.repeat, 10) || 1); }, 0);
+      var html = '<p style="margin-bottom:12px">共 <b>' + schema.sections.length + '</b> 個區塊（學員 <b>' + stuCount + '</b> 位、指導者 <b>' + tchCount + '</b> 位）、<b>' + total + '</b> 個欄位 — 僅供檢視，修改請按上方「開啟設計器」。</p>';
       schema.sections.forEach(function (s) {
-        var cnt = (s.role === 'student') ? ((CFG.memberCount || 1) + ' 位') : (s.role === 'teacher') ? ((CFG.teacherCount || 1) + ' 位') : '';
+        // Per-section count = its own repeat (almost always 1 with the new 1-section-per-person model)
+        var rep = parseInt(s.repeat, 10) || 1;
+        var cnt = (s.role === 'student' || s.role === 'teacher') ? (rep + ' 位') : '';
         html += '<div style="margin-bottom:12px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">' +
           '<div style="font:600 13px/1.3 var(--f-display); margin-bottom:8px">' + escapeHtml(s.title || '(無標題)') +
             ' <span style="font:500 10.5px/1 var(--f-mono); color:var(--muted)">' + (roleLabel[s.role] || '自訂') + (cnt ? (' · ' + cnt) : '') + '</span></div>';
