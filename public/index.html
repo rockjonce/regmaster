@@ -288,6 +288,16 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
   .section-head h2, .cta-section h2 { font-size: 36px; }
   .logos-grid { grid-template-columns: repeat(3,1fr); }
 }
+@media (max-width: 600px) {
+  .hero h1 { font-size: 40px; }
+  .bento { grid-template-columns: 1fr; }
+  .bento-cell.size-2, .bento-cell.size-3, .bento-cell.size-4 { grid-column: span 1; }
+  .dashboard-body { grid-template-columns: 1fr; height: auto; }
+  .db-kpi-row { grid-template-columns: 1fr 1fr; }
+  .f-grid { grid-template-columns: 1fr 1fr; }
+  .logos-grid { grid-template-columns: repeat(2,1fr); }
+  .f-foot { flex-direction: column; gap: 10px; }
+}
 
 .spark-line { stroke: var(--ok-500); stroke-width: 1.5; fill: none; }
 .spark-fill { fill: rgba(16,185,129,.12); stroke: none; }

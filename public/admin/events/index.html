@@ -42,6 +42,8 @@
 
 /* Grid */
 .events-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:18px; }
+@media (max-width:768px){ .stat-strip { grid-template-columns:repeat(3,1fr); } .events-grid { grid-template-columns:1fr; } }
+@media (max-width:460px){ .stat-strip { grid-template-columns:repeat(2,1fr); } }
 .evt-card { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; cursor:pointer; transition:.18s; display:flex; flex-direction:column; text-decoration:none; color:inherit; }
 .evt-card:hover { border-color:var(--ink-3); transform:translateY(-2px); box-shadow:var(--sh); }
 .evt-card .cover { aspect-ratio:16/8; position:relative; overflow:hidden; }

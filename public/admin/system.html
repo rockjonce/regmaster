@@ -40,7 +40,8 @@ body { background:var(--bg); }
 .fld input:focus, .fld select:focus { outline:0; border-color:var(--acc); box-shadow:0 0 0 3px rgba(61,107,255,.16); }
 .row-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
-@media(max-width:680px){ .row-2,.row-3 { grid-template-columns:1fr; } }
+@media(max-width:680px){ .row-2,.row-3 { grid-template-columns:1fr; } .row-4 { grid-template-columns:1fr 1fr !important; } }
+@media(max-width:420px){ .row-4 { grid-template-columns:1fr !important; } }
 
 /* tables */
 .tbl { width:100%; border-collapse:collapse; font:400 13px/1.5 var(--f-tc); }
