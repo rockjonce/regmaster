@@ -433,7 +433,26 @@
               <div><h3>Email 通知</h3><p>報名成功 / 付款確認時自動寄送</p></div>
             </div>
             <div class="toggle-row"><div class="body"><h6>啟用自動 Email 通知</h6><p>關閉後，新報名者不會收到確認信</p></div><div class="tg-sw on" id="autoEmail" data-dirty></div></div>
-            <div class="fld" style="margin-top:14px"><div class="lbl">公告 Email 範本</div><a href="javascript:void(0)" id="openAnnLink" style="color:var(--acc); font:500 13px/1.5 var(--f-tc); text-decoration:none">前往「公告 / EDM」管理範本 →</a></div>
+            <div class="fld" style="margin-top:14px"><div class="lbl">進階：公告 / EDM 群發</div><a href="javascript:void(0)" id="openAnnLink" style="color:var(--acc); font:500 13px/1.5 var(--f-tc); text-decoration:none">前往「公告 / EDM」設計範本與群發 →</a></div>
+          </div>
+
+          <!-- BB1: inline announcements composer — same shape as legacy regmaster-pro's
+               "公告" tab; lets the organiser post text that appears on the activity's
+               public landing page (公告 section). -->
+          <div class="sec">
+            <div class="sec-hd">
+              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg></div>
+              <div><h3>活動公告</h3><p>輸入後會即時顯示在活動公開頁的「公告」區，依日期由新到舊排序</p></div>
+            </div>
+            <div class="row2" style="grid-template-columns: 160px 1fr">
+              <div class="fld"><div class="lbl">日期</div><input type="date" id="ann-date"></div>
+              <div class="fld"><div class="lbl">標題</div><input type="text" id="ann-title" placeholder="例：報到位置變更通知"></div>
+            </div>
+            <div class="fld"><div class="lbl">內容（純文字，換行會保留）</div><textarea id="ann-content" rows="4" placeholder="輸入公告內容⋯"></textarea></div>
+            <div style="display:flex; justify-content:flex-end; margin-top:10px">
+              <button class="btn btn-primary btn-sm" id="ann-add">＋ 新增公告</button>
+            </div>
+            <div id="ann-list" style="margin-top:18px"></div>
           </div>
         </div>
 
@@ -521,6 +540,70 @@
   document.getElementById('openAnnLink').addEventListener('click', function () {
     location.href = '/admin/events/' + encodeURIComponent(compId) + '/announcements';
   });
+
+  // BB1: inline announcement composer wired to addAnnouncement / getAnnouncements /
+  // deleteAnnouncement callables. Same data store as /admin/events/[id]/announcements,
+  // so posting here surfaces immediately on the public detail page's 公告 section.
+  function _todayIso() {
+    var d = new Date(); var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function _annRender(list) {
+    var el = document.getElementById('ann-list');
+    if (!list || !list.length) {
+      el.innerHTML = '<p style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:14px; background:var(--surface-2); border:1px dashed var(--line); border-radius:9px; text-align:center">目前還沒有任何公告，新增第一則吧。</p>';
+      return;
+    }
+    el.innerHTML = list.map(function (a) {
+      var date = escapeHtml(a.date || ''); var title = escapeHtml(a.title || '(無標題)');
+      var body = escapeHtml(a.content || '').replace(/\n/g, '<br>');
+      return '<div class="ann-row" style="padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); margin-bottom:10px">' +
+        '<div style="display:flex; justify-content:space-between; align-items:start; gap:10px; margin-bottom:6px">' +
+          '<div><b style="font:600 13.5px/1.3 var(--f-display); color:var(--ink)">' + title + '</b>' +
+            '<div style="font:500 11.5px/1.4 var(--f-mono); color:var(--muted); margin-top:3px">' + date + '</div></div>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-ann-del="' + escapeHtml(a.docId) + '" style="color:var(--err-700)">刪除</button>' +
+        '</div>' +
+        '<div style="font:400 13px/1.65 var(--f-tc); color:var(--ink-2)">' + body + '</div>' +
+      '</div>';
+    }).join('');
+    el.querySelectorAll('[data-ann-del]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var docId = b.dataset.annDel;
+        uiConfirm('確定刪除此公告？此操作無法復原。', { title: '刪除公告', okText: '永久刪除', danger: true }).then(function (ok) {
+          if (!ok) return;
+          google.script.run
+            .withSuccessHandler(function () { _annLoad(); })
+            .withFailureHandler(function (e) { uiAlert('刪除失敗：' + (e && e.message)); })
+            .deleteAnnouncement(compId, docId);
+        });
+      });
+    });
+  }
+  function _annLoad() {
+    google.script.run
+      .withSuccessHandler(function (list) { _annRender(list || []); })
+      .withFailureHandler(function () { _annRender([]); })
+      .getAnnouncements(compId);
+  }
+  document.getElementById('ann-date').value = _todayIso();
+  document.getElementById('ann-add').addEventListener('click', function () {
+    var date = document.getElementById('ann-date').value;
+    var title = document.getElementById('ann-title').value.trim();
+    var content = document.getElementById('ann-content').value.trim();
+    if (!date || !title || !content) { uiAlert('請填寫日期、標題與內容'); return; }
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '送出中⋯';
+    google.script.run
+      .withSuccessHandler(function () {
+        btn.disabled = false; btn.textContent = o;
+        document.getElementById('ann-title').value = '';
+        document.getElementById('ann-content').value = '';
+        document.getElementById('ann-date').value = _todayIso();
+        _annLoad();
+      })
+      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; uiAlert('新增失敗：' + (e && e.message)); })
+      .addAnnouncement(compId, date, title, content);
+  });
+  _annLoad();
 
   document.getElementById('logoutBtn').addEventListener('click', function (e) { e.preventDefault(); AppState.setMe(null); location.href = '/login.html'; });
 
