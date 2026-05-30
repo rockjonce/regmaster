@@ -773,6 +773,67 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     code += parseInt(id[9], 10);
     return code % 10 === 0;
   }
+  // FB5: Taiwan 統一編號 checksum.
+  // Algorithm: weights [1,2,1,2,1,2,4,1]; product digit-sum each pair; total % 10 === 0.
+  // If digit[6] === 7, accept also (total + 1) % 10 === 0 (longstanding tax-office exception).
+  function validateTaxId(s) {
+    s = String(s || '').trim();
+    if (!/^\d{8}$/.test(s)) return false;
+    var w = [1,2,1,2,1,2,4,1];
+    var sum = 0;
+    for (var i = 0; i < 8; i++) {
+      var p = parseInt(s[i], 10) * w[i];
+      sum += Math.floor(p / 10) + (p % 10);
+    }
+    if (sum % 10 === 0) return true;
+    if (s[6] === '7' && (sum + 1) % 10 === 0) return true;
+    return false;
+  }
+  // FB5: today as YYYY-MM-DD (local), for date comparisons that should respect viewer TZ.
+  function _todayISO() {
+    var d = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  // FB5: dispatcher — special-field built-in validation. Returns null on pass or error string on fail.
+  function validateSpecial(def, v) {
+    if (!v) return null;
+    var k = def.legacyKey;
+    if (!k) return null;
+    // Phones (TW): 0 + 8 or 9 digits, no separators
+    if (k === 'phone' || k === 'emergencyPhone') {
+      var pure = String(v).replace(/[^\d]/g, '');
+      if (!/^0\d{8,9}$/.test(pure)) return def.label + ' 格式不正確（應為 0 開頭的 9–10 碼台灣電話/行動電話）';
+    }
+    // Mobile with country code — value is "+CC NNN"; the digits-after-cc must be 6+ digits
+    if (k === 'mobilePhone') {
+      var m = String(v).match(/^\+\d+\s+(\d+)$/);
+      if (!m || m[1].length < 6) return def.label + ' 格式不正確（請輸入國碼後的純數字號碼，至少 6 碼）';
+    }
+    // Unified business number (統一編號) — 8 digits with checksum
+    if (k === 'taxId') {
+      if (!validateTaxId(v)) return def.label + ' 不正確（應為 8 碼統一編號且通過 checksum）';
+    }
+    // Taiwan postal code — 3 digits, or 3+2 form (300/30050)
+    if (k === 'postalCode') {
+      if (!/^\d{3}(\d{2})?$/.test(String(v).trim())) return def.label + ' 不正確（應為 3 碼或 5 碼數字）';
+    }
+    // Birthday / passport issue date — must not be in the future
+    if (k === 'birthday' || k === 'passportIssueDate') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return def.label + ' 日期格式不正確';
+      if (v > _todayISO()) return def.label + ' 不可為未來日期';
+    }
+    // Passport expiry — must be strictly later than today
+    if (k === 'passportExpiry') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return def.label + ' 日期格式不正確';
+      if (v <= _todayISO()) return def.label + ' 必須晚於今日';
+    }
+    // Passport number — 6 to 9 alphanumerics
+    if (k === 'passport') {
+      if (!/^[A-Za-z0-9]{6,9}$/.test(String(v).trim())) return def.label + ' 格式不正確（應為 6–9 碼英數字）';
+    }
+    return null;
+  }
   function readMember(defs, prefix, who) {
     var obj = {};
     for (var k = 0; k < defs.length; k++) {
@@ -784,6 +845,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (wrap) wrap.classList.remove('error');
       if (def.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的 Email 格式錯誤'); return false; }
       if (def.type === 'idnumber' && v && /^[A-Za-z][0-9]{9}$/.test(v) && !validateTWID(v)) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的「' + def.label + '」身分證號碼格式不正確'); return false; }
+      // FB5: built-in validation for special fields (taxId / phone / postalCode / dates / passport / mobile)
+      var specialErr = validateSpecial(def, v);
+      if (specialErr) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的「' + specialErr + '」'); return false; }
       if (v) obj[def.key] = v;
     }
     return obj;
@@ -796,6 +860,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var v = readFieldValue(def, 'cq_');
       if (def.req && !v) { if (wrap) wrap.classList.add('error'); showErr('「' + def.label + '」為必答'); return false; }
       if (wrap) wrap.classList.remove('error');
+      // FB5: built-in special-field validation also applies to custom-question slots
+      var cqErr = validateSpecial(def, v);
+      if (cqErr) { if (wrap) wrap.classList.add('error'); showErr(cqErr); return false; }
       if (v) STATE.customAnswers[def.label] = v;
     }
     return true;
