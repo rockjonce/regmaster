@@ -89,6 +89,27 @@
   .bill-summary .b-c .v { font-size:16px; }
 }
 
+/* Tab bar */
+.ptab-bar { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+.ptab { padding:10px 18px; background:none; border:0; border-bottom:2px solid transparent; font:600 13.5px/1.4 var(--f-display); color:var(--muted); cursor:pointer; margin-bottom:-1px; }
+.ptab:hover { color:var(--ink-2); }
+.ptab.on { color:var(--ink); border-bottom-color:var(--ink); }
+
+/* Payout (平台代收轉付) tab */
+.po-intro { margin-bottom:16px; }
+.po-intro h3 { font:700 16px/1.2 var(--f-display); margin-bottom:4px; }
+.po-intro p { font:400 12.5px/1.6 var(--f-tc); color:var(--muted); margin:0; }
+.po-bars { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+.po-bar { padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:10px; font:400 12.5px/1.6 var(--f-tc); color:var(--ink-2); }
+.po-bar h6 { font:600 11px/1 var(--f-mono); letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.po-bar .big { font:700 15px/1.3 var(--f-display); color:var(--ink); }
+.po-bar.warn { background:color-mix(in srgb, var(--amber-500) 8%, var(--surface)); border-color:color-mix(in srgb, var(--amber-500) 35%, var(--line)); }
+.po-sec-h { font:700 14px/1.3 var(--f-display); margin:22px 0 10px; }
+.po-settle-pill { font:600 10.5px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.po-settle-pill.done { background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); }
+.po-settle-pill.wait { background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--warn-700); }
+@media (max-width:768px){ .po-bars { grid-template-columns:1fr; } }
+
 .reconcile-bar { padding:18px; background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 8%, var(--surface)), var(--surface)); border:1px solid color-mix(in srgb, var(--acc) 30%, var(--line)); border-radius:12px; display:flex; gap:14px; align-items:center; margin-bottom:14px; }
 .reconcile-bar .ic-r { width:36px; height:36px; border-radius:9px; background:var(--acc); color:white; display:grid; place-items:center; flex-shrink:0; }
 .reconcile-bar .body { flex:1; }
@@ -132,45 +153,23 @@
     </header>
     <div id="loadingState" class="loading-c">載入付款資料⋯</div>
     <div class="main-c" id="content" style="display:none">
-      <div class="sum-row" id="sumRow"></div>
-
-      <!-- FF3: organiser-side billing summary. Hidden when there's nothing payable
-           (no PayUNI orders + no confirmed bank transfers in any period). -->
-      <div class="billing-card" id="billingCard" style="display:none">
-        <div class="billing-h">
-          <div>
-            <h3>💰 帳務匯出</h3>
-            <p>此頁面是「<b>本活動</b>」的帳務；如需跨活動匯出，請於每個活動分別下載。</p>
-          </div>
-          <div class="range-bar">
-            <select id="billPreset">
-              <option value="thisMonth">本月迄今</option>
-              <option value="lastMonth">上月</option>
-              <option value="last7">近 7 日</option>
-              <option value="last30">近 30 日</option>
-              <option value="last90">近 90 日</option>
-              <option value="thisYear">今年</option>
-              <option value="all">全部期間</option>
-              <option value="custom">自訂期間</option>
-            </select>
-            <input type="date" id="billFrom" style="display:none">
-            <input type="date" id="billTo"   style="display:none">
-            <button class="btn btn-ghost btn-sm" id="billReload">↻ 重新計算</button>
-            <button class="btn btn-primary btn-sm" id="billExport">⬇️ 匯出帳單</button>
-          </div>
-        </div>
-        <div class="bill-summary" id="billSummary"></div>
-        <div class="bill-detail" id="billDetail"></div>
+      <div class="ptab-bar">
+        <button class="ptab on" data-ptab="fees">報名費</button>
+        <button class="ptab" data-ptab="payout">平台代收轉付</button>
       </div>
+
+      <!-- ===== Tab 1: 報名費 (collection + reconcile) ===== -->
+      <div class="ptab-pane" data-ppane="fees">
+      <div class="sum-row" id="sumRow"></div>
 
       <div class="reconcile-bar" id="reconcileBar" style="display:none">
         <div class="ic-r"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg></div>
         <div class="body">
           <h5>快速銀行對帳</h5>
-          <p>輸入銀行帳號末 4 碼，系統會自動標記匹配的隊伍為「已確認」（PayUni 線上付款會自動對帳，無需手動）</p>
+          <p>輸入銀行帳號末 5 碼，系統會自動標記匹配的隊伍為「已確認」（PayUni 線上付款會自動對帳，無需手動）</p>
         </div>
         <div class="input-bar">
-          <input id="reconcileSuffix" placeholder="例：8923" maxlength="4">
+          <input id="reconcileSuffix" placeholder="例：18923" maxlength="5">
           <button class="btn btn-primary btn-sm" id="reconcileBtn">執行對帳</button>
         </div>
       </div>
@@ -186,6 +185,27 @@
           <thead><tr><th>編號</th><th>隊名</th><th>狀態</th><th>付款狀態</th><th>付款方式</th><th class="right">金額</th><th>動作</th></tr></thead>
           <tbody id="tblBody"></tbody>
         </table>
+      </div>
+      </div><!-- /ptab-pane fees -->
+
+      <!-- ===== Tab 2: 平台代收轉付 (PayUNI settlement / payouts) ===== -->
+      <div class="ptab-pane" data-ppane="payout" style="display:none">
+        <div id="payoutLoading" class="loading-c">載入代收轉付資料⋯</div>
+        <div id="payoutContent" style="display:none">
+          <div class="po-intro">
+            <h3>💸 平台代收轉付</h3>
+            <p>線上付款（PayUNI）由平台代收，扣除手續費後依轉帳週期匯入主辦方「收款帳戶」。銀行轉帳（ATM）由報名者直接匯入主辦方帳戶，不在此列。</p>
+          </div>
+          <div class="po-bars">
+            <div class="po-bar" id="payoutAccountBar"></div>
+            <div class="po-bar" id="payoutCycleBar"></div>
+          </div>
+          <div class="bill-summary" id="payoutSummary"></div>
+          <h4 class="po-sec-h">各隊收款明細</h4>
+          <div class="bill-detail" id="payoutOrders"></div>
+          <h4 class="po-sec-h">平台匯款紀錄</h4>
+          <div id="payoutRemittances"></div>
+        </div>
       </div>
     </div>
   </main>
@@ -363,7 +383,7 @@
 
   document.getElementById('reconcileBtn').addEventListener('click', function () {
     var suffix = document.getElementById('reconcileSuffix').value.trim();
-    if (!/^\d{4}$/.test(suffix)) return alert('請輸入 4 位數字');
+    if (!/^\d{5}$/.test(suffix)) return alert('請輸入 5 位數字');
     var btn = this; btn.disabled = true; btn.textContent = '對帳中⋯';
     google.script.run
       .withSuccessHandler(function (res) {
@@ -383,136 +403,123 @@
       .exportTeamsCSV(compId);
   });
 
-  // ===== FF3: organiser-side billing summary + export =====
-  var BILL = null; // last loaded billing row for this organiser (single-comp filtered)
-  function _todayISO() {
-    var d = new Date(); var pad = function (n) { return String(n).padStart(2, '0'); };
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-  function _isoFromDelta(days) {
-    var d = new Date(); d.setDate(d.getDate() - days + 1); var pad = function (n) { return String(n).padStart(2, '0'); };
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-  function _firstOfMonth(monthsBack) {
-    var d = new Date(); d.setMonth(d.getMonth() - monthsBack); var pad = function (n) { return String(n).padStart(2, '0'); };
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-01';
-  }
-  function _lastOfMonth(monthsBack) {
-    var d = new Date(); d.setMonth(d.getMonth() - monthsBack + 1); d.setDate(0);
+  // ===== 平台代收轉付 — per-order settlement view (read-only for organiser) =====
+  var PAYOUT_LOADED = false;
+  function fmtMoney(n) { return 'NT$ ' + (parseInt(n, 10) || 0).toLocaleString(); }
+
+  // Next payout date from the platform cycle. weekly → next Thursday; monthly → 5th
+  // (if it lands on a weekend, roll forward to the next weekday).
+  function nextPayoutDate(cycle) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
     var pad = function (n) { return String(n).padStart(2, '0'); };
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var iso = function (x) { return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); };
+    if (cycle === 'monthly') {
+      var t = new Date(d.getFullYear(), d.getMonth(), 5);
+      if (t < d) t = new Date(d.getFullYear(), d.getMonth() + 1, 5);
+      while (t.getDay() === 0 || t.getDay() === 6) t.setDate(t.getDate() + 1); // weekend → next weekday
+      return iso(t) + '（每月 5 日，遇假日順延）';
+    }
+    var add = (4 - d.getDay() + 7) % 7;                  // weekly → Thursday (getDay 4)
+    var t2 = new Date(d); t2.setDate(d.getDate() + add);
+    return iso(t2) + '（每週四）';
   }
-  function _resolveRange(preset) {
-    if (preset === 'thisMonth')  return { from: _firstOfMonth(0), to: _todayISO() };
-    if (preset === 'lastMonth')  return { from: _firstOfMonth(1), to: _lastOfMonth(1) };
-    if (preset === 'last7')      return { from: _isoFromDelta(7),  to: _todayISO() };
-    if (preset === 'last30')     return { from: _isoFromDelta(30), to: _todayISO() };
-    if (preset === 'last90')     return { from: _isoFromDelta(90), to: _todayISO() };
-    if (preset === 'thisYear')   return { from: new Date().getFullYear() + '-01-01', to: _todayISO() };
-    if (preset === 'all')        return { from: '1970-01-01', to: '9999-12-31' };
-    if (preset === 'custom')     return { from: document.getElementById('billFrom').value || '1970-01-01', to: document.getElementById('billTo').value || _todayISO() };
-    return { from: '1970-01-01', to: _todayISO() };
-  }
-  function loadBilling() {
-    var preset = document.getElementById('billPreset').value;
-    document.getElementById('billFrom').style.display = preset === 'custom' ? '' : 'none';
-    document.getElementById('billTo').style.display = preset === 'custom' ? '' : 'none';
-    var r = _resolveRange(preset);
-    document.getElementById('billSummary').innerHTML = '<div class="b-c"><div class="l">載入中⋯</div></div>';
+
+  function loadPayout() {
+    document.getElementById('payoutLoading').style.display = '';
+    document.getElementById('payoutContent').style.display = 'none';
     google.script.run
-      .withSuccessHandler(function (rows) {
-        var row = (rows || [])[0];
-        if (!row) { BILL = null; document.getElementById('billingCard').style.display = 'none'; return; }
-        // Filter orders down to JUST this competition
-        row.orders = (row.orders || []).filter(function (o) { return o.compId === compId; });
-        // Re-aggregate for this comp only
-        var s = { payuniGross: 0, feeTotal: 0, payuniNet: 0, atmNet: 0, payuniCount: 0, atmCount: 0 };
-        row.orders.forEach(function (o) {
-          if (o.type === 'payuni') { s.payuniGross += o.amount; s.feeTotal += o.fee; s.payuniNet += o.net; s.payuniCount++; }
-          else { s.atmNet += o.net; s.atmCount++; }
-        });
-        // Bank-transfer money is already in the organiser's bank — the platform doesn't
-        // wire that, so subtotal / actualWire are PayUNI-only.
-        s.subtotal = s.payuniNet;
-        s.wireFee  = 15;
-        s.actualWire = Math.max(0, s.subtotal - s.wireFee);
-        s.orderCount = row.orders.length;
-        row.summary = s;
-        BILL = row;
-        if (s.orderCount === 0) {
-          // Hide the whole card when there's nothing payable
-          document.getElementById('billingCard').style.display = 'none';
-          return;
-        }
-        document.getElementById('billingCard').style.display = '';
-        renderBilling(row);
+      .withSuccessHandler(function (res) {
+        document.getElementById('payoutLoading').style.display = 'none';
+        document.getElementById('payoutContent').style.display = '';
+        renderPayout(res || {});
       })
-      .withFailureHandler(function () { document.getElementById('billSummary').innerHTML = '<div class="b-c"><div class="l">載入失敗</div></div>'; })
-      .getOrganizerBilling(r.from, r.to, '');
+      .withFailureHandler(function (e) { document.getElementById('payoutLoading').textContent = '載入失敗：' + ((e && e.message) || ''); })
+      .getSettlementData('', compId);
   }
-  function renderBilling(row) {
-    var s = row.summary;
-    var tierLabel = { free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' }[row.tier] || row.tier;
-    var sum = document.getElementById('billSummary');
-    sum.innerHTML =
-      '<div class="b-c"><div class="l">主辦方方案</div><div class="v">' + escapeHtml(tierLabel) + '</div><div class="sub">PayUNI 手續費 ' + Number(row.feePct || 0).toFixed(1) + '%</div></div>' +
-      '<div class="b-c"><div class="l">PayUNI 收款</div><div class="v">NT$ ' + s.payuniGross.toLocaleString() + '</div><div class="sub">' + s.payuniCount + ' 筆訂單</div></div>' +
-      '<div class="b-c"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− NT$ ' + s.feeTotal.toLocaleString() + '</div><div class="sub">PayUNI 實領 NT$ ' + s.payuniNet.toLocaleString() + '</div></div>' +
-      '<div class="b-c" title="此筆款項由報名者直接轉入主辦方銀行帳戶，未經平台代收，故不計入匯款"><div class="l">銀行轉帳（直接入帳）</div><div class="v" style="color:var(--muted)">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆 · 已在主辦方帳戶</div></div>' +
-      '<div class="b-c featured"><div class="l">匯款前實領（PayUNI 部分）</div><div class="v">NT$ ' + s.subtotal.toLocaleString() + '</div><div class="sub">僅含 PayUNI 線上付款</div></div>' +
-      '<div class="b-c"><div class="l">實際匯款 (扣匯費 NT$15)</div><div class="v">NT$ ' + s.actualWire.toLocaleString() + '</div><div class="sub">' + (row.remitted ? '<span class="bill-remitted-tag">✓ 已匯款 ' + (row.remittance && row.remittance.remittedAt ? row.remittance.remittedAt.slice(0, 10) : '') + '</span>' : '<span style="color:var(--warn-700)">待匯款</span>') + '</div></div>';
-    var det = document.getElementById('billDetail');
-    if (!row.orders.length) { det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">此期間沒有可入帳的訂單</p>'; return; }
-    det.innerHTML =
-      '<div class="b-tbl-wrap"><table class="b-tbl">' +
-        '<thead><tr><th>類型</th><th>訂單 / 隊伍</th><th>付款資訊</th><th class="right">金額</th><th class="right">手續費</th><th class="right">實領</th></tr></thead>' +
-        '<tbody>' +
-          row.orders.map(function (o) {
-            return '<tr>' +
-              '<td><span class="type-pill ' + o.type + '">' + (o.type === 'payuni' ? 'PayUNI' : 'ATM') + '</span></td>' +
-              '<td><b>' + escapeHtml(o.orderId) + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(o.teamId) + ' · ' + escapeHtml(o.teamNameCN || o.teamNameEN || '—') + '</span></td>' +
-              '<td>' + (o.payuniTradeNo ? ('<span style="font:500 11px/1.3 var(--f-mono); color:var(--ink-2)">' + escapeHtml(o.payuniTradeNo) + '</span><br>') : '') + '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
-              '<td class="right">NT$ ' + o.amount.toLocaleString() + '</td>' +
-              '<td class="right" style="color:var(--err-700)">' + (o.fee > 0 ? ('− NT$ ' + o.fee.toLocaleString() + ' <span style="color:var(--muted); font-size:10.5px">(' + Number(o.feePct).toFixed(1) + '%)</span>') : '—') + '</td>' +
-              '<td class="right" style="font-weight:700; color:var(--ok-700)">NT$ ' + o.net.toLocaleString() + '</td>' +
-            '</tr>';
-          }).join('') +
-        '</tbody></table></div>';
+
+  function renderPayout(d) {
+    var s = d.summary || { gross: 0, feeTotal: 0, net: 0, settledNet: 0, unsettledNet: 0, orderCount: 0, settledCount: 0, unsettledCount: 0 };
+    var po = d.payout || {};
+    var acctBar = document.getElementById('payoutAccountBar');
+    if (po.accountNumber) {
+      acctBar.className = 'po-bar';
+      acctBar.innerHTML = '<h6>收款帳戶</h6>' +
+        '<div class="big">' + escapeHtml((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '</div>' +
+        '<div>' + escapeHtml((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div>' +
+        '<div>帳號 ' + escapeHtml(po.accountNumber) + '　戶名 ' + escapeHtml(po.accountName || '') + '</div>';
+    } else {
+      acctBar.className = 'po-bar warn';
+      acctBar.innerHTML = '<h6>收款帳戶</h6><div class="big" style="color:var(--warn-700)">尚未設定</div>' +
+        '<div>請至「<a href="/admin/settings.html" style="color:var(--acc)">帳戶設定 → 收款帳戶</a>」填寫，平台才能匯款給您。</div>';
+    }
+    document.getElementById('payoutCycleBar').innerHTML =
+      '<h6>轉帳週期</h6>' +
+      '<div class="big">' + (d.payoutCycle === 'monthly' ? '每月匯款' : '每週匯款') + '</div>' +
+      '<div>下次預計匯款日：' + escapeHtml(nextPayoutDate(d.payoutCycle)) + '</div>' +
+      '<div style="color:var(--muted)">PayUNI 手續費 ' + Number(d.feePct || 0).toFixed(1) + '%　每次匯款扣 NT$15 匯費</div>';
+
+    document.getElementById('payoutSummary').innerHTML =
+      '<div class="b-c"><div class="l">PayUNI 收款</div><div class="v">' + fmtMoney(s.gross) + '</div><div class="sub">' + s.orderCount + ' 筆訂單</div></div>' +
+      '<div class="b-c"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− ' + fmtMoney(s.feeTotal) + '</div></div>' +
+      '<div class="b-c featured"><div class="l">實領合計</div><div class="v">' + fmtMoney(s.net) + '</div></div>' +
+      '<div class="b-c"><div class="l">平台已轉</div><div class="v" style="color:var(--ok-700)">' + fmtMoney(s.settledNet) + '</div><div class="sub">' + s.settledCount + ' 筆已匯款</div></div>' +
+      '<div class="b-c"><div class="l">尚未轉付</div><div class="v" style="color:var(--warn-700)">' + fmtMoney(s.unsettledNet) + '</div><div class="sub">' + s.unsettledCount + ' 筆待匯款</div></div>';
+
+    var det = document.getElementById('payoutOrders');
+    var orders = d.orders || [];
+    if (!orders.length) {
+      det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">尚無線上付款（PayUNI）訂單</p>';
+    } else {
+      det.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl">' +
+        '<thead><tr><th>隊伍</th><th>付款時間</th><th class="right">報名費</th><th class="right">手續費</th><th class="right">實領</th><th>轉付狀態</th></tr></thead><tbody>' +
+        orders.map(function (o) {
+          var pill = o.settled
+            ? '<span class="po-settle-pill done">✓ 已轉 ' + escapeHtml(String(o.settledAt).slice(0, 10)) + '</span>'
+            : '<span class="po-settle-pill wait">待轉付</span>';
+          return '<tr>' +
+            '<td><b>' + escapeHtml(o.teamNameCN || o.teamNameEN || '—') + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(o.teamId) + '</span></td>' +
+            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
+            '<td class="right">' + fmtMoney(o.amount) + '</td>' +
+            '<td class="right" style="color:var(--err-700)">' + (o.fee > 0 ? '− ' + fmtMoney(o.fee) : '—') + '</td>' +
+            '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(o.net) + '</td>' +
+            '<td>' + pill + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+
+    var rem = document.getElementById('payoutRemittances');
+    var sets = d.settlements || [];
+    if (!sets.length) {
+      rem.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">平台尚未對本活動匯款</p>';
+    } else {
+      rem.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl">' +
+        '<thead><tr><th>結算編號</th><th>匯款時間</th><th class="right">本活動筆數</th><th class="right">本活動實領</th><th>收款帳戶</th><th>備註</th></tr></thead><tbody>' +
+        sets.map(function (st) {
+          var p = st.payout || {};
+          return '<tr>' +
+            '<td><b style="font:500 11px/1.3 var(--f-mono)">' + escapeHtml(st.settlementId) + '</b></td>' +
+            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(st.createdAt).slice(0, 16)) + '</span></td>' +
+            '<td class="right">' + (st.compOrderCount || 0) + '</td>' +
+            '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(st.compNet || 0) + '</td>' +
+            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml((p.bankName || '') + ' ' + (p.accountNumber || '')) + '</span></td>' +
+            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(st.note || '—') + '</span></td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+    }
   }
-  function exportBilling() {
-    if (!BILL || !BILL.orders.length) { alert('沒有資料可匯出'); return; }
-    var s = BILL.summary;
-    var headers = ['類型', '活動', '訂單編號', '隊伍編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額'];
-    var rows = BILL.orders.map(function (o) {
-      return [o.type, o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net];
+
+  // Tab switching — payout data loads lazily on first open.
+  document.querySelectorAll('.ptab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.ptab').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var tab = b.dataset.ptab;
+      document.querySelectorAll('.ptab-pane').forEach(function (p) { p.style.display = p.dataset.ppane === tab ? '' : 'none'; });
+      if (tab === 'payout' && !PAYOUT_LOADED) { PAYOUT_LOADED = true; loadPayout(); }
     });
-    // Aggregate footer
-    rows.push([]);
-    rows.push(['', '', '', '', '', '', '', 'PayUNI 收款小計', s.payuniGross, '', '', '']);
-    rows.push(['', '', '', '', '', '', '', '手續費小計',     '', '', s.feeTotal, '']);
-    rows.push(['', '', '', '', '', '', '', 'PayUNI 實領小計（= 匯款前實領）', '', '', '', s.payuniNet]);
-    rows.push(['', '', '', '', '', '', '', '銀行轉帳直接入帳小計（不計入匯款，僅供記錄）', '', '', '', s.atmNet]);
-    rows.push(['', '', '', '', '', '', '', '匯費',           '', '', '', '− ' + s.wireFee]);
-    rows.push(['', '', '', '', '', '', '', '實際匯款金額',   '', '', '', s.actualWire]);
-    var esc = function (v) {
-      v = (v == null ? '' : String(v));
-      if (v.indexOf(',') !== -1 || v.indexOf('"') !== -1 || v.indexOf('\n') !== -1) v = '"' + v.replace(/"/g, '""') + '"';
-      return v;
-    };
-    var csv = [headers].concat(rows).map(function (r) { return r.map(esc).join(','); }).join('\n');
-    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    var stamp = BILL.period.fromDate.replace(/-/g, '') + '_' + BILL.period.toDate.replace(/-/g, '');
-    var fname = '帳單_' + (compId || '').slice(0, 16) + '_' + stamp + '.csv';
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; a.click();
-  }
-  document.getElementById('billPreset').addEventListener('change', loadBilling);
-  document.getElementById('billFrom').addEventListener('change', loadBilling);
-  document.getElementById('billTo').addEventListener('change', loadBilling);
-  document.getElementById('billReload').addEventListener('click', loadBilling);
-  document.getElementById('billExport').addEventListener('click', exportBilling);
+  });
 
   load();
-  loadBilling();
 })();
 </script>
 </body>

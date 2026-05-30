@@ -344,6 +344,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           <h5 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">💰 銀行轉帳資訊</h5>
           <div style="font:400 13px/1.7 var(--f-tc); color:var(--ink-2)">
             <div><b>銀行：</b><span id="atmBankName">—</span></div>
+            <div id="atmBankBranchRow" style="display:none"><b>分行：</b><span id="atmBankBranch">—</span></div>
             <div><b>帳號：</b><span id="atmBankAcc">—</span></div>
             <div><b>戶名：</b><span id="atmBankOwner">—</span></div>
             <div style="margin-top:6px; color:var(--muted); font-size:11.5px">請於 3 個工作天內完成轉帳，主辦方將自動對帳。</div>
@@ -1331,7 +1332,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     // get bounced to PayUNI before success), free events have no fee.
     if (STATE.payMethod === 'atm' && CFG.bankInfo && CFG.bankInfo.accountNumber) {
       document.getElementById('atmInstructions').style.display = 'block';
-      document.getElementById('atmBankName').textContent = CFG.bankInfo.bankName || '—';
+      document.getElementById('atmBankName').textContent = (CFG.bankInfo.bankCode ? CFG.bankInfo.bankCode + ' ' : '') + (CFG.bankInfo.bankName || '—');
+      if (CFG.bankInfo.branchName || CFG.bankInfo.branchCode) {
+        document.getElementById('atmBankBranchRow').style.display = '';
+        document.getElementById('atmBankBranch').textContent = (CFG.bankInfo.branchCode ? CFG.bankInfo.branchCode + ' ' : '') + (CFG.bankInfo.branchName || '');
+      }
       document.getElementById('atmBankAcc').textContent = CFG.bankInfo.accountNumber || '—';
       document.getElementById('atmBankOwner').textContent = CFG.bankInfo.accountName || CFG.bankInfo.owner || '—';
     }

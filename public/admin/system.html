@@ -268,6 +268,20 @@ body { background:var(--bg); }
                 <div class="fld"><label class="lbl">Team 方案</label><input id="p-fee-team" type="number" min="0" max="100" step="0.1" placeholder="例：1.8"></div>
               </div>
             </div>
+
+            <!-- 平台代收轉付週期：平台把 PayUNI 實領匯款給主辦方的頻率 -->
+            <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--line-2)">
+              <h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:4px">平台轉帳週期</h4>
+              <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-bottom:14px">平台代收的 PayUNI 報名費（扣手續費後）匯款給主辦方的頻率。每週＝每週四；每月＝每月 5 日（遇假日順延至下個工作日）。此為全平台統一設定，主辦方於帳務頁可見下次匯款日。</p>
+              <div class="row-2" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; max-width:420px">
+                <div class="fld"><label class="lbl">週期</label>
+                  <select id="p-payoutCycle" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)">
+                    <option value="weekly">每週（每週四）</option>
+                    <option value="monthly">每月（每月 5 日）</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; max-width:none">
@@ -308,47 +322,29 @@ body { background:var(--bg); }
         </div>
       </div>
 
-      <!-- ============ 帳務管理 (system role) ============ -->
+      <!-- ============ 帳務管理 — 平台代收轉付結算 (system role) ============ -->
       <div class="pane" data-pane="billing">
         <div class="card">
           <div class="ch">
             <div>
-              <h3>主辦方帳務匯出</h3>
-              <p>選擇主辦方與期間，查看每筆 PayUNI 與銀行轉帳訂單的入帳明細、手續費與實領金額。標記「已實際匯款」後會記錄 NT$ 15 匯費。</p>
+              <h3>平台代收轉付 — 結算匯款</h3>
+              <p>選擇主辦方，檢視其所有活動的 PayUNI 線上付款訂單。點「結算並匯款」會把目前<b>所有未結訂單</b>一次匯出（每筆只會被匯一次，整批扣 NT$15 匯費）。銀行轉帳由報名者直接匯入主辦方帳戶，不在此列。</p>
             </div>
           </div>
           <div class="cb">
-            <div class="row-3" style="display:grid; grid-template-columns:1fr 180px 180px; gap:12px; margin-bottom:14px">
+            <div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:14px; align-items:end">
               <div class="fld">
                 <label class="lbl">主辦方</label>
                 <select id="b-creator" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)"></select>
               </div>
-              <div class="fld">
-                <label class="lbl">期間預設</label>
-                <select id="b-preset" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)">
-                  <option value="thisMonth">本月迄今</option>
-                  <option value="lastMonth">上月</option>
-                  <option value="last7">近 7 日</option>
-                  <option value="last30">近 30 日</option>
-                  <option value="last90">近 90 日</option>
-                  <option value="thisYear">今年</option>
-                  <option value="all">全部期間</option>
-                  <option value="custom">自訂期間</option>
-                </select>
-              </div>
-              <div class="fld" style="display:flex; align-items:flex-end; gap:8px">
-                <button class="btn btn-ghost btn-sm" id="b-reload">↻ 重新計算</button>
-              </div>
+              <button class="btn btn-ghost btn-sm" id="b-reload">↻ 重新整理</button>
             </div>
-            <div class="row-2" id="b-customRow" style="display:none; gap:12px; margin-bottom:14px">
-              <div class="fld"><label class="lbl">起日</label><input type="date" id="b-from"></div>
-              <div class="fld"><label class="lbl">迄日</label><input type="date" id="b-to"></div>
-            </div>
+            <div id="b-bars" style="display:none; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px"></div>
             <div id="b-summary" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:14px"></div>
             <div id="b-detail"></div>
             <div style="display:flex; gap:8px; margin-top:14px; justify-content:flex-end">
               <button class="btn btn-ghost" id="b-export">⬇️ 匯出 CSV</button>
-              <button class="btn btn-primary" id="b-mark">✓ 標記為已實際匯款</button>
+              <button class="btn btn-primary" id="b-settle">💸 結算並匯款</button>
             </div>
             <div id="b-history" style="margin-top:24px; padding-top:18px; border-top:1px solid var(--line-2)"></div>
           </div>
@@ -648,6 +644,7 @@ body { background:var(--bg); }
       document.getElementById('p-fee-starter').value = fees.starter != null ? fees.starter : '';
       document.getElementById('p-fee-pro').value = fees.pro != null ? fees.pro : '';
       document.getElementById('p-fee-team').value = fees.team != null ? fees.team : '';
+      document.getElementById('p-payoutCycle').value = cfg.payoutCycle === 'monthly' ? 'monthly' : 'weekly';
     }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getSalesConfig();
   }
   document.getElementById('p-reveal').addEventListener('change', function () {
@@ -672,7 +669,8 @@ body { background:var(--bg); }
         starter: parseFloat(document.getElementById('p-fee-starter').value) || 0,
         pro:     parseFloat(document.getElementById('p-fee-pro').value)     || 0,
         team:    parseFloat(document.getElementById('p-fee-team').value)    || 0
-      }
+      },
+      payoutCycle: document.getElementById('p-payoutCycle').value === 'monthly' ? 'monthly' : 'weekly'
     };
     var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
     google.script.run.withSuccessHandler(function (r) {
@@ -771,22 +769,9 @@ body { background:var(--bg); }
   // ================= 帳務管理 (system role) =================
   // System admin lists organisers, picks period, sees aggregated billing across all
   // that organiser's activities, and marks as 已實際匯款 (records NT$15 wire fee).
-  function _todayISO() { var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
-  function _isoBack(days) { var d=new Date(); d.setDate(d.getDate()-days+1); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
-  function _firstMonth(b) { var d=new Date(); d.setMonth(d.getMonth()-b); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-01'; }
-  function _lastMonth(b) { var d=new Date(); d.setMonth(d.getMonth()-b+1); d.setDate(0); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
-  function _bRange(preset) {
-    if (preset === 'thisMonth')  return { from: _firstMonth(0), to: _todayISO() };
-    if (preset === 'lastMonth')  return { from: _firstMonth(1), to: _lastMonth(1) };
-    if (preset === 'last7')      return { from: _isoBack(7),    to: _todayISO() };
-    if (preset === 'last30')     return { from: _isoBack(30),   to: _todayISO() };
-    if (preset === 'last90')     return { from: _isoBack(90),   to: _todayISO() };
-    if (preset === 'thisYear')   return { from: new Date().getFullYear() + '-01-01', to: _todayISO() };
-    if (preset === 'all')        return { from: '1970-01-01', to: '9999-12-31' };
-    if (preset === 'custom')     return { from: document.getElementById('b-from').value || '1970-01-01', to: document.getElementById('b-to').value || _todayISO() };
-    return { from: '1970-01-01', to: _todayISO() };
-  }
   var BILL_DATA = null;
+  function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function _money(n) { return 'NT$ ' + (parseInt(n, 10) || 0).toLocaleString(); }
   function loadBillingOrgs() {
     google.script.run.withSuccessHandler(function (list) {
       list = list || [];
@@ -800,134 +785,152 @@ body { background:var(--bg); }
   }
   function loadBilling() {
     var creator = document.getElementById('b-creator').value;
-    var preset = document.getElementById('b-preset').value;
-    document.getElementById('b-customRow').style.display = preset === 'custom' ? '' : 'none';
-    if (!creator) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">請先選擇主辦方</p>'; document.getElementById('b-detail').innerHTML = ''; return; }
-    var r = _bRange(preset);
+    document.getElementById('b-bars').style.display = 'none';
+    if (!creator) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">請先選擇主辦方</p>'; document.getElementById('b-detail').innerHTML = ''; document.getElementById('b-history').innerHTML = ''; BILL_DATA = null; return; }
     document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">載入中⋯</p>';
     document.getElementById('b-detail').innerHTML = '';
     google.script.run
-      .withSuccessHandler(function (rows) {
-        BILL_DATA = (rows || [])[0] || null;
-        renderBilling();
-        loadBillingHistory(creator);
-      })
+      .withSuccessHandler(function (res) { BILL_DATA = res || null; renderBilling(); })
       .withFailureHandler(function (e) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--err-700); padding:16px">載入失敗：' + (e && e.message) + '</p>'; })
-      .getOrganizerBilling(r.from, r.to, creator);
+      .getSettlementData(creator, '');
   }
-  function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function renderBilling() {
-    var row = BILL_DATA;
-    if (!row) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">此主辦方在此期間沒有任何活動</p>'; document.getElementById('b-detail').innerHTML = ''; return; }
-    var s = row.summary;
-    var tierLabel = { free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' }[row.tier] || row.tier;
+    var d = BILL_DATA;
+    _ensureBillingCss();
+    if (!d || d.error) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">查無資料</p>'; document.getElementById('b-detail').innerHTML = ''; document.getElementById('b-history').innerHTML = ''; return; }
+    var s = d.summary || {};
+    var tierLabel = { free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' }[d.tier] || d.tier;
+    var po = d.payout || {};
+
+    // Payout account + cycle bars
+    var bars = document.getElementById('b-bars');
+    bars.style.display = 'grid';
+    var acctHtml = po.accountNumber
+      ? '<div class="big">' + _esc((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '　' + _esc((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div><div>帳號 ' + _esc(po.accountNumber) + '　戶名 ' + _esc(po.accountName || '') + '</div>'
+      : '<div class="big" style="color:var(--warn-700)">⚠ 主辦方尚未設定收款帳戶</div><div style="color:var(--muted)">無法匯款，請通知主辦方至「設定 → 收款帳戶」填寫。</div>';
+    bars.innerHTML =
+      '<div class="po-bar-sys' + (po.accountNumber ? '' : ' warn') + '"><h6>收款帳戶</h6>' + acctHtml + '</div>' +
+      '<div class="po-bar-sys"><h6>轉帳週期</h6><div class="big">' + (d.payoutCycle === 'monthly' ? '每月匯款（每月 5 日）' : '每週匯款（每週四）') + '</div><div style="color:var(--muted)">手續費率 ' + Number(d.feePct || 0).toFixed(1) + '%（方案 ' + _esc(tierLabel) + '）　每次匯款扣 NT$15</div></div>';
+
     document.getElementById('b-summary').innerHTML =
-      '<div class="b-c-sys featured"><div class="l">方案 / 手續費</div><div class="v">' + _esc(tierLabel) + '</div><div class="sub">' + Number(row.feePct || 0).toFixed(1) + '% 手續費率</div></div>' +
-      '<div class="b-c-sys"><div class="l">PayUNI 收款</div><div class="v">NT$ ' + s.payuniGross.toLocaleString() + '</div><div class="sub">' + s.payuniCount + ' 筆訂單</div></div>' +
-      '<div class="b-c-sys"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− NT$ ' + s.feeTotal.toLocaleString() + '</div></div>' +
-      '<div class="b-c-sys"><div class="l">PayUNI 實領</div><div class="v" style="color:var(--ok-700)">NT$ ' + s.payuniNet.toLocaleString() + '</div></div>' +
-      '<div class="b-c-sys" title="銀行轉帳由報名者直接轉入主辦方銀行帳戶，未經平台代收，故不計入匯款"><div class="l">銀行轉帳（直接入帳）</div><div class="v" style="color:var(--muted)">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆 · 不需匯款</div></div>' +
-      '<div class="b-c-sys"><div class="l">匯款前實領（PayUNI 部分）</div><div class="v" style="font-weight:800">NT$ ' + s.subtotal.toLocaleString() + '</div></div>' +
-      '<div class="b-c-sys"><div class="l">實際匯款 (扣 NT$15 匯費)</div><div class="v">NT$ ' + s.actualWire.toLocaleString() + '</div><div class="sub">' + (row.remitted ? '<span style="color:var(--ok-700); font-weight:700">✓ 已匯款 ' + ((row.remittance && row.remittance.remittedAt) || '').slice(0, 16) + '</span>' : '<span style="color:var(--warn-700)">待匯款</span>') + '</div></div>';
-    var orders = row.orders || [];
+      '<div class="b-c-sys"><div class="l">PayUNI 收款</div><div class="v">' + _money(s.gross) + '</div><div class="sub">' + (s.orderCount || 0) + ' 筆訂單</div></div>' +
+      '<div class="b-c-sys"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− ' + _money(s.feeTotal) + '</div></div>' +
+      '<div class="b-c-sys featured"><div class="l">實領合計</div><div class="v">' + _money(s.net) + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">已轉付</div><div class="v" style="color:var(--ok-700)">' + _money(s.settledNet) + '</div><div class="sub">' + (s.settledCount || 0) + ' 筆</div></div>' +
+      '<div class="b-c-sys"><div class="l">尚未轉付</div><div class="v" style="color:var(--warn-700)">' + _money(s.unsettledNet) + '</div><div class="sub">' + (s.unsettledCount || 0) + ' 筆</div></div>';
+
+    var orders = d.orders || [];
     document.getElementById('b-detail').innerHTML = orders.length === 0
-      ? '<p style="color:var(--muted); text-align:center; padding:18px">無入帳訂單</p>'
+      ? '<p style="color:var(--muted); text-align:center; padding:18px">無 PayUNI 訂單</p>'
       : '<div style="overflow-x:auto; border:1px solid var(--line); border-radius:9px"><table class="b-tbl-sys" style="width:100%; min-width:820px; border-collapse:collapse; font:400 12.5px/1.5 var(--f-tc)">' +
-        '<thead><tr><th>類型</th><th>活動</th><th>訂單 / 隊伍</th><th>付款資訊</th><th style="text-align:right">金額</th><th style="text-align:right">手續費</th><th style="text-align:right">實領</th></tr></thead>' +
+        '<thead><tr><th>活動</th><th>隊伍</th><th>付款時間</th><th style="text-align:right">報名費</th><th style="text-align:right">手續費</th><th style="text-align:right">實領</th><th>轉付狀態</th></tr></thead>' +
         '<tbody>' + orders.map(function (o) {
+          var pill = o.settled
+            ? '<span style="font:600 10px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700)">✓ 已轉 ' + _esc(String(o.settledAt).slice(0, 10)) + '</span>'
+            : '<span style="font:600 10px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--warn-700)">待轉付</span>';
           return '<tr>' +
-            '<td><span style="font:600 10px/1 var(--f-mono); padding:2px 6px; border-radius:4px; background:' + (o.type === 'payuni' ? 'color-mix(in srgb, var(--acc) 14%, transparent)' : 'color-mix(in srgb, var(--ok-500) 14%, transparent)') + '; color:' + (o.type === 'payuni' ? 'var(--acc)' : 'var(--ok-700)') + '">' + (o.type === 'payuni' ? 'PayUNI' : 'ATM') + '</span></td>' +
             '<td>' + _esc(o.compName) + '</td>' +
-            '<td><b>' + _esc(o.orderId) + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(o.teamId) + ' · ' + _esc(o.teamNameCN || o.teamNameEN || '—') + '</span></td>' +
-            '<td>' + (o.payuniTradeNo ? '<span style="font:500 11px/1.3 var(--f-mono)">' + _esc(o.payuniTradeNo) + '</span><br>' : '') + '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
-            '<td style="text-align:right; font-family:var(--f-mono)">NT$ ' + o.amount.toLocaleString() + '</td>' +
-            '<td style="text-align:right; font-family:var(--f-mono); color:var(--err-700)">' + (o.fee > 0 ? ('− NT$ ' + o.fee.toLocaleString()) : '—') + '</td>' +
-            '<td style="text-align:right; font-family:var(--f-mono); font-weight:700; color:var(--ok-700)">NT$ ' + o.net.toLocaleString() + '</td>' +
+            '<td><b>' + _esc(o.teamNameCN || o.teamNameEN || '—') + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(o.teamId) + '</span></td>' +
+            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
+            '<td style="text-align:right; font-family:var(--f-mono)">' + _money(o.amount) + '</td>' +
+            '<td style="text-align:right; font-family:var(--f-mono); color:var(--err-700)">' + (o.fee > 0 ? ('− ' + _money(o.fee)) : '—') + '</td>' +
+            '<td style="text-align:right; font-family:var(--f-mono); font-weight:700; color:var(--ok-700)">' + _money(o.net) + '</td>' +
+            '<td>' + pill + '</td>' +
           '</tr>';
         }).join('') + '</tbody></table></div>';
-    // Apply styles for .b-c-sys cards (re-use payments.html .b-c shape)
-    var css = document.getElementById('billing-css');
-    if (!css) {
-      css = document.createElement('style'); css.id = 'billing-css';
-      css.textContent =
-        '.b-c-sys{padding:12px 14px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px}' +
-        '.b-c-sys.featured{background:linear-gradient(135deg,var(--ink),#1a2e52);color:#fff;border-color:var(--ink)}' +
-        '.b-c-sys.featured .l{color:rgba(255,255,255,.7)}' +
-        '.b-c-sys .l{font:500 10.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}' +
-        '.b-c-sys .v{font:700 19px/1 var(--f-display)}' +
-        '.b-c-sys .sub{font:400 10.5px/1.4 var(--f-tc);color:var(--muted);margin-top:4px}' +
-        '.b-c-sys.featured .sub{color:rgba(255,255,255,.65)}' +
-        '.b-tbl-sys thead th{text-align:left;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);font:600 10px/1 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
-        '.b-tbl-sys tbody td{padding:10px 12px;border-bottom:1px solid var(--line-2);color:var(--ink-2);vertical-align:middle}' +
-        '.b-tbl-sys tbody tr:hover td{background:var(--surface-2)}';
-      document.head.appendChild(css);
+
+    // Settle button state
+    var settleBtn = document.getElementById('b-settle');
+    var unNet = s.unsettledNet || 0, unCnt = s.unsettledCount || 0;
+    if (unCnt > 0) {
+      settleBtn.disabled = false;
+      settleBtn.textContent = '💸 結算並匯款（' + unCnt + ' 筆，實匯 ' + _money(Math.max(0, unNet - 15)) + '）';
+    } else {
+      settleBtn.disabled = true;
+      settleBtn.textContent = '💸 無未結訂單';
     }
+
+    renderSettlements(d.settlements || []);
   }
-  function loadBillingHistory(creator) {
-    google.script.run.withSuccessHandler(function (list) {
-      list = list || [];
-      var h = document.getElementById('b-history');
-      h.innerHTML = '<h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">過去匯款紀錄（' + list.length + '）</h4>' +
-        (list.length === 0
-          ? '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">尚未有任何匯款紀錄</p>'
-          : '<div style="display:grid; gap:8px">' + list.map(function (r) {
-              return '<div style="padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; display:flex; justify-content:space-between; align-items:center; font:400 12.5px/1.4 var(--f-tc)">' +
-                '<div><b>' + _esc(r.fromDate) + ' ~ ' + _esc(r.toDate) + '</b>　<span style="color:var(--muted)">' + _esc(r.remittedAt.slice(0, 16)) + '</span></div>' +
-                '<div style="font-family:var(--f-mono); font-weight:700; color:var(--ok-700)">NT$ ' + (r.actualWireAmount || 0).toLocaleString() + '</div>' +
-              '</div>';
-            }).join('') + '</div>');
-    }).listRemittanceHistory(creator);
+  function renderSettlements(list) {
+    var h = document.getElementById('b-history');
+    h.innerHTML = '<h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">結算匯款紀錄（' + list.length + '）</h4>' +
+      (list.length === 0
+        ? '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">尚未有任何結算匯款紀錄</p>'
+        : '<div style="display:grid; gap:8px">' + list.map(function (r) {
+            return '<div style="padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; font:400 12.5px/1.4 var(--f-tc)">' +
+              '<div><b style="font:500 11.5px/1.3 var(--f-mono)">' + _esc(r.settlementId) + '</b>　<span style="color:var(--muted)">' + _esc(String(r.createdAt).slice(0, 16)) + '</span><br><span style="color:var(--muted); font-size:11px">' + (r.orderCount || 0) + ' 筆 · 收款 ' + _money(r.grossTotal) + ' · 手續費 − ' + _money(r.feeTotal) + ' · 匯費 − NT$' + (r.wireFee || 15) + '</span></div>' +
+              '<div style="font-family:var(--f-mono); font-weight:700; color:var(--ok-700); white-space:nowrap">' + _money(r.actualWire) + '</div>' +
+            '</div>';
+          }).join('') + '</div>');
+  }
+  function _ensureBillingCss() {
+    if (document.getElementById('billing-css')) return;
+    var css = document.createElement('style'); css.id = 'billing-css';
+    css.textContent =
+      '.b-c-sys{padding:12px 14px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px}' +
+      '.b-c-sys.featured{background:linear-gradient(135deg,var(--ink),#1a2e52);color:#fff;border-color:var(--ink)}' +
+      '.b-c-sys.featured .l{color:rgba(255,255,255,.7)}' +
+      '.b-c-sys .l{font:500 10.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}' +
+      '.b-c-sys .v{font:700 19px/1 var(--f-display)}' +
+      '.b-c-sys .sub{font:400 10.5px/1.4 var(--f-tc);color:var(--muted);margin-top:4px}' +
+      '.b-c-sys.featured .sub{color:rgba(255,255,255,.65)}' +
+      '.po-bar-sys{padding:13px 15px;background:var(--surface);border:1px solid var(--line);border-radius:9px;font:400 12px/1.6 var(--f-tc);color:var(--ink-2)}' +
+      '.po-bar-sys.warn{background:color-mix(in srgb,var(--amber-500) 8%,var(--surface));border-color:color-mix(in srgb,var(--amber-500) 35%,var(--line))}' +
+      '.po-bar-sys h6{font:600 10.5px/1 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}' +
+      '.po-bar-sys .big{font:700 14px/1.3 var(--f-display);color:var(--ink);margin-bottom:3px}' +
+      '.b-tbl-sys thead th{text-align:left;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);font:600 10px/1 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
+      '.b-tbl-sys tbody td{padding:10px 12px;border-bottom:1px solid var(--line-2);color:var(--ink-2);vertical-align:middle}' +
+      '.b-tbl-sys tbody tr:hover td{background:var(--surface-2)}' +
+      '@media (max-width:768px){#b-bars{grid-template-columns:1fr !important}}';
+    document.head.appendChild(css);
   }
   function exportBillingSys() {
-    if (!BILL_DATA || !BILL_DATA.orders.length) { toast('沒有資料可匯出', 'err'); return; }
+    if (!BILL_DATA || !(BILL_DATA.orders || []).length) { toast('沒有資料可匯出', 'err'); return; }
     var s = BILL_DATA.summary;
-    var headers = ['類型', '主辦方', '活動', '訂單編號', '隊伍編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額'];
+    var headers = ['活動', '訂單編號', '隊伍編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額', '轉付狀態', '結算編號'];
     var rows = BILL_DATA.orders.map(function (o) {
-      return [o.type, BILL_DATA.creator, o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net];
+      return [o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net, o.settled ? '已轉付' : '待轉付', o.settlementId || ''];
     });
     rows.push([]);
-    rows.push(['', '', '', '', '', '', '', '', 'PayUNI 收款小計', s.payuniGross, '', '', '']);
-    rows.push(['', '', '', '', '', '', '', '', '手續費小計',     '', '', s.feeTotal, '']);
-    rows.push(['', '', '', '', '', '', '', '', 'PayUNI 實領小計（= 匯款前實領）', '', '', '', s.payuniNet]);
-    rows.push(['', '', '', '', '', '', '', '', '銀行轉帳直接入帳小計（不計入匯款，僅供記錄）', '', '', '', s.atmNet]);
-    rows.push(['', '', '', '', '', '', '', '', '匯費',           '', '', '', '− ' + s.wireFee]);
-    rows.push(['', '', '', '', '', '', '', '', '實際匯款金額',   '', '', '', s.actualWire]);
+    rows.push(['', '', '', '', '', '', 'PayUNI 收款小計', s.gross, '', '', '', '', '']);
+    rows.push(['', '', '', '', '', '', '手續費小計', '', '', s.feeTotal, '', '', '']);
+    rows.push(['', '', '', '', '', '', '實領合計', '', '', '', s.net, '', '']);
+    rows.push(['', '', '', '', '', '', '已轉付', '', '', '', s.settledNet, '', '']);
+    rows.push(['', '', '', '', '', '', '尚未轉付', '', '', '', s.unsettledNet, '', '']);
     var esc = function (v) { v = (v == null ? '' : String(v)); if (v.indexOf(',') !== -1 || v.indexOf('"') !== -1 || v.indexOf('\n') !== -1) v = '"' + v.replace(/"/g, '""') + '"'; return v; };
     var csv = [headers].concat(rows).map(function (r) { return r.map(esc).join(','); }).join('\n');
     var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    var stamp = BILL_DATA.period.fromDate.replace(/-/g, '') + '_' + BILL_DATA.period.toDate.replace(/-/g, '');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '帳單_' + BILL_DATA.creator + '_' + stamp + '.csv'; a.click();
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '代收轉付_' + BILL_DATA.creator + '.csv'; a.click();
   }
-  function markRemittedSys() {
-    if (!BILL_DATA) { toast('請先載入帳單', 'err'); return; }
-    if (BILL_DATA.summary.orderCount === 0) { toast('沒有可匯款的訂單', 'err'); return; }
-    if (BILL_DATA.remitted) {
-      if (!confirm('此期間已標記為已匯款，確定要覆蓋嗎？')) return;
-    }
+  function settleNow() {
+    if (!BILL_DATA) { toast('請先選擇主辦方', 'err'); return; }
     var s = BILL_DATA.summary;
-    if (!confirm('將標記為已實際匯款：\n\n' +
+    if (!s || (s.unsettledCount || 0) === 0) { toast('沒有未結算的訂單', 'err'); return; }
+    var po = BILL_DATA.payout || {};
+    if (!po.accountNumber) { toast('主辦方尚未設定收款帳戶，無法匯款', 'err'); return; }
+    var actualWire = Math.max(0, (s.unsettledNet || 0) - 15);
+    if (!confirm('確認結算並匯款？\n\n' +
       '主辦方：' + BILL_DATA.creator + '\n' +
-      '期間：' + BILL_DATA.period.fromDate + ' ~ ' + BILL_DATA.period.toDate + '\n' +
-      'PayUNI 實領：NT$ ' + s.payuniNet.toLocaleString() + '\n' +
-      '匯費：− NT$ ' + s.wireFee + '\n' +
-      '實際匯款金額：NT$ ' + s.actualWire.toLocaleString() + '\n\n' +
-      '註：銀行轉帳 NT$ ' + s.atmNet.toLocaleString() + ' 由報名者直接匯入主辦方帳戶，不計入此次匯款。\n\n' +
-      '此操作會寫入帳本紀錄，請確認金額無誤。')) return;
+      '收款帳戶：' + (po.bankName || '') + ' ' + (po.branchName || '') + ' / ' + po.accountNumber + '（' + (po.accountName || '') + '）\n\n' +
+      '未結訂單：' + s.unsettledCount + ' 筆\n' +
+      '實領小計：NT$ ' + (s.unsettledNet || 0).toLocaleString() + '\n' +
+      '匯費：− NT$ 15\n' +
+      '實際匯款金額：NT$ ' + actualWire.toLocaleString() + '\n\n' +
+      '此操作會把這些訂單標記為「已轉付」（不可重複匯款），並寫入結算紀錄。請確認金額無誤。')) return;
+    var btn = document.getElementById('b-settle'); btn.disabled = true; var o = btn.textContent; btn.textContent = '結算中⋯';
     google.script.run
       .withSuccessHandler(function (r) {
-        if (r && r.success) { toast('已標記為已匯款'); loadBilling(); }
-        else toast((r && r.message) || '標記失敗', 'err');
+        if (r && r.success) { toast('已結算匯款：' + r.settlementId + '（實匯 NT$' + (r.actualWire || 0).toLocaleString() + '）'); loadBilling(); }
+        else { btn.disabled = false; btn.textContent = o; toast((r && r.message) || '結算失敗', 'err'); }
       })
-      .withFailureHandler(function (e) { toast(e.message || '失敗', 'err'); })
-      .markBillingAsRemitted(BILL_DATA.creator, BILL_DATA.period.fromDate, BILL_DATA.period.toDate, s.actualWire, s.wireFee, '');
+      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || '失敗', 'err'); })
+      .createSettlement(BILL_DATA.creator, '');
   }
   document.getElementById('b-creator').addEventListener('change', loadBilling);
-  document.getElementById('b-preset').addEventListener('change', loadBilling);
-  document.getElementById('b-from').addEventListener('change', loadBilling);
-  document.getElementById('b-to').addEventListener('change', loadBilling);
   document.getElementById('b-reload').addEventListener('click', loadBilling);
   document.getElementById('b-export').addEventListener('click', exportBillingSys);
-  document.getElementById('b-mark').addEventListener('click', markRemittedSys);
+  document.getElementById('b-settle').addEventListener('click', settleNow);
   loadBillingOrgs();
 
   // ================= 使用者分析 (CC1: 5-tab dashboard) =================

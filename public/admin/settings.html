@@ -118,6 +118,20 @@
               <div class="save-bar"><button class="btn btn-primary" id="saveProfileBtn">儲存變更</button></div>
             </div>
           </div>
+
+          <!-- 收款帳戶 (payout account): where the platform wires PayUNI net to -->
+          <div class="section">
+            <div class="sh"><h3>收款帳戶</h3><p>平台代收的線上報名費（扣除手續費後）將由系統管理員匯入此帳戶。請務必填寫正確。</p></div>
+            <div class="sb">
+              <div class="row-2">
+                <div class="fld"><div class="lbl">銀行</div><select id="payout-bank"><option value="">載入中⋯</option></select></div>
+                <div class="fld"><div class="lbl">分行</div><select id="payout-branch" disabled><option value="">— 請先選擇銀行 —</option></select></div>
+                <div class="fld"><div class="lbl">帳號</div><input id="payout-account" inputmode="numeric" placeholder="銀行存款帳號"></div>
+                <div class="fld"><div class="lbl">戶名</div><input id="payout-name" placeholder="須與存摺戶名一致"></div>
+              </div>
+              <div class="save-bar"><button class="btn btn-primary" id="savePayoutBtn">儲存收款帳戶</button></div>
+            </div>
+          </div>
         </div>
 
         <!-- notifications -->
@@ -213,6 +227,7 @@
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/admin-nav.js"></script>
+<script src="/shared/tw-banks.js"></script>
 <script>
 (function(){
   AppState.init();
@@ -230,6 +245,14 @@
   document.getElementById('prof-username').value = me.username;
   document.getElementById('prof-role').value = me.role === 'system' ? '系統管理員' : '主辦方';
   document.getElementById('prof-displayName').value = me.displayName || '';
+  // ---- 收款帳戶 bank/branch dropdowns ----
+  var payoutBankSel = document.getElementById('payout-bank');
+  var payoutBranchSel = document.getElementById('payout-branch');
+  TWBankUI.fillBanks(payoutBankSel, '');
+  payoutBankSel.addEventListener('change', function () {
+    TWBankUI.fillBranches(payoutBranchSel, payoutBankSel.value, '');
+  });
+
   // Load authoritative profile (email/phone aren't in the login session payload)
   google.script.run.withSuccessHandler(function (p) {
     p = p || {};
@@ -237,7 +260,29 @@
     document.getElementById('prof-organizationName').value = p.organizationName || '';
     document.getElementById('prof-email').value = p.email || '';
     document.getElementById('prof-phone').value = p.phone || '';
+    // Payout account
+    TWBankUI.fillBanks(payoutBankSel, p.payoutBankCode || '');
+    TWBankUI.fillBranches(payoutBranchSel, p.payoutBankCode || '', p.payoutBranchCode || '');
+    document.getElementById('payout-account').value = p.payoutAccount || '';
+    document.getElementById('payout-name').value = p.payoutName || '';
   }).getMyProfile();
+
+  document.getElementById('savePayoutBtn').addEventListener('click', function () {
+    var bankCode = payoutBankSel.value;
+    var branchCode = payoutBranchSel.value;
+    var accountNumber = document.getElementById('payout-account').value.trim();
+    var accountName = document.getElementById('payout-name').value.trim();
+    if (bankCode && (!accountNumber || !accountName)) { uiAlert('已選擇銀行，請完整填寫帳號與戶名。'); return; }
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = o;
+        if (res && res.success) { btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = o; }, 1400); }
+        else uiAlert((res && res.message) || '儲存失敗');
+      })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; uiAlert('失敗：' + (err && err.message)); })
+      .savePayoutAccount(bankCode, TWBankUI.bankName(bankCode), branchCode, TWBankUI.branchName(bankCode, branchCode), accountNumber, accountName);
+  });
 
   document.querySelectorAll('.set-nav a').forEach(function (a) {
     a.addEventListener('click', function (e) {

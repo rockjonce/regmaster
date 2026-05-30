@@ -385,8 +385,8 @@
             </div>
             <div id="bankFields" style="display:none; margin-top:14px">
               <div class="row2">
-                <div class="fld"><div class="lbl">銀行名稱 <span class="req">*</span></div><input id="pay-bankName" data-dirty></div>
-                <div class="fld"><div class="lbl">銀行代號 <span class="req">*</span></div><input id="pay-bankCode" data-dirty></div>
+                <div class="fld"><div class="lbl">銀行 <span class="req">*</span></div><select id="pay-bank" data-dirty><option value="">— 請選擇銀行 —</option></select></div>
+                <div class="fld"><div class="lbl">分行代號 <span class="req">*</span></div><select id="pay-branch" data-dirty disabled><option value="">— 請先選擇銀行 —</option></select></div>
                 <div class="fld"><div class="lbl">帳號 <span class="req">*</span></div><input id="pay-accountNumber" data-dirty></div>
                 <div class="fld"><div class="lbl">戶名 <span class="req">*</span></div><input id="pay-accountName" data-dirty></div>
               </div>
@@ -502,6 +502,7 @@
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/admin-nav.js"></script>
+<script src="/shared/tw-banks.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -724,8 +725,8 @@
 
     // Bank: explicit flag, else infer from whether an account number was stored.
     var b = CFG.bankInfo || {};
-    document.getElementById('pay-bankName').value = b.bankName || '';
-    document.getElementById('pay-bankCode').value = b.bankCode || '';
+    TWBankUI.fillBanks(document.getElementById('pay-bank'), b.bankCode || '');
+    TWBankUI.fillBranches(document.getElementById('pay-branch'), b.bankCode || '', b.branchCode || '');
     document.getElementById('pay-accountNumber').value = b.accountNumber || '';
     document.getElementById('pay-accountName').value = b.accountName || '';
     var bankOn = (CFG.bankTransferEnabled === true) || (CFG.bankTransferEnabled === undefined && !!b.accountNumber);
@@ -975,6 +976,10 @@
     document.getElementById('bankFields').style.display = on ? '' : 'none';
   }
   document.getElementById('bankEnabled').addEventListener('click', updateBankFields);
+  // Re-populate the branch dropdown whenever the bank changes.
+  document.getElementById('pay-bank').addEventListener('change', function () {
+    TWBankUI.fillBranches(document.getElementById('pay-branch'), this.value, '');
+  });
 
   // ---- Item 11: fee items list ----
   function recalcFeeTotal() {
@@ -1339,12 +1344,18 @@
       groupDiscounts: readGroupDisc(),
       payuniEnabled: document.getElementById('payuniEnabled').classList.contains('on'),
       bankEnabled: document.getElementById('bankEnabled').classList.contains('on'),
-      bankInfo: {
-        bankName: document.getElementById('pay-bankName').value,
-        bankCode: document.getElementById('pay-bankCode').value,
-        accountNumber: document.getElementById('pay-accountNumber').value,
-        accountName: document.getElementById('pay-accountName').value
-      },
+      bankInfo: (function () {
+        var bankCode = document.getElementById('pay-bank').value;
+        var branchCode = document.getElementById('pay-branch').value;
+        return {
+          bankCode: bankCode,
+          bankName: TWBankUI.bankName(bankCode),
+          branchCode: branchCode,
+          branchName: TWBankUI.branchName(bankCode, branchCode),
+          accountNumber: document.getElementById('pay-accountNumber').value,
+          accountName: document.getElementById('pay-accountName').value
+        };
+      })(),
       maxTeams: parseInt(document.getElementById('adv-maxTeams').value, 10) || 0,
       allowWaitlist: document.getElementById('adv-allowWaitlist').value === 'true'
     });

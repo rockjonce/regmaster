@@ -426,8 +426,30 @@ exports.getMyProfile = authCallable(["system", "competition"], async (data, requ
     username: a.username, role: a.role,
     displayName: a.displayName || "", organizationName: a.organizationName || "",
     email: a.email || "", phone: a.phone || "",
-    emailVerified: a.emailVerified || false
+    emailVerified: a.emailVerified || false,
+    // 收款帳戶 (payout): where the platform wires this organiser's PayUNI net to.
+    payoutBankCode: a.payoutBankCode || "", payoutBankName: a.payoutBankName || "",
+    payoutBranchCode: a.payoutBranchCode || "", payoutBranchName: a.payoutBranchName || "",
+    payoutAccount: a.payoutAccount || "", payoutName: a.payoutName || ""
   };
+});
+
+// 收款帳戶 — distinct from the per-activity ATM collection account. This is where the
+// platform admin wires the organiser's PayUNI net (after fees) for 平台代收轉付 payouts.
+exports.savePayoutAccount = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  await snap.docs[0].ref.update({
+    payoutBankCode:   String(data.bankCode   || "").slice(0, 8),
+    payoutBankName:   String(data.bankName   || "").slice(0, 60),
+    payoutBranchCode: String(data.branchCode || "").slice(0, 12),
+    payoutBranchName: String(data.branchName || "").slice(0, 60),
+    payoutAccount:    String(data.accountNumber || "").slice(0, 40),
+    payoutName:       String(data.accountName   || "").slice(0, 60)
+  });
+  await auditLog(username, "更新收款帳戶", username, "");
+  return { success: true };
 });
 
 // V3 Phase 9: update the caller's OWN profile (displayName / email / phone).
@@ -3511,7 +3533,8 @@ exports.getSalesConfig = authCallable(["system","competition"], async (data, req
       starterPrice: cfg.starterPrice || 0, proPrice: cfg.proPrice || 0, teamPrice: cfg.teamPrice || 0,
       singlePrice: cfg.singlePrice, yearlyPrice: cfg.yearlyPrice,
       taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || [],
-      payuniFeeByTier: cfg.payuniFeeByTier || { free: 0, starter: 0, pro: 0, team: 0 }
+      payuniFeeByTier: cfg.payuniFeeByTier || { free: 0, starter: 0, pro: 0, team: 0 },
+      payoutCycle: cfg.payoutCycle || "weekly"
     };
   }
   return cfg;
@@ -4227,6 +4250,159 @@ exports.listOrganizerAccounts = authCallable(["system"], async () => {
     return { username: a.username, displayName: a.displayName || "", organizationName: a.organizationName || "", tier };
   }));
   return accounts.sort((a, b) => a.username.localeCompare(b.username));
+});
+
+// ===== 平台代收轉付 — per-order settlement model =====
+// Replaces period-range remittance with per-order tracking so 已轉/未轉 is always
+// exact: an order can never be wired twice (settled flag is the lock) nor missed
+// (createSettlement sweeps ALL outstanding orders). Bank-transfer (ATM) money is
+// NOT included — that goes straight to the organiser's own account.
+
+// Read settlement data for one organiser (system passes creator; organiser = self),
+// optionally scoped to a single competition (compId) for the organiser-facing tab.
+exports.getSettlementData = authCallable(["system", "competition"], async (data, request) => {
+  const creator = request.authUser.role === "system" ? (data.creator || null) : request.authUser.username;
+  if (!creator) return { error: "缺少 creator" };
+  const scopeComp = data.compId || "";
+
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const sales = salesDoc.exists ? salesDoc.data() : {};
+  const feeByTier = sales.payuniFeeByTier || {};
+  const payoutCycle = sales.payoutCycle || "weekly";
+  const tier = await getEffectiveTier(creator);
+  const feePct = parseFloat(feeByTier[tier]) || 0;
+
+  // payout account snapshot
+  const accSnap = await db.collection("accounts").where("username", "==", creator).limit(1).get();
+  const acc = accSnap.empty ? {} : accSnap.docs[0].data();
+  const payout = {
+    bankCode: acc.payoutBankCode || "", bankName: acc.payoutBankName || "",
+    branchCode: acc.payoutBranchCode || "", branchName: acc.payoutBranchName || "",
+    accountNumber: acc.payoutAccount || "", accountName: acc.payoutName || "",
+    organizationName: acc.organizationName || acc.displayName || ""
+  };
+
+  const compSnap = await db.collection("competitions").where("creator", "==", creator).get();
+  const compMap = {};
+  compSnap.docs.forEach(d => { compMap[d.id] = (d.data().config && d.data().config.competitionName) || d.data().name || d.id; });
+  const compIds = scopeComp ? [scopeComp] : Object.keys(compMap);
+
+  const orders = [];
+  let gross = 0, feeTotal = 0, net = 0, settledNet = 0, unsettledNet = 0;
+  for (const cid of compIds) {
+    const paySnap = await db.collection("regPayments").where("compId", "==", cid).where("status", "==", "paid").get();
+    paySnap.docs.forEach(d => {
+      const p = d.data();
+      const amt = parseInt(p.amount, 10) || 0;
+      const feeInt = Math.round(amt * feePct / 100);
+      const n = amt - feeInt;
+      gross += amt; feeTotal += feeInt; net += n;
+      if (p.settled) settledNet += n; else unsettledNet += n;
+      orders.push({
+        orderId: p.orderId || d.id, compId: cid, compName: compMap[cid] || cid,
+        teamId: p.teamId || "", teamNameCN: p.teamNameCN || "", teamNameEN: p.teamNameEN || "",
+        payuniTradeNo: p.payuniTradeNo || "", paidAt: p.paidAt || "",
+        amount: amt, feePct, fee: feeInt, net: n,
+        settled: !!p.settled, settlementId: p.settlementId || "", settledAt: p.settledAt || ""
+      });
+    });
+  }
+  orders.sort((a, b) => String(b.paidAt).localeCompare(String(a.paidAt)));
+
+  // settlement batches for this creator (when scoped, only those touching this comp)
+  const setSnap = await db.collection("settlements").where("creator", "==", creator).get();
+  let settlements = setSnap.docs.map(d => d.data());
+  if (scopeComp) {
+    settlements = settlements.map(s => {
+      const compOrders = (s.orders || []).filter(o => o.compId === scopeComp);
+      if (!compOrders.length) return null;
+      return Object.assign({}, s, {
+        compOrders,
+        compNet: compOrders.reduce((x, o) => x + (o.net || 0), 0),
+        compOrderCount: compOrders.length
+      });
+    }).filter(Boolean);
+  }
+  settlements.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+  return {
+    creator, tier, feePct, payoutCycle, payout, scope: scopeComp || null,
+    summary: {
+      gross, feeTotal, net, settledNet, unsettledNet,
+      orderCount: orders.length,
+      settledCount: orders.filter(o => o.settled).length,
+      unsettledCount: orders.filter(o => !o.settled).length
+    },
+    orders, settlements
+  };
+});
+
+// System admin wires ALL currently-unsettled PAID PayUNI orders for a creator as one
+// batch. Double-wire safe: only orders without a `settled` flag are swept in.
+exports.createSettlement = authCallable(["system"], async (data, request) => {
+  const { creator, note } = data;
+  if (!creator) return { success: false, message: "缺少 creator" };
+
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const sales = salesDoc.exists ? salesDoc.data() : {};
+  const feeByTier = sales.payuniFeeByTier || {};
+  const tier = await getEffectiveTier(creator);
+  const feePct = parseFloat(feeByTier[tier]) || 0;
+
+  const compSnap = await db.collection("competitions").where("creator", "==", creator).get();
+  const compMap = {};
+  compSnap.docs.forEach(d => { compMap[d.id] = (d.data().config && d.data().config.competitionName) || d.data().name || d.id; });
+
+  const targets = [];
+  for (const cid of Object.keys(compMap)) {
+    const paySnap = await db.collection("regPayments").where("compId", "==", cid).where("status", "==", "paid").get();
+    paySnap.docs.forEach(d => { const p = d.data(); if (!p.settled) targets.push({ ref: d.ref, p, cid }); });
+  }
+  if (!targets.length) return { success: false, message: "沒有未結算的 PayUNI 訂單" };
+
+  const settlementId = "STL" + Date.now();
+  const now = fmtNow();
+  let grossTotal = 0, feeTotal = 0, netTotal = 0;
+  const orderSnap = targets.map(t => {
+    const amt = parseInt(t.p.amount, 10) || 0;
+    const feeInt = Math.round(amt * feePct / 100);
+    const n = amt - feeInt;
+    grossTotal += amt; feeTotal += feeInt; netTotal += n;
+    return {
+      orderId: t.p.orderId || t.ref.id, compId: t.cid, compName: compMap[t.cid] || t.cid,
+      teamId: t.p.teamId || "", teamNameCN: t.p.teamNameCN || "", teamNameEN: t.p.teamNameEN || "",
+      amount: amt, fee: feeInt, net: n
+    };
+  });
+  const wireFee = 15;
+  const actualWire = Math.max(0, netTotal - wireFee);
+
+  const accSnap = await db.collection("accounts").where("username", "==", creator).limit(1).get();
+  const acc = accSnap.empty ? {} : accSnap.docs[0].data();
+
+  // mark orders settled (batched writes, 400/commit)
+  for (let i = 0; i < targets.length; i += 400) {
+    const batch = db.batch();
+    targets.slice(i, i + 400).forEach(t => batch.update(t.ref, { settled: true, settlementId, settledAt: now }));
+    await batch.commit();
+  }
+
+  await db.collection("settlements").doc(settlementId).set({
+    settlementId, creator, tier, feePct,
+    orderCount: orderSnap.length,
+    grossTotal, feeTotal, netTotal, wireFee, actualWire,
+    payout: {
+      bankCode: acc.payoutBankCode || "", bankName: acc.payoutBankName || "",
+      branchCode: acc.payoutBranchCode || "", branchName: acc.payoutBranchName || "",
+      accountNumber: acc.payoutAccount || "", accountName: acc.payoutName || ""
+    },
+    orders: orderSnap,
+    note: String(note || "").slice(0, 200),
+    createdAt: now, createdBy: request.authUser.username
+  });
+  await auditLog(request.authUser.username, "平台結算匯款", creator,
+    settlementId + " " + orderSnap.length + "筆 實匯NT$" + actualWire);
+  return { success: true, settlementId, orderCount: orderSnap.length, grossTotal, feeTotal, netTotal, wireFee, actualWire };
 });
 
 exports.getRegPaymentStatus = callable(async (data) => {

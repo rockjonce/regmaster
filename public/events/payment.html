@@ -359,8 +359,8 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         if (m === 'manual') {
           var info = CFG.bankInfo || {};
           var lines = [];
-          if (info.bankName) lines.push('<b>銀行：</b>' + escapeHtml(info.bankName));
-          if (info.bankCode) lines.push('<b>銀行代號：</b><span class="copyable" data-copy="' + escapeHtml(info.bankCode) + '">' + escapeHtml(info.bankCode) + ' 📋</span>');
+          if (info.bankName) lines.push('<b>銀行：</b>' + (info.bankCode ? escapeHtml(info.bankCode) + ' ' : '') + escapeHtml(info.bankName));
+          if (info.branchName || info.branchCode) lines.push('<b>分行：</b>' + (info.branchCode ? escapeHtml(info.branchCode) + ' ' : '') + escapeHtml(info.branchName || ''));
           if (info.accountNumber) lines.push('<b>帳號：</b><span class="copyable" data-copy="' + escapeHtml(info.accountNumber) + '">' + escapeHtml(info.accountNumber) + ' 📋</span>');
           if (info.accountName) lines.push('<b>戶名：</b>' + escapeHtml(info.accountName));
           lines.push('<b>金額：</b>NT$ <span id="manualAmt">' + quoteTotal.toLocaleString() + '</span>');
