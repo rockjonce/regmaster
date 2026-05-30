@@ -32,7 +32,7 @@
 .sum-card.featured .sub { color:rgba(255,255,255,.6); }
 
 /* Chart cards */
-.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.chart-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; }
 .chart-card { padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
 .chart-card.full { grid-column:1 / -1; }
 .chart-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
@@ -43,6 +43,17 @@
 .chart-toggle button.on { background:var(--ink); color:white; border-color:var(--ink); }
 .chart-box { position:relative; height:240px; }
 .chart-box.tall { height:280px; }
+
+/* Heatmap — pure CSS grid, 7 rows × 24 cols + axis labels */
+.heatmap { display:grid; grid-template-columns:46px repeat(24, 1fr); gap:3px; padding:6px 0; }
+.heatmap .hm-corner { background:transparent; }
+.heatmap .hm-col { font:500 9.5px/1 var(--f-mono); color:var(--muted); text-align:center; padding-bottom:2px; }
+.heatmap .hm-row-label { font:500 11px/1 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; justify-content:flex-end; padding-right:8px; }
+.heatmap .hm-cell { aspect-ratio:1; border-radius:3px; background:var(--surface-2); border:1px solid var(--line-2); position:relative; cursor:default; min-height:18px; }
+.heatmap .hm-cell:hover { outline:2px solid var(--ink); z-index:2; }
+.heatmap .hm-legend { grid-column:1 / -1; margin-top:8px; display:flex; align-items:center; gap:6px; font:500 11px/1 var(--f-mono); color:var(--muted); justify-content:flex-end; }
+.heatmap .hm-legend .swatch { display:flex; gap:1px; }
+.heatmap .hm-legend .swatch span { width:14px; height:14px; border-radius:2px; border:1px solid var(--line-2); }
 
 /* Tables for list tab — same look as payments.html */
 .tbl-wrap { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow-x:auto; }
@@ -112,35 +123,48 @@
       <div class="tab-pane on" data-pane="stats">
         <div class="sum-row" id="kpiRow"></div>
 
+        <!-- Row A: small categorical breakdowns (auto-fit) -->
         <div class="chart-grid">
-          <!-- 各組別報名數量 (only when groups exist) -->
           <div class="chart-card" id="groupCardWrap" style="display:none">
-            <div class="chart-head">
-              <h4>各組別報名數量</h4>
-              <span class="help">隊伍 / 組別</span>
-            </div>
+            <div class="chart-head"><h4>各組別報名數量</h4><span class="help">隊伍 / 組別</span></div>
             <div class="chart-box"><canvas id="chartGroup"></canvas></div>
           </div>
-
-          <!-- 男女性別比例 -->
-          <div class="chart-card" id="genderCardWrap">
-            <div class="chart-head">
-              <h4>性別比例</h4>
-              <span class="help">所有成員（學員 + 指導者）</span>
-            </div>
+          <div class="chart-card" id="genderCardWrap" style="display:none">
+            <div class="chart-head"><h4>性別比例</h4><span class="help">學員 + 指導者</span></div>
             <div class="chart-box"><canvas id="chartGender"></canvas></div>
           </div>
+          <div class="chart-card" id="statusCardWrap" style="display:none">
+            <div class="chart-head"><h4>狀態（正取／備取）</h4><span class="help">候補狀況</span></div>
+            <div class="chart-box"><canvas id="chartStatus"></canvas></div>
+          </div>
+          <div class="chart-card" id="paymentCardWrap" style="display:none">
+            <div class="chart-head"><h4>付款狀態</h4><span class="help">已付款 vs 待付款</span></div>
+            <div class="chart-box"><canvas id="chartPayment"></canvas></div>
+          </div>
+          <div class="chart-card" id="sessionCardWrap" style="display:none">
+            <div class="chart-head"><h4>各梯次報名分布</h4><span class="help">熱門場次</span></div>
+            <div class="chart-box"><canvas id="chartSession"></canvas></div>
+          </div>
+          <div class="chart-card" id="ageCardWrap" style="display:none">
+            <div class="chart-head"><h4>學員年齡分布</h4><span class="help" id="ageHelp">—</span></div>
+            <div class="chart-box"><canvas id="chartAge"></canvas></div>
+          </div>
+          <div class="chart-card" id="methodCardWrap" style="display:none">
+            <div class="chart-head"><h4>付款方式偏好</h4><span class="help">已選付款方式</span></div>
+            <div class="chart-box"><canvas id="chartMethod"></canvas></div>
+          </div>
+        </div>
 
-          <!-- 每日報名數（長條圖） -->
+        <!-- Row B: time-series (full width) -->
+        <div class="chart-grid" style="margin-top:16px">
           <div class="chart-card full">
-            <div class="chart-head">
-              <h4>每日新增報名數</h4>
-              <span class="help">每日完成報名的隊伍數量</span>
-            </div>
+            <div class="chart-head"><h4>每日新增報名數</h4><span class="help">每日完成報名的隊伍數量</span></div>
             <div class="chart-box tall"><canvas id="chartDaily"></canvas></div>
           </div>
-
-          <!-- 報名趨勢（累計） — X 軸切換 -->
+          <div class="chart-card full" id="dailyRevenueCardWrap" style="display:none">
+            <div class="chart-head"><h4>每日入帳金額 (NT$)</h4><span class="help">當日完成付款的隊伍 × 報名費</span></div>
+            <div class="chart-box tall"><canvas id="chartDailyRevenue"></canvas></div>
+          </div>
           <div class="chart-card full">
             <div class="chart-head">
               <h4>報名累計趨勢</h4>
@@ -150,6 +174,21 @@
               </div>
             </div>
             <div class="chart-box tall"><canvas id="chartTrend"></canvas></div>
+          </div>
+          <div class="chart-card full" id="revenueTrendCardWrap" style="display:none">
+            <div class="chart-head"><h4>累積收費金額 (NT$)</h4><span class="help">隨時間累積的入帳曲線</span></div>
+            <div class="chart-box tall"><canvas id="chartRevenueTrend"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row C: heatmap (full width) -->
+        <div class="chart-grid" style="margin-top:16px">
+          <div class="chart-card full">
+            <div class="chart-head">
+              <h4>報名時段熱點（星期 × 小時）</h4>
+              <span class="help">顏色深淺對應該時段報名筆數，可推測下次公告時機</span>
+            </div>
+            <div id="heatmap" class="heatmap"></div>
           </div>
         </div>
       </div>
@@ -258,72 +297,224 @@
 
   function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 
+  // Per-chart visibility flags inferred from CFG (組織方設定) — hides charts that
+  // wouldn't carry useful info for this particular activity.
+  function computeVisibility() {
+    var fee = parseInt(CFG.registrationFee, 10) || 0;
+    if (!fee && Array.isArray(CFG.feeItems)) fee = CFG.feeItems.reduce(function (n, it) { return n + (parseInt(it.amount, 10) || 0); }, 0);
+    var methods = Array.isArray(CFG.paymentMethods) ? CFG.paymentMethods : [];
+    var sessions = Array.isArray(CFG.sessions) ? CFG.sessions : [];
+    var multiSessions = (CFG.dateMode === 'multi') && sessions.length >= 2;
+    var groups = Array.isArray(CFG.groups) ? CFG.groups : [];
+    var hasGroups = groups.length > 0 && Object.keys(STATS.groupCounts || {}).length > 0;
+    var hasGender = Object.keys(STATS.genderCounts || {}).length > 0;
+    var hasBirthday = (STATS.ageKnown || 0) > 0;
+    var hasFee = fee > 0;
+    var hasMultiplePayMethods = methods.length >= 2;
+    // statusCounts has more than one bucket only when 備取 has appeared at least once
+    var statusKeys = Object.keys(STATS.statusCounts || {});
+    var hasMultiStatus = statusKeys.length >= 2;
+    return {
+      group: hasGroups,
+      gender: hasGender,
+      status: hasMultiStatus,                  // hide when everyone is 正取 (uninteresting)
+      payment: hasFee,                         // (a) payment status pie only when fee>0
+      session: multiSessions,                  // (b) session bar only when multi-session
+      age: hasBirthday,                        // (f) age histogram only when birthday collected
+      method: hasFee && hasMultiplePayMethods, // (h) method pie only when fee>0 + ≥2 methods
+      dailyRevenue: hasFee,                    // (d)
+      revenueTrend: hasFee,                    // (g)
+      heatmap: STATS.teamTotal > 0,            // (e) needs at least 1 reg with a parseable time
+      fee: fee
+    };
+  }
+
   function renderCharts() {
     if (typeof Chart === 'undefined') return;
+    var vis = computeVisibility();
+    var fee = vis.fee;
 
-    // 1. 組別報名數量 — 顯示條件: groupCounts 有任何 key 且不是空陣列
+    // ----- 1. Group bar (existing) -----
     var groupCounts = STATS.groupCounts || {};
     var groupKeys = Object.keys(groupCounts);
-    if (groupKeys.length > 0) {
-      document.getElementById('groupCardWrap').style.display = '';
+    document.getElementById('groupCardWrap').style.display = vis.group ? '' : 'none';
+    if (vis.group) {
       destroyChart('group');
       charts.group = new Chart(document.getElementById('chartGroup').getContext('2d'), {
         type: 'bar',
-        data: {
-          labels: groupKeys,
-          datasets: [{
-            label: '報名隊伍數',
-            data: groupKeys.map(function (k) { return groupCounts[k]; }),
-            backgroundColor: groupKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }),
-            borderRadius: 5
-          }]
-        },
-        options: Object.assign({}, BASE_OPTS, { plugins: Object.assign({}, BASE_OPTS.plugins, { legend: { display: false } }) })
+        data: { labels: groupKeys, datasets: [{ label: '報名隊伍數', data: groupKeys.map(function (k) { return groupCounts[k]; }), backgroundColor: groupKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }), borderRadius: 5 }] },
+        options: noLegend(BASE_OPTS)
       });
     }
 
-    // 2. 性別比例 圓餅圖
+    // ----- 2. Gender doughnut (existing) -----
     var genderCounts = STATS.genderCounts || {};
     var genderKeys = Object.keys(genderCounts);
-    if (genderKeys.length > 0) {
+    document.getElementById('genderCardWrap').style.display = vis.gender ? '' : 'none';
+    if (vis.gender) {
       destroyChart('gender');
-      charts.gender = new Chart(document.getElementById('chartGender').getContext('2d'), {
-        type: 'doughnut',
-        data: {
-          labels: genderKeys,
-          datasets: [{
-            data: genderKeys.map(function (k) { return genderCounts[k]; }),
-            backgroundColor: genderKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }),
-            borderColor: '#fff', borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, cutout: '60%',
-          plugins: { legend: { position: 'bottom', labels: { font: { size: 11.5 } } }, tooltip: BASE_OPTS.plugins.tooltip }
-        }
+      charts.gender = donut('chartGender', genderKeys, genderKeys.map(function (k) { return genderCounts[k]; }));
+    }
+
+    // ----- (c) Status pie (正取/備取) -----
+    var statusCounts = STATS.statusCounts || {};
+    var statusKeys = Object.keys(statusCounts);
+    document.getElementById('statusCardWrap').style.display = vis.status ? '' : 'none';
+    if (vis.status) {
+      destroyChart('status');
+      charts.status = donut('chartStatus', statusKeys, statusKeys.map(function (k) { return statusCounts[k]; }));
+    }
+
+    // ----- (a) Payment status pie -----
+    document.getElementById('paymentCardWrap').style.display = vis.payment ? '' : 'none';
+    if (vis.payment) {
+      var pc = STATS.paymentCounts || { paid: 0, pending: 0 };
+      destroyChart('payment');
+      charts.payment = donut('chartPayment', ['已付款', '待付款'], [pc.paid || 0, pc.pending || 0], ['#10b981', '#f59e0b']);
+    }
+
+    // ----- (b) Session bar -----
+    document.getElementById('sessionCardWrap').style.display = vis.session ? '' : 'none';
+    if (vis.session) {
+      var sessions = CFG.sessions || [];
+      var labels = sessions.map(function (s, i) { return s.name || ('場次 ' + (i + 1)); });
+      var data = sessions.map(function (_, i) { return (STATS.sessionCounts || {})[String(i)] || 0; });
+      destroyChart('session');
+      charts.session = new Chart(document.getElementById('chartSession').getContext('2d'), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: '隊伍數', data: data, backgroundColor: '#9b6bff', borderRadius: 4 }] },
+        options: noLegend(BASE_OPTS)
       });
     }
 
-    // 3. 每日新增 — 長條圖
+    // ----- (f) Age histogram -----
+    document.getElementById('ageCardWrap').style.display = vis.age ? '' : 'none';
+    if (vis.age) {
+      var ab = STATS.ageBuckets || {};
+      var abKeys = ['<13', '13-15', '16-18', '19-22', '23-30', '31-50', '51+'];
+      document.getElementById('ageHelp').textContent = '已採集 ' + (STATS.ageKnown || 0) + ' 人 / 共 ' + (STATS.memberTotal || 0) + ' 人';
+      destroyChart('age');
+      charts.age = new Chart(document.getElementById('chartAge').getContext('2d'), {
+        type: 'bar',
+        data: { labels: abKeys, datasets: [{ label: '人數', data: abKeys.map(function (k) { return ab[k] || 0; }), backgroundColor: '#06b6d4', borderRadius: 4 }] },
+        options: noLegend(BASE_OPTS)
+      });
+    }
+
+    // ----- (h) Payment-method pie -----
+    document.getElementById('methodCardWrap').style.display = vis.method ? '' : 'none';
+    if (vis.method) {
+      var pmc = STATS.paymentMethodCounts || {};
+      var pmcKeys = Object.keys(pmc);
+      // pretty labels
+      var labelMap = { payuni: 'PayUNI 線上付款', atm: '銀行 / ATM 轉帳' };
+      destroyChart('method');
+      charts.method = donut('chartMethod', pmcKeys.map(function (k) { return labelMap[k] || k; }), pmcKeys.map(function (k) { return pmc[k]; }));
+    }
+
+    // ----- Daily new bar (existing) -----
     var daily = STATS.dailyCounts || {};
     var sortedDays = Object.keys(daily).sort();
     destroyChart('daily');
     charts.daily = new Chart(document.getElementById('chartDaily').getContext('2d'), {
       type: 'bar',
-      data: {
-        labels: sortedDays,
-        datasets: [{
-          label: '新增報名',
-          data: sortedDays.map(function (d) { return daily[d]; }),
-          backgroundColor: '#3d6bff',
-          borderRadius: 4
-        }]
-      },
-      options: Object.assign({}, BASE_OPTS, { plugins: Object.assign({}, BASE_OPTS.plugins, { legend: { display: false } }) })
+      data: { labels: sortedDays, datasets: [{ label: '新增報名', data: sortedDays.map(function (d) { return daily[d]; }), backgroundColor: '#3d6bff', borderRadius: 4 }] },
+      options: noLegend(BASE_OPTS)
     });
 
-    // 4. 累計趨勢 — 折線圖，X 軸可切換 (日期 / D-N)
+    // ----- (d) Daily revenue bar -----
+    document.getElementById('dailyRevenueCardWrap').style.display = vis.dailyRevenue ? '' : 'none';
+    if (vis.dailyRevenue) {
+      var dpc = STATS.dailyPaidCounts || {};
+      var dpDays = Object.keys(dpc).sort();
+      destroyChart('dailyRevenue');
+      charts.dailyRevenue = new Chart(document.getElementById('chartDailyRevenue').getContext('2d'), {
+        type: 'bar',
+        data: { labels: dpDays, datasets: [{ label: '當日入帳', data: dpDays.map(function (d) { return (dpc[d] || 0) * fee; }), backgroundColor: '#10b981', borderRadius: 4 }] },
+        options: revenueOpts()
+      });
+    }
+
+    // ----- Cumulative trend (existing) -----
     drawTrend();
+
+    // ----- (g) Cumulative revenue line -----
+    document.getElementById('revenueTrendCardWrap').style.display = vis.revenueTrend ? '' : 'none';
+    if (vis.revenueTrend) {
+      var dpc2 = STATS.dailyPaidCounts || {};
+      var rDays = Object.keys(dpc2).sort();
+      var cum = 0;
+      var cumVals = rDays.map(function (d) { cum += (dpc2[d] || 0) * fee; return cum; });
+      destroyChart('revenueTrend');
+      charts.revenueTrend = new Chart(document.getElementById('chartRevenueTrend').getContext('2d'), {
+        type: 'line',
+        data: { labels: rDays, datasets: [{ label: '累積入帳', data: cumVals, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.10)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: '#10b981' }] },
+        options: revenueOpts()
+      });
+    }
+
+    // ----- (e) CSS heatmap (7 rows × 24 cols) -----
+    if (vis.heatmap) renderHeatmap();
+  }
+
+  // --- chart helpers ---
+  function noLegend(base) { return Object.assign({}, base, { plugins: Object.assign({}, base.plugins, { legend: { display: false } }) }); }
+  function donut(canvasId, labels, data, palette) {
+    var colors = palette || labels.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; });
+    return new Chart(document.getElementById(canvasId).getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11.5 } } }, tooltip: BASE_OPTS.plugins.tooltip }
+      }
+    });
+  }
+  function revenueOpts() {
+    var fmt = function (v) { return 'NT$ ' + Number(v).toLocaleString(); };
+    return Object.assign({}, BASE_OPTS, {
+      plugins: Object.assign({}, BASE_OPTS.plugins, {
+        legend: { display: false },
+        tooltip: Object.assign({}, BASE_OPTS.plugins.tooltip, { callbacks: { label: function (ctx) { return fmt(ctx.parsed.y); } } })
+      }),
+      scales: {
+        x: BASE_OPTS.scales.x,
+        y: Object.assign({}, BASE_OPTS.scales.y, { ticks: Object.assign({}, BASE_OPTS.scales.y.ticks, { callback: function (v) { return 'NT$ ' + Number(v).toLocaleString(); } }) })
+      }
+    });
+  }
+
+  function renderHeatmap() {
+    var byHour = STATS.byHourOfWeek || {};
+    // Find max for shading scale
+    var max = 1;
+    Object.keys(byHour).forEach(function (k) { if (byHour[k] > max) max = byHour[k]; });
+    var DOW = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+    var html = '';
+    // header row (hours)
+    html += '<div class="hm-corner"></div>';
+    for (var h = 0; h < 24; h++) html += '<div class="hm-col">' + (h % 3 === 0 ? h : '') + '</div>';
+    // rows
+    for (var dow = 0; dow < 7; dow++) {
+      html += '<div class="hm-row-label">' + DOW[dow] + '</div>';
+      for (var hr = 0; hr < 24; hr++) {
+        var key = dow + '_' + hr;
+        var c = byHour[key] || 0;
+        var pct = c / max;
+        // color: light → dark accent (RegMaster blue)
+        var bg = c === 0 ? 'var(--surface-2)' : 'rgba(61,107,255,' + Math.max(0.12, pct).toFixed(2) + ')';
+        html += '<div class="hm-cell" style="background:' + bg + '" title="' + DOW[dow] + ' ' + hr + ':00 — ' + c + ' 筆"></div>';
+      }
+    }
+    // legend
+    html += '<div class="hm-legend">少 <div class="swatch">' +
+      '<span style="background:rgba(61,107,255,.12)"></span>' +
+      '<span style="background:rgba(61,107,255,.30)"></span>' +
+      '<span style="background:rgba(61,107,255,.55)"></span>' +
+      '<span style="background:rgba(61,107,255,.85)"></span>' +
+      '<span style="background:rgba(61,107,255,1.00)"></span>' +
+    '</div> 多　·　最高 ' + max + ' 筆</div>';
+    document.getElementById('heatmap').innerHTML = html;
   }
 
   function drawTrend() {

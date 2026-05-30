@@ -1637,8 +1637,9 @@ exports.getAllTeams = compAuthCallable(async (data) => {
   });
 });
 
-// 報名管理: stats aggregation for the dashboard tab (group counts, gender pie,
-// daily registration trend, status/payment breakdowns). One callable, one round-trip.
+// 報名管理: stats aggregation for the dashboard tab. One callable, one round-trip.
+// Returns enough data for ~12 charts; frontend hides individual charts based on which
+// fields the organiser actually configured / collected.
 exports.getRegistrationStats = compAuthCallable(async (data) => {
   const compId = data.compId;
   const [tSnap, mSnap] = await Promise.all([
@@ -1648,9 +1649,21 @@ exports.getRegistrationStats = compAuthCallable(async (data) => {
   const groupCounts = {};
   const statusCounts = {};
   const paymentCounts = { paid: 0, pending: 0 };
+  const paymentMethodCounts = {};                       // (h) payment method pie
   const dailyCounts = {};
+  const dailyPaidCounts = {};                           // (d)(g) revenue charts use paid teams only
   const sessionCounts = {};
+  const byHourOfWeek = {};                              // (e) "<dow>_<hour>" → count (dow 0=Sun)
   let teamTotal = 0;
+  const _parseRegTime = rt => {
+    // Accept "YYYY-MM-DD HH:MM:SS" or ISO "YYYY-MM-DDTHH:MM[:SS][Z]"
+    if (!rt) return null;
+    const s = String(rt).replace('T', ' ');
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[\s]+(\d{2}):(\d{2})/);
+    if (!m) return null;
+    // Treat as a naive local time (organisers and registrants share TW timezone in this product)
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0);
+  };
   tSnap.docs.forEach(d => {
     const t = d.data();
     teamTotal++;
@@ -1660,11 +1673,18 @@ exports.getRegistrationStats = compAuthCallable(async (data) => {
     statusCounts[st] = (statusCounts[st] || 0) + 1;
     const paid = String(t.paymentStatus || "").includes("已確認") || String(t.paymentStatus || "").toLowerCase().includes("paid");
     if (paid) paymentCounts.paid++; else paymentCounts.pending++;
+    const pm = (t.paymentMethod || "").trim();
+    if (pm) paymentMethodCounts[pm] = (paymentMethodCounts[pm] || 0) + 1;
     const rt = String(t.registrationTime || "");
-    // Accept "2026-05-30 14:00:00" or ISO; take first 10 chars
     if (rt.length >= 10) {
       const day = rt.slice(0, 10);
       dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      if (paid) dailyPaidCounts[day] = (dailyPaidCounts[day] || 0) + 1;
+    }
+    const dt = _parseRegTime(rt);
+    if (dt) {
+      const key = dt.getDay() + "_" + dt.getHours();   // 0_14 ... 6_22
+      byHourOfWeek[key] = (byHourOfWeek[key] || 0) + 1;
     }
     if (Array.isArray(t.selectedSessions)) {
       t.selectedSessions.forEach(idx => {
@@ -1677,20 +1697,43 @@ exports.getRegistrationStats = compAuthCallable(async (data) => {
     }
   });
   const genderCounts = {};
-  let memberTotal = 0, studentTotal = 0, teacherTotal = 0;
+  const ageBuckets = { "<13": 0, "13-15": 0, "16-18": 0, "19-22": 0, "23-30": 0, "31-50": 0, "51+": 0 };
+  let memberTotal = 0, studentTotal = 0, teacherTotal = 0, ageKnown = 0;
+  const today = new Date();
   mSnap.docs.forEach(d => {
     const m = d.data();
     memberTotal++;
     if (m.role === "學生") studentTotal++;
     else teacherTotal++;
-    const g = m.gender || "未填";
-    genderCounts[g] = (genderCounts[g] || 0) + 1;
+    if (m.gender) genderCounts[m.gender] = (genderCounts[m.gender] || 0) + 1;
+    // (f) age histogram — only count when birthday parses as a valid date
+    if (m.birthday) {
+      const bd = String(m.birthday).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (bd) {
+        const by = +bd[1], bm = +bd[2] - 1, bdy = +bd[3];
+        let age = today.getFullYear() - by;
+        const mDiff = today.getMonth() - bm;
+        if (mDiff < 0 || (mDiff === 0 && today.getDate() < bdy)) age--;
+        if (age >= 0 && age < 120) {
+          ageKnown++;
+          if (age < 13) ageBuckets["<13"]++;
+          else if (age <= 15) ageBuckets["13-15"]++;
+          else if (age <= 18) ageBuckets["16-18"]++;
+          else if (age <= 22) ageBuckets["19-22"]++;
+          else if (age <= 30) ageBuckets["23-30"]++;
+          else if (age <= 50) ageBuckets["31-50"]++;
+          else ageBuckets["51+"]++;
+        }
+      }
+    }
   });
   return {
-    teamTotal, memberTotal, studentTotal, teacherTotal,
-    groupCounts, genderCounts, statusCounts, paymentCounts,
-    dailyCounts,                                       // { 'YYYY-MM-DD': N }
-    sessionCounts                                      // { '<index>': N }
+    teamTotal, memberTotal, studentTotal, teacherTotal, ageKnown,
+    groupCounts, genderCounts, statusCounts, paymentCounts, paymentMethodCounts,
+    dailyCounts, dailyPaidCounts,                      // { 'YYYY-MM-DD': N }
+    sessionCounts,                                     // { '<index>': N }
+    byHourOfWeek,                                      // (e) heatmap data
+    ageBuckets                                         // (f) histogram
   };
 });
 
