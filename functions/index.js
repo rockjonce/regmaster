@@ -4778,7 +4778,7 @@ function buildFormSchemaFromLegacy(cfg) {
   const customQuestions = (cfg.customQuestions || []).slice();
 
   const FIELD_LABELS = {
-    chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證 / 護照',
+    chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證',
     birthday: '出生年月日', school: '學校', department: '系所', grade: '年級',
     email: 'Email', phone: '電話', address: '地址',
     dietary: '飲食習慣', tshirt: 'T-shirt 尺寸',

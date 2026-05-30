@@ -334,11 +334,20 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           </div>
         </div>
 
-        <div style="display:flex; gap:10px; justify-content:center; margin-top:24px">
-          <a id="payBtn" href="#" class="btn btn-primary btn-lg">前往付款 →</a>
-          <a href="/my.html" class="btn btn-ghost btn-lg">我的報名</a>
+        <!-- T2: payment-method-specific footer. The legacy 前往付款 button is gone — PayUNI happens
+             BEFORE the success page, ATM users get bank info here, free users see nothing extra. -->
+        <div id="atmInstructions" style="display:none; margin-top:20px; padding:16px; background:var(--surface); border:1px solid var(--line); border-radius:11px; text-align:left">
+          <h5 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">💰 銀行轉帳資訊</h5>
+          <div style="font:400 13px/1.7 var(--f-tc); color:var(--ink-2)">
+            <div><b>銀行：</b><span id="atmBankName">—</span></div>
+            <div><b>帳號：</b><span id="atmBankAcc">—</span></div>
+            <div><b>戶名：</b><span id="atmBankOwner">—</span></div>
+            <div style="margin-top:6px; color:var(--muted); font-size:11.5px">請於 3 個工作天內完成轉帳，主辦方將自動對帳。</div>
+          </div>
         </div>
-        <p style="font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-top:16px">本活動若為免費，無需付款；可直接於「我的報名」查詢。</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:24px">
+          <a href="/my.html" class="btn btn-primary btn-lg">查看我的報名 →</a>
+        </div>
       </div>
     </div>
 
@@ -450,6 +459,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   };
   // Q2/Q3/Q4: payment computed after CFG loads
   var TOTAL_FEE = 0, NEEDS_PAYMENT = false, AVAILABLE_METHODS = [];
+  // T1: step 1 is only meaningful when group/session/team-name fields are configured
+  var STEP1_NEEDED = true;
+  function firstStep() { return STEP1_NEEDED ? 1 : 2; }
+  function lastStep()  { return NEEDS_PAYMENT ? 4 : 3; }
+  function activeStepCount() { return lastStep() - firstStep() + 1; }
   function updateSubmitButtonLabel() {
     var btn = document.getElementById('submitBtn');
     if (!btn) return;
@@ -493,7 +507,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.getElementById('sumName').textContent = CFG.competitionName || '';
     var meta = [];
     if (CFG.competitionDate) meta.push('<div>📅 ' + escapeHtml(CFG.competitionDate) + '</div>');
-    if (CFG.deadline) meta.push('<div>⏰ 截止：' + escapeHtml(CFG.deadline) + '</div>');
+    if (CFG.deadline) meta.push('<div>⏰ 截止：' + escapeHtml(String(CFG.deadline).replace('T', ' ').slice(0, 16)) + '</div>');
     if (CFG.category) meta.push('<div>🏷 ' + escapeHtml(CFG.category) + '</div>');
     document.getElementById('sumMeta').innerHTML = meta.join('');
     if (CFG.posterUrl) {
@@ -581,14 +595,26 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     } else {
       document.getElementById('paymentBlock').style.display = 'none';
     }
-    // Hide step-4 indicator + bar when not needed; step navigation will skip.
+    // T1: step 1 is needed only when the organiser actually configured something for it
+    var needGroups = (CFG.groups || []).length > 0;
+    var needSessions = (CFG.sessions || []).length > 0;
+    var needTeamName = !!(CFG.requireTeamNameCN || CFG.requireTeamNameEN);
+    STEP1_NEEDED = needGroups || needSessions || needTeamName;
+    if (!STEP1_NEEDED) {
+      var step1Dot = document.querySelector('.step-item[data-step="1"]');
+      if (step1Dot) step1Dot.style.display = 'none';
+      STATE.step = 2;                          // open straight to "學員資料"
+    }
+    // Hide step-4 indicator when no payment needed
     if (!NEEDS_PAYMENT) {
       var step4Dot = document.querySelector('.step-item[data-step="4"]');
       if (step4Dot) step4Dot.style.display = 'none';
-      // Show 3 steps in footer count instead of 4
-      var totalSteps = document.getElementById('footMeta');
-      if (totalSteps) totalSteps.innerHTML = '步驟 <b id="curStep">1</b> / 3';
     }
+    // Footer step counter reflects only the steps that will actually render
+    var totalSteps = document.getElementById('footMeta');
+    if (totalSteps) totalSteps.innerHTML = '步驟 <b id="curStep">' + STATE.step + '</b> / ' + activeStepCount();
+    // T1: when step 1 was skipped, synchronise DOM with STATE so step 2 is the visible pane
+    if (!STEP1_NEEDED) showStep(2);
 
     // Groups
     var groups = CFG.groups || [];
@@ -700,7 +726,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   var FIELD_LABELS = {
-    chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證 / 護照號碼',
+    chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證',
     birthday: '出生年月日', school: '學校', department: '系所', grade: '年級',
     email: 'Email', phone: '電話', address: '地址', dietary: '飲食習慣', tshirt: 'T-shirt 尺寸',
     gender: '性別', nationality: '國籍', passport: '護照號碼', classroom: '班級',
@@ -906,11 +932,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       b.classList.toggle('done', n > i + 1);
     });
     document.getElementById('curStep').textContent = n;
-    document.getElementById('prevBtn').disabled = (n === 1);
-    // Q2: when no payment is needed we skip step 4 entirely → submit appears on step 3.
-    var lastStep = NEEDS_PAYMENT ? 4 : 3;
-    document.getElementById('nextBtn').style.display = (n < lastStep ? '' : 'none');
-    document.getElementById('submitBtn').style.display = (n === lastStep ? '' : 'none');
+    document.getElementById('prevBtn').disabled = (n <= firstStep());
+    // Submit button appears on the FINAL active step (4 with payment, 3 without).
+    var last = lastStep();
+    document.getElementById('nextBtn').style.display = (n < last ? '' : 'none');
+    document.getElementById('submitBtn').style.display = (n === last ? '' : 'none');
     if (n === 4 || (n === 3 && !NEEDS_PAYMENT)) renderReview();
     updateSubmitButtonLabel();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1173,7 +1199,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.getElementById('reviewArea').innerHTML = html;
   }
 
-  document.getElementById('prevBtn').addEventListener('click', function () { if (STATE.step > 1) showStep(STATE.step - 1); });
+  document.getElementById('prevBtn').addEventListener('click', function () {
+    if (STATE.step > firstStep()) showStep(STATE.step - 1);
+  });
   document.getElementById('nextBtn').addEventListener('click', function () {
     if (!validateStep(STATE.step)) return;
     showStep(STATE.step + 1);
@@ -1203,24 +1231,33 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
-          // Q3: PayUNI selected → create order + auto-submit to PayUNI billing URL
+          // T2: PayUNI flow. User must reach PayUNI to complete payment BEFORE seeing the
+          // success page, so:
+          //   - successful order  → redirect to PayUNI (browser leaves the page)
+          //   - failed order      → alert + keep them here so they can retry (do NOT show
+          //                         success — the user paid nothing and would be confused).
+          //   - freeAfterDiscount → discount covered the bill, jump straight to success.
           if (NEEDS_PAYMENT && STATE.payMethod === 'payuni') {
             btn.textContent = '建立 PayUNI 訂單中⋯⋯';
+            // Stash so user can find their team if they navigate away (e.g. close PayUNI tab)
+            try { localStorage.setItem('regmaster_pending_team', JSON.stringify({ compId: compId, teamId: res.teamId, ts: Date.now() })); } catch (e) {}
             google.script.run
               .withSuccessHandler(function (p) {
                 if (!p || !p.success) {
                   btn.disabled = false; updateSubmitButtonLabel();
-                  showErr((p && p.message) || '無法建立 PayUNI 訂單');
-                  // Show success page anyway so user has their teamId/password
-                  showSuccess(res);
+                  // Persist team info so the organiser still sees it; tell the user the
+                  // registration is saved but payment failed, with a "前往我的報名" escape.
+                  uiAlert('報名已建立但無法產生 PayUNI 訂單：' + ((p && p.message) || '請聯絡主辦方') +
+                    '\n\n您的報名編號：' + res.teamId + '（請保留），可至「我的報名」查詢狀態。');
+                  showErr('PayUNI 訂單建立失敗：' + ((p && p.message) || '請稍後再試') + '。報名編號：' + res.teamId);
                   return;
                 }
                 if (p.freeAfterDiscount) {
-                  // Fully discounted → no PayUNI hop needed; show success
+                  // Fully discounted → no PayUNI hop needed
                   showSuccess(res);
                   return;
                 }
-                // POST hidden form to PayUNI
+                // POST hidden form to PayUNI (the browser leaves this page)
                 var f = document.createElement('form');
                 f.method = 'POST';
                 f.action = p.payuni.action;
@@ -1235,8 +1272,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
               })
               .withFailureHandler(function (err) {
                 btn.disabled = false; updateSubmitButtonLabel();
-                showErr((err && err.message) || '無法建立 PayUNI 訂單');
-                showSuccess(res);
+                uiAlert('報名已建立但 PayUNI 連線失敗：' + ((err && err.message) || '網路錯誤') +
+                  '\n\n您的報名編號：' + res.teamId + '（請保留）。');
+                showErr('PayUNI 連線失敗：' + ((err && err.message) || '請稍後再試') + '。報名編號：' + res.teamId);
               })
               .createRegistrationPayment(compId, res.teamId, '');
             return;
@@ -1261,8 +1299,14 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.getElementById('resTeamId').textContent = res.teamId || '—';
     document.getElementById('resPwd').textContent = res.password || '—';
     document.getElementById('resStatus').textContent = res.status || '正取';
-    var payHref = '/events/payment.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(res.teamId);
-    document.getElementById('payBtn').href = payHref;
+    // T2: only ATM users see bank info here; PayUNI users won't reach this page (they
+    // get bounced to PayUNI before success), free events have no fee.
+    if (STATE.payMethod === 'atm' && CFG.bankInfo && CFG.bankInfo.accountNumber) {
+      document.getElementById('atmInstructions').style.display = 'block';
+      document.getElementById('atmBankName').textContent = CFG.bankInfo.bankName || '—';
+      document.getElementById('atmBankAcc').textContent = CFG.bankInfo.accountNumber || '—';
+      document.getElementById('atmBankOwner').textContent = CFG.bankInfo.accountName || CFG.bankInfo.owner || '—';
+    }
     document.querySelectorAll('[data-copy]').forEach(function (b) {
       b.addEventListener('click', function () {
         var el = document.getElementById(b.dataset.copy);

@@ -494,7 +494,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     document.getElementById('factCapacity').innerHTML = (max > 0)
       ? accepted + ' / ' + max + ' 已報名<small>' + ((accepted / max * 100).toFixed(0)) + '% 已滿</small>'
       : accepted + ' 已報名<small>未設名額上限</small>';
-    document.getElementById('factDeadline').textContent = cfg.deadline || '待公告';
+    // T3: human-readable date — "2026-06-06T11:00" → "2026-06-06 11:00".
+    document.getElementById('factDeadline').textContent = cfg.deadline ? String(cfg.deadline).replace('T', ' ').slice(0, 16) : '待公告';
 
     // Cover — use poster if available. B.4: resolve pfid:DOCID placeholders via getPosterData.
     var cover = document.getElementById('coverArt');

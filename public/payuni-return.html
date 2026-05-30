@@ -4,22 +4,54 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RegMaster — 付款結果</title>
+<link rel="icon" type="image/png" href="/favicon.png">
 <style>
 body{font-family:'Outfit','Noto Sans TC',sans-serif;background:#f1f5f9;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}
-.card{background:#fff;border-radius:16px;padding:40px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.card{background:#fff;border-radius:16px;padding:40px 32px;max-width:480px;width:100%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08)}
 .icon{font-size:56px;margin-bottom:12px}
 h1{font-size:22px;font-weight:800;color:#0A437A;margin:0 0 8px}
 p{font-size:15px;color:#475569;line-height:1.7;margin:0 0 20px}
-.btn{display:inline-block;padding:12px 32px;background:#0A437A;color:#fff;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;transition:.2s}
+.btn{display:inline-block;padding:12px 28px;background:#0A437A;color:#fff;border-radius:12px;font-size:15.5px;font-weight:600;text-decoration:none;transition:.2s;margin:0 6px}
 .btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(10,67,122,.3)}
+.btn.ghost{background:#fff;color:#0A437A;border:1px solid #cbd5e1}
+.team-info{padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:18px;font-size:14px;color:#334155}
+.team-info b{color:#0A437A}
+.muted{font-size:12.5px;color:#94a3b8;margin-top:12px}
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" id="card">
   <div class="icon">✅</div>
-  <h1>感謝您的購買！</h1>
-  <p>系統正在處理您的訂單，授權碼將在交易確認後自動產生。<br>請返回 RegMaster 管理介面查看。</p>
-  <a href="/" class="btn">🏠 返回 RegMaster</a>
+  <h1>感謝您的付款！</h1>
+  <p>系統正在處理您的訂單。</p>
+  <div id="actions">
+    <a href="/" class="btn">🏠 返回首頁</a>
+  </div>
 </div>
+<script>
+(function () {
+  // The redirect from PayUNI carries no query data, so we read the order/team stash
+  // left in localStorage by the page that triggered the payment.
+  var pendingTeam = null;
+  try { pendingTeam = JSON.parse(localStorage.getItem('regmaster_pending_team') || 'null'); } catch (e) {}
+  if (pendingTeam && pendingTeam.teamId && (Date.now() - (pendingTeam.ts || 0) < 60 * 60 * 1000)) {
+    // Came from a team registration payment — direct the user to their registration
+    document.getElementById('card').innerHTML =
+      '<div class="icon">✅</div>' +
+      '<h1>付款處理中</h1>' +
+      '<p>已收到您的付款，系統正在確認。請至「我的報名」查看付款狀態。</p>' +
+      '<div class="team-info">您的報名編號：<b>' + pendingTeam.teamId + '</b></div>' +
+      '<div>' +
+        '<a href="/my.html?email=" class="btn">📋 查看我的報名</a>' +
+        '<a href="/events/detail.html?id=' + encodeURIComponent(pendingTeam.compId || '') + '" class="btn ghost">回活動頁</a>' +
+      '</div>' +
+      '<div class="muted">付款結果由 PayUNI 透過 webhook 確認，可能需數秒至數分鐘。</div>';
+    // Clear the stash so a later visit to this page doesn't reuse stale info
+    try { localStorage.removeItem('regmaster_pending_team'); } catch (e) {}
+  }
+  // Fallback (license / non-registration payments) keeps the original UX:
+  // user already sees the default success card from the markup above.
+})();
+</script>
 </body>
 </html>
