@@ -887,6 +887,18 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
 
+  // U1: 即日起 — overwrite openDate with the server-side save time so the timestamp
+  // is exactly when the save happened (not when the checkbox was first ticked), and
+  // force isOpen=true so registration opens immediately.
+  let openImmediateRequested = false;
+  if (jc.openImmediate === true) {
+    openImmediateRequested = true;
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    jc.openDate = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+      + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+  }
+
   // B.1: AI summary for the public-page hero. Regenerate when description changed
   // since the last save, OR when no summary exists yet (one-time backfill per activity).
   // This keeps Gemini usage minimal — the AI runs at most once per description-change.
@@ -925,7 +937,10 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
 
   await ref.update({
     name: config.competitionName || "", category: config.category || "", config: jc,
-    isOpen: config.isOpen === true, isVisible: !!config.isVisible,
+    // U1: 即日起 forces isOpen=true regardless of the explicit toggle, so registration
+    // really does open the moment the organiser hits 儲存.
+    isOpen: openImmediateRequested ? true : (config.isOpen === true),
+    isVisible: !!config.isVisible,
     deadline: config.deadline || "", maxTeams: config.maxTeams || 0
   });
 
@@ -1134,6 +1149,28 @@ exports.submitRegistration = callable(async (data) => {
     return { success: false, message: "報名尚未開始，開放時間：" + String(cfg.openDate).replace('T', ' ') };
   }
   if (comp.deadline && new Date() >= new Date(comp.deadline)) return { success: false, message: "已截止" };
+
+  // U4: team-name uniqueness — within this competition, no two teams may share a CN or EN name.
+  // Skip empty names. Trim + case-fold the EN name for fairness.
+  {
+    const cnNew = String(fd.teamNameCN || "").trim();
+    const enNew = String(fd.teamNameEN || "").trim().toLowerCase();
+    if (cnNew || enNew) {
+      const teamsSnap = await db.collection("teams").where("compId", "==", compId).get();
+      for (const t of teamsSnap.docs) {
+        const td = t.data();
+        if (td.status === "已取消") continue;             // freed up by cancellation
+        const cnEx = String(td.teamNameCN || "").trim();
+        const enEx = String(td.teamNameEN || "").trim().toLowerCase();
+        if (cnNew && cnEx && cnEx === cnNew) {
+          return { success: false, message: "中文隊名「" + cnNew + "」已被其他隊伍使用，請換一個。" };
+        }
+        if (enNew && enEx && enEx === enNew) {
+          return { success: false, message: "英文隊名「" + (fd.teamNameEN || "").trim() + "」已被其他隊伍使用，請換一個。" };
+        }
+      }
+    }
+  }
 
   // Item 4: uniqueness checks — within this competition, no two students may share
   // the same 身分證號碼 (idNumber), and no two may share the same 護照號碼 + 國籍 pair.
@@ -3831,7 +3868,26 @@ exports.createRegistrationPayment = callable(async (data) => {
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { success: false, message: "找不到活動" };
   const cfg = compDoc.data().config || {};
-  if (!cfg.payuniEnabled || !cfg.payuniMerID || !cfg.payuniHashKey) return { success: false, message: "此活動未啟用線上付款" };
+  if (!cfg.payuniEnabled) return { success: false, message: "此活動未啟用線上付款" };
+
+  // U2 fix: edit.html doesn't expose per-activity PayUNI keys (only the enable toggle), so
+  // cfg.payuniMerID/payuniHashKey are almost always empty. Fall back to the system-level
+  // sales config — same merchant credentials already used for license payments.
+  let payMerID = cfg.payuniMerID || "";
+  let payKey   = cfg.payuniHashKey || "";
+  let payIV    = cfg.payuniHashIV || "";
+  let payMode  = cfg.payuniMode || "";
+  if (!payMerID || !payKey || !payIV) {
+    const salesDoc = await db.collection("config").doc("sales").get();
+    const sales = salesDoc.exists ? salesDoc.data() : {};
+    payMerID = payMerID || sales.payuniMerID || "";
+    payKey   = payKey   || sales.payuniHashKey || "";
+    payIV    = payIV    || sales.payuniHashIV || "";
+    payMode  = payMode  || sales.payuniMode || "t";
+  }
+  if (!payMerID || !payKey || !payIV) {
+    return { success: false, message: "金流尚未設定（請洽系統管理員設定 PayUNI 商店代號與金鑰）" };
+  }
 
   const teamDoc = await db.collection("teams").doc(teamId).get();
   if (!teamDoc.exists) return { success: false, message: "找不到報名資料" };
@@ -3860,23 +3916,28 @@ exports.createRegistrationPayment = callable(async (data) => {
   });
 
   const hostUrl = PROJECT_HOST;
+  // Persist the keyset used for this order so payuniRegNotify can verify the callback
+  // (otherwise we'd have to iterate every competition's keyset to find the match).
+  await db.collection("regPayments").doc(orderId).update({
+    payuniMerID: payMerID, payuniKeySource: cfg.payuniMerID ? "comp" : "sales"
+  });
   const encryptInfo = {
-    MerID: cfg.payuniMerID,
+    MerID: payMerID,
     MerTradeNo: orderId,
     TradeAmt: String(fee),
     Timestamp: String(Math.floor(Date.now() / 1000)),
-    ProdDesc: (cfg.competitionName || "RegMaster").substring(0, 40) + " " + teamId,
+    // ASCII-only ProdDesc avoids any encoding gotcha; the orderId disambiguates per-team
+    ProdDesc: "RegMaster Order " + orderId,
     ReturnURL: hostUrl + "/payuni-return.html",
-    NotifyURL: FUNCTIONS_BASE + "/payuniRegNotify",
-    TradeType: "1"
+    NotifyURL: FUNCTIONS_BASE + "/payuniRegNotify"
   };
-  const encStr = payuniEncrypt(encryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
-  const hashStr = payuniHash(encStr, cfg.payuniHashKey, cfg.payuniHashIV);
-  const prefix = cfg.payuniMode === "t" ? "https://sandbox-" : "https://";
+  const encStr = payuniEncrypt(encryptInfo, payKey, payIV);
+  const hashStr = payuniHash(encStr, payKey, payIV);
+  const prefix = payMode === "t" ? "https://sandbox-" : "https://";
 
   return {
     success: true, orderId,
-    payuni: { action: prefix + "api.payuni.com.tw/api/upp", MerID: cfg.payuniMerID, Version: "1.0", EncryptInfo: encStr, HashInfo: hashStr }
+    payuni: { action: prefix + "api.payuni.com.tw/api/upp", MerID: payMerID, Version: "1.0", EncryptInfo: encStr, HashInfo: hashStr }
   };
 });
 
@@ -3884,24 +3945,40 @@ exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async
   try {
     const { EncryptInfo, HashInfo } = req.body;
     let matched = null;
-    
-    /* Try to find order by iterating - the MerTradeNo is in the encrypted data */
-    const compSnap = await db.collection("competitions").get();
-    for (const comp of compSnap.docs) {
-      const cfg = (comp.data().config || {});
-      if (!cfg.payuniEnabled || !cfg.payuniHashKey) continue;
-      const chk = payuniHash(EncryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
+
+    // U2 fix: orders are now most often signed with the SYSTEM-LEVEL sales keys (because
+    // edit.html doesn't expose per-activity keys), so try sales first, then fall back to
+    // per-activity keys for any future per-activity merchant setup.
+    const salesDoc = await db.collection("config").doc("sales").get();
+    const sales = salesDoc.exists ? salesDoc.data() : {};
+    if (sales.payuniHashKey && sales.payuniHashIV) {
+      const chk = payuniHash(EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
       if (chk === HashInfo) {
         try {
-          const info = payuniDecrypt(EncryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
-          matched = { info, cfg, compId: comp.id };
-        } catch(e) { continue; }
-        break;
+          const info = payuniDecrypt(EncryptInfo, sales.payuniHashKey, sales.payuniHashIV);
+          matched = { info, cfg: sales, compId: null };
+        } catch (e) { /* fall through to per-comp scan */ }
+      }
+    }
+    if (!matched) {
+      /* Find by iterating competitions — MerTradeNo lives inside the encrypted payload */
+      const compSnap = await db.collection("competitions").get();
+      for (const comp of compSnap.docs) {
+        const cfg = (comp.data().config || {});
+        if (!cfg.payuniEnabled || !cfg.payuniHashKey) continue;
+        const chk = payuniHash(EncryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
+        if (chk === HashInfo) {
+          try {
+            const info = payuniDecrypt(EncryptInfo, cfg.payuniHashKey, cfg.payuniHashIV);
+            matched = { info, cfg, compId: comp.id };
+          } catch(e) { continue; }
+          break;
+        }
       }
     }
     if (!matched) { res.status(400).send("hash mismatch"); return; }
 
-    const { info, compId } = matched;
+    const { info } = matched;
     const orderId = info.MerTradeNo;
     const tradeStatus = info.Status;
 
@@ -3909,6 +3986,8 @@ exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async
     const orderDoc = await orderRef.get();
     if (!orderDoc.exists) { res.status(404).send("order not found"); return; }
     const order = orderDoc.data();
+    // compId for downstream collection writes (notifications, discount codes, etc.)
+    const compId = matched.compId || order.compId;
 
     if (tradeStatus === "SUCCESS" && order.status !== "paid") {
       await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: info.TradeNo || "" });

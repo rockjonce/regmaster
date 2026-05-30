@@ -301,6 +301,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         </div>
       </div>
 
+      <!-- U3: inline error right above the action bar, so submission errors are visible
+           where the user is actually looking (next to the submit button). -->
+      <div class="alert-box err" id="errBoxFoot" style="display:none; margin:0 -56px 14px; border-radius:0; border-left:0; border-right:0"></div>
+
       <!-- Foot bar -->
       <div class="foot-bar">
         <div class="left" id="footMeta">步驟 <b id="curStep">1</b> / 4</div>
@@ -932,8 +936,20 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function showErr(msg) { document.getElementById('errBox').textContent = msg; document.getElementById('errBox').style.display = 'block'; }
-  function hideErr() { document.getElementById('errBox').style.display = 'none'; }
+  // U3: keep the top errBox (existing) AND mirror the message to errBoxFoot near the
+  // submit button so the user actually notices submission errors. Scroll the visible one.
+  function showErr(msg) {
+    var top = document.getElementById('errBox');
+    var foot = document.getElementById('errBoxFoot');
+    top.textContent = msg; top.style.display = 'block';
+    foot.textContent = msg; foot.style.display = 'block';
+    // Scroll the foot box into view so the user sees the message immediately
+    setTimeout(function () { foot.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 30);
+  }
+  function hideErr() {
+    document.getElementById('errBox').style.display = 'none';
+    document.getElementById('errBoxFoot').style.display = 'none';
+  }
 
   // ---- Read a field value by its scoped domId (handles radio/checkbox/file) ----
   function readFieldValue(def, prefix) {
