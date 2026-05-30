@@ -82,7 +82,7 @@
     deleteAccount:["username"],
     changePassword:["username","oldPassword","newPassword"],
     getMyProfile:[],
-    updateProfile:["displayName","email","phone"],
+    updateProfile:["displayName","email","phone","organizationName"],
     deleteOwnAccount:[],
     saveGeminiKeys:["keys"],
     getNotifications:["role","username"],

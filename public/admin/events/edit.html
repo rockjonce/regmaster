@@ -220,7 +220,7 @@
               <div class="datemode-grp">
                 <label class="datemode-opt">
                   <input type="radio" name="dateMode" value="single" data-dirty>
-                  <span class="dm-body"><b>單次活動</b><small>單一日期、固定時段</small></span>
+                  <span class="dm-body"><b>單次 / 單日活動</b><small>單一日期、固定時段</small></span>
                 </label>
                 <label class="datemode-opt">
                   <input type="radio" name="dateMode" value="multi" data-dirty>
@@ -663,6 +663,8 @@
         else { document.getElementById('posterMsg').textContent = '已有海報（縮圖無法載入）'; }
       }).withFailureHandler(function () { document.getElementById('posterMsg').textContent = '已有海報（縮圖載入失敗）'; }).getPosterData(compId);
     }
+    // A.3: if AI palette previously analysed, render swatches now so organiser always sees the result
+    renderPaletteFromTheme(COMP.themeColors || CFG.themeColors);
     // S3: pdf initial state
     refreshPdfStatus();
 
@@ -798,16 +800,25 @@
       var name = s.name || '';
       var startDate = s.startDate || '';
       var startTime = s.startTime || '08:30';
+      var endDate = s.endDate || startDate || '';     // default to same-day
       var endTime = s.endTime || '18:00';
       var maxTeams = s.maxTeams || 0;
-      return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 1fr 130px 95px 95px 80px auto; gap:8px; align-items:center">' +
-        '<span class="grip">⋮⋮</span>' +
-        '<input value="' + escapeHtml(name) + '" placeholder="場次名稱" data-sf="name">' +
-        '<input type="date" value="' + escapeHtml(startDate) + '" data-sf="startDate" title="場次日期">' +
-        '<input type="time" value="' + escapeHtml(startTime) + '" data-sf="startTime" title="開始時間">' +
-        '<input type="time" value="' + escapeHtml(endTime) + '" data-sf="endTime" title="結束時間">' +
-        '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="名額" data-sf="maxTeams" style="text-align:right">' +
-        '<span class="rm" data-rm-session="' + i + '">×</span>' +
+      // Two-row card so a multi-day session has room for full date+time range
+      return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:10px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
+        '<div style="display:grid; grid-template-columns:auto 1fr 90px auto; gap:8px; align-items:center">' +
+          '<span class="grip" style="cursor:grab">⋮⋮</span>' +
+          '<input value="' + escapeHtml(name) + '" placeholder="場次名稱（例：第一梯次）" data-sf="name">' +
+          '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="名額" data-sf="maxTeams" style="text-align:right" title="該場次名額上限">' +
+          '<span class="rm" data-rm-session="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:auto 130px 95px auto 130px 95px; gap:6px; align-items:center; margin-top:8px; padding-left:28px">' +
+          '<span class="help" style="margin:0">開始</span>' +
+          '<input type="date" value="' + escapeHtml(startDate) + '" data-sf="startDate" title="開始日期">' +
+          '<input type="time" value="' + escapeHtml(startTime) + '" data-sf="startTime" title="開始時間">' +
+          '<span class="help" style="margin:0">～ 結束</span>' +
+          '<input type="date" value="' + escapeHtml(endDate) + '" data-sf="endDate" title="結束日期（多日活動）">' +
+          '<input type="time" value="' + escapeHtml(endTime) + '" data-sf="endTime" title="結束時間">' +
+        '</div>' +
       '</div>';
     }).join('');
     el.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { markDirty(); updateCapacityField(); }); });
@@ -816,16 +827,19 @@
   }
   function readSessions() {
     return Array.from(document.querySelectorAll('#sessionsList .list-row')).map(function (r) {
+      var sd = r.querySelector('[data-sf="startDate"]').value;
+      var ed = r.querySelector('[data-sf="endDate"]').value;
       return {
         name: r.querySelector('[data-sf="name"]').value.trim(),
-        startDate: r.querySelector('[data-sf="startDate"]').value,
+        startDate: sd,
+        endDate: ed || sd,                       // default endDate = startDate
         startTime: r.querySelector('[data-sf="startTime"]').value || '08:30',
         endTime: r.querySelector('[data-sf="endTime"]').value || '18:00',
         maxTeams: parseInt(r.querySelector('[data-sf="maxTeams"]').value, 10) || 0
       };
     }).filter(function (s) { return s.name; });
   }
-  document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
+  document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', endDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
 
   // Item 1: 報名上限 is editable only in 單日活動; in 多梯次 it shows the sum of each
   // session's cap (read-only) — change it back in the 場次 / 梯次 section.
@@ -1079,14 +1093,28 @@
         .uploadPosterImage(compId, b64, posterChosen.name, 'image/jpeg');
     });
   });
+  // A.3: render persisted palette swatches; accepts JSON string or object
+  function renderPaletteFromTheme(theme) {
+    if (!theme) { document.getElementById('colorSwatches').innerHTML = ''; return; }
+    var c;
+    try { c = (typeof theme === 'string') ? JSON.parse(theme) : theme; } catch (e) { c = null; }
+    if (!c || typeof c !== 'object') return;
+    document.getElementById('colorSwatches').innerHTML = Object.keys(c).map(function (k) {
+      return '<div style="text-align:center"><div style="width:42px;height:42px;border-radius:8px;border:1px solid var(--line);background:' + escapeHtml(c[k]) + '"></div><div style="font:400 9.5px/1.4 var(--f-mono);color:var(--muted);margin-top:3px">' + escapeHtml(k) + '</div></div>';
+    }).join('');
+    if (!document.getElementById('posterMsg').textContent.match(/配色/)) {
+      // append a status line about the existing palette without clobbering a poster-load message
+      var pm = document.getElementById('posterMsg');
+      pm.textContent = (pm.textContent || '') + (pm.textContent ? '　·　' : '') + '✓ 已套用 AI 配色（' + Object.keys(c).length + ' 色）';
+    }
+  }
   document.getElementById('analyzeColorsBtn').addEventListener('click', function () {
     var btn = this; btn.disabled = true; btn.textContent = 'AI 分析中⋯';
     google.script.run.withSuccessHandler(function (res) {
       btn.disabled = false; btn.textContent = '🎨 AI 配色';
       if (res && res.success && res.colors) {
-        var c = res.colors;
-        document.getElementById('colorSwatches').innerHTML = Object.keys(c).map(function (k) { return '<div style="text-align:center"><div style="width:42px;height:42px;border-radius:8px;border:1px solid var(--line);background:' + escapeHtml(c[k]) + '"></div><div style="font:400 9.5px/1.4 var(--f-mono);color:var(--muted);margin-top:3px">' + escapeHtml(k) + '</div></div>'; }).join('');
-        document.getElementById('posterMsg').textContent = '✓ 已套用配色到公開頁主題';
+        renderPaletteFromTheme(res.colors);
+        document.getElementById('posterMsg').textContent = '✓ 已套用配色到公開頁主題（' + Object.keys(res.colors).length + ' 色）';
       } else { uiAlert((res && res.message) || 'AI 配色失敗'); }
     }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '🎨 AI 配色'; uiAlert('AI 配色失敗：' + (e && e.message)); })
       .analyzePosterColors(compId, CFG.posterUrl || '');

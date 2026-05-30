@@ -424,7 +424,8 @@ exports.getMyProfile = authCallable(["system", "competition"], async (data, requ
   const a = request.authUser;
   return {
     username: a.username, role: a.role,
-    displayName: a.displayName || "", email: a.email || "", phone: a.phone || "",
+    displayName: a.displayName || "", organizationName: a.organizationName || "",
+    email: a.email || "", phone: a.phone || "",
     emailVerified: a.emailVerified || false
   };
 });
@@ -437,6 +438,7 @@ exports.updateProfile = authCallable(["system", "competition"], async (data, req
   const update = {};
   if (data.displayName !== undefined) update.displayName = String(data.displayName || "").slice(0, 80);
   if (data.phone !== undefined) update.phone = String(data.phone || "").slice(0, 40);
+  if (data.organizationName !== undefined) update.organizationName = String(data.organizationName || "").slice(0, 120);
   if (data.email !== undefined) {
     const e = String(data.email || "").trim().toLowerCase();
     if (e) {
@@ -451,7 +453,7 @@ exports.updateProfile = authCallable(["system", "competition"], async (data, req
   }
   await snap.docs[0].ref.update(update);
   await auditLog(username, "更新個人資料", username, "");
-  return { success: true, displayName: update.displayName, email: update.email, phone: update.phone };
+  return { success: true, displayName: update.displayName, email: update.email, phone: update.phone, organizationName: update.organizationName };
 });
 
 // V3 Phase 9: let a user delete their OWN account (with lockout safeguards).
@@ -806,17 +808,60 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   const jc = {};
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
-  
+
+  // B.1: AI summary for the public-page hero. Only regenerate when the description
+  // actually changed since the last save, to keep Gemini usage minimal.
+  const prevCfg = compData.config || {};
+  const prevDesc = prevCfg.description || "";
+  const newDesc = jc.description || "";
+  const descChanged = String(prevDesc).trim() !== String(newDesc).trim();
+  if (descChanged && newDesc && newDesc.replace(/<[^>]*>/g, '').trim().length >= 20) {
+    try {
+      const summary = await generateDescriptionSummary(newDesc);
+      if (summary) jc.descriptionSummary = summary;
+    } catch (e) { /* tolerate AI failure — save still proceeds */ }
+  } else if (!newDesc) {
+    jc.descriptionSummary = ""; // clear when description was removed
+  } else if (prevCfg.descriptionSummary !== undefined) {
+    jc.descriptionSummary = prevCfg.descriptionSummary; // preserve existing summary
+  }
+
   await ref.update({
-    name: config.competitionName || "", category: config.category || "", config: jc, 
-    isOpen: config.isOpen === true, isVisible: !!config.isVisible, 
+    name: config.competitionName || "", category: config.category || "", config: jc,
+    isOpen: config.isOpen === true, isVisible: !!config.isVisible,
     deadline: config.deadline || "", maxTeams: config.maxTeams || 0
   });
-  
+
   await auditLog(request.authUser.username, "儲存設定", compId, "");
   cDel("cfg_" + compId);
-  return { success: true, message: "儲存成功！" };
+  return { success: true, message: "儲存成功！", summaryUpdated: descChanged && !!jc.descriptionSummary };
 });
+
+// B.1 helper: ask Gemini for a 100–150 字 Chinese summary of an activity description.
+async function generateDescriptionSummary(rawDesc) {
+  const text = String(rawDesc || "").replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!text) return "";
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return "";
+  try {
+    const prompt = "請將下列活動描述濃縮成 100 到 150 字的中文摘要，保留時間、地點、對象、特色等關鍵資訊，不要使用 markdown 或標題，直接輸出純文字段落：\n\n" + text.slice(0, 4000);
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 600, temperature: 0.3 }
+      })
+    });
+    const json = await res.json();
+    let out = "";
+    try { json.candidates[0].content.parts.forEach(p => { if (p.text) out += p.text; }); } catch (e) { out = ""; }
+    out = (out || "").replace(/\s+/g, ' ').trim();
+    return out.slice(0, 220);
+  } catch (e) {
+    await rotateGeminiKey();
+    return "";
+  }
+}
 
 exports.setRegistrationOpen = compAuthCallable(async (data) => {
   await db.collection("competitions").doc(data.compId).update({ isOpen: data.isOpen });
@@ -900,13 +945,27 @@ exports.getRegistrationBundle = callable(async (data) => {
     const a = d.data();
     return { date: a.date || "", title: a.title || "", content: a.content || "" };
   }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  // B.2: best-effort host display (organizationName preferred, fall back to displayName / username)
+  let hostName = "";
+  const createdBy = r.createdBy || "";
+  if (createdBy) {
+    try {
+      const accSnap = await db.collection("accounts").where("username", "==", createdBy).limit(1).get();
+      if (!accSnap.empty) {
+        const acc = accSnap.docs[0].data();
+        hostName = acc.organizationName || acc.displayName || acc.username || "";
+      }
+    } catch (e) { /* swallow — public bundle should not fail because of host lookup */ }
+  }
   return {
     config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
     sessionAccepted: stats.sessionAccepted || {},
     sessionWaitlist: stats.sessionWaitlist || {},
     rulesPdfUrl: cfg.rulesPdfId || "",
     pdfDocId: r.pdfDocId || "",
-    themeColors: cfg.themeColors || ""
+    themeColors: cfg.themeColors || "",
+    hostName: hostName,
+    createdBy: createdBy
   };
 });
 

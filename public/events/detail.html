@@ -15,8 +15,9 @@
 
 <style>
 .nav { position:sticky; top:0; z-index:50; height:60px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
-.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:inherit; }
-.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
+/* B.5: brand/logo must stay on RegMaster's own palette regardless of activity AI theming */
+.nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:var(--brand-ink, #0b1c3d); }
+.nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--brand-ink, #0b1c3d); color:#fff; display:grid; place-items:center; font:800 13px/1 var(--f-display); }
 .nav .crumbs { display:flex; align-items:center; gap:8px; margin-left:32px; font:400 13px/1 var(--f-tc); color:var(--muted); flex:1; overflow:hidden; }
 .nav .crumbs a { color:var(--ink-3); text-decoration:none; }
 .nav .crumbs a:hover { color:var(--ink); }
@@ -266,6 +267,11 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         </a>
       </div>
 
+      <div class="side-card" id="aiHelpCard">
+        <h4>💬 AI 活動小幫手</h4>
+        <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0 0 10px">關於本活動的問題（時間、組別、費用、規章…）都可以直接詢問 AI。</p>
+        <button id="aiChatOpenBtn" class="btn" style="background:var(--acc); color:#fff; width:100%">開啟 AI 對話</button>
+      </div>
       <div class="side-card">
         <h4>需要協助</h4>
         <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0">活動相關問題請直接洽詢主辦方。其他平台問題請<a href="/contact.html?topic=support" style="color:var(--acc);font-weight:500">聯絡客服</a>。</p>
@@ -278,6 +284,45 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   <h3>無法載入活動</h3>
   <p id="errorMsg">找不到此活動，或活動已下架。</p>
   <a href="/events/" class="btn btn-primary">回到活動列表</a>
+</div>
+
+<!-- B.3: Activity-scoped AI chatbot (ported from legacy regmaster-pro) -->
+<style>
+#aiChatPanel { position:fixed; right:24px; bottom:24px; width:360px; max-width:calc(100vw - 32px); height:480px; max-height:70vh;
+  background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 18px 48px rgba(11,28,61,.18);
+  display:none; flex-direction:column; z-index:120; overflow:hidden; }
+#aiChatPanel.open { display:flex; }
+#aiChatPanel .hdr { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;
+  background:linear-gradient(135deg, var(--acc) 0%, color-mix(in srgb, var(--acc) 70%, var(--ink)) 100%); color:#fff; }
+#aiChatPanel .hdr h5 { margin:0; font:700 14.5px/1.2 var(--f-display); color:#fff; }
+#aiChatPanel .hdr small { display:block; font:400 11px/1.4 var(--f-tc); opacity:.85; margin-top:2px; }
+#aiChatPanel .hdr button { background:rgba(255,255,255,.18); color:#fff; border:0; width:26px; height:26px; border-radius:6px; cursor:pointer; font:600 14px/1 var(--f-tc); }
+#aiChatPanel .msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:var(--surface-2); }
+#aiChatPanel .msg { display:flex; }
+#aiChatPanel .msg.user { justify-content:flex-end; }
+#aiChatPanel .msg .bubble { max-width:78%; padding:10px 13px; border-radius:12px; font:400 13px/1.55 var(--f-tc); white-space:pre-wrap; word-wrap:break-word; }
+#aiChatPanel .msg.user .bubble { background:var(--acc); color:#fff; border-bottom-right-radius:4px; }
+#aiChatPanel .msg.ai .bubble { background:var(--surface); border:1px solid var(--line); color:var(--ink); border-bottom-left-radius:4px; }
+#aiChatPanel .input-row { padding:10px 12px; border-top:1px solid var(--line); display:flex; gap:8px; background:var(--surface); }
+#aiChatPanel .input-row input { flex:1; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font:400 13px/1.4 var(--f-tc); }
+#aiChatPanel .input-row button { padding:9px 14px; background:var(--acc); color:#fff; border:0; border-radius:8px; font:600 13px/1 var(--f-tc); cursor:pointer; }
+#aiChatPanel .input-row button:disabled { opacity:.55; cursor:not-allowed; }
+@media (max-width: 720px) {
+  #aiChatPanel { right:16px; bottom:16px; left:16px; width:auto; height:75vh; }
+}
+</style>
+<div id="aiChatPanel" role="dialog" aria-label="活動 AI 對話">
+  <div class="hdr">
+    <div><h5>AI 活動小幫手</h5><small>僅回答本活動相關問題</small></div>
+    <button type="button" id="aiChatCloseBtn" title="關閉">×</button>
+  </div>
+  <div class="msgs" id="aiChatMsgs">
+    <div class="msg ai"><div class="bubble">您好！我是 AI 小幫手，本活動的時間、組別、費用、規章內容都可以詢問我。請輸入您的問題。</div></div>
+  </div>
+  <div class="input-row">
+    <input id="aiChatInput" type="text" placeholder="請輸入問題⋯⋯（按 Enter 送出）" maxlength="200">
+    <button type="button" id="aiChatSendBtn">送出</button>
+  </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
@@ -306,6 +351,32 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   }
   var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   var weekdays = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  // B.4: posterUrl may be a data URI, http URL, or a pfid:DOC_ID placeholder that
+  // needs to be resolved via getPosterData(docId). Cache results to avoid duplicate calls.
+  var POSTER_CACHE = {};
+  var RESOLVED_POSTER_SRC = '';
+  function resolvePosterUrl(url, cb) {
+    if (!url) { cb(''); return; }
+    if (typeof url !== 'string') { cb(''); return; }
+    // Already a data URI or a normal http(s) URL — use directly
+    if (url.indexOf('data:') === 0 || /^https?:\/\//.test(url)) { cb(url); return; }
+    // pfid: placeholder — backend resolves via compId (which knows its own posterDocId)
+    if (url.indexOf('pfid:') === 0) {
+      if (POSTER_CACHE[compId]) { cb(POSTER_CACHE[compId]); return; }
+      google.script.run
+        .withSuccessHandler(function (res) {
+          var src = res && (res.dataUri || res.dataUrl || (res.base64 ? ('data:image/jpeg;base64,' + res.base64) : ''));
+          POSTER_CACHE[compId] = src || '';
+          cb(src || '');
+        })
+        .withFailureHandler(function () { cb(''); })
+        .getPosterData(compId);
+      return;
+    }
+    // Unknown shape — try as-is, browser may handle relative path
+    cb(url);
+  }
 
   google.script.run
     .withSuccessHandler(function (data) {
@@ -347,29 +418,41 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     }).join('');
 
     document.getElementById('evTitle').textContent = name;
-    // C.1 fix: cfg.description may contain HTML; strip tags before showing as a plain-text snippet.
-    var subTmp = document.createElement('div'); subTmp.innerHTML = cfg.description || '';
-    var subPlain = (subTmp.textContent || subTmp.innerText || '').trim().replace(/\s+/g, ' ');
-    var sub = subPlain.slice(0, 200) + (subPlain.length > 200 ? '⋯' : '');
+    // B.1: prefer the AI-generated summary (descriptionSummary) for the hero subtitle;
+    // fall back to a stripped+truncated snippet of the raw description.
+    var sub = '';
+    if (cfg.descriptionSummary) {
+      sub = String(cfg.descriptionSummary).trim();
+    } else {
+      var subTmp = document.createElement('div'); subTmp.innerHTML = cfg.description || '';
+      var subPlain = (subTmp.textContent || subTmp.innerText || '').trim().replace(/\s+/g, ' ');
+      sub = subPlain.slice(0, 200) + (subPlain.length > 200 ? '⋯' : '');
+    }
     document.getElementById('evSubtitle').textContent = sub;
 
     // C.2: apply AI-extracted theme colours (analyzePosterColors stores JSON on the comp doc).
+    // B.5: snapshot the original --ink (RegMaster brand colour, honouring light/dark mode)
+    // into --brand-ink BEFORE any AI palette override, so the logo stays on RegMaster's own palette.
     var themeRaw = d.themeColors || (d.config && d.config.themeColors) || '';
     if (themeRaw) {
       try {
+        var rsHead = document.documentElement.style;
+        var cs = getComputedStyle(document.documentElement);
+        var origInk = cs.getPropertyValue('--ink').trim();
+        if (origInk) rsHead.setProperty('--brand-ink', origInk);
         var t = (typeof themeRaw === 'string') ? JSON.parse(themeRaw) : themeRaw;
-        var rs = document.documentElement.style;
-        if (t.primary)   rs.setProperty('--ink',     t.primary);
-        if (t.secondary) rs.setProperty('--ink-2',   t.secondary);
-        if (t.accent)    rs.setProperty('--acc',     t.accent);
-        if (t.background) rs.setProperty('--bg',     t.background);
-        if (t.text)      rs.setProperty('--ink-3',   t.text);
+        if (t.primary)   rsHead.setProperty('--ink',     t.primary);
+        if (t.secondary) rsHead.setProperty('--ink-2',   t.secondary);
+        if (t.accent)    rsHead.setProperty('--acc',     t.accent);
+        if (t.background) rsHead.setProperty('--bg',     t.background);
+        if (t.text)      rsHead.setProperty('--ink-3',   t.text);
       } catch (e) { /* ignore malformed theme */ }
     }
 
-    // Host (best effort — we don't have creator displayName here, fallback to compId)
-    document.getElementById('hostAvatar').textContent = (name || '?').charAt(0);
-    document.getElementById('hostName').textContent = '活動主辦方';
+    // Host — B.2: backend returns hostName (organizationName || displayName || username)
+    var hostName = d.hostName || '';
+    document.getElementById('hostAvatar').textContent = (hostName || name || '?').charAt(0);
+    document.getElementById('hostName').textContent = hostName || '活動主辦方';
     document.getElementById('hostMeta').textContent = '活動編號 ' + compId;
 
     // Facts — date + start/end time (single mode) OR session list (multi mode)
@@ -378,9 +461,22 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var dateHtml = '';
     if (dateMode === 'multi' && Array.isArray(cfg.sessions) && cfg.sessions.length) {
       dateHtml = cfg.sessions.map(function (s) {
-        var t = '';
-        if (s.startTime || s.endTime) t = ' · ' + (s.startTime || '') + (s.endTime ? ('～' + s.endTime) : '');
-        return '<div style="line-height:1.45">' + escapeHtml(s.name || '梯次') + '：' + escapeHtml(s.startDate || '待公告') + t + '</div>';
+        var sd = s.startDate || '';
+        var ed = s.endDate || sd;
+        var st = s.startTime || '';
+        var et = s.endTime || '';
+        var range;
+        if (!sd) { range = '日期待公告'; }
+        else if (sd === ed) {
+          // same-day: show date once, times after
+          var tail = '';
+          if (st || et) tail = ' · ' + st + (et ? ('～' + et) : '');
+          range = sd + tail;
+        } else {
+          // multi-day: show full range
+          range = sd + (st ? (' ' + st) : '') + ' ～ ' + ed + (et ? (' ' + et) : '');
+        }
+        return '<div style="line-height:1.45">' + escapeHtml(s.name || '梯次') + '：' + escapeHtml(range) + '</div>';
       }).join('');
     } else if (competitionDate) {
       var timeSuffix = '';
@@ -400,16 +496,20 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       : accepted + ' 已報名<small>未設名額上限</small>';
     document.getElementById('factDeadline').textContent = cfg.deadline || '待公告';
 
-    // Cover — use poster if available
+    // Cover — use poster if available. B.4: resolve pfid:DOCID placeholders via getPosterData.
     var cover = document.getElementById('coverArt');
     if (cfg.posterUrl) {
-      cover.classList.add('has-poster');
-      var img = document.createElement('img');
-      img.className = 'poster';
-      img.src = cfg.posterUrl;
-      img.alt = name;
-      img.onerror = function () { cover.classList.remove('has-poster'); img.remove(); };
-      cover.appendChild(img);
+      resolvePosterUrl(cfg.posterUrl, function (src) {
+        if (!src) return;                                    // resolution failed; leave cover blank
+        cover.classList.add('has-poster');
+        var img = document.createElement('img');
+        img.className = 'poster';
+        img.src = src;
+        img.alt = name;
+        img.onerror = function () { cover.classList.remove('has-poster'); img.remove(); };
+        cover.appendChild(img);
+        RESOLVED_POSTER_SRC = src;
+      });
     }
     var dl = parseDate(competitionDate) || parseDate(cfg.deadline);
     if (dl) {
@@ -488,12 +588,15 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       }
     }
 
-    // C.3: Poster tab + content — only when a poster image is uploaded
+    // C.3: Poster tab + content — only when a poster image is uploaded (B.4: pfid resolution)
     if (cfg.posterUrl) {
       document.getElementById('tabPoster').style.display = '';
       document.getElementById('poster').style.display = '';
-      document.getElementById('posterFull').innerHTML =
-        '<img src="' + escapeHtml(cfg.posterUrl) + '" alt="活動海報" style="display:block; max-width:100%; height:auto; border-radius:14px; border:1px solid var(--line)">';
+      resolvePosterUrl(cfg.posterUrl, function (src) {
+        if (!src) { document.getElementById('posterFull').innerHTML = '<p class="help">海報載入失敗</p>'; return; }
+        document.getElementById('posterFull').innerHTML =
+          '<img src="' + escapeHtml(src) + '" alt="活動海報" style="display:block; max-width:100%; height:auto; border-radius:14px; border:1px solid var(--line)">';
+      });
     }
 
     // Show
@@ -564,6 +667,50 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   document.getElementById('shareFB').addEventListener('click', function () {
     window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(location.href), '_blank');
   });
+
+  // ----- B.3: Activity-scoped AI chatbot (uses askCompetitionAI callable) -----
+  var aiPanel = document.getElementById('aiChatPanel');
+  var aiMsgs = document.getElementById('aiChatMsgs');
+  var aiInput = document.getElementById('aiChatInput');
+  var aiSendBtn = document.getElementById('aiChatSendBtn');
+  var aiOpenBtn = document.getElementById('aiChatOpenBtn');
+  var aiCloseBtn = document.getElementById('aiChatCloseBtn');
+  var aiCooldown = false;
+  function aiOpen() { aiPanel.classList.add('open'); setTimeout(function () { aiInput.focus(); }, 50); }
+  function aiClose() { aiPanel.classList.remove('open'); }
+  if (aiOpenBtn) aiOpenBtn.addEventListener('click', aiOpen);
+  if (aiCloseBtn) aiCloseBtn.addEventListener('click', aiClose);
+  function aiAppend(role, text) {
+    var safe = String(text || '').replace(/[&<>]/g, function (c) { return ({ '&':'&amp;','<':'&lt;','>':'&gt;' })[c]; });
+    var html = '<div class="msg ' + role + '"><div class="bubble">' + safe.replace(/\n/g, '<br>') + '</div></div>';
+    aiMsgs.insertAdjacentHTML('beforeend', html);
+    aiMsgs.scrollTop = aiMsgs.scrollHeight;
+  }
+  function aiSend() {
+    var q = (aiInput.value || '').trim();
+    if (!q) return;
+    if (aiCooldown) { aiAppend('ai', '請稍候再提問⋯'); return; }
+    aiCooldown = true; setTimeout(function () { aiCooldown = false; }, 8000);
+    aiAppend('user', q);
+    aiInput.value = '';
+    aiSendBtn.disabled = true;
+    aiMsgs.insertAdjacentHTML('beforeend', '<div class="msg ai" id="aiChatLoading"><div class="bubble">⏳ AI 思考中⋯</div></div>');
+    aiMsgs.scrollTop = aiMsgs.scrollHeight;
+    google.script.run
+      .withSuccessHandler(function (r) {
+        var ld = document.getElementById('aiChatLoading'); if (ld) ld.remove();
+        aiSendBtn.disabled = false;
+        aiAppend('ai', (r && r.answer) || 'AI 暫時無法回答，請稍後再試。');
+      })
+      .withFailureHandler(function () {
+        var ld = document.getElementById('aiChatLoading'); if (ld) ld.remove();
+        aiSendBtn.disabled = false;
+        aiAppend('ai', 'AI 暫時無法連線，請稍後再試。');
+      })
+      .askCompetitionAI(compId, q);
+  }
+  if (aiSendBtn) aiSendBtn.addEventListener('click', aiSend);
+  if (aiInput) aiInput.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); aiSend(); } });
 })();
 </script>
 </body>

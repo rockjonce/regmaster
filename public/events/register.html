@@ -414,9 +414,17 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     if (CFG.category) meta.push('<div>🏷 ' + escapeHtml(CFG.category) + '</div>');
     document.getElementById('sumMeta').innerHTML = meta.join('');
     if (CFG.posterUrl) {
-      var img = document.createElement('img');
-      img.src = CFG.posterUrl;
-      document.getElementById('sumPh').appendChild(img);
+      var poImg = document.createElement('img');
+      // B.4: resolve pfid:DOCID via backend; fall through for data: / http(s):
+      if (String(CFG.posterUrl).indexOf('pfid:') === 0) {
+        google.script.run.withSuccessHandler(function (res) {
+          var src = res && (res.dataUri || res.dataUrl || (res.base64 ? ('data:image/jpeg;base64,' + res.base64) : ''));
+          if (src) poImg.src = src;
+        }).withFailureHandler(function () {}).getPosterData(compId);
+      } else {
+        poImg.src = CFG.posterUrl;
+      }
+      document.getElementById('sumPh').appendChild(poImg);
     }
     if ((CFG.paymentMethods || []).length > 0) {
       document.getElementById('payMethodsList').textContent = CFG.paymentMethods.join('、');
@@ -451,13 +459,22 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var grid = document.getElementById('sessionGrid');
       grid.innerHTML = sessions.map(function (s, i) {
         var name = s.name || ('場次 ' + (i+1));
-        var d = s.startDate || s.date || '';
-        var timeTxt = '';
-        if (s.startTime || s.endTime) timeTxt = ' · ' + (s.startTime || '') + (s.endTime ? ('～' + s.endTime) : '');
+        var sd = s.startDate || s.date || '';
+        var ed = s.endDate || sd;
+        var st = s.startTime || '';
+        var et = s.endTime || '';
+        var rangeTxt = '';
+        if (sd && sd === ed) {
+          rangeTxt = sd + ((st || et) ? (' · ' + st + (et ? ('～' + et) : '')) : '');
+        } else if (sd && ed && sd !== ed) {
+          rangeTxt = sd + (st ? (' ' + st) : '') + ' ～ ' + ed + (et ? (' ' + et) : '');
+        } else if (sd) {
+          rangeTxt = sd;
+        }
         var accepted = CFG.sessionAccepted[i] || 0;
         var max = parseInt(s.maxTeams) || 0;
         var qtyTxt = max > 0 ? (accepted + ' / ' + max) : (accepted + ' 已報名');
-        return '<div class="session-card" data-idx="' + i + '"><div class="top"><div class="ck"></div><h5>' + escapeHtml(name) + '</h5><span class="qty">' + qtyTxt + '</span></div>' + (d ? '<div class="meta">' + escapeHtml(d + timeTxt) + '</div>' : '') + '</div>';
+        return '<div class="session-card" data-idx="' + i + '"><div class="top"><div class="ck"></div><h5>' + escapeHtml(name) + '</h5><span class="qty">' + qtyTxt + '</span></div>' + (rangeTxt ? '<div class="meta">' + escapeHtml(rangeTxt) + '</div>' : '') + '</div>';
       }).join('');
       grid.querySelectorAll('.session-card').forEach(function (card) {
         card.addEventListener('click', function () {

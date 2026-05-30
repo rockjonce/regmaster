@@ -111,6 +111,7 @@
                 <div class="fld"><div class="lbl">帳號（不可變更）</div><input id="prof-username" disabled></div>
                 <div class="fld"><div class="lbl">角色（不可變更）</div><input id="prof-role" disabled></div>
                 <div class="fld"><div class="lbl">顯示名稱</div><input id="prof-displayName"></div>
+                <div class="fld"><div class="lbl">機構名稱</div><input id="prof-organizationName" placeholder="例：廣天國際有限公司"></div>
                 <div class="fld"><div class="lbl">Email</div><input id="prof-email" type="email"></div>
                 <div class="fld"><div class="lbl">電話</div><input id="prof-phone" type="tel"></div>
               </div>
@@ -222,7 +223,7 @@
   function getNested(obj, path) { return path.split('.').reduce(function (o, k) { return o && o[k]; }, obj); }
 
   ['orgAv','meAv','bigAv'].forEach(function (id) { document.getElementById(id).textContent = (me.displayName || me.username).charAt(0).toUpperCase(); });
-  document.getElementById('orgName').textContent = me.displayName || me.username;
+  document.getElementById('orgName').textContent = me.organizationName || me.displayName || me.username;
   document.getElementById('meName').textContent = me.displayName || me.username;
   document.getElementById('bigName').textContent = me.displayName || me.username;
   document.getElementById('bigRole').textContent = me.role === 'system' ? '系統管理員' : '主辦方';
@@ -233,6 +234,7 @@
   google.script.run.withSuccessHandler(function (p) {
     p = p || {};
     document.getElementById('prof-displayName').value = p.displayName || '';
+    document.getElementById('prof-organizationName').value = p.organizationName || '';
     document.getElementById('prof-email').value = p.email || '';
     document.getElementById('prof-phone').value = p.phone || '';
   }).getMyProfile();
@@ -299,9 +301,10 @@
       .changePassword(me.username, oldP, newP);
   });
 
-  // ---- Save profile (displayName / email / phone) ----
+  // ---- Save profile (displayName / organizationName / email / phone) ----
   document.getElementById('saveProfileBtn').addEventListener('click', function () {
     var displayName = document.getElementById('prof-displayName').value.trim();
+    var organizationName = document.getElementById('prof-organizationName').value.trim();
     var email = document.getElementById('prof-email').value.trim();
     var phone = document.getElementById('prof-phone').value.trim();
     var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
@@ -312,12 +315,13 @@
           btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = o; }, 1400);
           // keep the local session display name in sync
           if (displayName) { me.displayName = displayName; AppState.setMe(me); }
+          if (organizationName !== undefined) { me.organizationName = organizationName; AppState.setMe(me); }
           document.getElementById('bigName').textContent = displayName || me.username;
-          document.getElementById('orgName').textContent = displayName || me.username;
+          document.getElementById('orgName').textContent = organizationName || displayName || me.username;
         } else { alert((res && res.message) || '儲存失敗'); }
       })
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; alert('失敗：' + (err && err.message)); })
-      .updateProfile(displayName, email, phone);
+      .updateProfile(displayName, email, phone, organizationName);
   });
 
   // ---- Delete own account ----
