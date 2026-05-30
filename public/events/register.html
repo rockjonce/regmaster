@@ -687,15 +687,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     STU_DEFS = studentFieldDefs();
     TCH_DEFS = teacherFieldDefs();
     CUSTOM_DEFS = customFieldDefs();
-    // 報名 #1 fix: card count = max(config.memberCount, sum of student-section repeats).
-    // Each card uses its own section's fields so two student blocks render as two distinct cards.
+    // Section count is now the single source of truth: 學員區塊有 N 個 → 學員卡片就有 N 個.
+    // The legacy CFG.memberCount/teacherCount only kicks in for old activities without a formSchema.
     var stuSecs = SCHEMA ? sectionsByRole('student') : [];
     var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-    var mCount = Math.max(CFG.memberCount || 1, stuSecRepeatTotal, 1);
+    var mCount = SCHEMA ? Math.max(1, stuSecRepeatTotal) : (CFG.memberCount || 1);
     STU_DEFS_PER_CARD = studentFieldDefsPerCard(mCount);
     var tchSecs = SCHEMA ? sectionsByRole('teacher') : [];
     var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-    var tCount = Math.max(CFG.teacherCount || 0, tchSecRepeatTotal);
+    var tCount = SCHEMA ? tchSecRepeatTotal : (CFG.teacherCount || 0);
     TCH_DEFS_PER_CARD = teacherFieldDefsPerCard(tCount);
     document.getElementById('studentCount').textContent = '共 ' + mCount + ' 位';
     var sList = document.getElementById('studentList');
@@ -1092,7 +1092,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       // Derive counts the same way the renderer did, so each card reads with its own defs
       var stuSecs = SCHEMA ? sectionsByRole('student') : [];
       var stuSecRepeatTotal = stuSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-      var mCount = Math.max(CFG.memberCount || 1, stuSecRepeatTotal, 1);
+      // Section count is authoritative when a schema exists; legacy fallback only for old activities.
+      var mCount = SCHEMA ? Math.max(1, stuSecRepeatTotal) : (CFG.memberCount || 1);
       var defsPerCard = STU_DEFS_PER_CARD.length ? STU_DEFS_PER_CARD : studentFieldDefsPerCard(mCount);
       for (var i = 0; i < mCount; i++) {
         var s = readMember(defsPerCard[i] || STU_DEFS, 'student_' + i + '_', '學員 ' + (i + 1));
@@ -1102,7 +1103,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       STATE.teachers = [];
       var tchSecs = SCHEMA ? sectionsByRole('teacher') : [];
       var tchSecRepeatTotal = tchSecs.reduce(function (n, s) { return n + Math.max(1, parseInt(s.repeat, 10) || 1); }, 0);
-      var tCount = Math.max(CFG.teacherCount || 0, tchSecRepeatTotal);
+      var tCount = SCHEMA ? tchSecRepeatTotal : (CFG.teacherCount || 0);
       var tchDefsPerCard = TCH_DEFS_PER_CARD.length ? TCH_DEFS_PER_CARD : teacherFieldDefsPerCard(tCount);
       if (tCount > 0) {
         for (var j = 0; j < tCount; j++) {

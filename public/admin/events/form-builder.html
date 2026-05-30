@@ -913,6 +913,9 @@ body { background:var(--bg); overflow:hidden; }
   var ROLE_LABELS = { student: '學員', teacher: '指導者', custom: '自訂' };
   function defaultSectionTitle(role) { return role === 'student' ? '學員資料' : role === 'teacher' ? '指導者' : '附加問題'; }
   document.getElementById('addSectionBtn').addEventListener('click', function () {
+    // 附加問題 (custom) is single-instance — show "(已存在)" on the option when there's
+    // already one in the schema, and disable it so the user can't pick it again.
+    var customExists = (SCHEMA.sections || []).some(function (s) { return s.role === 'custom'; });
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.45);display:grid;place-items:center;z-index:9999;padding:20px';
     ov.innerHTML =
@@ -920,7 +923,9 @@ body { background:var(--bg); overflow:hidden; }
         '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:16px">新增區塊</h3>' +
         '<div style="margin-bottom:14px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">區塊類型</div>' +
           '<select id="asRole" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink);background:var(--surface)">' +
-            '<option value="student">學員</option><option value="teacher">指導者</option><option value="custom">自訂</option>' +
+            '<option value="student">學員（可新增多個 → 每個代表一位學員）</option>' +
+            '<option value="teacher">指導者（可新增多個 → 每個代表一位指導者）</option>' +
+            '<option value="custom"' + (customExists ? ' disabled' : '') + '>附加問題' + (customExists ? '（已存在，僅允許一個）' : '（限一個）') + '</option>' +
           '</select></div>' +
         '<div style="margin-bottom:18px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">區塊標題</div>' +
           '<input id="asTitle" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink)" value="學員資料"></div>' +
@@ -937,6 +942,11 @@ body { background:var(--bg); overflow:hidden; }
     ov.querySelector('#asCancel').addEventListener('click', close);
     ov.querySelector('#asOk').addEventListener('click', function () {
       var role = roleSel.value, title = (titleInp.value || '').trim() || ROLE_LABELS[role];
+      // Belt-and-braces: even if someone bypasses the disabled option, block here too.
+      if (role === 'custom' && (SCHEMA.sections || []).some(function (s) { return s.role === 'custom'; })) {
+        uiAlert('附加問題區塊只能有一個。請編輯既有的「附加問題」區塊新增題目。');
+        return;
+      }
       SCHEMA.sections.push({ id: uid('sec'), title: title, role: role, repeat: 1, fields: [] });
       close(); render(); markDirty();
     });

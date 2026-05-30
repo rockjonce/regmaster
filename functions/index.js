@@ -4880,6 +4880,19 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
     })
   };
 
+  // Enforce single 附加問題: if multiple custom-role sections slip through, merge their
+  // fields into the first and drop the rest. Defends against direct-API calls.
+  {
+    const customs = cleanSchema.sections.filter(s => s.role === 'custom');
+    if (customs.length > 1) {
+      const first = customs[0];
+      for (let i = 1; i < customs.length; i++) {
+        first.fields = first.fields.concat(customs[i].fields || []).slice(0, 50);
+      }
+      cleanSchema.sections = cleanSchema.sections.filter(s => s.role !== 'custom' || s === first);
+    }
+  }
+
   const derived = deriveLegacyFromFormSchema(cleanSchema);
 
   const update = {
