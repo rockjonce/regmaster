@@ -674,8 +674,8 @@ body { background:var(--bg); }
       '<div class="b-c-sys"><div class="l">PayUNI 收款</div><div class="v">NT$ ' + s.payuniGross.toLocaleString() + '</div><div class="sub">' + s.payuniCount + ' 筆訂單</div></div>' +
       '<div class="b-c-sys"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− NT$ ' + s.feeTotal.toLocaleString() + '</div></div>' +
       '<div class="b-c-sys"><div class="l">PayUNI 實領</div><div class="v" style="color:var(--ok-700)">NT$ ' + s.payuniNet.toLocaleString() + '</div></div>' +
-      '<div class="b-c-sys"><div class="l">銀行轉帳實領</div><div class="v">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆訂單</div></div>' +
-      '<div class="b-c-sys"><div class="l">匯款前實領總額</div><div class="v" style="font-weight:800">NT$ ' + s.subtotal.toLocaleString() + '</div></div>' +
+      '<div class="b-c-sys" title="銀行轉帳由報名者直接轉入主辦方銀行帳戶，未經平台代收，故不計入匯款"><div class="l">銀行轉帳（直接入帳）</div><div class="v" style="color:var(--muted)">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆 · 不需匯款</div></div>' +
+      '<div class="b-c-sys"><div class="l">匯款前實領（PayUNI 部分）</div><div class="v" style="font-weight:800">NT$ ' + s.subtotal.toLocaleString() + '</div></div>' +
       '<div class="b-c-sys"><div class="l">實際匯款 (扣 NT$15 匯費)</div><div class="v">NT$ ' + s.actualWire.toLocaleString() + '</div><div class="sub">' + (row.remitted ? '<span style="color:var(--ok-700); font-weight:700">✓ 已匯款 ' + ((row.remittance && row.remittance.remittedAt) || '').slice(0, 16) + '</span>' : '<span style="color:var(--warn-700)">待匯款</span>') + '</div></div>';
     var orders = row.orders || [];
     document.getElementById('b-detail').innerHTML = orders.length === 0
@@ -736,9 +736,8 @@ body { background:var(--bg); }
     rows.push([]);
     rows.push(['', '', '', '', '', '', '', '', 'PayUNI 收款小計', s.payuniGross, '', '', '']);
     rows.push(['', '', '', '', '', '', '', '', '手續費小計',     '', '', s.feeTotal, '']);
-    rows.push(['', '', '', '', '', '', '', '', 'PayUNI 實領小計', '', '', '', s.payuniNet]);
-    rows.push(['', '', '', '', '', '', '', '', '銀行轉帳實領小計', '', '', '', s.atmNet]);
-    rows.push(['', '', '', '', '', '', '', '', '匯款前實領總額', '', '', '', s.subtotal]);
+    rows.push(['', '', '', '', '', '', '', '', 'PayUNI 實領小計（= 匯款前實領）', '', '', '', s.payuniNet]);
+    rows.push(['', '', '', '', '', '', '', '', '銀行轉帳直接入帳小計（不計入匯款，僅供記錄）', '', '', '', s.atmNet]);
     rows.push(['', '', '', '', '', '', '', '', '匯費',           '', '', '', '− ' + s.wireFee]);
     rows.push(['', '', '', '', '', '', '', '', '實際匯款金額',   '', '', '', s.actualWire]);
     var esc = function (v) { v = (v == null ? '' : String(v)); if (v.indexOf(',') !== -1 || v.indexOf('"') !== -1 || v.indexOf('\n') !== -1) v = '"' + v.replace(/"/g, '""') + '"'; return v; };
@@ -754,7 +753,14 @@ body { background:var(--bg); }
       if (!confirm('此期間已標記為已匯款，確定要覆蓋嗎？')) return;
     }
     var s = BILL_DATA.summary;
-    if (!confirm('將標記為已實際匯款：\n\n主辦方：' + BILL_DATA.creator + '\n期間：' + BILL_DATA.period.fromDate + ' ~ ' + BILL_DATA.period.toDate + '\n匯款金額：NT$ ' + s.actualWire.toLocaleString() + '\n（已扣 NT$ ' + s.wireFee + ' 匯費）\n\n此操作會寫入帳本紀錄，請確認金額無誤。')) return;
+    if (!confirm('將標記為已實際匯款：\n\n' +
+      '主辦方：' + BILL_DATA.creator + '\n' +
+      '期間：' + BILL_DATA.period.fromDate + ' ~ ' + BILL_DATA.period.toDate + '\n' +
+      'PayUNI 實領：NT$ ' + s.payuniNet.toLocaleString() + '\n' +
+      '匯費：− NT$ ' + s.wireFee + '\n' +
+      '實際匯款金額：NT$ ' + s.actualWire.toLocaleString() + '\n\n' +
+      '註：銀行轉帳 NT$ ' + s.atmNet.toLocaleString() + ' 由報名者直接匯入主辦方帳戶，不計入此次匯款。\n\n' +
+      '此操作會寫入帳本紀錄，請確認金額無誤。')) return;
     google.script.run
       .withSuccessHandler(function (r) {
         if (r && r.success) { toast('已標記為已匯款'); loadBilling(); }

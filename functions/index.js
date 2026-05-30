@@ -4158,7 +4158,11 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
     const remitted = remDoc.exists;
     const remittance = remitted ? remDoc.data() : null;
 
-    const subtotal = payuniNet + atmNet;
+    // Bank-transfer (ATM) orders pay the organiser DIRECTLY at their own bank — that
+    // money never reaches the platform, so it doesn't enter the wire-out calculation.
+    // ATM rows are still surfaced in the orders list as informational context, but
+    // subtotal / actualWire compute on PayUNI net only.
+    const subtotal = payuniNet;
     const wireFee  = 15;                                  // NT$ 15 / actual wire-out
     const actualWire = Math.max(0, subtotal - wireFee);
 

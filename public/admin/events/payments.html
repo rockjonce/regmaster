@@ -431,7 +431,9 @@
           if (o.type === 'payuni') { s.payuniGross += o.amount; s.feeTotal += o.fee; s.payuniNet += o.net; s.payuniCount++; }
           else { s.atmNet += o.net; s.atmCount++; }
         });
-        s.subtotal = s.payuniNet + s.atmNet;
+        // Bank-transfer money is already in the organiser's bank — the platform doesn't
+        // wire that, so subtotal / actualWire are PayUNI-only.
+        s.subtotal = s.payuniNet;
         s.wireFee  = 15;
         s.actualWire = Math.max(0, s.subtotal - s.wireFee);
         s.orderCount = row.orders.length;
@@ -456,8 +458,8 @@
       '<div class="b-c"><div class="l">主辦方方案</div><div class="v">' + escapeHtml(tierLabel) + '</div><div class="sub">PayUNI 手續費 ' + Number(row.feePct || 0).toFixed(1) + '%</div></div>' +
       '<div class="b-c"><div class="l">PayUNI 收款</div><div class="v">NT$ ' + s.payuniGross.toLocaleString() + '</div><div class="sub">' + s.payuniCount + ' 筆訂單</div></div>' +
       '<div class="b-c"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− NT$ ' + s.feeTotal.toLocaleString() + '</div><div class="sub">PayUNI 實領 NT$ ' + s.payuniNet.toLocaleString() + '</div></div>' +
-      '<div class="b-c"><div class="l">銀行轉帳收款</div><div class="v" style="color:var(--ok-700)">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆訂單</div></div>' +
-      '<div class="b-c featured"><div class="l">匯款前實領總額</div><div class="v">NT$ ' + s.subtotal.toLocaleString() + '</div><div class="sub">含 PayUNI + 銀行轉帳</div></div>' +
+      '<div class="b-c" title="此筆款項由報名者直接轉入主辦方銀行帳戶，未經平台代收，故不計入匯款"><div class="l">銀行轉帳（直接入帳）</div><div class="v" style="color:var(--muted)">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆 · 已在主辦方帳戶</div></div>' +
+      '<div class="b-c featured"><div class="l">匯款前實領（PayUNI 部分）</div><div class="v">NT$ ' + s.subtotal.toLocaleString() + '</div><div class="sub">僅含 PayUNI 線上付款</div></div>' +
       '<div class="b-c"><div class="l">實際匯款 (扣匯費 NT$15)</div><div class="v">NT$ ' + s.actualWire.toLocaleString() + '</div><div class="sub">' + (row.remitted ? '<span class="bill-remitted-tag">✓ 已匯款 ' + (row.remittance && row.remittance.remittedAt ? row.remittance.remittedAt.slice(0, 10) : '') + '</span>' : '<span style="color:var(--warn-700)">待匯款</span>') + '</div></div>';
     var det = document.getElementById('billDetail');
     if (!row.orders.length) { det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">此期間沒有可入帳的訂單</p>'; return; }
@@ -488,9 +490,8 @@
     rows.push([]);
     rows.push(['', '', '', '', '', '', '', 'PayUNI 收款小計', s.payuniGross, '', '', '']);
     rows.push(['', '', '', '', '', '', '', '手續費小計',     '', '', s.feeTotal, '']);
-    rows.push(['', '', '', '', '', '', '', 'PayUNI 實領小計', '', '', '', s.payuniNet]);
-    rows.push(['', '', '', '', '', '', '', '銀行轉帳實領小計', '', '', '', s.atmNet]);
-    rows.push(['', '', '', '', '', '', '', '匯款前實領總額', '', '', '', s.subtotal]);
+    rows.push(['', '', '', '', '', '', '', 'PayUNI 實領小計（= 匯款前實領）', '', '', '', s.payuniNet]);
+    rows.push(['', '', '', '', '', '', '', '銀行轉帳直接入帳小計（不計入匯款，僅供記錄）', '', '', '', s.atmNet]);
     rows.push(['', '', '', '', '', '', '', '匯費',           '', '', '', '− ' + s.wireFee]);
     rows.push(['', '', '', '', '', '', '', '實際匯款金額',   '', '', '', s.actualWire]);
     var esc = function (v) {
