@@ -76,7 +76,7 @@
         eitem('/form-builder', '表單設計', 'form-builder', IC.cal) +
         eitem('/registrations', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>') +
         eitem('/announcements', '公告', 'announcements', IC.log) +
-        eitem('/payments', '付款', 'payments', IC.lic) +
+        eitem('/payments', '帳務', 'payments', IC.lic) +
         eitem('/scoring', '評分', 'scoring', IC.sys) +
         eitem('/checkin', '報到', 'checkin', IC.ai) +
       '</div>';

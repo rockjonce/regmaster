@@ -4047,6 +4047,184 @@ exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async
   }
 });
 
+// ===== FF1: Billing / payouts to organisers =====
+// Pulls every paid order (PayUNI or bank-transfer-confirmed) in the date range
+// for one organiser, applies that organiser's tier-specific PayUNI fee %, and
+// returns ready-to-display rows + an aggregate summary. The wire fee (NT$15) is
+// only added to the final wire-out total — see markBillingAsRemitted.
+exports.getOrganizerBilling = authCallable(["system", "competition"], async (data, request) => {
+  const targetCreator = request.authUser.role === "system"
+    ? (data.creator || null)
+    : request.authUser.username;
+  const fromDate = String(data.fromDate || "1970-01-01").slice(0, 10);
+  const toDate   = String(data.toDate   || "9999-12-31").slice(0, 10);
+
+  // Tier-specific fee %
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const feeByTier = (salesDoc.exists ? (salesDoc.data().payuniFeeByTier || {}) : {});
+
+  // Resolve the set of creators we report on.
+  let creators;
+  if (targetCreator) {
+    creators = [targetCreator];
+  } else {
+    const accSnap = await db.collection("accounts").where("role", "==", "competition").get();
+    creators = accSnap.docs.map(d => d.data().username);
+  }
+
+  const results = [];
+  for (const creator of creators) {
+    const tier = await getEffectiveTier(creator);
+    const feePct = parseFloat(feeByTier[tier]) || 0;
+
+    const compSnap = await db.collection("competitions").where("creator", "==", creator).get();
+    const compMap = {};
+    compSnap.docs.forEach(d => { compMap[d.id] = d.data(); });
+    const compIds = Object.keys(compMap);
+    if (!compIds.length) continue;
+
+    const orders = [];
+    let payuniGross = 0, feeTotal = 0, payuniNet = 0, atmNet = 0;
+
+    for (const compId of compIds) {
+      const compName = compMap[compId].name || (compMap[compId].config && compMap[compId].config.competitionName) || "";
+
+      // PayUNI orders — keyed by paidAt date
+      const paySnap = await db.collection("regPayments").where("compId", "==", compId).where("status", "==", "paid").get();
+      paySnap.docs.forEach(d => {
+        const p = d.data();
+        const paidDateStr = String(p.paidAt || "").slice(0, 10);
+        if (!paidDateStr || paidDateStr < fromDate || paidDateStr > toDate) return;
+        const amt = parseInt(p.amount, 10) || 0;
+        const fee = Math.round(amt * feePct) / 100; // 2-decimal precision then we round to int
+        const feeInt = Math.round(amt * feePct / 100);
+        const net = amt - feeInt;
+        payuniGross += amt;
+        feeTotal    += feeInt;
+        payuniNet   += net;
+        orders.push({
+          type: "payuni",
+          compId, compName,
+          orderId: p.orderId,
+          teamId: p.teamId || "",
+          teamNameCN: p.teamNameCN || "",
+          teamNameEN: p.teamNameEN || "",
+          payuniTradeNo: p.payuniTradeNo || "",
+          paidAt: p.paidAt || "",
+          amount: amt, feePct, fee: feeInt, net
+        });
+      });
+
+      // Bank-transfer confirmed teams — no fee deduction
+      const teamSnap = await db.collection("teams").where("compId", "==", compId).get();
+      const cfg = compMap[compId].config || {};
+      // For ATM rows we don't have per-order amount → use the activity's registration fee
+      let atmAmount = parseInt(cfg.registrationFee, 10) || 0;
+      if (!atmAmount && Array.isArray(cfg.feeItems)) {
+        atmAmount = cfg.feeItems.reduce((n, it) => n + (parseInt(it.amount, 10) || 0), 0);
+      }
+      teamSnap.docs.forEach(d => {
+        const t = d.data();
+        const pm = String(t.paymentMethod || "");
+        // Skip PayUNI / discounts — those are handled by regPayments above
+        if (pm === "payuni" || pm === "onlinePayment" || pm === "discount") return;
+        // Require an explicit 已確認 marker
+        const ps = String(t.paymentStatus || "");
+        if (!ps.includes("已確認")) return;
+        // Confirm date — pulled from the timestamp embedded in the status string
+        const dm = ps.match(/(\d{4})-(\d{2})-(\d{2})/);
+        if (!dm) return;
+        const confirmDate = dm[1] + "-" + dm[2] + "-" + dm[3];
+        if (confirmDate < fromDate || confirmDate > toDate) return;
+        if (!atmAmount) return; // skip free events
+        atmNet += atmAmount;
+        orders.push({
+          type: "atm",
+          compId, compName,
+          orderId: "(銀行轉帳)",
+          teamId: t.teamId || "",
+          teamNameCN: t.teamNameCN || "",
+          teamNameEN: t.teamNameEN || "",
+          payuniTradeNo: "",
+          paidAt: confirmDate,
+          amount: atmAmount, feePct: 0, fee: 0, net: atmAmount
+        });
+      });
+    }
+
+    // Was this period already remitted?
+    const remDocId = creator + "_" + fromDate + "_" + toDate;
+    const remDoc = await db.collection("billingRemittances").doc(remDocId).get();
+    const remitted = remDoc.exists;
+    const remittance = remitted ? remDoc.data() : null;
+
+    const subtotal = payuniNet + atmNet;
+    const wireFee  = 15;                                  // NT$ 15 / actual wire-out
+    const actualWire = Math.max(0, subtotal - wireFee);
+
+    // Sort orders newest first
+    orders.sort((a, b) => String(b.paidAt).localeCompare(String(a.paidAt)));
+
+    results.push({
+      creator, tier, feePct,
+      orders,
+      summary: {
+        payuniGross, feeTotal, payuniNet, atmNet, subtotal, wireFee, actualWire,
+        orderCount: orders.length,
+        payuniCount: orders.filter(o => o.type === "payuni").length,
+        atmCount:    orders.filter(o => o.type === "atm").length
+      },
+      remitted, remittance,
+      period: { fromDate, toDate }
+    });
+  }
+  return results;
+});
+
+// System admin marks a (creator × period) bill as wired. Persists the recorded
+// amount + wire fee + author + note, so future runs of getOrganizerBilling can
+// flag the period as "已匯款".
+exports.markBillingAsRemitted = authCallable(["system"], async (data, request) => {
+  const { creator, fromDate, toDate, actualWireAmount, wireFee, note } = data;
+  if (!creator || !fromDate || !toDate) return { success: false, message: "缺少必要欄位 (creator/fromDate/toDate)" };
+  const docId = creator + "_" + String(fromDate).slice(0, 10) + "_" + String(toDate).slice(0, 10);
+  await db.collection("billingRemittances").doc(docId).set({
+    creator,
+    fromDate: String(fromDate).slice(0, 10),
+    toDate:   String(toDate).slice(0, 10),
+    actualWireAmount: parseInt(actualWireAmount, 10) || 0,
+    wireFee:          parseInt(wireFee, 10) || 15,
+    remittedAt: fmtNow(),
+    remittedBy: request.authUser.username,
+    note: String(note || "").slice(0, 200)
+  });
+  await auditLog(request.authUser.username, "標記已匯款", creator,
+    String(fromDate).slice(0, 10) + "~" + String(toDate).slice(0, 10) + " NT$" + (parseInt(actualWireAmount, 10) || 0));
+  return { success: true };
+});
+
+// Past wire-outs (organiser sees their own; system admin can pass a creator or omit for all).
+exports.listRemittanceHistory = authCallable(["system", "competition"], async (data, request) => {
+  const targetCreator = request.authUser.role === "system"
+    ? (data && data.creator) || null
+    : request.authUser.username;
+  let snap;
+  if (targetCreator) snap = await db.collection("billingRemittances").where("creator", "==", targetCreator).get();
+  else snap = await db.collection("billingRemittances").get();
+  return snap.docs.map(d => d.data()).sort((a, b) => String(b.remittedAt || "").localeCompare(String(a.remittedAt || "")));
+});
+
+// System admin lists every competition owner so the billing UI can pick from a dropdown.
+exports.listOrganizerAccounts = authCallable(["system"], async () => {
+  const snap = await db.collection("accounts").where("role", "==", "competition").get();
+  const accounts = await Promise.all(snap.docs.map(async d => {
+    const a = d.data();
+    const tier = await getEffectiveTier(a.username);
+    return { username: a.username, displayName: a.displayName || "", organizationName: a.organizationName || "", tier };
+  }));
+  return accounts.sort((a, b) => a.username.localeCompare(b.username));
+});
+
 exports.getRegPaymentStatus = callable(async (data) => {
   const { orderId } = data;
   if (!orderId) return { status: "unknown" };

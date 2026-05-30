@@ -159,6 +159,7 @@ body { background:var(--bg); }
         <a data-tab="params"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg>參數設定</a>
         <a data-tab="accounts"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 11l2 2 4-4"/></svg>帳號管理 <span class="ct" id="ctAccts"></span></a>
         <a data-tab="licenses"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>授權碼 <span class="ct" id="ctLics"></span></a>
+        <a data-tab="billing"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>帳務管理 <span class="ct" id="ctBilling"></span></a>
         <a data-tab="analytics"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>使用者分析</a>
         <a data-tab="feedback"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>意見回饋 <span class="ct" id="ctFb"></span></a>
         <a data-tab="aikeys"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13l8-8M16 5l3 3M14 7l3 3"/></svg>AI 金鑰 <span class="ct" id="ctKeys"></span></a>
@@ -257,6 +258,53 @@ body { background:var(--bg); }
           <div class="tbl-wrap">
             <table class="tbl"><thead><tr><th>授權碼</th><th>層級</th><th>年限</th><th>狀態</th><th>啟用者</th><th></th></tr></thead>
             <tbody id="licsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 帳務管理 (system role) ============ -->
+      <div class="pane" data-pane="billing">
+        <div class="card">
+          <div class="ch">
+            <div>
+              <h3>主辦方帳務匯出</h3>
+              <p>選擇主辦方與期間，查看每筆 PayUNI 與銀行轉帳訂單的入帳明細、手續費與實領金額。標記「已實際匯款」後會記錄 NT$ 15 匯費。</p>
+            </div>
+          </div>
+          <div class="cb">
+            <div class="row-3" style="display:grid; grid-template-columns:1fr 180px 180px; gap:12px; margin-bottom:14px">
+              <div class="fld">
+                <label class="lbl">主辦方</label>
+                <select id="b-creator" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)"></select>
+              </div>
+              <div class="fld">
+                <label class="lbl">期間預設</label>
+                <select id="b-preset" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)">
+                  <option value="thisMonth">本月迄今</option>
+                  <option value="lastMonth">上月</option>
+                  <option value="last7">近 7 日</option>
+                  <option value="last30">近 30 日</option>
+                  <option value="last90">近 90 日</option>
+                  <option value="thisYear">今年</option>
+                  <option value="all">全部期間</option>
+                  <option value="custom">自訂期間</option>
+                </select>
+              </div>
+              <div class="fld" style="display:flex; align-items:flex-end; gap:8px">
+                <button class="btn btn-ghost btn-sm" id="b-reload">↻ 重新計算</button>
+              </div>
+            </div>
+            <div class="row-2" id="b-customRow" style="display:none; gap:12px; margin-bottom:14px">
+              <div class="fld"><label class="lbl">起日</label><input type="date" id="b-from"></div>
+              <div class="fld"><label class="lbl">迄日</label><input type="date" id="b-to"></div>
+            </div>
+            <div id="b-summary" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:14px"></div>
+            <div id="b-detail"></div>
+            <div style="display:flex; gap:8px; margin-top:14px; justify-content:flex-end">
+              <button class="btn btn-ghost" id="b-export">⬇️ 匯出 CSV</button>
+              <button class="btn btn-primary" id="b-mark">✓ 標記為已實際匯款</button>
+            </div>
+            <div id="b-history" style="margin-top:24px; padding-top:18px; border-top:1px solid var(--line-2)"></div>
           </div>
         </div>
       </div>
@@ -567,6 +615,162 @@ body { background:var(--bg); }
     }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || '產生失敗', 'err'); })
       .createLicense(tier, years);
   });
+
+  // ================= 帳務管理 (system role) =================
+  // System admin lists organisers, picks period, sees aggregated billing across all
+  // that organiser's activities, and marks as 已實際匯款 (records NT$15 wire fee).
+  function _todayISO() { var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function _isoBack(days) { var d=new Date(); d.setDate(d.getDate()-days+1); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function _firstMonth(b) { var d=new Date(); d.setMonth(d.getMonth()-b); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-01'; }
+  function _lastMonth(b) { var d=new Date(); d.setMonth(d.getMonth()-b+1); d.setDate(0); var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function _bRange(preset) {
+    if (preset === 'thisMonth')  return { from: _firstMonth(0), to: _todayISO() };
+    if (preset === 'lastMonth')  return { from: _firstMonth(1), to: _lastMonth(1) };
+    if (preset === 'last7')      return { from: _isoBack(7),    to: _todayISO() };
+    if (preset === 'last30')     return { from: _isoBack(30),   to: _todayISO() };
+    if (preset === 'last90')     return { from: _isoBack(90),   to: _todayISO() };
+    if (preset === 'thisYear')   return { from: new Date().getFullYear() + '-01-01', to: _todayISO() };
+    if (preset === 'all')        return { from: '1970-01-01', to: '9999-12-31' };
+    if (preset === 'custom')     return { from: document.getElementById('b-from').value || '1970-01-01', to: document.getElementById('b-to').value || _todayISO() };
+    return { from: '1970-01-01', to: _todayISO() };
+  }
+  var BILL_DATA = null;
+  function loadBillingOrgs() {
+    google.script.run.withSuccessHandler(function (list) {
+      list = list || [];
+      var sel = document.getElementById('b-creator');
+      sel.innerHTML = '<option value="">— 請選擇主辦方 —</option>' + list.map(function (a) {
+        var lbl = a.organizationName || a.displayName || a.username;
+        return '<option value="' + a.username + '">' + lbl + '（' + a.username + ' · ' + a.tier + '）</option>';
+      }).join('');
+      document.getElementById('ctBilling').textContent = list.length;
+    }).withFailureHandler(function () { toast('載入主辦方列表失敗', 'err'); }).listOrganizerAccounts();
+  }
+  function loadBilling() {
+    var creator = document.getElementById('b-creator').value;
+    var preset = document.getElementById('b-preset').value;
+    document.getElementById('b-customRow').style.display = preset === 'custom' ? '' : 'none';
+    if (!creator) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">請先選擇主辦方</p>'; document.getElementById('b-detail').innerHTML = ''; return; }
+    var r = _bRange(preset);
+    document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">載入中⋯</p>';
+    document.getElementById('b-detail').innerHTML = '';
+    google.script.run
+      .withSuccessHandler(function (rows) {
+        BILL_DATA = (rows || [])[0] || null;
+        renderBilling();
+        loadBillingHistory(creator);
+      })
+      .withFailureHandler(function (e) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--err-700); padding:16px">載入失敗：' + (e && e.message) + '</p>'; })
+      .getOrganizerBilling(r.from, r.to, creator);
+  }
+  function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function renderBilling() {
+    var row = BILL_DATA;
+    if (!row) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">此主辦方在此期間沒有任何活動</p>'; document.getElementById('b-detail').innerHTML = ''; return; }
+    var s = row.summary;
+    var tierLabel = { free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' }[row.tier] || row.tier;
+    document.getElementById('b-summary').innerHTML =
+      '<div class="b-c-sys featured"><div class="l">方案 / 手續費</div><div class="v">' + _esc(tierLabel) + '</div><div class="sub">' + Number(row.feePct || 0).toFixed(1) + '% 手續費率</div></div>' +
+      '<div class="b-c-sys"><div class="l">PayUNI 收款</div><div class="v">NT$ ' + s.payuniGross.toLocaleString() + '</div><div class="sub">' + s.payuniCount + ' 筆訂單</div></div>' +
+      '<div class="b-c-sys"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− NT$ ' + s.feeTotal.toLocaleString() + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">PayUNI 實領</div><div class="v" style="color:var(--ok-700)">NT$ ' + s.payuniNet.toLocaleString() + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">銀行轉帳實領</div><div class="v">NT$ ' + s.atmNet.toLocaleString() + '</div><div class="sub">' + s.atmCount + ' 筆訂單</div></div>' +
+      '<div class="b-c-sys"><div class="l">匯款前實領總額</div><div class="v" style="font-weight:800">NT$ ' + s.subtotal.toLocaleString() + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">實際匯款 (扣 NT$15 匯費)</div><div class="v">NT$ ' + s.actualWire.toLocaleString() + '</div><div class="sub">' + (row.remitted ? '<span style="color:var(--ok-700); font-weight:700">✓ 已匯款 ' + ((row.remittance && row.remittance.remittedAt) || '').slice(0, 16) + '</span>' : '<span style="color:var(--warn-700)">待匯款</span>') + '</div></div>';
+    var orders = row.orders || [];
+    document.getElementById('b-detail').innerHTML = orders.length === 0
+      ? '<p style="color:var(--muted); text-align:center; padding:18px">無入帳訂單</p>'
+      : '<div style="overflow-x:auto; border:1px solid var(--line); border-radius:9px"><table class="b-tbl-sys" style="width:100%; min-width:820px; border-collapse:collapse; font:400 12.5px/1.5 var(--f-tc)">' +
+        '<thead><tr><th>類型</th><th>活動</th><th>訂單 / 隊伍</th><th>付款資訊</th><th style="text-align:right">金額</th><th style="text-align:right">手續費</th><th style="text-align:right">實領</th></tr></thead>' +
+        '<tbody>' + orders.map(function (o) {
+          return '<tr>' +
+            '<td><span style="font:600 10px/1 var(--f-mono); padding:2px 6px; border-radius:4px; background:' + (o.type === 'payuni' ? 'color-mix(in srgb, var(--acc) 14%, transparent)' : 'color-mix(in srgb, var(--ok-500) 14%, transparent)') + '; color:' + (o.type === 'payuni' ? 'var(--acc)' : 'var(--ok-700)') + '">' + (o.type === 'payuni' ? 'PayUNI' : 'ATM') + '</span></td>' +
+            '<td>' + _esc(o.compName) + '</td>' +
+            '<td><b>' + _esc(o.orderId) + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(o.teamId) + ' · ' + _esc(o.teamNameCN || o.teamNameEN || '—') + '</span></td>' +
+            '<td>' + (o.payuniTradeNo ? '<span style="font:500 11px/1.3 var(--f-mono)">' + _esc(o.payuniTradeNo) + '</span><br>' : '') + '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
+            '<td style="text-align:right; font-family:var(--f-mono)">NT$ ' + o.amount.toLocaleString() + '</td>' +
+            '<td style="text-align:right; font-family:var(--f-mono); color:var(--err-700)">' + (o.fee > 0 ? ('− NT$ ' + o.fee.toLocaleString()) : '—') + '</td>' +
+            '<td style="text-align:right; font-family:var(--f-mono); font-weight:700; color:var(--ok-700)">NT$ ' + o.net.toLocaleString() + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+    // Apply styles for .b-c-sys cards (re-use payments.html .b-c shape)
+    var css = document.getElementById('billing-css');
+    if (!css) {
+      css = document.createElement('style'); css.id = 'billing-css';
+      css.textContent =
+        '.b-c-sys{padding:12px 14px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px}' +
+        '.b-c-sys.featured{background:linear-gradient(135deg,var(--ink),#1a2e52);color:#fff;border-color:var(--ink)}' +
+        '.b-c-sys.featured .l{color:rgba(255,255,255,.7)}' +
+        '.b-c-sys .l{font:500 10.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}' +
+        '.b-c-sys .v{font:700 19px/1 var(--f-display)}' +
+        '.b-c-sys .sub{font:400 10.5px/1.4 var(--f-tc);color:var(--muted);margin-top:4px}' +
+        '.b-c-sys.featured .sub{color:rgba(255,255,255,.65)}' +
+        '.b-tbl-sys thead th{text-align:left;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);font:600 10px/1 var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
+        '.b-tbl-sys tbody td{padding:10px 12px;border-bottom:1px solid var(--line-2);color:var(--ink-2);vertical-align:middle}' +
+        '.b-tbl-sys tbody tr:hover td{background:var(--surface-2)}';
+      document.head.appendChild(css);
+    }
+  }
+  function loadBillingHistory(creator) {
+    google.script.run.withSuccessHandler(function (list) {
+      list = list || [];
+      var h = document.getElementById('b-history');
+      h.innerHTML = '<h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">過去匯款紀錄（' + list.length + '）</h4>' +
+        (list.length === 0
+          ? '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">尚未有任何匯款紀錄</p>'
+          : '<div style="display:grid; gap:8px">' + list.map(function (r) {
+              return '<div style="padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; display:flex; justify-content:space-between; align-items:center; font:400 12.5px/1.4 var(--f-tc)">' +
+                '<div><b>' + _esc(r.fromDate) + ' ~ ' + _esc(r.toDate) + '</b>　<span style="color:var(--muted)">' + _esc(r.remittedAt.slice(0, 16)) + '</span></div>' +
+                '<div style="font-family:var(--f-mono); font-weight:700; color:var(--ok-700)">NT$ ' + (r.actualWireAmount || 0).toLocaleString() + '</div>' +
+              '</div>';
+            }).join('') + '</div>');
+    }).listRemittanceHistory(creator);
+  }
+  function exportBillingSys() {
+    if (!BILL_DATA || !BILL_DATA.orders.length) { toast('沒有資料可匯出', 'err'); return; }
+    var s = BILL_DATA.summary;
+    var headers = ['類型', '主辦方', '活動', '訂單編號', '隊伍編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額'];
+    var rows = BILL_DATA.orders.map(function (o) {
+      return [o.type, BILL_DATA.creator, o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net];
+    });
+    rows.push([]);
+    rows.push(['', '', '', '', '', '', '', '', 'PayUNI 收款小計', s.payuniGross, '', '', '']);
+    rows.push(['', '', '', '', '', '', '', '', '手續費小計',     '', '', s.feeTotal, '']);
+    rows.push(['', '', '', '', '', '', '', '', 'PayUNI 實領小計', '', '', '', s.payuniNet]);
+    rows.push(['', '', '', '', '', '', '', '', '銀行轉帳實領小計', '', '', '', s.atmNet]);
+    rows.push(['', '', '', '', '', '', '', '', '匯款前實領總額', '', '', '', s.subtotal]);
+    rows.push(['', '', '', '', '', '', '', '', '匯費',           '', '', '', '− ' + s.wireFee]);
+    rows.push(['', '', '', '', '', '', '', '', '實際匯款金額',   '', '', '', s.actualWire]);
+    var esc = function (v) { v = (v == null ? '' : String(v)); if (v.indexOf(',') !== -1 || v.indexOf('"') !== -1 || v.indexOf('\n') !== -1) v = '"' + v.replace(/"/g, '""') + '"'; return v; };
+    var csv = [headers].concat(rows).map(function (r) { return r.map(esc).join(','); }).join('\n');
+    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    var stamp = BILL_DATA.period.fromDate.replace(/-/g, '') + '_' + BILL_DATA.period.toDate.replace(/-/g, '');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '帳單_' + BILL_DATA.creator + '_' + stamp + '.csv'; a.click();
+  }
+  function markRemittedSys() {
+    if (!BILL_DATA) { toast('請先載入帳單', 'err'); return; }
+    if (BILL_DATA.summary.orderCount === 0) { toast('沒有可匯款的訂單', 'err'); return; }
+    if (BILL_DATA.remitted) {
+      if (!confirm('此期間已標記為已匯款，確定要覆蓋嗎？')) return;
+    }
+    var s = BILL_DATA.summary;
+    if (!confirm('將標記為已實際匯款：\n\n主辦方：' + BILL_DATA.creator + '\n期間：' + BILL_DATA.period.fromDate + ' ~ ' + BILL_DATA.period.toDate + '\n匯款金額：NT$ ' + s.actualWire.toLocaleString() + '\n（已扣 NT$ ' + s.wireFee + ' 匯費）\n\n此操作會寫入帳本紀錄，請確認金額無誤。')) return;
+    google.script.run
+      .withSuccessHandler(function (r) {
+        if (r && r.success) { toast('已標記為已匯款'); loadBilling(); }
+        else toast((r && r.message) || '標記失敗', 'err');
+      })
+      .withFailureHandler(function (e) { toast(e.message || '失敗', 'err'); })
+      .markBillingAsRemitted(BILL_DATA.creator, BILL_DATA.period.fromDate, BILL_DATA.period.toDate, s.actualWire, s.wireFee, '');
+  }
+  document.getElementById('b-creator').addEventListener('change', loadBilling);
+  document.getElementById('b-preset').addEventListener('change', loadBilling);
+  document.getElementById('b-from').addEventListener('change', loadBilling);
+  document.getElementById('b-to').addEventListener('change', loadBilling);
+  document.getElementById('b-reload').addEventListener('click', loadBilling);
+  document.getElementById('b-export').addEventListener('click', exportBillingSys);
+  document.getElementById('b-mark').addEventListener('click', markRemittedSys);
+  loadBillingOrgs();
 
   // ================= 使用者分析 =================
   function loadAnalytics() {
