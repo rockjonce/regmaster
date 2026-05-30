@@ -799,7 +799,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   
   const jk = ["competitionName", "category", "eventType", "isVisible", "groups", "requireTeamNameCN", "requireTeamNameEN", "memberCount",
     "studentFields", "teacherCount", "teacherFields", "dietaryOptions", "dietaryRestrictionOptions", "tshirtOptions", "customQuestions", "studentCustomQuestions", "teacherCustomQuestions", "paymentMethods", "bankInfo", "creditCardLink",
-    "description", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
+    "description", "descriptionSummary", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
     "competitionDate", "competitionStartTime", "competitionEndTime", "openImmediate",
     "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
     "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
@@ -809,21 +809,40 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
 
-  // B.1: AI summary for the public-page hero. Only regenerate when the description
-  // actually changed since the last save, to keep Gemini usage minimal.
+  // B.1: AI summary for the public-page hero. Regenerate when description changed
+  // since the last save, OR when no summary exists yet (one-time backfill per activity).
+  // This keeps Gemini usage minimal — the AI runs at most once per description-change.
   const prevCfg = compData.config || {};
   const prevDesc = prevCfg.description || "";
   const newDesc = jc.description || "";
   const descChanged = String(prevDesc).trim() !== String(newDesc).trim();
-  if (descChanged && newDesc && newDesc.replace(/<[^>]*>/g, '').trim().length >= 20) {
+  const plainNewDesc = String(newDesc).replace(/<[^>]*>/g, '').trim();
+  const hasNoSummary = !prevCfg.descriptionSummary;
+  const needsAI = (descChanged || hasNoSummary) && plainNewDesc.length >= 20;
+  let summaryUpdated = false;
+  let summaryReason = "";
+  if (needsAI) {
     try {
       const summary = await generateDescriptionSummary(newDesc);
-      if (summary) jc.descriptionSummary = summary;
-    } catch (e) { /* tolerate AI failure — save still proceeds */ }
+      if (summary) {
+        jc.descriptionSummary = summary;
+        summaryUpdated = true;
+        summaryReason = descChanged ? "description changed" : "first-time backfill";
+      } else {
+        summaryReason = "AI returned empty";
+        // Preserve any existing summary so we don't blank out a working one.
+        if (prevCfg.descriptionSummary) jc.descriptionSummary = prevCfg.descriptionSummary;
+      }
+    } catch (e) {
+      summaryReason = "AI threw: " + String(e && e.message || e);
+      if (prevCfg.descriptionSummary) jc.descriptionSummary = prevCfg.descriptionSummary;
+    }
   } else if (!newDesc) {
     jc.descriptionSummary = ""; // clear when description was removed
+    summaryReason = "description empty";
   } else if (prevCfg.descriptionSummary !== undefined) {
     jc.descriptionSummary = prevCfg.descriptionSummary; // preserve existing summary
+    summaryReason = "no change, kept existing";
   }
 
   await ref.update({
@@ -834,7 +853,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
 
   await auditLog(request.authUser.username, "儲存設定", compId, "");
   cDel("cfg_" + compId);
-  return { success: true, message: "儲存成功！", summaryUpdated: descChanged && !!jc.descriptionSummary };
+  return { success: true, message: "儲存成功！", summaryUpdated, summaryReason, summaryLength: (jc.descriptionSummary || "").length };
 });
 
 // B.1 helper: ask Gemini for a 100–150 字 Chinese summary of an activity description.
@@ -844,18 +863,32 @@ async function generateDescriptionSummary(rawDesc) {
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return "";
   try {
-    const prompt = "請將下列活動描述濃縮成 100 到 150 字的中文摘要，保留時間、地點、對象、特色等關鍵資訊，不要使用 markdown 或標題，直接輸出純文字段落：\n\n" + text.slice(0, 4000);
+    const prompt = "請將下列活動描述濃縮成 100 到 150 字的中文摘要，保留時間、地點、對象、特色等關鍵資訊。" +
+      "不要使用 markdown、標題、條列、表情符號，直接輸出純文字段落。摘要長度必須介於 100 到 150 個中文字。\n\n" +
+      "活動描述：\n" + text.slice(0, 4000) + "\n\n摘要：";
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 600, temperature: 0.3 }
+        generationConfig: {
+          // Gemini 2.5 Flash counts thinking tokens against maxOutputTokens. 150 字 ≈ 250 tokens
+          // of output, but the model can burn 600+ on internal thinking → empty response. Disable
+          // thinking entirely so the whole budget goes to actual output.
+          maxOutputTokens: 800,
+          temperature: 0.4,
+          thinkingConfig: { thinkingBudget: 0 }
+        }
       })
     });
     const json = await res.json();
     let out = "";
-    try { json.candidates[0].content.parts.forEach(p => { if (p.text) out += p.text; }); } catch (e) { out = ""; }
+    try {
+      const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts;
+      if (Array.isArray(parts)) parts.forEach(p => { if (p && p.text) out += p.text; });
+    } catch (e) { out = ""; }
     out = (out || "").replace(/\s+/g, ' ').trim();
+    // Light tidy: drop leading "摘要：" / "以下是" prefixes the model sometimes emits despite the prompt.
+    out = out.replace(/^(摘要[:：]|以下是.{0,20}摘要[:：]?|這是.{0,10}摘要[:：]?)\s*/, '').trim();
     return out.slice(0, 220);
   } catch (e) {
     await rotateGeminiKey();
@@ -3517,7 +3550,12 @@ async function quoteRegistration(compId, peopleCount, code) {
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { ok: false, message: "找不到活動" };
   const cfg = compDoc.data().config || {};
-  const base = parseInt(cfg.registrationFee, 10) || 0;
+  // P2: prefer cfg.registrationFee (already a sum from saveCompetitionConfig); for older
+  // configs without it, derive from feeItems so the payable amount is never silently 0.
+  let base = parseInt(cfg.registrationFee, 10) || 0;
+  if (!base && Array.isArray(cfg.feeItems)) {
+    base = cfg.feeItems.reduce((n, it) => n + (parseInt(it.amount, 10) || 0), 0);
+  }
   let groupDiscount = 0, groupLabel = "";
   const g = bestGroupDiscount(cfg, peopleCount || 1);
   if (g) { groupDiscount = applyDisc(base, g.type, g.value); groupLabel = "團報優惠（滿 " + g.minPeople + " 人）"; }

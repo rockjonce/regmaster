@@ -464,6 +464,24 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('payMethodsList').textContent = CFG.paymentMethods.join('、');
     }
 
+    // P2: render line items + total from CFG.feeItems (preferred) or CFG.registrationFee fallback.
+    // Without this the summary was hard-coded to 免費 / NT$ 0 even when the organiser configured a fee.
+    var items = Array.isArray(CFG.feeItems) ? CFG.feeItems : [];
+    var sum = 0;
+    var liEl = document.getElementById('lineItems');
+    if (items.length > 0) {
+      liEl.innerHTML = items.map(function (it) {
+        var amt = parseInt(it.amount, 10) || 0;
+        sum += amt;
+        return '<div class="line-item"><span class="lbl">' + escapeHtml(it.label || '收費項目') + '</span><span class="v">' + (amt > 0 ? ('NT$ ' + amt.toLocaleString()) : '免費') + '</span></div>';
+      }).join('');
+    } else {
+      var single = parseInt(CFG.registrationFee, 10) || 0;
+      sum = single;
+      liEl.innerHTML = '<div class="line-item"><span class="lbl">' + escapeHtml(CFG.registrationFeeLabel || '基本報名費') + '</span><span class="v">' + (single > 0 ? ('NT$ ' + single.toLocaleString()) : '免費') + '</span></div>';
+    }
+    document.getElementById('totalAmt').textContent = sum > 0 ? ('NT$ ' + sum.toLocaleString()) : 'NT$ 0';
+
     // Groups
     var groups = CFG.groups || [];
     var groupRadio = document.getElementById('groupRadio');
@@ -535,14 +553,20 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     STU_DEFS = studentFieldDefs();
     TCH_DEFS = teacherFieldDefs();
     CUSTOM_DEFS = customFieldDefs();
-    // Member COUNT stays authoritative from config (driven by event type); the
-    // form schema only defines WHICH fields each member fills.
-    var mCount = CFG.memberCount || 1;
+    // P1: each formSchema student-role section becomes one card; otherwise CFG.memberCount drives count.
+    var stuSecs = SCHEMA ? sectionsByRole('student') : [];
+    var mCount = Math.max(CFG.memberCount || 1, stuSecs.length, 1);
+    STU_DEFS_PER_CARD = studentFieldDefsPerCard(mCount);
     var tCount = CFG.teacherCount || 0;
     document.getElementById('studentCount').textContent = '共 ' + mCount + ' 位';
     var sList = document.getElementById('studentList');
     sList.innerHTML = '';
-    for (var i = 0; i < mCount; i++) sList.appendChild(buildMemberCard('student', i, STU_DEFS));
+    for (var i = 0; i < mCount; i++) {
+      // When multiple student sections are designed, show each section's own title so the
+      // registrant can tell them apart (e.g. 學員 1 / 學員 2 or 隊長 / 副隊長).
+      var t = (stuSecs.length > 1 && stuSecs[i]) ? stuSecs[i].title : null;
+      sList.appendChild(buildMemberCard('student', i, STU_DEFS_PER_CARD[i], t));
+    }
     if (tCount > 0 && TCH_DEFS.length) {
       document.getElementById('teacherSection').style.display = 'block';
       document.getElementById('teacherCount').textContent = '共 ' + tCount + ' 位';
@@ -575,7 +599,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   var COUNTRY_OPTS = ['台灣 Taiwan','中國 China','香港 Hong Kong','澳門 Macau','日本 Japan','韓國 South Korea','美國 United States','加拿大 Canada','英國 United Kingdom','法國 France','德國 Germany','義大利 Italy','西班牙 Spain','葡萄牙 Portugal','荷蘭 Netherlands','比利時 Belgium','瑞士 Switzerland','奧地利 Austria','瑞典 Sweden','挪威 Norway','丹麥 Denmark','芬蘭 Finland','冰島 Iceland','愛爾蘭 Ireland','波蘭 Poland','捷克 Czech Republic','匈牙利 Hungary','希臘 Greece','土耳其 Turkey','俄羅斯 Russia','烏克蘭 Ukraine','澳洲 Australia','紐西蘭 New Zealand','新加坡 Singapore','馬來西亞 Malaysia','泰國 Thailand','越南 Vietnam','菲律賓 Philippines','印尼 Indonesia','印度 India','巴基斯坦 Pakistan','孟加拉 Bangladesh','斯里蘭卡 Sri Lanka','緬甸 Myanmar','柬埔寨 Cambodia','寮國 Laos','蒙古 Mongolia','北韓 North Korea','尼泊爾 Nepal','以色列 Israel','阿聯酋 UAE','沙烏地阿拉伯 Saudi Arabia','卡達 Qatar','科威特 Kuwait','巴林 Bahrain','阿曼 Oman','伊朗 Iran','伊拉克 Iraq','約旦 Jordan','黎巴嫩 Lebanon','敘利亞 Syria','埃及 Egypt','南非 South Africa','奈及利亞 Nigeria','肯亞 Kenya','迦納 Ghana','摩洛哥 Morocco','突尼西亞 Tunisia','衣索比亞 Ethiopia','坦尚尼亞 Tanzania','墨西哥 Mexico','巴西 Brazil','阿根廷 Argentina','智利 Chile','哥倫比亞 Colombia','秘魯 Peru','委內瑞拉 Venezuela','厄瓜多 Ecuador','古巴 Cuba','巴拿馬 Panama','哥斯大黎加 Costa Rica','多明尼加 Dominican Republic','牙買加 Jamaica','盧森堡 Luxembourg','摩納哥 Monaco','列支敦斯登 Liechtenstein','馬爾他 Malta','克羅埃西亞 Croatia','塞爾維亞 Serbia','斯洛維尼亞 Slovenia','斯洛伐克 Slovakia','羅馬尼亞 Romania','保加利亞 Bulgaria','立陶宛 Lithuania','拉脫維亞 Latvia','愛沙尼亞 Estonia','喬治亞 Georgia','亞美尼亞 Armenia','亞塞拜然 Azerbaijan','哈薩克 Kazakhstan','烏茲別克 Uzbekistan','汶萊 Brunei','斐濟 Fiji','帛琉 Palau','馬紹爾群島 Marshall Islands','東帝汶 Timor-Leste','不丹 Bhutan','馬爾地夫 Maldives','巴布亞紐幾內亞 Papua New Guinea','其他 Other'];
 
   // ---- formSchema-aware field engine (V3 independent) ----
-  var SCHEMA = null, STU_DEFS = [], TCH_DEFS = [], CUSTOM_DEFS = [], LABEL_MAP = {};
+  var SCHEMA = null, STU_DEFS = [], STU_DEFS_PER_CARD = [], TCH_DEFS = [], CUSTOM_DEFS = [], LABEL_MAP = {};
   function sectionsByRole(role) { return SCHEMA ? SCHEMA.sections.filter(function (s) { return (s.role || 'custom') === role; }) : []; }
   function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', invoiceType:'select', healthNote:'textarea', idNumber:'idnumber' })[k] || 'text'; }
   function optsFor(k) {
@@ -597,6 +621,25 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
   function legacyDefs(keys) { return (keys || []).map(function (k) { LABEL_MAP[k] = FIELD_LABELS[k] || k; return { key: k, label: FIELD_LABELS[k] || k, type: inferType(k), opts: optsFor(k), req: true, help: '', logic: null }; }); }
   function studentFieldDefs() { if (SCHEMA) { var s = sectionsByRole('student')[0]; return s ? (s.fields || []).map(toDef) : []; } return legacyDefs(CFG.studentFields || ['chineseName']); }
+  // P1: when multiple student-role sections exist in formSchema, each section drives its own member card.
+  // Returns an array of defs-lists, one per student card.
+  function studentFieldDefsPerCard(count) {
+    if (SCHEMA) {
+      var secs = sectionsByRole('student');
+      if (secs.length > 1) {
+        var out = [];
+        for (var i = 0; i < count; i++) {
+          var s = secs[i] || secs[secs.length - 1];   // overflow → repeat last section's shape
+          out.push((s.fields || []).map(toDef));
+        }
+        return out;
+      }
+    }
+    // Single section (or legacy): every card uses the same defs
+    var shared = studentFieldDefs();
+    var arr = []; for (var k = 0; k < count; k++) arr.push(shared);
+    return arr;
+  }
   function teacherFieldDefs() { if (SCHEMA) { var s = sectionsByRole('teacher')[0]; return s ? (s.fields || []).map(toDef) : []; } return legacyDefs(CFG.teacherFields || ['chineseName']); }
   function customFieldDefs() {
     if (SCHEMA) { var out = []; sectionsByRole('custom').forEach(function (s) { (s.fields || []).forEach(function (f) { out.push(toDef(f)); }); }); return out; }
@@ -700,13 +743,14 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
   function isHidden(el) { var w = el && el.closest ? el.closest('.fld') : null; return w && w.style.display === 'none'; }
 
-  function buildMemberCard(role, idx, defs) {
+  function buildMemberCard(role, idx, defs, titleOverride) {
     var card = document.createElement('div');
     card.className = 'member-card';
     card.dataset.role = role; card.dataset.idx = idx;
-    var label = role === 'student' ? '學員' : '指導者';
+    var fallbackLabel = role === 'student' ? '學員' : '指導者';
+    var label = titleOverride || (fallbackLabel + ' ' + (idx + 1));
     var prefix = role + '_' + idx + '_';
-    var inner = '<div class="mc-head"><div class="b">' + (idx + 1) + '</div><h6>' + label + ' ' + (idx + 1) + '</h6></div><div class="fields-2">';
+    var inner = '<div class="mc-head"><div class="b">' + (idx + 1) + '</div><h6>' + escapeHtml(label) + '</h6></div><div class="fields-2">';
     inner += defs.map(function (def) { return buildFieldHtml(def, prefix); }).join('');
     inner += '</div>';
     card.innerHTML = inner;
@@ -884,9 +928,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     } else if (n === 2) {
       // Collect students/teachers from the schema-driven cards
       STATE.students = [];
-      var mCount = CFG.memberCount || 1;
+      // P1: derive count the same way the renderer did, so each card reads with its own defs
+      var sStudentSections = SCHEMA ? sectionsByRole('student').length : 0;
+      var mCount = Math.max(CFG.memberCount || 1, sStudentSections, 1);
+      var defsPerCard = STU_DEFS_PER_CARD.length ? STU_DEFS_PER_CARD : studentFieldDefsPerCard(mCount);
       for (var i = 0; i < mCount; i++) {
-        var s = readMember(STU_DEFS, 'student_' + i + '_', '學員 ' + (i + 1));
+        var s = readMember(defsPerCard[i] || STU_DEFS, 'student_' + i + '_', '學員 ' + (i + 1));
         if (s === false) return false;
         STATE.students.push(s);
       }
@@ -954,6 +1001,23 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var lines = Object.keys(STATE.customAnswers).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(k) + '</span><span class="v">' + escapeHtml(STATE.customAnswers[k]) + '</span></div>'; }).join('');
       html += '<div class="review-section"><h5>附加問題</h5>' + lines + '</div>';
     }
+    // P2: 報名費用一覽 — keeps review consistent with the right-hand summary
+    var feeRows = '';
+    var feeSum = 0;
+    var feeItems = Array.isArray(CFG.feeItems) ? CFG.feeItems : [];
+    if (feeItems.length > 0) {
+      feeItems.forEach(function (it) {
+        var amt = parseInt(it.amount, 10) || 0;
+        feeSum += amt;
+        feeRows += '<div class="r-row"><span class="k">' + escapeHtml(it.label || '收費項目') + '</span><span class="v">' + (amt > 0 ? ('NT$ ' + amt.toLocaleString()) : '免費') + '</span></div>';
+      });
+    } else {
+      var single = parseInt(CFG.registrationFee, 10) || 0;
+      feeSum = single;
+      feeRows += '<div class="r-row"><span class="k">' + escapeHtml(CFG.registrationFeeLabel || '基本報名費') + '</span><span class="v">' + (single > 0 ? ('NT$ ' + single.toLocaleString()) : '免費') + '</span></div>';
+    }
+    feeRows += '<div class="r-row" style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:8px; font-weight:700"><span class="k">合計</span><span class="v" style="color:var(--ink)">' + (feeSum > 0 ? ('NT$ ' + feeSum.toLocaleString()) : '免費') + '</span></div>';
+    html += '<div class="review-section"><h5>報名費用</h5>' + feeRows + '</div>';
     document.getElementById('reviewArea').innerHTML = html;
   }
 

@@ -233,7 +233,12 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         return;
       }
       CFG = data.config || {};
+      // P2: prefer registrationFee (already a sum from saveCompetitionConfig); fall back to
+      // re-summing feeItems for backward compatibility with older / direct-Firestore docs.
       fee = parseInt(CFG.registrationFee || 0) || 0;
+      if (!fee && Array.isArray(CFG.feeItems)) {
+        fee = CFG.feeItems.reduce(function (n, it) { return n + (parseInt(it.amount, 10) || 0); }, 0);
+      }
       // Now load team detail (public lookup by teamId + comp)
       loadTeam();
     })

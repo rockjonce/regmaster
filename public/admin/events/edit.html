@@ -1332,18 +1332,24 @@
     });
     var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
     google.script.run
-      .withSuccessHandler(function () {
+      .withSuccessHandler(function (res) {
         // isOpen lives on the top-level comp doc and has its own callable.
         // deadline is now included in newCfg above; saveCompetitionConfig writes it to the comp doc.
-        new Promise(function (res) {
-          google.script.run.withSuccessHandler(res).withFailureHandler(res).setRegistrationOpen(compId, data.isOpen);
+        new Promise(function (r) {
+          google.script.run.withSuccessHandler(r).withFailureHandler(r).setRegistrationOpen(compId, data.isOpen);
         }).then(function () {
           ORIGINAL_JSON = serialize();
           markDirty();
           btn.textContent = '儲存變更';
           var meta = document.getElementById('saveMeta');
-          meta.textContent = '✓ 儲存成功';
+          // P3: surface AI summary status so organiser sees whether the hero text was regenerated
+          var aiNote = '';
+          if (res && res.summaryUpdated) aiNote = '　·　🤖 AI 摘要已更新（' + (res.summaryLength || 0) + ' 字）';
+          else if (res && res.summaryReason) aiNote = '　·　AI 摘要：' + res.summaryReason;
+          meta.textContent = '✓ 儲存成功' + aiNote;
           meta.className = 'meta saved';
+          // Refresh local cfg so re-saves know the current summary
+          if (res && typeof res.summaryLength === 'number') CFG.descriptionSummary = (res.summaryLength > 0) ? (CFG.descriptionSummary || '<已更新>') : '';
         });
       })
       .withFailureHandler(function (err) {
