@@ -205,7 +205,14 @@
               </div>
             </div>
             <div class="row2">
-              <div class="fld"><div class="lbl">開放報名時間</div><input type="datetime-local" id="basic-openDate" data-dirty><div class="help">到此時間才開放填表報名；留空為立即開放</div></div>
+              <div class="fld">
+                <div class="lbl">開放報名時間</div>
+                <input type="datetime-local" id="basic-openDate" data-dirty>
+                <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); cursor:pointer">
+                  <input type="checkbox" id="basic-openImmediate" data-dirty style="width:14px; height:14px"> 即日起（立即開放）
+                </label>
+                <div class="help">到此時間才開放填表報名；勾選「即日起」即不需輸入</div>
+              </div>
               <div class="fld"><div class="lbl">報名截止時間 <span class="req">*</span></div><input type="datetime-local" id="basic-deadline" data-dirty><div class="help">此時間後停止接受報名</div></div>
             </div>
             <div class="fld" style="margin-top:4px">
@@ -213,16 +220,22 @@
               <div class="datemode-grp">
                 <label class="datemode-opt">
                   <input type="radio" name="dateMode" value="single" data-dirty>
-                  <span class="dm-body"><b>單日活動</b><small>設定單一活動日期</small></span>
+                  <span class="dm-body"><b>單次活動</b><small>單一日期、固定時段</small></span>
                 </label>
                 <label class="datemode-opt">
                   <input type="radio" name="dateMode" value="multi" data-dirty>
-                  <span class="dm-body"><b>多梯次 / 多日</b><small>於「組別 / 場次」分頁設定各梯次</small></span>
+                  <span class="dm-body"><b>多梯次 / 多日</b><small>於下方場次區塊設定各梯次</small></span>
                 </label>
               </div>
             </div>
-            <div class="fld" id="singleDateField"><div class="lbl">活動日</div><input type="datetime-local" id="basic-competitionDate" data-dirty></div>
-            <div class="alert-box info" id="multiDateHint" style="display:none">此活動為多梯次模式 — 請於下方「場次 / 梯次」區塊設定各梯次的日期與名額；單一「活動日」欄位已停用。</div>
+            <div id="singleDateField">
+              <div class="row3">
+                <div class="fld"><div class="lbl">活動日 <span class="req">*</span></div><input type="date" id="basic-competitionDate" data-dirty></div>
+                <div class="fld"><div class="lbl">開始時間</div><input type="time" id="basic-competitionStartTime" data-dirty></div>
+                <div class="fld"><div class="lbl">結束時間</div><input type="time" id="basic-competitionEndTime" data-dirty></div>
+              </div>
+            </div>
+            <div class="alert-box info" id="multiDateHint" style="display:none">此活動為多梯次模式 — 請於下方「場次 / 梯次」區塊設定各梯次的開始與結束時間；單一「活動日」欄位已停用。</div>
           </div>
 
           <!-- 場次 / 梯次（item 2: moved here, shown only in 多梯次 mode） -->
@@ -251,6 +264,7 @@
             <div style="display:flex; gap:8px; flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" id="posterPickBtn">選擇圖片…</button>
               <button type="button" class="btn btn-primary btn-sm" id="posterUploadBtn" disabled>上傳海報</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="posterPreviewBtn" disabled>🔍 預覽海報</button>
               <button type="button" class="btn btn-ghost btn-sm" id="analyzeColorsBtn" disabled>🎨 AI 配色</button>
             </div>
             <div id="posterMsg" class="help" style="margin-top:8px"></div>
@@ -268,7 +282,7 @@
             <div style="display:flex; gap:8px; flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" id="pdfPickBtn">選擇 PDF…</button>
               <button type="button" class="btn btn-primary btn-sm" id="pdfUploadBtn" disabled>上傳簡章</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="aiFillBtn">🤖 用簡章 AI 自動填寫設定</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="aiFillBtn" style="display:none">🤖 用簡章 AI 自動填寫設定</button>
             </div>
             <div id="pdfMsg" class="help" style="margin-top:8px"></div>
           </div>
@@ -282,7 +296,23 @@
               <div><h3>組別</h3><p>區隔不同年齡層、能力等級或主題的選手分組</p></div>
             </div>
             <div class="list-grp" id="groupsList"></div>
-            <button class="add-row" id="addGroupBtn">＋ 新增組別</button>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px">
+              <select id="groupPreset" style="padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13.5px/1.4 var(--f-tc); min-width:160px">
+                <option value="">— 選擇預設組別 —</option>
+                <option value="國小組">國小組（7–12 歲）</option>
+                <option value="國中組">國中組（13–15 歲）</option>
+                <option value="高中組">高中組（16–18 歲）</option>
+                <option value="普高組">普高組（16–18 歲）</option>
+                <option value="技高組">技高組（16–18 歲）</option>
+                <option value="大專組">大專組</option>
+                <option value="社會組">社會組</option>
+                <option value="教師組">教師組</option>
+                <option value="公開組">公開組</option>
+                <option value="__custom__">自訂組別⋯</option>
+              </select>
+              <button class="btn btn-primary btn-sm" type="button" id="addGroupBtn">＋ 新增組別</button>
+            </div>
+            <p class="help" style="margin-top:6px">每個組別可設定年齡限制（年齡區間 或 出生日期區間），系統會在報名時自動驗證選手生日。</p>
           </div>
 
           <div class="sec">
@@ -549,14 +579,40 @@
     return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
+  // Current time as <input type=datetime-local> value.
+  function _nowLocalInput() {
+    var d = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  // Toggle 即日起 checkbox: disable openDate input, stamp it to "now" so the displayed value matches what we'll save.
+  function applyOpenImmediate() {
+    var cb = document.getElementById('basic-openImmediate');
+    var inp = document.getElementById('basic-openDate');
+    if (!cb || !inp) return;
+    if (cb.checked) { inp.value = _nowLocalInput(); inp.disabled = true; inp.style.opacity = '0.55'; }
+    else { inp.disabled = false; inp.style.opacity = ''; }
+  }
+
   function populate() {
     document.getElementById('basic-name').value = CFG.competitionName || '';
     document.getElementById('basic-category').value = CFG.category || '研討會';
     document.getElementById('basic-eventType').value = CFG.eventType || 'single_no_coach';
     document.getElementById('basic-description').value = CFG.description || '';
-    document.getElementById('basic-openDate').value = toLocalInput(CFG.openDate);
-    document.getElementById('basic-deadline').value = toLocalInput(CFG.deadline || COMP.deadline);
-    document.getElementById('basic-competitionDate').value = toLocalInput(CFG.competitionDate);
+    // ---- Dates: prefill sensible defaults when empty ----
+    var _today = (function () { var d = new Date(); var pad = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); })();
+    document.getElementById('basic-openDate').value = CFG.openDate ? toLocalInput(CFG.openDate) : (_today + 'T08:30');
+    document.getElementById('basic-deadline').value = (CFG.deadline || COMP.deadline) ? toLocalInput(CFG.deadline || COMP.deadline) : (_today + 'T12:00');
+    document.getElementById('basic-openImmediate').checked = !!CFG.openImmediate;
+    applyOpenImmediate();
+    // competitionDate may carry datetime (old format) or date-only — split into date + start/end.
+    var cd = String(CFG.competitionDate || '');
+    var datePart = '', timePart = '';
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(cd)) { datePart = cd.slice(0, 10); timePart = cd.slice(11, 16); }
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(cd)) { datePart = cd; }
+    document.getElementById('basic-competitionDate').value = datePart;
+    document.getElementById('basic-competitionStartTime').value = CFG.competitionStartTime || timePart || '08:30';
+    document.getElementById('basic-competitionEndTime').value = CFG.competitionEndTime || '18:00';
 
     // Date mode: explicit dateMode, else infer from whether sessions exist.
     var dateMode = CFG.dateMode || ((CFG.sessions && CFG.sessions.length) ? 'multi' : 'single');
@@ -564,7 +620,7 @@
     updateDateMode();
 
     // Groups
-    renderGroups(CFG.groups || []);
+    renderGroups(CFG.groups || [], CFG.groupAgeRules || {});
     renderSessions(CFG.sessions || []);
     var mode = CFG.sessionSelectMode || 'single';
     document.querySelectorAll('input[name="sessionMode"]').forEach(function (r) { r.checked = (r.value === mode); });
@@ -596,14 +652,16 @@
     renderGroupDisc(CFG.groupDiscounts || []);
     loadDiscCodes();
 
-    // S2: poster initial state
+    // S2: poster initial state — load thumbnail + enable preview/colour-analysis buttons.
     if (CFG.posterUrl) {
       document.getElementById('analyzeColorsBtn').disabled = false;
-      document.getElementById('posterMsg').textContent = '已有海報';
+      document.getElementById('posterPreviewBtn').disabled = false;
+      document.getElementById('posterMsg').textContent = '已有海報（縮圖載入中⋯）';
       google.script.run.withSuccessHandler(function (res) {
-        var src = res && (res.dataUrl || (res.base64 ? ('data:image/jpeg;base64,' + res.base64) : (res.posterUrl && String(res.posterUrl).indexOf('data:') === 0 ? res.posterUrl : '')));
-        if (src) showPosterImg(src);
-      }).withFailureHandler(function () {}).getPosterData(compId);
+        var src = res && (res.dataUri || res.dataUrl || (res.base64 ? ('data:image/jpeg;base64,' + res.base64) : ''));
+        if (src) { showPosterImg(src); LAST_POSTER_SRC = src; document.getElementById('posterMsg').textContent = '已有海報'; }
+        else { document.getElementById('posterMsg').textContent = '已有海報（縮圖無法載入）'; }
+      }).withFailureHandler(function () { document.getElementById('posterMsg').textContent = '已有海報（縮圖載入失敗）'; }).getPosterData(compId);
     }
     // S3: pdf initial state
     refreshPdfStatus();
@@ -615,30 +673,139 @@
     renderFormSummary();
   }
 
-  function renderGroups(groups) {
+  // --- A.6/A.7: groups with per-group age rules (mode: none / age / birth) ---
+  // Defaults ported from legacy regmaster-pro (Taiwan student age bands)
+  var GROUP_AGE_PRESETS = {
+    '國小組': { type: 'age', minAge: 7,  maxAge: 12 },
+    '國中組': { type: 'age', minAge: 13, maxAge: 15 },
+    '高中組': { type: 'age', minAge: 16, maxAge: 18 },
+    '普高組': { type: 'age', minAge: 16, maxAge: 18 },
+    '技高組': { type: 'age', minAge: 16, maxAge: 18 }
+  };
+  function _groupCardHtml(i, name, rule) {
+    var t = (rule && rule.type) || 'none';
+    var minAge = (rule && rule.minAge != null) ? rule.minAge : '';
+    var maxAge = (rule && rule.maxAge != null) ? rule.maxAge : '';
+    var bFrom = (rule && rule.birthFrom) || '';
+    var bTo   = (rule && rule.birthTo)   || '';
+    return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
+      '<div style="display:flex; gap:8px; align-items:center">' +
+        '<span class="grip" style="cursor:grab">⋮⋮</span>' +
+        '<input data-gf="name" value="' + escapeHtml(name) + '" placeholder="組別名稱" style="flex:1">' +
+        '<select data-gf="type" style="padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13px/1.4 var(--f-tc)">' +
+          '<option value="none"' + (t==='none' ?' selected':'') + '>不限年齡</option>' +
+          '<option value="age"'  + (t==='age'  ?' selected':'') + '>年齡區間</option>' +
+          '<option value="birth"'+ (t==='birth'?' selected':'') + '>出生日期區間</option>' +
+        '</select>' +
+        '<span class="rm" data-rm-group="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
+      '</div>' +
+      '<div data-gf="ageRow" style="display:' + (t==='age'?'flex':'none') + '; gap:8px; align-items:center; margin-top:8px; padding-left:28px">' +
+        '<span class="help" style="margin:0">最小</span>' +
+        '<input type="number" min="0" max="120" data-gf="minAge" value="' + escapeHtml(String(minAge)) + '" style="width:90px">' +
+        '<span class="help" style="margin:0">歲 ～ 最大</span>' +
+        '<input type="number" min="0" max="120" data-gf="maxAge" value="' + escapeHtml(String(maxAge)) + '" style="width:90px">' +
+        '<span class="help" style="margin:0">歲</span>' +
+      '</div>' +
+      '<div data-gf="birthRow" style="display:' + (t==='birth'?'flex':'none') + '; gap:8px; align-items:center; margin-top:8px; padding-left:28px">' +
+        '<span class="help" style="margin:0">出生日期從</span>' +
+        '<input type="date" data-gf="birthFrom" value="' + escapeHtml(bFrom) + '">' +
+        '<span class="help" style="margin:0">至</span>' +
+        '<input type="date" data-gf="birthTo" value="' + escapeHtml(bTo) + '">' +
+      '</div>' +
+    '</div>';
+  }
+  function renderGroups(groups, rules) {
+    rules = rules || {};
     var el = document.getElementById('groupsList');
     el.innerHTML = (groups || []).map(function (g, i) {
       var name = typeof g === 'string' ? g : (g.name || g.label || '');
-      return '<div class="list-row" data-idx="' + i + '"><span class="grip">⋮⋮</span><input value="' + escapeHtml(name) + '" placeholder="組別名稱"><span class="rm" data-rm-group="' + i + '">×</span></div>';
+      return _groupCardHtml(i, name, rules[name] || null);
     }).join('');
+    // mode-select toggles between rows
+    el.querySelectorAll('[data-gf="type"]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var row = sel.closest('.list-row');
+        row.querySelector('[data-gf="ageRow"]').style.display   = (sel.value === 'age')   ? 'flex' : 'none';
+        row.querySelector('[data-gf="birthRow"]').style.display = (sel.value === 'birth') ? 'flex' : 'none';
+        markDirty();
+      });
+    });
     el.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', markDirty); });
-    el.querySelectorAll('[data-rm-group]').forEach(function (b) { b.addEventListener('click', function () { var idx = parseInt(b.dataset.rmGroup, 10); var arr = readGroups(); arr.splice(idx, 1); renderGroups(arr); markDirty(); }); });
+    el.querySelectorAll('[data-rm-group]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var idx = parseInt(b.dataset.rmGroup, 10);
+        var arr = readGroups();
+        var rs = readGroupAgeRules();
+        var removed = arr[idx];
+        arr.splice(idx, 1);
+        if (removed) delete rs[removed];
+        renderGroups(arr, rs);
+        markDirty();
+      });
+    });
   }
   function readGroups() {
-    return Array.from(document.querySelectorAll('#groupsList .list-row input')).map(function (i) { return i.value.trim(); }).filter(Boolean);
+    return Array.from(document.querySelectorAll('#groupsList .list-row [data-gf="name"]'))
+      .map(function (i) { return i.value.trim(); }).filter(Boolean);
   }
-  document.getElementById('addGroupBtn').addEventListener('click', function () { var arr = readGroups(); arr.push(''); renderGroups(arr); markDirty(); document.querySelector('#groupsList input:last-of-type').focus(); });
+  function readGroupAgeRules() {
+    var out = {};
+    Array.from(document.querySelectorAll('#groupsList .list-row')).forEach(function (r) {
+      var name = (r.querySelector('[data-gf="name"]').value || '').trim();
+      if (!name) return;
+      var type = r.querySelector('[data-gf="type"]').value;
+      if (type === 'age') {
+        var minA = parseInt(r.querySelector('[data-gf="minAge"]').value, 10);
+        var maxA = parseInt(r.querySelector('[data-gf="maxAge"]').value, 10);
+        out[name] = { type: 'age', minAge: isNaN(minA) ? null : minA, maxAge: isNaN(maxA) ? null : maxA };
+      } else if (type === 'birth') {
+        out[name] = { type: 'birth', birthFrom: r.querySelector('[data-gf="birthFrom"]').value || '', birthTo: r.querySelector('[data-gf="birthTo"]').value || '' };
+      }
+      // type === 'none' → omit (no rule)
+    });
+    return out;
+  }
+  document.getElementById('addGroupBtn').addEventListener('click', function () {
+    var preset = document.getElementById('groupPreset').value;
+    var arr = readGroups();
+    var rs = readGroupAgeRules();
+    var name;
+    if (!preset) { uiAlert('請先選擇預設組別或「自訂組別」'); return; }
+    if (preset === '__custom__') {
+      name = '';
+    } else {
+      // dedupe: if already exists, focus its name input
+      if (arr.indexOf(preset) !== -1) {
+        uiAlert('組別「' + preset + '」已存在');
+        return;
+      }
+      name = preset;
+      if (GROUP_AGE_PRESETS[name]) rs[name] = Object.assign({}, GROUP_AGE_PRESETS[name]);
+    }
+    arr.push(name);
+    renderGroups(arr, rs);
+    markDirty();
+    document.getElementById('groupPreset').value = '';
+    if (!name) {
+      var inputs = document.querySelectorAll('#groupsList [data-gf="name"]');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }
+  });
 
   function renderSessions(sessions) {
     var el = document.getElementById('sessionsList');
     el.innerHTML = (sessions || []).map(function (s, i) {
       var name = s.name || '';
       var startDate = s.startDate || '';
+      var startTime = s.startTime || '08:30';
+      var endTime = s.endTime || '18:00';
       var maxTeams = s.maxTeams || 0;
-      return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 1fr 140px 90px auto; gap:10px">' +
+      return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 1fr 130px 95px 95px 80px auto; gap:8px; align-items:center">' +
         '<span class="grip">⋮⋮</span>' +
         '<input value="' + escapeHtml(name) + '" placeholder="場次名稱" data-sf="name">' +
-        '<input type="date" value="' + escapeHtml(startDate) + '" data-sf="startDate">' +
+        '<input type="date" value="' + escapeHtml(startDate) + '" data-sf="startDate" title="場次日期">' +
+        '<input type="time" value="' + escapeHtml(startTime) + '" data-sf="startTime" title="開始時間">' +
+        '<input type="time" value="' + escapeHtml(endTime) + '" data-sf="endTime" title="結束時間">' +
         '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="名額" data-sf="maxTeams" style="text-align:right">' +
         '<span class="rm" data-rm-session="' + i + '">×</span>' +
       '</div>';
@@ -652,11 +819,13 @@
       return {
         name: r.querySelector('[data-sf="name"]').value.trim(),
         startDate: r.querySelector('[data-sf="startDate"]').value,
+        startTime: r.querySelector('[data-sf="startTime"]').value || '08:30',
+        endTime: r.querySelector('[data-sf="endTime"]').value || '18:00',
         maxTeams: parseInt(r.querySelector('[data-sf="maxTeams"]').value, 10) || 0
       };
     }).filter(function (s) { return s.name; });
   }
-  document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
+  document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
 
   // Item 1: 報名上限 is editable only in 單日活動; in 多梯次 it shows the sum of each
   // session's cap (read-only) — change it back in the 場次 / 梯次 section.
@@ -698,6 +867,8 @@
   document.querySelectorAll('input[name="dateMode"]').forEach(function (r) {
     r.addEventListener('change', function () { updateDateMode(); markDirty(); });
   });
+  // 即日起 checkbox → toggle openDate input state
+  document.getElementById('basic-openImmediate').addEventListener('change', function () { applyOpenImmediate(); markDirty(); });
 
   // ---- Item 12: bank-account fields gated by enable toggle ----
   function updateBankFields() {
@@ -840,9 +1011,32 @@
     ta.value = convertDescToHtml(v); markDirty();
   });
 
+  // ===== Shared: in-page media preview modal (poster image / rules PDF) =====
+  function openMediaModal(innerHtml, title) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.6);display:grid;place-items:center;z-index:9999;padding:20px';
+    ov.innerHTML =
+      '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:880px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--sh-lg)">' +
+        '<div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)">' +
+          '<h3 style="font:700 14px/1.2 var(--f-display);flex:1">' + (title || '預覽') + '</h3>' +
+          '<button type="button" id="mmClose" class="btn btn-ghost btn-sm">關閉</button>' +
+        '</div>' +
+        '<div style="padding:18px;overflow:auto">' + innerHtml + '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#mmClose').addEventListener('click', close);
+  }
+
   // ===== S2: 活動海報上傳 + AI 配色 =====
   var posterChosen = null;
-  function showPosterImg(src) { document.getElementById('posterImg').src = src; document.getElementById('posterPreview').style.display = 'block'; }
+  var LAST_POSTER_SRC = '';
+  function showPosterImg(src) { document.getElementById('posterImg').src = src; document.getElementById('posterPreview').style.display = 'block'; LAST_POSTER_SRC = src; }
+  document.getElementById('posterPreviewBtn').addEventListener('click', function () {
+    if (!LAST_POSTER_SRC) { uiAlert('海報尚未載入，請稍候。'); return; }
+    openMediaModal('<img src="' + LAST_POSTER_SRC + '" alt="海報" style="display:block;max-width:100%;height:auto;border-radius:10px">', '活動海報預覽');
+  });
   function compressImage(file, maxKB, cb) {
     var r = new FileReader();
     r.onload = function (e) {
@@ -904,14 +1098,18 @@
     var el = document.getElementById('pdfStatus');
     if (CFG.rulesPdfId || CFG.pdfDocId) {
       var chars = (CFG.rulesText || '').length;
-      el.innerHTML = '✓ 已上傳簡章' + (chars ? ('（已擷取約 ' + chars + ' 字作為 AI 知識庫）') : '') + ' — <a href="javascript:void(0)" id="viewPdfLink" style="color:var(--acc)">檢視 PDF</a>';
+      el.innerHTML = '✓ 已上傳簡章' + (chars ? ('（已擷取約 ' + chars + ' 字作為 AI 知識庫）') : '') +
+        ' <button type="button" class="btn btn-ghost btn-sm" id="viewPdfLink" style="margin-left:6px">🔍 預覽 PDF</button>';
       var vp = document.getElementById('viewPdfLink');
       if (vp) vp.addEventListener('click', function () {
         var docId = CFG.pdfDocId || String(CFG.rulesPdfId || '').replace('pfpdf:', '');
+        vp.disabled = true; vp.textContent = '載入中⋯';
         google.script.run.withSuccessHandler(function (res) {
-          var d = res && (res.dataUrl || (res.base64 ? ('data:application/pdf;base64,' + res.base64) : ''));
-          if (d) window.open(d, '_blank'); else uiAlert('無法載入 PDF');
-        }).withFailureHandler(function () { uiAlert('無法載入 PDF'); }).getPdfData(docId);
+          vp.disabled = false; vp.textContent = '🔍 預覽 PDF';
+          var d = res && (res.dataUrl || res.dataUri || (res.base64 ? ('data:application/pdf;base64,' + res.base64) : ''));
+          if (d) openMediaModal('<iframe src="' + d + '" style="width:100%;height:70vh;border:0;border-radius:8px"></iframe>', '活動簡章預覽');
+          else uiAlert('無法載入 PDF');
+        }).withFailureHandler(function () { vp.disabled = false; vp.textContent = '🔍 預覽 PDF'; uiAlert('無法載入 PDF'); }).getPdfData(docId);
       });
     } else { el.textContent = '尚未上傳簡章。'; }
   }
@@ -1004,11 +1202,15 @@
       category: document.getElementById('basic-category').value,
       eventType: document.getElementById('basic-eventType').value,
       description: document.getElementById('basic-description').value,
-      openDate: document.getElementById('basic-openDate').value,
+      openDate: document.getElementById('basic-openImmediate').checked ? _nowLocalInput() : document.getElementById('basic-openDate').value,
+      openImmediate: document.getElementById('basic-openImmediate').checked,
       deadline: document.getElementById('basic-deadline').value,
       competitionDate: document.getElementById('basic-competitionDate').value,
+      competitionStartTime: document.getElementById('basic-competitionStartTime').value,
+      competitionEndTime: document.getElementById('basic-competitionEndTime').value,
       dateMode: (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single',
       groups: readGroups(),
+      groupAgeRules: readGroupAgeRules(),
       sessions: readSessions(),
       sessionMode: (document.querySelector('input[name="sessionMode"]:checked') || {}).value || 'single',
       requireTeamNameCN: document.getElementById('requireTeamNameCN').classList.contains('on'),
@@ -1069,12 +1271,16 @@
       eventType: data.eventType,
       description: data.description,
       openDate: data.openDate,
+      openImmediate: !!data.openImmediate,
       deadline: data.deadline,                                  // BUG FIX: deadline was previously never saved
       dateMode: data.dateMode,
       // Item 3: single-day vs multi-session are mutually exclusive
       competitionDate: single ? data.competitionDate : '',
+      competitionStartTime: single ? (data.competitionStartTime || '') : '',
+      competitionEndTime: single ? (data.competitionEndTime || '') : '',
       sessions: single ? [] : data.sessions,
       groups: data.groups,
+      groupAgeRules: data.groupAgeRules || {},
       sessionSelectMode: data.sessionMode,
       requireTeamNameCN: data.requireTeamNameCN,
       requireTeamNameEN: data.requireTeamNameEN,

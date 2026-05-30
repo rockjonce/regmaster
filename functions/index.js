@@ -798,7 +798,8 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   const jk = ["competitionName", "category", "eventType", "isVisible", "groups", "requireTeamNameCN", "requireTeamNameEN", "memberCount",
     "studentFields", "teacherCount", "teacherFields", "dietaryOptions", "dietaryRestrictionOptions", "tshirtOptions", "customQuestions", "studentCustomQuestions", "teacherCustomQuestions", "paymentMethods", "bankInfo", "creditCardLink",
     "description", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
-    "competitionDate", "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
+    "competitionDate", "competitionStartTime", "competitionEndTime", "openImmediate",
+    "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
     "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
     "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts"];
     

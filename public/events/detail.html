@@ -218,7 +218,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     <div class="inner">
       <a href="#about" class="on">活動介紹</a>
       <a href="#announcements">公告 <span id="annCountBadge"></span></a>
-      <a href="#rules">規章</a>
+      <a href="#poster" id="tabPoster" style="display:none">海報</a>
+      <a href="#rules" id="tabRules" style="display:none">規章</a>
     </div>
   </div>
 
@@ -234,7 +235,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         <div id="annList"><p class="lead" style="color:var(--muted)">目前沒有公告。</p></div>
       </section>
 
-      <section class="block" id="rules">
+      <section class="block" id="poster" style="display:none">
+        <h2>活動海報</h2>
+        <div id="posterFull"><p style="color:var(--muted)">主辦方尚未上傳海報。</p></div>
+      </section>
+
+      <section class="block" id="rules" style="display:none">
         <h2>規章與規則</h2>
         <div id="rulesArea">
           <p style="color:var(--muted)">主辦方尚未上傳規章文件。</p>
@@ -341,18 +347,51 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     }).join('');
 
     document.getElementById('evTitle').textContent = name;
-    var sub = cfg.description ? String(cfg.description).slice(0, 200) : '';
-    if (cfg.description && cfg.description.length > 200) sub += '⋯';
+    // C.1 fix: cfg.description may contain HTML; strip tags before showing as a plain-text snippet.
+    var subTmp = document.createElement('div'); subTmp.innerHTML = cfg.description || '';
+    var subPlain = (subTmp.textContent || subTmp.innerText || '').trim().replace(/\s+/g, ' ');
+    var sub = subPlain.slice(0, 200) + (subPlain.length > 200 ? '⋯' : '');
     document.getElementById('evSubtitle').textContent = sub;
+
+    // C.2: apply AI-extracted theme colours (analyzePosterColors stores JSON on the comp doc).
+    var themeRaw = d.themeColors || (d.config && d.config.themeColors) || '';
+    if (themeRaw) {
+      try {
+        var t = (typeof themeRaw === 'string') ? JSON.parse(themeRaw) : themeRaw;
+        var rs = document.documentElement.style;
+        if (t.primary)   rs.setProperty('--ink',     t.primary);
+        if (t.secondary) rs.setProperty('--ink-2',   t.secondary);
+        if (t.accent)    rs.setProperty('--acc',     t.accent);
+        if (t.background) rs.setProperty('--bg',     t.background);
+        if (t.text)      rs.setProperty('--ink-3',   t.text);
+      } catch (e) { /* ignore malformed theme */ }
+    }
 
     // Host (best effort — we don't have creator displayName here, fallback to compId)
     document.getElementById('hostAvatar').textContent = (name || '?').charAt(0);
     document.getElementById('hostName').textContent = '活動主辦方';
     document.getElementById('hostMeta').textContent = '活動編號 ' + compId;
 
-    // Facts
+    // Facts — date + start/end time (single mode) OR session list (multi mode)
     var competitionDate = cfg.competitionDate || '';
-    document.getElementById('factDate').innerHTML = competitionDate ? escapeHtml(competitionDate) : '<small>待公告</small>';
+    var dateMode = cfg.dateMode || (Array.isArray(cfg.sessions) && cfg.sessions.length ? 'multi' : 'single');
+    var dateHtml = '';
+    if (dateMode === 'multi' && Array.isArray(cfg.sessions) && cfg.sessions.length) {
+      dateHtml = cfg.sessions.map(function (s) {
+        var t = '';
+        if (s.startTime || s.endTime) t = ' · ' + (s.startTime || '') + (s.endTime ? ('～' + s.endTime) : '');
+        return '<div style="line-height:1.45">' + escapeHtml(s.name || '梯次') + '：' + escapeHtml(s.startDate || '待公告') + t + '</div>';
+      }).join('');
+    } else if (competitionDate) {
+      var timeSuffix = '';
+      if (cfg.competitionStartTime || cfg.competitionEndTime) {
+        timeSuffix = ' · ' + (cfg.competitionStartTime || '') + (cfg.competitionEndTime ? ('～' + cfg.competitionEndTime) : '');
+      }
+      dateHtml = escapeHtml(competitionDate) + escapeHtml(timeSuffix);
+    } else {
+      dateHtml = '<small>待公告</small>';
+    }
+    document.getElementById('factDate').innerHTML = dateHtml;
     document.getElementById('factCategory').textContent = cfg.category || '一般活動';
     var accepted = d.currentAccepted || 0;
     var max = d.config.maxCapacityLimit || (cfg.maxTeams || 0);
@@ -432,17 +471,29 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       }).join('');
     }
 
-    // Rules PDF
-    if (d.rulesPdfUrl || d.pdfDocId) {
-      var pdfUrl = d.rulesPdfUrl;
-      if (!pdfUrl && d.pdfDocId) pdfUrl = '#'; // placeholder
-      document.getElementById('pdfSideCard').style.display = 'block';
-      document.getElementById('pdfLink').href = pdfUrl;
-      document.getElementById('rulesArea').innerHTML =
-        '<p style="margin-bottom:12px">本活動有正式規章 PDF。請於右側下載閱讀。</p>' +
-        '<a class="btn btn-ghost" href="' + escapeHtml(pdfUrl) + '" target="_blank">下載規章 PDF →</a>';
-    } else if (d.config.rulesText) {
-      document.getElementById('rulesArea').innerHTML = '<div class="rich-content">' + renderRich(d.config.rulesText) + '</div>';
+    // C.3: Rules tab + content — only when an actual PDF/text exists
+    var hasRules = !!(d.rulesPdfUrl || d.pdfDocId || (d.config && d.config.rulesText) || d.hasRules);
+    if (hasRules) {
+      document.getElementById('tabRules').style.display = '';
+      document.getElementById('rules').style.display = '';
+      if (d.rulesPdfUrl || d.pdfDocId) {
+        var pdfUrl = d.rulesPdfUrl || '#';
+        document.getElementById('pdfSideCard').style.display = 'block';
+        document.getElementById('pdfLink').href = pdfUrl;
+        document.getElementById('rulesArea').innerHTML =
+          '<p style="margin-bottom:12px">本活動有正式規章 PDF。請於右側下載閱讀。</p>' +
+          '<a class="btn btn-ghost" href="' + escapeHtml(pdfUrl) + '" target="_blank">下載規章 PDF →</a>';
+      } else if (d.config.rulesText) {
+        document.getElementById('rulesArea').innerHTML = '<div class="rich-content">' + renderRich(d.config.rulesText) + '</div>';
+      }
+    }
+
+    // C.3: Poster tab + content — only when a poster image is uploaded
+    if (cfg.posterUrl) {
+      document.getElementById('tabPoster').style.display = '';
+      document.getElementById('poster').style.display = '';
+      document.getElementById('posterFull').innerHTML =
+        '<img src="' + escapeHtml(cfg.posterUrl) + '" alt="活動海報" style="display:block; max-width:100%; height:auto; border-radius:14px; border:1px solid var(--line)">';
     }
 
     // Show

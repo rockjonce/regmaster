@@ -452,10 +452,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       grid.innerHTML = sessions.map(function (s, i) {
         var name = s.name || ('場次 ' + (i+1));
         var d = s.startDate || s.date || '';
+        var timeTxt = '';
+        if (s.startTime || s.endTime) timeTxt = ' · ' + (s.startTime || '') + (s.endTime ? ('～' + s.endTime) : '');
         var accepted = CFG.sessionAccepted[i] || 0;
         var max = parseInt(s.maxTeams) || 0;
         var qtyTxt = max > 0 ? (accepted + ' / ' + max) : (accepted + ' 已報名');
-        return '<div class="session-card" data-idx="' + i + '"><div class="top"><div class="ck"></div><h5>' + escapeHtml(name) + '</h5><span class="qty">' + qtyTxt + '</span></div>' + (d ? '<div class="meta">' + escapeHtml(d) + '</div>' : '') + '</div>';
+        return '<div class="session-card" data-idx="' + i + '"><div class="top"><div class="ck"></div><h5>' + escapeHtml(name) + '</h5><span class="qty">' + qtyTxt + '</span></div>' + (d ? '<div class="meta">' + escapeHtml(d + timeTxt) + '</div>' : '') + '</div>';
       }).join('');
       grid.querySelectorAll('.session-card').forEach(function (card) {
         card.addEventListener('click', function () {
@@ -737,6 +739,28 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           var t = readMember(TCH_DEFS, 'teacher_' + j + '_', '指導者 ' + (j + 1));
           if (t === false) return false;
           STATE.teachers.push(t);
+        }
+      }
+      // --- Age-rule validation (ported from legacy regmaster-pro) ---
+      var ageRule = (CFG.groupAgeRules || {})[STATE.group];
+      if (ageRule && (ageRule.type === 'age' || ageRule.type === 'birth')) {
+        for (var k = 0; k < STATE.students.length; k++) {
+          var stu = STATE.students[k];
+          var bd = stu.birthday;
+          if (!bd) continue; // skip if birthday field absent from this schema
+          if (ageRule.type === 'age') {
+            var today = new Date();
+            var birth = new Date(bd);
+            if (isNaN(birth.getTime())) { showErr('學員 ' + (k + 1) + ' 的出生年月日格式不正確'); return false; }
+            var age = today.getFullYear() - birth.getFullYear();
+            var m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+            if (ageRule.minAge != null && age < ageRule.minAge) { showErr('學員 ' + (k + 1) + ' 不符組別「' + STATE.group + '」的年齡限制（最小 ' + ageRule.minAge + ' 歲，目前 ' + age + ' 歲）'); return false; }
+            if (ageRule.maxAge != null && age > ageRule.maxAge) { showErr('學員 ' + (k + 1) + ' 不符組別「' + STATE.group + '」的年齡限制（最大 ' + ageRule.maxAge + ' 歲，目前 ' + age + ' 歲）'); return false; }
+          } else if (ageRule.type === 'birth') {
+            if (ageRule.birthFrom && bd < ageRule.birthFrom) { showErr('學員 ' + (k + 1) + ' 的出生日期早於組別「' + STATE.group + '」允許的最早日期（' + ageRule.birthFrom + '）'); return false; }
+            if (ageRule.birthTo && bd > ageRule.birthTo) { showErr('學員 ' + (k + 1) + ' 的出生日期晚於組別「' + STATE.group + '」允許的最晚日期（' + ageRule.birthTo + '）'); return false; }
+          }
         }
       }
     } else if (n === 3) {
