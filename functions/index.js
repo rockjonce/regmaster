@@ -3876,15 +3876,23 @@ exports.createRegistrationPayment = callable(async (data) => {
   let payMerID = cfg.payuniMerID || "";
   let payKey   = cfg.payuniHashKey || "";
   let payIV    = cfg.payuniHashIV || "";
-  let payMode  = cfg.payuniMode || "";
+  // payuniMode "" = 正式 (production), "t" = 測試 (sandbox). EMPTY STRING IS A VALID VALUE,
+  // so we have to use a strict-undefined check instead of `||` — otherwise production
+  // mode (saved as "") gets overridden by the sandbox fallback and PayUNI returns
+  // "商店不存在" because the production MerID isn't registered in the sandbox.
+  let payMode  = (cfg.payuniMode !== undefined && cfg.payuniMode !== null) ? cfg.payuniMode : null;
   if (!payMerID || !payKey || !payIV) {
     const salesDoc = await db.collection("config").doc("sales").get();
     const sales = salesDoc.exists ? salesDoc.data() : {};
     payMerID = payMerID || sales.payuniMerID || "";
     payKey   = payKey   || sales.payuniHashKey || "";
     payIV    = payIV    || sales.payuniHashIV || "";
-    payMode  = payMode  || sales.payuniMode || "t";
+    if (payMode === null) {
+      // Take sales mode as-is — DO NOT collapse "" into a fallback.
+      payMode = (sales.payuniMode !== undefined && sales.payuniMode !== null) ? sales.payuniMode : "";
+    }
   }
+  if (payMode === null) payMode = "";
   if (!payMerID || !payKey || !payIV) {
     return { success: false, message: "金流尚未設定（請洽系統管理員設定 PayUNI 商店代號與金鑰）" };
   }
@@ -3935,9 +3943,13 @@ exports.createRegistrationPayment = callable(async (data) => {
   const hashStr = payuniHash(encStr, payKey, payIV);
   const prefix = payMode === "t" ? "https://sandbox-" : "https://";
 
+  // Diagnostic echo so the registrant page can show "正在前往 PayUNI（正式/沙箱 · 商店 ABC**）"
+  // and we don't have to guess later why PayUNI rejected the call.
+  const merMasked = payMerID.length > 4 ? payMerID.slice(0, 2) + '…' + payMerID.slice(-2) : '***';
   return {
     success: true, orderId,
-    payuni: { action: prefix + "api.payuni.com.tw/api/upp", MerID: payMerID, Version: "1.0", EncryptInfo: encStr, HashInfo: hashStr }
+    payuni: { action: prefix + "api.payuni.com.tw/api/upp", MerID: payMerID, Version: "1.0", EncryptInfo: encStr, HashInfo: hashStr },
+    diagnostic: { mode: payMode === "t" ? "sandbox" : "production", merMasked, action: prefix + "api.payuni.com.tw/api/upp" }
   };
 });
 
