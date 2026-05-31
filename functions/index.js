@@ -771,7 +771,7 @@ exports.createCompetition = authCallable(["system","competition"], async (data, 
 
   // Tier gate: cap the number of events; seed the capacity limit from the plan.
   const tier = request.authUser.role === "system" ? "team" : await getEffectiveTier(creator);
-  const lim = tierLimits(tier);
+  const lim = request.authUser.role === "system" ? { maxActiveEvents: Infinity, maxCapacity: Infinity } : await planLimits(tier);
   if (lim.maxActiveEvents !== Infinity) {
     const existing = await db.collection("competitions").where("creator", "==", creator).get();
     if (existing.size >= lim.maxActiveEvents) {
@@ -857,7 +857,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   // Capacity cap follows the OWNER's current plan, so upgrades take effect
   // immediately; a system admin may still manually unlock via setCapacityLimit.
   const ownerTier = await getEffectiveTier(compData.creator);
-  const tierCap = tierLimits(ownerTier).maxCapacity;
+  const tierCap = (await planLimits(ownerTier)).maxCapacity;
   const capUnlocked = compData.capacityLimitUnlocked === true || tierCap === Infinity;
   const capLimit = tierCap === Infinity ? 0 : tierCap;
 
@@ -2195,7 +2195,8 @@ exports.sendNotificationToAll = compAuthCallable(async (data, request) => {
 });
 
 // ===== Scores =====
-exports.saveScore = compAuthCallable(async (data) => {
+exports.saveScore = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "scoring");
   const { compId, teamId, item, score, rank, comment, user } = data;
   const snap = await db.collection("scores").where("compId", "==", compId).where("teamId", "==", teamId).where("item", "==", item).limit(1).get();
   if (!snap.empty) {
@@ -2239,9 +2240,70 @@ const FEATURE_MIN_RANK = {
   multiJudge: 2, // PRO+      多評審評分
   campaigns:  2  // PRO+      公告群發
 };
-const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", multiJudge: "多評審評分", campaigns: "公告群發" };
+const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", scoring: "評分", multiJudge: "多評審評分", campaigns: "公告群發", checkin: "QR 報到", certificate: "名牌 / 證書" };
 const RANK_TIER_LABEL = { 1: "STARTER", 2: "PRO", 3: "TEAM" };
 function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
+
+// ===== Per-plan matrix — single source of truth in config/sales.plans =====
+// Convention: price = NT$/year; feePct = PayUNI 手續費 %; maxActiveEvents / maxCapacity
+// use 0 = 無限 (matches the existing maxCapacityLimit Infinity?0 convention). System
+// role bypasses all of this. DEFAULT_PLANS is the fallback when config/sales.plans is
+// absent, and encodes the product decisions (Free 可收款 5%；報到/評分為 Starter+).
+const DEFAULT_PLANS = {
+  free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,
+             features:{ payment:true,  csvExport:false, ai:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
+  starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,
+             features:{ payment:true,  csvExport:true,  ai:false, scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
+  pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
+             features:{ payment:true,  csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
+  team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
+             features:{ payment:true,  csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
+};
+const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","scoring","multiJudge","campaigns","checkin","certificate"];
+
+// Read config/sales and produce the resolved plan matrix (deep-merged over defaults).
+// Back-compat: if config/sales has no `plans` object yet, only legacy money fields
+// (starterPrice/proPrice/teamPrice + payuniFeeByTier) are overlaid; limits & features
+// fall back to DEFAULT_PLANS so the product decisions apply without disruption.
+async function getPlans() {
+  const doc = await db.collection("config").doc("sales").get();
+  const cfg = doc.exists ? doc.data() : {};
+  const out = JSON.parse(JSON.stringify(DEFAULT_PLANS));
+  const tiers = ["free","starter","pro","team"];
+  if (cfg.plans && typeof cfg.plans === "object") {
+    for (const t of tiers) {
+      const p = cfg.plans[t];
+      if (!p || typeof p !== "object") continue;
+      if (typeof p.price === "number") out[t].price = p.price;
+      if (typeof p.feePct === "number") out[t].feePct = p.feePct;
+      if (typeof p.maxActiveEvents === "number") out[t].maxActiveEvents = p.maxActiveEvents;
+      if (typeof p.maxCapacity === "number") out[t].maxCapacity = p.maxCapacity;
+      if (p.features && typeof p.features === "object") {
+        for (const k of PLAN_FEATURE_KEYS) {
+          if (typeof p.features[k] === "boolean") out[t].features[k] = p.features[k];
+        }
+      }
+    }
+  } else {
+    // Legacy migration — carry over only the money settings the admin had configured.
+    if (typeof cfg.starterPrice === "number") out.starter.price = cfg.starterPrice;
+    if (typeof cfg.proPrice === "number")    out.pro.price    = cfg.proPrice;
+    if (typeof cfg.teamPrice === "number")   out.team.price   = cfg.teamPrice;
+    const feeBy = cfg.payuniFeeByTier || {};
+    for (const t of tiers) if (typeof feeBy[t] === "number") out[t].feePct = feeBy[t];
+  }
+  return out;
+}
+
+// Resolved numeric limits for a tier; 0 → Infinity (so callers compare as before).
+async function planLimits(tier) {
+  const plans = await getPlans();
+  const p = plans[tier] || plans.free;
+  return {
+    maxActiveEvents: (p.maxActiveEvents === 0 || p.maxActiveEvents == null) ? Infinity : p.maxActiveEvents,
+    maxCapacity:     (p.maxCapacity === 0 || p.maxCapacity == null) ? Infinity : p.maxCapacity
+  };
+}
 
 // Resolve the account's effective (highest active) subscription tier:
 // "free" | "starter" | "pro" | "team". Mirrors getLicenseStatus's bestTier +
@@ -2280,10 +2342,21 @@ async function getEffectiveTier(username) {
 async function requireFeature(authUser, key) {
   if (authUser && authUser.role === "system") return "team";
   const tier = await getEffectiveTier(authUser.username);
-  const need = FEATURE_MIN_RANK[key] || 0;
-  if ((TIER_RANK[tier] || 0) < need) {
+  const plans = await getPlans();
+  const feats = (plans[tier] && plans[tier].features) || {};
+  // Matrix is authoritative; keys absent from the matrix fall back to legacy rank logic.
+  const inMatrix = Object.prototype.hasOwnProperty.call(feats, key);
+  const allowed = inMatrix ? (feats[key] === true) : ((TIER_RANK[tier] || 0) >= (FEATURE_MIN_RANK[key] || 0));
+  if (!allowed) {
+    // Lowest tier that unlocks this feature → for the upgrade message.
+    let minLabel = "付費";
+    for (const t of ["free","starter","pro","team"]) {
+      const tf = (plans[t] && plans[t].features) || {};
+      const has = Object.prototype.hasOwnProperty.call(tf, key) ? (tf[key] === true) : ((TIER_RANK[t] || 0) >= (FEATURE_MIN_RANK[key] || 0));
+      if (has) { minLabel = tierLabel(t); break; }
+    }
     throw new HttpsError("permission-denied",
-      "「" + (FEATURE_LABEL[key] || key) + "」為 " + (RANK_TIER_LABEL[need] || "付費") + " 以上方案功能，請先升級方案。");
+      "「" + (FEATURE_LABEL[key] || key) + "」為 " + minLabel + " 以上方案功能，請先升級方案。");
   }
   return tier;
 }
@@ -3471,6 +3544,7 @@ exports.duplicateCompetition = compAuthCallable(async (data, request) => {
 
 // ===== QR Code Check-in =====
 exports.checkInTeam = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "checkin");
   const { teamId } = data;
   if (!teamId) return { success: false, message: "missing teamId" };
   const ref = db.collection("teams").doc(teamId);
@@ -3526,21 +3600,51 @@ function payuniHash(encStr, key, iv) {
 exports.getSalesConfig = authCallable(["system","competition"], async (data, request) => {
   const doc = await db.collection("config").doc("sales").get();
   const cfg = doc.exists ? doc.data() : { singlePrice: 500, yearlyPrice: 3000, taxRate: 5, bulkDiscounts: [], payuniMerID: "", payuniHashKey: "", payuniHashIV: "", payuniMode: "t" };
+  const plans = await getPlans();
   if (request.authUser.role === "competition") {
-    // Organizers see tier prices (to upgrade) + PayUNI fee % (so they know how much
-    // gets deducted from their registrations) but never the PayUni secrets.
+    // Organizers see the plan matrix (prices/fees/limits/features to upgrade) but never
+    // the PayUni secrets. Flat fields are derived from `plans` for backward compatibility.
     return {
-      starterPrice: cfg.starterPrice || 0, proPrice: cfg.proPrice || 0, teamPrice: cfg.teamPrice || 0,
+      plans,
+      starterPrice: plans.starter.price, proPrice: plans.pro.price, teamPrice: plans.team.price,
       singlePrice: cfg.singlePrice, yearlyPrice: cfg.yearlyPrice,
       taxRate: cfg.taxRate, bulkDiscounts: cfg.bulkDiscounts || [],
-      payuniFeeByTier: cfg.payuniFeeByTier || { free: 0, starter: 0, pro: 0, team: 0 },
+      payuniFeeByTier: { free: plans.free.feePct, starter: plans.starter.feePct, pro: plans.pro.feePct, team: plans.team.feePct },
       payoutCycle: cfg.payoutCycle || "weekly"
     };
   }
-  return cfg;
+  return { ...cfg, plans };
 });
+
+// Public (no-auth) plan matrix for the landing pages — prices/fees/limits/features only,
+// never any keys or internal config.
+exports.getPublicPlans = callable(async () => {
+  const plans = await getPlans();
+  const safe = {};
+  for (const t of ["free","starter","pro","team"]) {
+    const p = plans[t];
+    safe[t] = { price: p.price, feePct: p.feePct, maxActiveEvents: p.maxActiveEvents, maxCapacity: p.maxCapacity, features: { ...p.features } };
+  }
+  return { plans: safe };
+});
+
 exports.saveSalesConfig = authCallable(["system"], async (data) => {
-  await db.collection("config").doc("sales").set(data.config, { merge: true });
+  const config = data.config || {};
+  // Validate the plan matrix if present (price≥0 int, feePct 0–100, limits≥0 int, features boolean).
+  if (config.plans && typeof config.plans === "object") {
+    for (const t of ["free","starter","pro","team"]) {
+      const p = config.plans[t];
+      if (!p || typeof p !== "object") continue;
+      if (p.price !== undefined) { const v = Number(p.price); if (!Number.isFinite(v) || v < 0) return { success: false, message: t + " 年費需為 ≥0 的數字" }; p.price = Math.round(v); }
+      if (p.feePct !== undefined) { const v = Number(p.feePct); if (!Number.isFinite(v) || v < 0 || v > 100) return { success: false, message: t + " 手續費需為 0–100" }; p.feePct = v; }
+      if (p.maxActiveEvents !== undefined) { const v = Number(p.maxActiveEvents); if (!Number.isFinite(v) || v < 0) return { success: false, message: t + " 活動數需為 ≥0 整數" }; p.maxActiveEvents = Math.round(v); }
+      if (p.maxCapacity !== undefined) { const v = Number(p.maxCapacity); if (!Number.isFinite(v) || v < 0) return { success: false, message: t + " 名額需為 ≥0 整數" }; p.maxCapacity = Math.round(v); }
+      if (p.features && typeof p.features === "object") {
+        for (const k of Object.keys(p.features)) p.features[k] = (p.features[k] === true);
+      }
+    }
+  }
+  await db.collection("config").doc("sales").set(config, { merge: true });
   return { success: true };
 });
 
@@ -3576,7 +3680,8 @@ exports.createPayuniOrder = callable(async (data) => {
   const salesDoc = await db.collection("config").doc("sales").get();
   const sales = salesDoc.exists ? salesDoc.data() : {};
   if (!sales.payuniMerID || !sales.payuniHashKey) return { success: false, message: "金流尚未設定" };
-  
+  const plans = await getPlans();
+
   /* Calculate price */
   let subtotal = 0;
   const orderItems = [];
@@ -3586,7 +3691,7 @@ exports.createPayuniOrder = callable(async (data) => {
       const tier = String(item.tier || "").toLowerCase();
       if (!VALID_TIERS.includes(tier)) continue;
       const years = Math.min(Math.max(1, parseInt(item.years, 10) || 1), 5);
-      const unitPrice = parseInt(sales[tierPriceField(tier)], 10) || 0;
+      const unitPrice = parseInt((plans[tier] && plans[tier].price), 10) || parseInt(sales[tierPriceField(tier)], 10) || 0;
       if (unitPrice <= 0) return { success: false, message: "此方案尚未設定價格，請聯絡系統管理員" };
       const sub = Math.round(years * unitPrice);
       orderItems.push({ type: "tier", tier, years, unitPrice, discount: 1, subtotal: sub });
@@ -4082,9 +4187,11 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
   const fromDate = String(data.fromDate || "1970-01-01").slice(0, 10);
   const toDate   = String(data.toDate   || "9999-12-31").slice(0, 10);
 
-  // Tier-specific fee %
+  // Tier-specific fee % — read from the plan matrix (fallback to legacy payuniFeeByTier).
   const salesDoc = await db.collection("config").doc("sales").get();
   const feeByTier = (salesDoc.exists ? (salesDoc.data().payuniFeeByTier || {}) : {});
+  const plans = await getPlans();
+  const tierFeePct = (t) => (plans[t] && typeof plans[t].feePct === "number") ? plans[t].feePct : (parseFloat(feeByTier[t]) || 0);
 
   // Resolve the set of creators we report on.
   let creators;
@@ -4098,7 +4205,7 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
   const results = [];
   for (const creator of creators) {
     const tier = await getEffectiveTier(creator);
-    const feePct = parseFloat(feeByTier[tier]) || 0;
+    const feePct = tierFeePct(tier);
 
     const compSnap = await db.collection("competitions").where("creator", "==", creator).get();
     const compMap = {};
@@ -4269,8 +4376,9 @@ exports.getSettlementData = authCallable(["system", "competition"], async (data,
   const sales = salesDoc.exists ? salesDoc.data() : {};
   const feeByTier = sales.payuniFeeByTier || {};
   const payoutCycle = sales.payoutCycle || "weekly";
+  const plans = await getPlans();
   const tier = await getEffectiveTier(creator);
-  const feePct = parseFloat(feeByTier[tier]) || 0;
+  const feePct = (plans[tier] && typeof plans[tier].feePct === "number") ? plans[tier].feePct : (parseFloat(feeByTier[tier]) || 0);
 
   // payout account snapshot
   const accSnap = await db.collection("accounts").where("username", "==", creator).limit(1).get();
@@ -4346,8 +4454,9 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
   const salesDoc = await db.collection("config").doc("sales").get();
   const sales = salesDoc.exists ? salesDoc.data() : {};
   const feeByTier = sales.payuniFeeByTier || {};
+  const plans = await getPlans();
   const tier = await getEffectiveTier(creator);
-  const feePct = parseFloat(feeByTier[tier]) || 0;
+  const feePct = (plans[tier] && typeof plans[tier].feePct === "number") ? plans[tier].feePct : (parseFloat(feeByTier[tier]) || 0);
 
   const compSnap = await db.collection("competitions").where("creator", "==", creator).get();
   const compMap = {};
@@ -5294,7 +5403,10 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
 // Legacy saveScore (single-judge) still works; we just add a new shape.
 
 exports.submitJudgeScore = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "multiJudge");
+  // Scoring is the gated feature (STARTER+). "multiJudge" (Pro+) is matrix/label-only
+  // for now — v3 has no separate judge accounts (compAuthCallable = owner only), so
+  // multiple judges per team cannot occur yet; gate it here when that ships.
+  await requireFeature(request.authUser, "scoring");
   const { compId, teamId, items, totalScore, comment } = data;
   if (!compId || !teamId) return { success: false, message: "缺少 compId / teamId" };
   const judgeId = request.authUser.username;
@@ -5363,6 +5475,7 @@ exports.getLiveLeaderboard = compAuthCallable(async (data) => {
 // Already exists: exports.checkInTeam — leave untouched. Add a sister
 // callable that records extras separately so the legacy field stays clean.
 exports.checkInTeamV2 = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "checkin");
   const { teamId, extras } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists) return { success: false, message: "找不到隊伍" };

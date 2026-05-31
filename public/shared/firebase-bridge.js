@@ -97,6 +97,7 @@
     getPdfData:["docId"],
     getSalesConfig:[],
     saveSalesConfig:["config"],
+    getPublicPlans:[],
     createCoupon:["code","type","value","maxUses","expiresAt"],
     listCoupons:[],
     deleteCoupon:["id"],

@@ -178,31 +178,44 @@
   }
   load();
 
+  // Name + tagline are presentational; the FEATURE list & limits now come from config.
   var TIER_DEFS = [
-    { id: 'free',    name: 'Free',    tag: '小型活動入門',  feats: ['基本報名表', '活動管理', 'Email 通知'] },
-    { id: 'starter', name: 'Starter', tag: '單一活動主辦',  feats: ['進階報名表', '金流整合', '匯出報表'] },
-    { id: 'pro',     name: 'Pro',     tag: '完整功能',      feats: ['AI 助理', '多評審評分', '名牌 / 證書', '公告群發'] },
-    { id: 'team',    name: 'Team',    tag: '大型機構',      feats: ['全部 Pro 功能', '專屬支援', 'SLA 保障', '優先客服'] }
+    { id: 'free',    name: 'Free',    tag: '小型活動入門' },
+    { id: 'starter', name: 'Starter', tag: '單一活動主辦' },
+    { id: 'pro',     name: 'Pro',     tag: '完整功能' },
+    { id: 'team',    name: 'Team',    tag: '大型機構' }
   ];
+  var FEATURE_LABEL_FE = { payment: '線上金流收款', csvExport: '匯出報表', ai: 'AI 助理', scoring: '評分', multiJudge: '多評審評分', campaigns: '公告群發', checkin: 'QR 報到', certificate: '名牌 / 證書' };
+  var FEATURE_ORDER = ['payment','csvExport','scoring','multiJudge','campaigns','checkin','ai','certificate'];
+  var DEFAULT_PLANS_FE = {
+    free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,   features:{ payment:true, csvExport:false, ai:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
+    starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,  features:{ payment:true, csvExport:true,  ai:false, scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
+    pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500, features:{ payment:true, csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
+    team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,    features:{ payment:true, csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
+  };
+  function _lim(n){ return (n === 0 || n == null) ? '無限' : Number(n).toLocaleString(); }
   function renderPlans(curTier, cfg) {
-    var priceOf = { free: 0, starter: Number(cfg.starterPrice) || 0, pro: Number(cfg.proPrice) || 0, team: Number(cfg.teamPrice) || 0 };
-    // EE1: surface PayUNI fee % so organisers see the deduction up-front per tier.
-    var feeBy = cfg.payuniFeeByTier || {};
-    var feePct = { free: feeBy.free || 0, starter: feeBy.starter || 0, pro: feeBy.pro || 0, team: feeBy.team || 0 };
+    var plans = (cfg && cfg.plans) || DEFAULT_PLANS_FE;
     var grid = document.getElementById('plansGrid');
     grid.innerHTML = TIER_DEFS.map(function (t) {
+      var p = plans[t.id] || DEFAULT_PLANS_FE[t.id] || {};
+      var feats = p.features || {};
       var isCur = (curTier || 'free') === t.id;
-      var price = priceOf[t.id];
+      var price = Number(p.price) || 0;
       var priceStr = price > 0 ? ('$' + price.toLocaleString()) : '$0';
       var btn;
       if (isCur) btn = '<div class="btn-plan">目前方案</div>';
       else if (t.id === 'free') btn = '<div class="btn-plan" style="opacity:.45">免費</div>';
       else if (price <= 0) btn = '<div class="btn-plan" style="opacity:.45" title="尚未設定價格">未開放</div>';
       else btn = '<button class="btn-plan" data-buy="' + t.id + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買 →</button>';
-      var feeRow = '<li style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:6px"><b>PayUNI 金流手續費：' + feePct[t.id].toFixed(1) + '%</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">報名者線上付款扣除；銀行轉帳免收</span></li>';
+      // Limits + enabled features (certificate stays false by default → not listed).
+      var limRows = '<li>同時活動數：' + _lim(p.maxActiveEvents) + '</li><li>單場名額：' + _lim(p.maxCapacity) + '</li>';
+      var featRows = FEATURE_ORDER.filter(function (k) { return feats[k] === true; })
+        .map(function (k) { return '<li>' + FEATURE_LABEL_FE[k] + '</li>'; }).join('');
+      var feeRow = '<li style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:6px"><b>PayUNI 金流手續費：' + (Number(p.feePct) || 0).toFixed(1) + '%</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">報名者線上付款扣除；銀行轉帳免收</span></li>';
       return '<div class="plan' + (isCur ? ' cur' : '') + '"><h4>' + t.name + '</h4><p class="tag">' + t.tag + '</p>' +
         '<div class="price"><span class="num">' + priceStr + '</span><span class="per">' + (price > 0 ? '/年' : '') + '</span></div>' +
-        '<ul>' + t.feats.map(function (f) { return '<li>' + f + '</li>'; }).join('') + feeRow + '</ul>' + btn + '</div>';
+        '<ul>' + limRows + featRows + feeRow + '</ul>' + btn + '</div>';
     }).join('');
     grid.querySelectorAll('[data-buy]').forEach(function (b) {
       b.addEventListener('click', function () { purchaseTier(b.dataset.buy); });
