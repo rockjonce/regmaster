@@ -63,6 +63,10 @@
 .stats-row { padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; font:400 13px/1.5 var(--f-tc); margin-bottom:14px; }
 .stats-row b { color:var(--ink); font-weight:600; }
 .help-tip { padding:12px 14px; background:var(--acc-soft); border:1px solid color-mix(in srgb, var(--acc) 20%, var(--line)); border-radius:9px; font:400 12px/1.55 var(--f-tc); color:var(--ink-2); }
+.steps-hint { background:var(--acc-soft); border:1px solid color-mix(in srgb, var(--acc) 22%, var(--line)); border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+.steps-hint b { display:block; font:700 12.5px/1.3 var(--f-display); color:var(--ink); margin-bottom:8px; }
+.steps-hint div { display:flex; align-items:flex-start; gap:7px; font:500 12px/1.55 var(--f-tc); color:var(--ink-2); margin-bottom:4px; }
+.steps-hint div span { flex-shrink:0; width:17px; height:17px; border-radius:50%; background:var(--acc); color:#fff; font:700 10px/17px var(--f-mono); text-align:center; }
 .recip-team { padding:8px 10px; border:1px solid var(--line-2); border-radius:8px; margin-bottom:6px; background:var(--surface-2); }
 .recip-team .tn { font:600 12px/1.4 var(--f-display); color:var(--ink); margin-bottom:2px; }
 .recip-team .em { font:400 11px/1.5 var(--f-mono); color:var(--muted); word-break:break-all; }
@@ -105,6 +109,13 @@
     <div id="loadingState" class="loading-c">載入公告⋯</div>
     <div class="main-3" id="content" style="display:none">
       <aside class="left-c">
+        <div class="steps-hint">
+          <b>📋 使用步驟</b>
+          <div><span>1</span> 點下方「＋ 新增範本」建立公告</div>
+          <div><span>2</span> 編輯主旨／內容、選擇收件對象</div>
+          <div><span>3</span> 點「🔍 預覽」確認排版</div>
+          <div><span>4</span> 點「立即發送」寄給報名者</div>
+        </div>
         <h3>所有範本</h3>
         <button class="new-camp-btn" id="newCampBtn">＋ 新增範本</button>
         <div class="camp-list" id="campList"></div>
@@ -217,6 +228,26 @@
     });
   }
 
+  // Lightweight refresh — only re-fetches the template list (no bundle), keeping
+  // actions snappy. Re-selects the given id, or the current one, or the first.
+  function refreshCampaigns(selectId) {
+    return new Promise(function (done) {
+      google.script.run
+        .withSuccessHandler(function (list) {
+          CAMPS = list || [];
+          renderList();
+          var keep = selectId || (SELECTED && SELECTED.id);
+          var c = keep && CAMPS.find(function (x) { return x.id === keep; });
+          if (c) selectCamp(c);
+          else if (CAMPS.length) selectCamp(CAMPS[0]);
+          else showEmptyEditor();
+          done();
+        })
+        .withFailureHandler(function () { done(); })
+        .listCampaigns(compId);
+    });
+  }
+
   function showEmptyEditor() {
     SELECTED = null;
     document.getElementById('campTitle').value = '';
@@ -258,7 +289,7 @@
           if (!ok) return;
           google.script.run
             .withSuccessHandler(function (res) {
-              if (res && res.success) { if (SELECTED && SELECTED.id === id) SELECTED = null; load(); }
+              if (res && res.success) { if (SELECTED && SELECTED.id === id) SELECTED = null; refreshCampaigns(); }
               else uiAlert((res && res.message) || '刪除失敗');
             })
             .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
@@ -294,12 +325,16 @@
   }
 
   function createDraft() {
+    var b = document.getElementById('newCampBtn');
+    if (b.disabled) return;
+    b.disabled = true; var o = b.textContent; b.textContent = '建立中⋯';
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
-          load();
-        }
+          refreshCampaigns(res.id).then(function () { b.disabled = false; b.textContent = o; });
+        } else { b.disabled = false; b.textContent = o; uiAlert((res && res.message) || '建立失敗'); }
       })
+      .withFailureHandler(function (err) { b.disabled = false; b.textContent = o; uiAlert('失敗：' + (err && err.message)); })
       .createCampaign(compId, { subject: '新公告 ' + new Date().toLocaleString(), body: '', channels: ['email'], recipientFilter: 'all' });
   }
   document.getElementById('newCampBtn').addEventListener('click', createDraft);
@@ -307,7 +342,7 @@
   function updateRecipCount() {
     var filter = document.getElementById('recipFilter').value;
     document.getElementById('recipCount').textContent = '⋯';
-    document.getElementById('recipList').innerHTML = '';
+    document.getElementById('recipList').innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">計算收件人中⋯</p>';
     google.script.run
       .withSuccessHandler(function (res) {
         res = res || {};
@@ -358,7 +393,7 @@
     };
     var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
     google.script.run
-      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = '儲存草稿'; load(); })
+      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = '✓ 已儲存'; var sid = SELECTED && SELECTED.id; refreshCampaigns(sid).then(function(){ setTimeout(function(){ var sb=document.getElementById('saveCampBtn'); if(sb) sb.textContent='儲存草稿'; }, 1000); }); })
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '儲存草稿'; alert('失敗：' + (err && err.message)); })
       .updateCampaign(SELECTED.id, payload);
   });
@@ -386,7 +421,7 @@
           .withSuccessHandler(function (res) {
             if (res && res.success) {
               alert('✓ 已發送 ' + res.sent + ' 封 Email' + (res.channels.length > 1 ? '（SMS/LINE 已記錄為排程，待後續整合）' : ''));
-              load();
+              refreshCampaigns(SELECTED && SELECTED.id);
             } else { alert('發送失敗：' + ((res && res.message) || '')); }
             btn.disabled = false; btn.textContent = '立即發送 →';
           })
@@ -406,7 +441,10 @@
       '<body style="margin:0;padding:0;background:#f0f4f8;font-family:Segoe UI,Roboto,Arial,sans-serif">' +
       '<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f0f4f8"><tr><td align="center" style="padding:20px 10px">' +
       '<table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#fff;border:1px solid #d1d9e0">' +
-      '<tr><td style="background:#0A437A;padding:12px 24px"><img src="' + LOGO + '" alt="RegMaster" height="40" style="height:40px;display:block;border:0"></td></tr>' +
+      '<tr><td style="background:#0A437A;padding:16px 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+        '<td style="vertical-align:middle;width:44px"><div style="width:40px;height:40px;background:#fff;border-radius:9px;text-align:center;line-height:40px"><img src="' + LOGO + '" alt="RegMaster" width="30" height="30" style="display:inline-block;border:0;vertical-align:middle"></div></td>' +
+        '<td style="vertical-align:middle;padding-left:12px"><span style="font-size:19px;font-weight:800;color:#fff;letter-spacing:.4px">RegMaster</span><span style="display:block;font-size:11px;color:rgba(255,255,255,.65);margin-top:1px">線上活動報名平台</span></td>' +
+      '</tr></table></td></tr>' +
       '<tr><td style="background:#0D5BA8;padding:18px 24px;text-align:center"><h2 style="margin:0;font-size:20px;font-weight:800;color:#fff">' + escapeHtml(subject || '活動公告') + '</h2></td></tr>' +
       '<tr><td style="padding:28px 24px;background:#fff;color:#333;font-size:15px;line-height:1.7">' + body + '</td></tr>' +
       '<tr><td style="background:#f1f5f9;padding:16px 24px;text-align:center;font-size:12px;color:#64748b"><div>Copyright © RegMaster Pro</div><div style="margin-top:4px;color:#94a3b8">此為系統自動發送之信件，請勿直接回覆。</div></td></tr>' +

@@ -65,12 +65,16 @@ function emailWrap(title, bodyHtml, footerExtra) {
 <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background-color:#ffffff;border:1px solid #d1d9e0">
 
 <!-- LOGO BANNER -->
-<tr><td style="background-color:#0A437A;padding:12px 24px">
-  <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-    <td style="vertical-align:middle">
-      <a href="${EMAIL_HOST}" target="_blank" style="text-decoration:none">
-        <img src="${EMAIL_LOGO_URL}" alt="RegMaster PRO" height="40" style="display:block;border:0;height:40px" />
-      </a>
+<tr><td style="background-color:#0A437A;padding:16px 24px">
+  <table cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="vertical-align:middle;width:44px">
+      <div style="width:40px;height:40px;background:#ffffff;border-radius:9px;text-align:center;line-height:40px">
+        <a href="${EMAIL_HOST}" target="_blank" style="text-decoration:none"><img src="${EMAIL_HOST}/favicon.png" alt="RegMaster" width="30" height="30" style="display:inline-block;border:0;vertical-align:middle" /></a>
+      </div>
+    </td>
+    <td style="vertical-align:middle;padding-left:12px">
+      <span style="font-family:'Segoe UI',Arial,sans-serif;font-size:19px;font-weight:800;color:#ffffff;letter-spacing:.4px">RegMaster</span>
+      <span style="display:block;font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:rgba(255,255,255,.65);margin-top:1px">線上活動報名平台</span>
     </td>
   </tr></table>
 </td></tr>
