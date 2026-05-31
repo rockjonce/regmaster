@@ -663,13 +663,13 @@ body { background:var(--bg); }
 
   // ================= 方案設定（逐方案矩陣） =================
   var PLAN_TIERS = [['free','Free'],['starter','Starter'],['pro','Pro'],['team','Team']];
-  var PLAN_FEATS = [['payment','線上金流收款'],['csvExport','匯出報表'],['ai','AI 助理'],['scoring','評分'],['multiJudge','多評審評分'],['campaigns','公告群發'],['checkin','QR 報到'],['certificate','名牌 / 證書']];
+  var PLAN_FEATS = [['payment','線上金流收款'],['csvExport','匯出報表'],['ai','AI 助理（主辦後台）'],['eventAi','活動 AI 助理（報名者端）'],['scoring','評分'],['multiJudge','多評審評分'],['campaigns','公告群發'],['checkin','QR 報到'],['certificate','名牌 / 證書']];
   // Front-end fallback mirrors functions/index.js DEFAULT_PLANS.
   var DEFAULT_PLANS_FE = {
-    free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,   features:{ payment:true, csvExport:false, ai:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
-    starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,  features:{ payment:true, csvExport:true,  ai:false, scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
-    pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500, features:{ payment:true, csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
-    team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,    features:{ payment:true, csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
+    free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,   features:{ payment:true, csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
+    starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,  features:{ payment:true, csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
+    pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500, features:{ payment:true, csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
+    team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,    features:{ payment:true, csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
   };
   function _escAttr(v){ return String(v==null?'':v).replace(/"/g,'&quot;'); }
   function buildPlanCards(plans) {

@@ -455,6 +455,10 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     document.getElementById('hostName').textContent = hostName || '活動主辦方';
     document.getElementById('hostMeta').textContent = '活動編號 ' + compId;
 
+    // 活動 AI 助理 — only shown when the event owner's plan includes it (STARTER+).
+    var aiCard = document.getElementById('aiHelpCard');
+    if (aiCard && d.eventAiEnabled !== true) aiCard.style.display = 'none';
+
     // Facts — date + start/end time (single mode) OR session list (multi mode)
     var competitionDate = cfg.competitionDate || '';
     var dateMode = cfg.dateMode || (Array.isArray(cfg.sessions) && cfg.sessions.length ? 'multi' : 'single');

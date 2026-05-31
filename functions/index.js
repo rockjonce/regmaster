@@ -1114,6 +1114,16 @@ exports.getRegistrationBundle = callable(async (data) => {
       }
     } catch (e) { /* swallow — public bundle should not fail because of host lookup */ }
   }
+  // 活動 AI 助理 availability follows the event owner's plan (STARTER+ by default).
+  let eventAiEnabled = false;
+  const ownerUser = r.creator || createdBy || "";
+  if (ownerUser) {
+    try {
+      const plans = await getPlans();
+      const ownerTier = await getEffectiveTier(ownerUser);
+      eventAiEnabled = !!(plans[ownerTier] && plans[ownerTier].features && plans[ownerTier].features.eventAi);
+    } catch (e) { /* swallow — default to disabled */ }
+  }
   return {
     config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
     sessionAccepted: stats.sessionAccepted || {},
@@ -1122,7 +1132,8 @@ exports.getRegistrationBundle = callable(async (data) => {
     pdfDocId: r.pdfDocId || "",
     themeColors: cfg.themeColors || "",
     hostName: hostName,
-    createdBy: createdBy
+    createdBy: createdBy,
+    eventAiEnabled: eventAiEnabled
   };
 });
 
@@ -2240,7 +2251,7 @@ const FEATURE_MIN_RANK = {
   multiJudge: 2, // PRO+      多評審評分
   campaigns:  2  // PRO+      公告群發
 };
-const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", scoring: "評分", multiJudge: "多評審評分", campaigns: "公告群發", checkin: "QR 報到", certificate: "名牌 / 證書" };
+const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", eventAi: "活動 AI 助理", scoring: "評分", multiJudge: "多評審評分", campaigns: "公告群發", checkin: "QR 報到", certificate: "名牌 / 證書" };
 const RANK_TIER_LABEL = { 1: "STARTER", 2: "PRO", 3: "TEAM" };
 function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
 
@@ -2251,15 +2262,15 @@ function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
 // absent, and encodes the product decisions (Free 可收款 5%；報到/評分為 Starter+).
 const DEFAULT_PLANS = {
   free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,
-             features:{ payment:true,  csvExport:false, ai:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
+             features:{ payment:true,  csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
   starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,
-             features:{ payment:true,  csvExport:true,  ai:false, scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
+             features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
   pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
-             features:{ payment:true,  csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
   team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
-             features:{ payment:true,  csvExport:true,  ai:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
 };
-const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","scoring","multiJudge","campaigns","checkin","certificate"];
+const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","certificate"];
 
 // Read config/sales and produce the resolved plan matrix (deep-merged over defaults).
 // Back-compat: if config/sales has no `plans` object yet, only legacy money fields
@@ -2650,6 +2661,16 @@ exports.askCompetitionAI = callable(async (data) => {
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { answer: "找不到競賽" };
   const comp = compDoc.data();
+  // Gate by the EVENT OWNER's plan (callers here are unauthenticated registrants).
+  // 活動 AI 助理 is a STARTER+ feature; return a friendly notice if the owner's plan lacks it.
+  const ownerUser = comp.creator || comp.createdBy || "";
+  if (ownerUser) {
+    const plans = await getPlans();
+    const ownerTier = await getEffectiveTier(ownerUser);
+    if (!(plans[ownerTier] && plans[ownerTier].features && plans[ownerTier].features.eventAi === true)) {
+      return { answer: "此活動未開放 AI 助理。", disabled: true };
+    }
+  }
   const cfg = comp.config || {};
   const rules = comp.rulesText || "";
   const desc = cfg.description || "";
