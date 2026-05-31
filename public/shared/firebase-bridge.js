@@ -98,6 +98,7 @@
     getSalesConfig:[],
     saveSalesConfig:["config"],
     getPublicPlans:[],
+    getMyPlan:[],
     createCoupon:["code","type","value","maxUses","expiresAt"],
     listCoupons:[],
     deleteCoupon:["id"],
@@ -211,6 +212,7 @@
 
     // V3 Phase 6 additions
     listCampaigns:["compId"],
+    getCampaignRecipients:["compId","filter"],
     createCampaign:["compId","payload"],
     updateCampaign:["campaignId","payload"],
     deleteCampaign:["campaignId"],

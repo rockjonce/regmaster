@@ -63,6 +63,17 @@
 .stats-row { padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px; font:400 13px/1.5 var(--f-tc); margin-bottom:14px; }
 .stats-row b { color:var(--ink); font-weight:600; }
 .help-tip { padding:12px 14px; background:var(--acc-soft); border:1px solid color-mix(in srgb, var(--acc) 20%, var(--line)); border-radius:9px; font:400 12px/1.55 var(--f-tc); color:var(--ink-2); }
+.recip-team { padding:8px 10px; border:1px solid var(--line-2); border-radius:8px; margin-bottom:6px; background:var(--surface-2); }
+.recip-team .tn { font:600 12px/1.4 var(--f-display); color:var(--ink); margin-bottom:2px; }
+.recip-team .em { font:400 11px/1.5 var(--f-mono); color:var(--muted); word-break:break-all; }
+.camp .camp-del { margin-left:6px; color:var(--err-700); cursor:pointer; font:700 14px/1 var(--f-tc); padding:0 4px; opacity:.6; }
+.camp .camp-del:hover { opacity:1; }
+.pv-bg { position:fixed; inset:0; background:rgba(11,28,61,.55); display:grid; place-items:center; z-index:9999; padding:20px; }
+.pv-card { background:var(--surface); border-radius:14px; max-width:680px; width:100%; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:var(--sh-lg); }
+.pv-h { padding:12px 18px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+.pv-h h3 { font:700 15px/1.2 var(--f-display); }
+.pv-body { overflow:auto; background:#f0f4f8; padding:0; }
+.pv-body iframe { width:100%; border:0; min-height:60vh; display:block; }
 @media (max-width:768px){ .main-3 { grid-template-columns:1fr; min-height:0; } }
 </style>
 </head>
@@ -94,14 +105,15 @@
     <div id="loadingState" class="loading-c">載入公告⋯</div>
     <div class="main-3" id="content" style="display:none">
       <aside class="left-c">
-        <h3>所有 Campaigns</h3>
-        <button class="new-camp-btn" id="newCampBtn">＋ 新增 Campaign</button>
+        <h3>所有範本</h3>
+        <button class="new-camp-btn" id="newCampBtn">＋ 新增範本</button>
         <div class="camp-list" id="campList"></div>
       </aside>
       <section class="center-c">
         <header class="editor-h">
-          <h2><input id="campTitle" placeholder="Campaign 標題"></h2>
+          <h2><input id="campTitle" placeholder="範本標題"></h2>
           <div class="actions">
+            <button class="btn btn-ghost btn-sm" id="previewBtn">🔍 預覽</button>
             <button class="btn btn-ghost btn-sm" id="saveCampBtn">儲存草稿</button>
             <button class="btn btn-primary btn-sm" id="sendNowBtn">立即發送 →</button>
           </div>
@@ -137,9 +149,10 @@
           <div class="v" id="recipCount">—</div>
           <div class="l">符合條件的 Email 數</div>
         </div>
+        <div id="recipList" style="margin-bottom:14px; max-height:320px; overflow-y:auto"></div>
         <h4 style="margin-top:18px">傳送統計</h4>
         <div class="stats-row" id="statsBox">尚未發送</div>
-        <div class="help-tip">💡 Email 範本含 RegMaster 標題列、頁尾與 footer。<br><br>SMS / LINE 通道將於 Phase 9 後續整合上線。</div>
+        <div class="help-tip">💡 Email 範本含 RegMaster 標題列、頁尾與 footer。<br><br>SMS / LINE 通道將於後續整合上線。</div>
       </aside>
     </div>
   </main>
@@ -168,6 +181,19 @@
 
   var CAMPS = [], SELECTED = null;
   var CHANNELS = ['email'];
+  var CAN_SEND = true;   // resolved from the caller's plan (公告群發 = PRO+)
+  google.script.run
+    .withSuccessHandler(function (p) { CAN_SEND = !!(p && p.features && p.features.campaigns); applySendGate(); })
+    .withFailureHandler(function () {})
+    .getMyPlan();
+  function applySendGate() {
+    var btn = document.getElementById('sendNowBtn');
+    if (!btn) return;
+    if (!CAN_SEND) {
+      btn.title = '公告群發為 Pro 以上方案功能';
+      btn.style.opacity = '.55';
+    } else { btn.title = ''; btn.style.opacity = ''; }
+  }
 
   function load() {
     Promise.all([
@@ -194,7 +220,7 @@
   function showEmptyEditor() {
     SELECTED = null;
     document.getElementById('campTitle').value = '';
-    document.getElementById('campTitle').placeholder = '尚未選擇 Campaign — 請點左側「＋ 新增 Campaign」';
+    document.getElementById('campTitle').placeholder = '尚未選擇範本 — 請點左側「＋ 新增範本」';
     document.getElementById('subjectInput').value = '';
     document.getElementById('subjectInput').disabled = true;
     document.getElementById('bodyTitleInput').value = '';
@@ -202,16 +228,17 @@
     document.getElementById('bodyContent').disabled = true;
     document.getElementById('saveCampBtn').disabled = true;
     document.getElementById('sendNowBtn').disabled = true;
-    document.getElementById('statsBox').textContent = '請先建立或選擇 Campaign';
+    document.getElementById('previewBtn').disabled = true;
+    document.getElementById('statsBox').textContent = '請先建立或選擇範本';
   }
 
   function renderList() {
     var list = document.getElementById('campList');
-    if (CAMPS.length === 0) { list.innerHTML = '<p style="color:var(--muted); padding:14px 0; text-align:center; font:500 12px/1.5 var(--f-tc)">尚無 campaign</p>'; return; }
+    if (CAMPS.length === 0) { list.innerHTML = '<p style="color:var(--muted); padding:14px 0; text-align:center; font:500 12px/1.5 var(--f-tc)">尚無範本</p>'; return; }
     list.innerHTML = CAMPS.map(function (c) {
       var chIcons = c.channels.map(function (x) { return x === 'email' ? '📧' : x === 'sms' ? '📱' : '💬'; }).join('');
       return '<div class="camp" data-id="' + c.id + '">' +
-        '<div class="top"><span class="st ' + (c.status || 'draft') + '">' + (c.status === 'sent' ? '已發送' : c.status === 'scheduled' ? '已排程' : '草稿') + '</span><span class="ch-icons">' + chIcons + '</span></div>' +
+        '<div class="top"><span class="st ' + (c.status || 'draft') + '">' + (c.status === 'sent' ? '已發送' : c.status === 'scheduled' ? '已排程' : '草稿') + '</span><span class="ch-icons">' + chIcons + '</span><span class="camp-del" data-del="' + c.id + '" title="刪除範本">✕</span></div>' +
         '<h4>' + escapeHtml(c.subject || '(無標題)') + '</h4>' +
         '<div class="meta">' + escapeHtml(c.createdAt || '') + ' · 收件 ' + ((c.stats && c.stats.sent) || 0) + '</div>' +
       '</div>';
@@ -222,19 +249,37 @@
         if (c) selectCamp(c);
       });
     });
+    list.querySelectorAll('[data-del]').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = b.dataset.del;
+        var c = CAMPS.find(function (x) { return x.id === id; });
+        uiConfirm('確定刪除範本「' + ((c && c.subject) || '') + '」？此操作無法復原。', { title: '刪除範本', okText: '刪除', danger: true }).then(function (ok) {
+          if (!ok) return;
+          google.script.run
+            .withSuccessHandler(function (res) {
+              if (res && res.success) { if (SELECTED && SELECTED.id === id) SELECTED = null; load(); }
+              else uiAlert((res && res.message) || '刪除失敗');
+            })
+            .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+            .deleteCampaign(id);
+        });
+      });
+    });
   }
 
   function selectCamp(c) {
     SELECTED = c;
     document.querySelectorAll('.camp').forEach(function (x) { x.classList.toggle('on', x.dataset.id === c.id); });
     document.getElementById('campTitle').value = c.subject || '';
-    document.getElementById('campTitle').placeholder = 'Campaign 標題';
+    document.getElementById('campTitle').placeholder = '範本標題';
     document.getElementById('subjectInput').value = c.subject || '';
     document.getElementById('subjectInput').disabled = false;
     document.getElementById('bodyTitleInput').value = c.subject || '';
     document.getElementById('bodyContent').value = c.body || '';
     document.getElementById('bodyContent').disabled = false;
     document.getElementById('saveCampBtn').disabled = false;
+    document.getElementById('previewBtn').disabled = false;
     document.getElementById('recipFilter').value = c.recipientFilter || 'all';
     CHANNELS = (c.channels || ['email']).slice();
     document.querySelectorAll('.channel-pill').forEach(function (p) {
@@ -260,21 +305,24 @@
   document.getElementById('newCampBtn').addEventListener('click', createDraft);
 
   function updateRecipCount() {
-    // Simple estimate: count members with email matching the filter via getAllTeams
+    var filter = document.getElementById('recipFilter').value;
+    document.getElementById('recipCount').textContent = '⋯';
+    document.getElementById('recipList').innerHTML = '';
     google.script.run
-      .withSuccessHandler(function (teams) {
-        var filter = document.getElementById('recipFilter').value;
-        var matched = (teams || []).filter(function (t) {
-          if (t.status === '已取消') return false;
-          if (filter === 'paid' && !(t.paymentStatus || '').includes('已確認')) return false;
-          if (filter === 'unpaid' && (t.paymentStatus || '').includes('已確認')) return false;
-          if (filter === 'waitlist' && !(t.status || '').startsWith('備取')) return false;
-          return true;
-        });
-        document.getElementById('recipCount').textContent = matched.length;
+      .withSuccessHandler(function (res) {
+        res = res || {};
+        document.getElementById('recipCount').textContent = (res.total != null ? res.total : 0);
+        var teams = res.teams || [];
+        document.getElementById('recipList').innerHTML = teams.length
+          ? teams.map(function (t) {
+              return '<div class="recip-team"><div class="tn">' + escapeHtml(t.teamName) +
+                '<span style="color:var(--muted); font-weight:400"> · ' + t.emails.length + ' 封</span></div>' +
+                '<div class="em">' + t.emails.map(escapeHtml).join('、') + '</div></div>';
+            }).join('')
+          : '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">此條件下沒有可寄送的 Email。</p>';
       })
-      .withFailureHandler(function () { document.getElementById('recipCount').textContent = '?'; })
-      .getAllTeams(compId);
+      .withFailureHandler(function () { document.getElementById('recipCount').textContent = '?'; document.getElementById('recipList').innerHTML = ''; })
+      .getCampaignRecipients(compId, filter);
   }
   document.getElementById('recipFilter').addEventListener('change', updateRecipCount);
 
@@ -301,7 +349,7 @@
   });
 
   document.getElementById('saveCampBtn').addEventListener('click', function () {
-    if (!SELECTED) return alert('請先選一個 campaign');
+    if (!SELECTED) return alert('請先選一個範本');
     var payload = {
       subject: document.getElementById('subjectInput').value.trim(),
       body: document.getElementById('bodyContent').value,
@@ -318,6 +366,10 @@
   document.getElementById('sendNowBtn').addEventListener('click', function () {
     if (!SELECTED) return;
     var btn = this;
+    if (!CAN_SEND) {
+      uiAlert('公告群發（EDM）為 Pro 以上方案功能。\n升級至 Pro 後，即可一次將公告 Email 寄送給符合條件的所有報名者（可依已付款 / 未付款 / 候補篩選）。\n\n請至「方案與授權」頁升級方案，或聯繫客服洽詢。', { title: '需要升級方案', okText: '前往升級' }).then(function () { location.href = '/admin/license.html'; });
+      return;
+    }
     uiConfirm('立即發送給 ' + document.getElementById('recipCount').textContent + ' 位收件人？', { title: '發送公告', okText: '立即發送' }).then(function (ok) {
     if (!ok) return;
     var payload = {
@@ -333,7 +385,7 @@
         google.script.run
           .withSuccessHandler(function (res) {
             if (res && res.success) {
-              alert('✓ 已發送 ' + res.sent + ' 封 Email' + (res.channels.length > 1 ? '（SMS/LINE 已記錄為排程，待 Phase 9 整合）' : ''));
+              alert('✓ 已發送 ' + res.sent + ' 封 Email' + (res.channels.length > 1 ? '（SMS/LINE 已記錄為排程，待後續整合）' : ''));
               load();
             } else { alert('發送失敗：' + ((res && res.message) || '')); }
             btn.disabled = false; btn.textContent = '立即發送 →';
@@ -344,6 +396,32 @@
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '立即發送 →'; alert('儲存失敗：' + (err && err.message)); })
       .updateCampaign(SELECTED.id, payload);
     });
+  });
+
+  // ----- Item 12: email preview (internal modal, RegMaster template) -----
+  function buildPreviewHtml(subject, bodyText) {
+    var body = escapeHtml(bodyText || '').replace(/\n/g, '<br>');
+    var LOGO = 'https://regmaster-v3.web.app/favicon.png';
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
+      '<body style="margin:0;padding:0;background:#f0f4f8;font-family:Segoe UI,Roboto,Arial,sans-serif">' +
+      '<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f0f4f8"><tr><td align="center" style="padding:20px 10px">' +
+      '<table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#fff;border:1px solid #d1d9e0">' +
+      '<tr><td style="background:#0A437A;padding:12px 24px"><img src="' + LOGO + '" alt="RegMaster" height="40" style="height:40px;display:block;border:0"></td></tr>' +
+      '<tr><td style="background:#0D5BA8;padding:18px 24px;text-align:center"><h2 style="margin:0;font-size:20px;font-weight:800;color:#fff">' + escapeHtml(subject || '活動公告') + '</h2></td></tr>' +
+      '<tr><td style="padding:28px 24px;background:#fff;color:#333;font-size:15px;line-height:1.7">' + body + '</td></tr>' +
+      '<tr><td style="background:#f1f5f9;padding:16px 24px;text-align:center;font-size:12px;color:#64748b"><div>Copyright © RegMaster Pro</div><div style="margin-top:4px;color:#94a3b8">此為系統自動發送之信件，請勿直接回覆。</div></td></tr>' +
+      '</table></td></tr></table></body></html>';
+  }
+  document.getElementById('previewBtn').addEventListener('click', function () {
+    var subject = document.getElementById('subjectInput').value.trim() || '活動公告';
+    var html = buildPreviewHtml(subject, document.getElementById('bodyContent').value);
+    var bg = document.createElement('div'); bg.className = 'pv-bg';
+    bg.innerHTML = '<div class="pv-card"><div class="pv-h"><h3>📧 信件預覽（套用 RegMaster 範本）</h3><button class="btn btn-ghost btn-sm" id="pvClose">關閉</button></div><div class="pv-body"><iframe id="pvFrame" title="email preview"></iframe></div></div>';
+    document.body.appendChild(bg);
+    bg.querySelector('#pvFrame').srcdoc = html;
+    function close() { if (bg.parentNode) bg.parentNode.removeChild(bg); }
+    bg.addEventListener('click', function (e) { if (e.target === bg) close(); });
+    bg.querySelector('#pvClose').addEventListener('click', close);
   });
 
   load();

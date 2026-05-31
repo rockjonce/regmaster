@@ -465,8 +465,8 @@
               <div><h3>名額與候補</h3></div>
             </div>
             <div class="row2">
-              <div class="fld"><div class="lbl">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="0"><div class="help" id="maxTeamsHelp">0 = 無上限。超過此數將進入候補</div></div>
-              <div class="fld"><div class="lbl">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="true">是（額滿後可候補）</option><option value="false">否（額滿即停止接受報名）</option></select></div>
+              <div class="fld"><div class="lbl">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="0"><div class="help" id="maxTeamsHelp">0 = 無上限。超過此數將進入候補</div><div id="maxTeamsErr" style="display:none; margin-top:5px; color:var(--err-700); font:600 11.5px/1.45 var(--f-tc)"></div></div>
+              <div class="fld"><div class="lbl">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="true">是（額滿後可候補）</option><option value="false">否（額滿即停止接受報名）</option></select><div id="waitlistHint" style="display:none; margin-top:5px; color:var(--warn-700); font:500 11.5px/1.45 var(--f-tc)"></div></div>
             </div>
           </div>
           <div class="sec">
@@ -476,6 +476,7 @@
             </div>
             <div class="toggle-row"><div class="body"><h6>於公開瀏覽頁顯示</h6><p>未開啟時，只有持連結的人才能找到此活動</p></div><div class="tg-sw" id="isVisible" data-dirty></div></div>
             <div class="toggle-row"><div class="body"><h6>開放報名</h6><p>關閉時公開頁的「立即報名」鈕變灰</p></div><div class="tg-sw" id="isOpen" data-dirty></div></div>
+            <div class="toggle-row"><div class="body"><h6>活動 AI 助理</h6><p id="eventAiHint">開啟後，報名者可在活動公開頁向 AI 詢問本活動的時間、組別、費用、規章等問題</p></div><div class="tg-sw" id="eventAiOn" data-dirty></div></div>
           </div>
 
           <div class="danger-zone">
@@ -626,7 +627,67 @@
   }
 
   // ---- Load config ----
-  var CFG = null, COMP = null, ORIGINAL_JSON = '';
+  var CFG = null, COMP = null, ORIGINAL_JSON = '', PLAN = null;
+  function tierLabelFE(t) { return ({ free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' })[t] || (t || ''); }
+  // Resolve the caller's plan (limits + features) to validate capacity inputs and gate
+  // the per-activity 活動 AI / 允許候補 controls.
+  google.script.run
+    .withSuccessHandler(function (p) { PLAN = p || null; applyPlanGating(); validateCapacity(); })
+    .withFailureHandler(function () {})
+    .getMyPlan();
+
+  function applyPlanGating() {
+    if (!PLAN || !PLAN.features) return;
+    // 活動 AI 助理 toggle
+    var aiSw = document.getElementById('eventAiOn');
+    var aiHint = document.getElementById('eventAiHint');
+    if (aiSw) {
+      if (!PLAN.features.eventAi) {
+        aiSw.classList.remove('on'); aiSw.dataset.locked = '1';
+        aiSw.style.opacity = '.4'; aiSw.style.pointerEvents = 'none';
+        if (aiHint) aiHint.innerHTML = '此功能需 <b>Starter</b> 以上方案 — <a href="/admin/license.html" style="color:var(--acc)">升級方案</a> 後即可開啟。';
+      } else {
+        delete aiSw.dataset.locked; aiSw.style.opacity = ''; aiSw.style.pointerEvents = '';
+        if (aiHint) aiHint.textContent = '開啟後，報名者可在活動公開頁向 AI 詢問本活動的時間、組別、費用、規章等問題。';
+      }
+    }
+    // 允許候補
+    var wl = document.getElementById('adv-allowWaitlist');
+    var wlHint = document.getElementById('waitlistHint');
+    if (wl) {
+      if (!PLAN.features.waitlist) {
+        wl.value = 'false'; wl.disabled = true;
+        if (wlHint) { wlHint.style.display = ''; wlHint.innerHTML = '允許候補為 <b>Starter</b> 以上方案功能 — <a href="/admin/license.html" style="color:var(--acc)">升級方案</a> 後可開啟。'; }
+      } else {
+        wl.disabled = false;
+        if (wlHint) wlHint.style.display = 'none';
+      }
+    }
+  }
+
+  // Item 1 & 2: block capacity that exceeds the plan's per-activity cap (0 = 無上限 plan).
+  function validateCapacity() {
+    var err = document.getElementById('maxTeamsErr');
+    if (!err) return true;
+    if (!PLAN || !PLAN.maxCapacity || PLAN.maxCapacity === 0) { err.style.display = 'none'; return true; }
+    var cap = PLAN.maxCapacity;
+    var mode = (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single';
+    var msg = '';
+    if (mode === 'multi') {
+      var sess = (typeof readSessions === 'function') ? readSessions() : [];
+      if (sess.length) {
+        var sum = sess.reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
+        var overEach = sess.some(function (s) { return (parseInt(s.maxTeams, 10) || 0) > cap; });
+        if (sum > cap) msg = '各梯次報名總數 (' + sum + ') 超過您方案（' + tierLabelFE(PLAN.tier) + '）單一活動名額上限 ' + cap + '，請調低各梯次名額或升級方案。';
+        else if (overEach) msg = '有梯次名額超過您方案（' + tierLabelFE(PLAN.tier) + '）上限 ' + cap + '，請調低或升級方案。';
+      }
+    } else {
+      var val = parseInt(document.getElementById('adv-maxTeams').value, 10) || 0;
+      if (val > cap) msg = '報名上限 ' + val + ' 超過您方案（' + tierLabelFE(PLAN.tier) + '）單場名額上限 ' + cap + '，請調低（≤ ' + cap + '）或升級方案。';
+    }
+    if (msg) { err.style.display = ''; err.textContent = msg; return false; }
+    err.style.display = 'none'; return true;
+  }
 
   google.script.run
     .withSuccessHandler(function (res) {
@@ -757,7 +818,9 @@
     // not the tier ceiling (maxCapacityLimit) — those two are different concepts.
     document.getElementById('adv-maxTeams').value = COMP.config.maxTeams || 0;
     document.getElementById('adv-allowWaitlist').value = (CFG.allowWaitlist !== false) ? 'true' : 'false';
+    setToggle('eventAiOn', CFG.enableAI !== false);   // 活動 AI 助理 per-activity toggle (default on)
     updateCapacityField();   // multi mode → overwrite with session sum + lock
+    applyPlanGating();        // gate eventAi / waitlist by the caller's plan
 
     renderFormSummary();
   }
@@ -948,12 +1011,15 @@
       inp.style.color = '';
       if (help) help.textContent = '0 = 無上限。超過此數將進入候補';
     }
+    validateCapacity();
   }
 
   function setToggle(id, on) { document.getElementById(id).classList.toggle('on', !!on); }
   document.querySelectorAll('.tg-sw').forEach(function (sw) {
-    sw.addEventListener('click', function () { sw.classList.toggle('on'); markDirty(); });
+    sw.addEventListener('click', function () { if (sw.dataset.locked) return; sw.classList.toggle('on'); markDirty(); });
   });
+  document.getElementById('adv-maxTeams').addEventListener('blur', validateCapacity);
+  document.getElementById('adv-maxTeams').addEventListener('input', function () { if (document.getElementById('maxTeamsErr').style.display !== 'none') validateCapacity(); });
 
   // ---- Item 3: single-day vs multi-session mutual exclusivity ----
   function updateDateMode() {
@@ -1358,7 +1424,8 @@
         };
       })(),
       maxTeams: parseInt(document.getElementById('adv-maxTeams').value, 10) || 0,
-      allowWaitlist: document.getElementById('adv-allowWaitlist').value === 'true'
+      allowWaitlist: document.getElementById('adv-allowWaitlist').value === 'true',
+      enableAI: document.getElementById('eventAiOn').classList.contains('on')
     });
   }
   function markDirty() {
@@ -1390,6 +1457,12 @@
     }
     if (data.openDate && data.deadline && data.openDate >= data.deadline) {
       uiAlert('開放報名時間必須早於報名截止時間。'); return;
+    }
+    // Item 1 & 2: block save when capacity exceeds the plan's per-activity cap.
+    if (!validateCapacity()) {
+      var em = document.getElementById('maxTeamsErr');
+      uiAlert((em && em.textContent) || '報名上限超過您的方案上限，請調整或升級方案。');
+      return;
     }
 
     var feeSum = (data.feeItems || []).reduce(function (n, it) { return n + (it.amount || 0); }, 0);
@@ -1429,6 +1502,7 @@
         (data.bankEnabled && data.bankInfo.accountNumber ? 'atm' : null)
       ].filter(Boolean),
       allowWaitlist: data.allowWaitlist,
+      enableAI: data.enableAI,
       // ROOT-CAUSE FIX for bug "maxTeams 設定後又變 0":
       // We previously only sent maxCapacityLimit (which isn't in the saveCompetitionConfig
       // jk whitelist and gets stripped), and forgot to pass maxTeams. The backend then
@@ -1439,6 +1513,12 @@
     var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
     google.script.run
       .withSuccessHandler(function (res) {
+        // Backend may reject (e.g. capacity over plan limit) with {success:false,message}.
+        if (res && res.success === false) {
+          btn.disabled = false; btn.textContent = '儲存變更';
+          uiAlert((res && res.message) || '儲存失敗');
+          return;
+        }
         // isOpen lives on the top-level comp doc and has its own callable.
         // deadline is now included in newCfg above; saveCompetitionConfig writes it to the comp doc.
         new Promise(function (r) {

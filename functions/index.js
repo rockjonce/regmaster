@@ -866,6 +866,8 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     || config.payuniEnabled === true
     || (parseInt(config.registrationFee) || 0) > 0;
   if (wantsPayment) await requireFeature(request.authUser, "payment");
+  // 允許候補 is a STARTER+ feature — reject enabling it on a plan that lacks it.
+  if (config.allowWaitlist === true) await requireFeature(request.authUser, "waitlist");
 
   if (!capUnlocked && capLimit > 0) {
     const sessMode = config.sessionSelectMode || "single";
@@ -1114,10 +1116,11 @@ exports.getRegistrationBundle = callable(async (data) => {
       }
     } catch (e) { /* swallow — public bundle should not fail because of host lookup */ }
   }
-  // 活動 AI 助理 availability follows the event owner's plan (STARTER+ by default).
+  // 活動 AI 助理 availability = owner's plan (STARTER+) AND the organiser's per-activity
+  // toggle (cfg.enableAI, default on).
   let eventAiEnabled = false;
   const ownerUser = r.creator || createdBy || "";
-  if (ownerUser) {
+  if (ownerUser && cfg.enableAI !== false) {
     try {
       const plans = await getPlans();
       const ownerTier = await getEffectiveTier(ownerUser);
@@ -2251,7 +2254,7 @@ const FEATURE_MIN_RANK = {
   multiJudge: 2, // PRO+      多評審評分
   campaigns:  2  // PRO+      公告群發
 };
-const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", eventAi: "活動 AI 助理", scoring: "評分", multiJudge: "多評審評分", campaigns: "公告群發", checkin: "QR 報到", certificate: "名牌 / 證書" };
+const FEATURE_LABEL = { payment: "線上金流收款", csvExport: "匯出報表", ai: "AI 助理", eventAi: "活動 AI 助理", scoring: "評分", multiJudge: "多評審評分", campaigns: "公告群發", checkin: "QR 報到", waitlist: "允許候補", certificate: "名牌 / 證書" };
 const RANK_TIER_LABEL = { 1: "STARTER", 2: "PRO", 3: "TEAM" };
 function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
 
@@ -2262,15 +2265,15 @@ function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
 // absent, and encodes the product decisions (Free 可收款 5%；報到/評分為 Starter+).
 const DEFAULT_PLANS = {
   free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,
-             features:{ payment:true,  csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, certificate:false } },
+             features:{ payment:true,  csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, waitlist:false, certificate:false } },
   starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,
-             features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  certificate:false } },
+             features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  waitlist:true,  certificate:false } },
   pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } },
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } },
   team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  certificate:false } }
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } }
 };
-const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","certificate"];
+const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","waitlist","certificate"];
 
 // Read config/sales and produce the resolved plan matrix (deep-merged over defaults).
 // Back-compat: if config/sales has no `plans` object yet, only legacy money fields
@@ -2661,17 +2664,18 @@ exports.askCompetitionAI = callable(async (data) => {
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { answer: "找不到競賽" };
   const comp = compDoc.data();
-  // Gate by the EVENT OWNER's plan (callers here are unauthenticated registrants).
-  // 活動 AI 助理 is a STARTER+ feature; return a friendly notice if the owner's plan lacks it.
+  const cfg = comp.config || {};
+  // Gate by the EVENT OWNER's plan (callers here are unauthenticated registrants) AND
+  // the organiser's per-activity toggle (cfg.enableAI, default on). 活動 AI 助理 is STARTER+.
   const ownerUser = comp.creator || comp.createdBy || "";
   if (ownerUser) {
     const plans = await getPlans();
     const ownerTier = await getEffectiveTier(ownerUser);
-    if (!(plans[ownerTier] && plans[ownerTier].features && plans[ownerTier].features.eventAi === true)) {
+    const planAllows = !!(plans[ownerTier] && plans[ownerTier].features && plans[ownerTier].features.eventAi === true);
+    if (!planAllows || cfg.enableAI === false) {
       return { answer: "此活動未開放 AI 助理。", disabled: true };
     }
   }
-  const cfg = comp.config || {};
   const rules = comp.rulesText || "";
   const desc = cfg.description || "";
   const keyInfo = await getNextGeminiKey();
@@ -3647,6 +3651,20 @@ exports.getPublicPlans = callable(async () => {
     safe[t] = { price: p.price, feePct: p.feePct, maxActiveEvents: p.maxActiveEvents, maxCapacity: p.maxCapacity, features: { ...p.features } };
   }
   return { plans: safe };
+});
+
+// The caller's own resolved plan (tier + limits + features) — used by edit.html to
+// validate capacity inputs and gate per-activity toggles (活動 AI、允許候補).
+exports.getMyPlan = authCallable(["system", "competition"], async (data, request) => {
+  const tier = request.authUser.role === "system" ? "team" : await getEffectiveTier(request.authUser.username);
+  const plans = await getPlans();
+  const p = plans[tier] || plans.free;
+  return {
+    tier,
+    maxActiveEvents: p.maxActiveEvents,   // 0 = 無限
+    maxCapacity: p.maxCapacity,           // 0 = 無限
+    features: Object.assign({}, p.features)
+  };
 });
 
 exports.saveSalesConfig = authCallable(["system"], async (data) => {
@@ -5308,6 +5326,35 @@ exports.listCampaigns = compAuthCallable(async (data) => {
   const snap = await db.collection("campaigns").where("compId", "==", data.compId).get();
   return snap.docs.map(d => Object.assign({ id: d.id }, d.data()))
                   .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+});
+
+// Recipients for a given filter — team name + that team's recorded emails + the
+// total unique email count. Used by the EDM composer's 預計收件人 panel.
+exports.getCampaignRecipients = compAuthCallable(async (data) => {
+  const { compId, filter } = data;
+  const f = filter || "all";
+  const teamSnap = await db.collection("teams").where("compId", "==", compId).get();
+  const teamMap = {};
+  teamSnap.docs.forEach(d => {
+    const t = d.data();
+    if (t.status === "已取消") return;
+    if (f === "paid" && !(t.paymentStatus || "").includes("已確認")) return;
+    if (f === "unpaid" && (t.paymentStatus || "").includes("已確認")) return;
+    if (f === "waitlist" && !(t.status || "").startsWith("備取")) return;
+    teamMap[d.id] = { teamId: t.teamId || d.id, teamName: t.teamNameCN || t.teamNameEN || "(無隊名)", emails: [] };
+  });
+  const memSnap = await db.collection("members").where("compId", "==", compId).get();
+  const allEmails = new Set();
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    if (teamMap[m.teamId] && m.email) {
+      if (teamMap[m.teamId].emails.indexOf(m.email) === -1) teamMap[m.teamId].emails.push(m.email);
+      allEmails.add(m.email);
+    }
+  });
+  const teams = Object.keys(teamMap).map(k => teamMap[k]).filter(t => t.emails.length > 0)
+                      .sort((a, b) => String(a.teamId).localeCompare(String(b.teamId)));
+  return { total: allEmails.size, teamCount: teams.length, teams };
 });
 
 exports.createCampaign = compAuthCallable(async (data, request) => {
