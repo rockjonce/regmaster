@@ -3667,6 +3667,51 @@ exports.getMyPlan = authCallable(["system", "competition"], async (data, request
   };
 });
 
+// Fair upgrade proration: 應補差額 = 新方案價 − 目前方案價 ×(剩餘天數 ÷ 365)，
+// 付款日起重新計算 365 天。Free→付費 = 全額。回傳金額為「直接收費」(已含稅、不另加稅)。
+async function computeUpgradeQuote(username, newTier) {
+  newTier = String(newTier || "").toLowerCase();
+  if (!VALID_TIERS.includes(newTier)) return null;
+  const plans = await getPlans();
+  const newPrice = parseInt(plans[newTier] && plans[newTier].price, 10) || 0;
+  const curTier = await getEffectiveTier(username);
+  const curRank = TIER_RANK[curTier] || 0;
+  const newRank = TIER_RANK[newTier] || 0;
+  const curPrice = parseInt(plans[curTier] && plans[curTier].price, 10) || 0;
+  // Remaining days of the buyer's current active subscription (clamped 0–365).
+  let remainingDays = 0;
+  if (curRank > 0) {
+    const snap = await db.collection("licenses").where("activatedBy", "==", username).get();
+    const now = Date.now();
+    snap.docs.forEach(d => {
+      const l = d.data();
+      const type = (l.type || "").toLowerCase();
+      const isSub = type === "subscription" || (!type && l.years > 0);
+      if (isSub && l.status === "已啟用" && l.expiresAt) {
+        const t = new Date(l.expiresAt).getTime();
+        if (!isNaN(t) && t > now) { const dd = Math.ceil((t - now) / 86400000); if (dd > remainingDays) remainingDays = dd; }
+      }
+    });
+    if (remainingDays > 365) remainingDays = 365;
+  }
+  const isUpgrade = newRank > curRank && curRank > 0;
+  const credit = isUpgrade ? Math.round(curPrice * remainingDays / 365) : 0;
+  const amount = Math.max(0, newPrice - credit);
+  return { currentTier: curTier, newTier, newPrice, curPrice, remainingDays, credit, amount, isUpgrade, canBuy: newRank > curRank };
+}
+
+// Upgrade quotes for every tier above the caller's current tier — drives license.html.
+exports.getUpgradeOptions = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const curTier = request.authUser.role === "system" ? "team" : await getEffectiveTier(username);
+  const options = [];
+  for (const t of VALID_TIERS) {
+    const q = await computeUpgradeQuote(username, t);
+    if (q) options.push(q);
+  }
+  return { currentTier: curTier, options };
+});
+
 exports.saveSalesConfig = authCallable(["system"], async (data) => {
   const config = data.config || {};
   // Validate the plan matrix if present (price≥0 int, feePct 0–100, limits≥0 int, features boolean).
@@ -3723,18 +3768,21 @@ exports.createPayuniOrder = callable(async (data) => {
 
   /* Calculate price */
   let subtotal = 0;
+  let hasTier = false;
   const orderItems = [];
   for (const item of (items || [])) {
     if (item.type === "tier") {
-      // Tiered subscription purchase (starter / pro / team)
+      // Tiered subscription purchase — server computes the (prorated) amount; the price
+      // charged is exactly this (tax-inclusive, no extra tax). Fresh 365 days on success.
       const tier = String(item.tier || "").toLowerCase();
       if (!VALID_TIERS.includes(tier)) continue;
-      const years = Math.min(Math.max(1, parseInt(item.years, 10) || 1), 5);
-      const unitPrice = parseInt((plans[tier] && plans[tier].price), 10) || parseInt(sales[tierPriceField(tier)], 10) || 0;
-      if (unitPrice <= 0) return { success: false, message: "此方案尚未設定價格，請聯絡系統管理員" };
-      const sub = Math.round(years * unitPrice);
-      orderItems.push({ type: "tier", tier, years, unitPrice, discount: 1, subtotal: sub });
-      subtotal += sub;
+      const q = await computeUpgradeQuote(username, tier);
+      if (!q || !q.canBuy) return { success: false, message: "您目前的方案已等於或高於此方案，無法購買。" };
+      if (q.newPrice <= 0) return { success: false, message: "此方案尚未設定價格，請聯絡系統管理員" };
+      hasTier = true;
+      orderItems.push({ type: "tier", tier, years: 1, unitPrice: q.amount, fullPrice: q.newPrice,
+        credit: q.credit, upgradeFrom: q.currentTier, discount: 1, subtotal: q.amount });
+      subtotal += q.amount;
     } else {
       // Legacy count/subscription items (deprecated)
       const qty = Math.min(Math.max(1, item.qty || 1), item.type === "count" ? 10 : 5);
@@ -3762,7 +3810,8 @@ exports.createPayuniOrder = callable(async (data) => {
   }
   const taxRate = (sales.taxRate || 5) / 100;
   const afterDiscount = subtotal - couponDiscount;
-  const tax = Math.round(afterDiscount * taxRate);
+  // Plan (tier) purchases are charged at the plan price directly — no extra tax.
+  const tax = hasTier ? 0 : Math.round(afterDiscount * taxRate);
   const total = afterDiscount + tax;
   if (total < 1) return { success: false, message: "金額不正確" };
   
@@ -3782,7 +3831,9 @@ exports.createPayuniOrder = callable(async (data) => {
     ProdDesc: "RegMaster " + orderItems.map(i => i.type === "tier" ? (tierLabel(i.tier) + "x" + i.years + "年") : (i.type === "count" ? "次數x" + i.qty : "訂閱x" + i.qty + "年")).join("+"),
     ReturnURL: hostUrl + "/payuni-return.html",
     NotifyURL: FUNCTIONS_BASE + "/payuniNotify",
-    TradeType: "1"
+    TradeType: "1",
+    // Credit-card only — do not offer ATM / WebATM / CVS / barcode for plan purchases.
+    Credit: "1"
   };
   const encStr = payuniEncrypt(encryptInfo, sales.payuniHashKey, sales.payuniHashIV);
   const hashStr = payuniHash(encStr, sales.payuniHashKey, sales.payuniHashIV);

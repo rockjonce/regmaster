@@ -49,8 +49,20 @@ p{font-size:15px;color:#475569;line-height:1.7;margin:0 0 20px}
     // Clear the stash so a later visit to this page doesn't reuse stale info
     try { localStorage.removeItem('regmaster_pending_team'); } catch (e) {}
   }
-  // Fallback (license / non-registration payments) keeps the original UX:
-  // user already sees the default success card from the markup above.
+  // Plan / license purchase — route the buyer back to 方案與授權.
+  var pendingPlan = null;
+  try { pendingPlan = JSON.parse(localStorage.getItem('regmaster_pending_plan') || 'null'); } catch (e) {}
+  if (pendingPlan && (Date.now() - (pendingPlan.ts || 0) < 60 * 60 * 1000)) {
+    var label = (pendingPlan.tier || '').toUpperCase();
+    document.getElementById('card').innerHTML =
+      '<div class="icon">✅</div>' +
+      '<h1>付款完成，方案啟用中</h1>' +
+      '<p>已收到您的付款，系統正在啟用您的' + (label ? ' <b>' + label + '</b> ' : '') + '方案。授權碼會自動產生並綁定到您的帳號，通常數秒內完成。</p>' +
+      '<div><a href="/admin/license.html" class="btn">📋 前往方案與授權</a><a href="/admin/" class="btn ghost">回主辦後台</a></div>' +
+      '<div class="muted">付款結果由 PayUNI 透過 webhook 確認，可能需數秒至數分鐘。若方案未即時更新，請稍候重新整理。</div>';
+    try { localStorage.removeItem('regmaster_pending_plan'); } catch (e) {}
+  }
+  // Fallback (other payments) keeps the original default success card.
 })();
 </script>
 </body>

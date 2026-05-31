@@ -99,6 +99,7 @@
     saveSalesConfig:["config"],
     getPublicPlans:[],
     getMyPlan:[],
+    getUpgradeOptions:[],
     createCoupon:["code","type","value","maxUses","expiresAt"],
     listCoupons:[],
     deleteCoupon:["id"],

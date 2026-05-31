@@ -165,10 +165,11 @@
         } else {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">尚無授權紀錄</td></tr>';
         }
-        // Fetch prices then render the plan cards with the current tier highlighted
-        google.script.run.withSuccessHandler(function (cfg) { renderPlans(tier, cfg || {}); })
-          .withFailureHandler(function () { renderPlans(tier, {}); })
-          .getSalesConfig();
+        // Fetch prices + per-tier upgrade quotes, then render the plan cards.
+        Promise.all([
+          new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getSalesConfig(); }),
+          new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({ options: [] }); }).getUpgradeOptions(); })
+        ]).then(function (arr) { renderPlans(tier, arr[0] || {}, arr[1] || { options: [] }); });
       })
       .withFailureHandler(function (err) {
         document.getElementById('errorBanner').innerHTML = '無法載入授權狀態：' + escapeHtml((err && err.message) || '');
@@ -194,36 +195,60 @@
     team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,    features:{ payment:true, csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } }
   };
   function _lim(n){ return (n === 0 || n == null) ? '無限' : Number(n).toLocaleString(); }
-  function renderPlans(curTier, cfg) {
+  var TIER_RANK_FE = { free: 0, starter: 1, pro: 2, team: 3 };
+  var UPG = {};   // tier → quote { amount, credit, newPrice, remainingDays, canBuy }
+  function renderPlans(curTier, cfg, upgRes) {
     var plans = (cfg && cfg.plans) || DEFAULT_PLANS_FE;
+    var curRank = TIER_RANK_FE[curTier || 'free'] || 0;
+    UPG = {};
+    ((upgRes && upgRes.options) || []).forEach(function (o) { UPG[o.newTier] = o; });
     var grid = document.getElementById('plansGrid');
     grid.innerHTML = TIER_DEFS.map(function (t) {
       var p = plans[t.id] || DEFAULT_PLANS_FE[t.id] || {};
       var feats = p.features || {};
       var isCur = (curTier || 'free') === t.id;
+      var rank = TIER_RANK_FE[t.id] || 0;
       var price = Number(p.price) || 0;
       var priceStr = price > 0 ? ('$' + price.toLocaleString()) : '$0';
-      var btn;
+      var q = UPG[t.id];
+      var btn, upgNote = '';
       if (isCur) btn = '<div class="btn-plan">目前方案</div>';
+      else if (rank < curRank) btn = '<div class="btn-plan" style="opacity:.4">較低方案</div>';
       else if (t.id === 'free') btn = '<div class="btn-plan" style="opacity:.45">免費</div>';
       else if (price <= 0) btn = '<div class="btn-plan" style="opacity:.45" title="尚未設定價格">未開放</div>';
-      else btn = '<button class="btn-plan" data-buy="' + t.id + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買 →</button>';
-      // Limits + enabled features (certificate stays false by default → not listed).
+      else if (q && q.canBuy) {
+        // Upgrade from a paid tier shows the prorated differential; from Free shows full price.
+        if (q.isUpgrade && q.credit > 0) {
+          btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + q.amount + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">升級（加 NT$' + q.amount.toLocaleString() + '）→</button>';
+          upgNote = '<li style="border-top:1px dashed var(--line); margin-top:6px; padding-top:6px; color:var(--acc)"><b>升級僅需 NT$' + q.amount.toLocaleString() + '</b><br><span style="font:400 10.5px/1.4 var(--f-tc); color:var(--muted)">已折抵目前方案剩餘 ' + q.remainingDays + ' 天 NT$' + q.credit.toLocaleString() + '；付款日起重新計 365 天</span></li>';
+        } else {
+          btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + q.amount + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買（NT$' + q.amount.toLocaleString() + '）→</button>';
+        }
+      } else {
+        btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + price + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買 →</button>';
+      }
       var limRows = '<li>同時活動數：' + _lim(p.maxActiveEvents) + '</li><li>單場名額：' + _lim(p.maxCapacity) + '</li>';
       var featRows = FEATURE_ORDER.filter(function (k) { return feats[k] === true; })
         .map(function (k) { return '<li>' + FEATURE_LABEL_FE[k] + '</li>'; }).join('');
       var feeRow = '<li style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:6px"><b>PayUNI 金流手續費：' + (Number(p.feePct) || 0).toFixed(1) + '%</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">報名者線上付款扣除；銀行轉帳免收</span></li>';
       return '<div class="plan' + (isCur ? ' cur' : '') + '"><h4>' + t.name + '</h4><p class="tag">' + t.tag + '</p>' +
         '<div class="price"><span class="num">' + priceStr + '</span><span class="per">' + (price > 0 ? '/年' : '') + '</span></div>' +
-        '<ul>' + limRows + featRows + feeRow + '</ul>' + btn + '</div>';
+        '<ul>' + limRows + featRows + feeRow + upgNote + '</ul>' + btn + '</div>';
     }).join('');
     grid.querySelectorAll('[data-buy]').forEach(function (b) {
-      b.addEventListener('click', function () { purchaseTier(b.dataset.buy); });
+      b.addEventListener('click', function () { purchaseTier(b.dataset.buy, parseInt(b.dataset.amt, 10) || 0); });
     });
   }
-  function purchaseTier(tier) {
-    uiConfirm('將以線上刷卡（PayUni）購買 ' + tier.toUpperCase() + ' 方案（1 年），付款成功後自動綁定到您的帳號。是否繼續？', { title: '購買方案', okText: '前往付款' }).then(function (ok) {
+  function purchaseTier(tier, amount) {
+    var q = UPG[tier];
+    var label = (tier || '').toUpperCase();
+    var msg = q && q.isUpgrade && q.credit > 0
+      ? '升級至 ' + label + ' 方案：\n\n應付差額 NT$' + (amount || q.amount).toLocaleString() + '\n（已折抵目前方案剩餘 ' + q.remainingDays + ' 天 NT$' + q.credit.toLocaleString() + '）\n付款成功後，' + label + ' 方案自當日起算 365 天。\n\n將以線上信用卡刷卡（PayUni）付款，是否繼續？'
+      : '購買 ' + label + ' 方案（自付款日起 1 年）：\n\n應付 NT$' + (amount || (q && q.amount) || 0).toLocaleString() + '\n\n將以線上信用卡刷卡（PayUni）付款，付款成功後自動啟用，是否繼續？';
+    uiConfirm(msg, { title: '購買 / 升級方案', okText: '前往付款' }).then(function (ok) {
       if (!ok) return;
+      // Stash so payuni-return.html can route the buyer back to this page.
+      try { localStorage.setItem('regmaster_pending_plan', JSON.stringify({ tier: tier, ts: Date.now() })); } catch (e) {}
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success && res.payuni) submitPayuni(res.payuni);
