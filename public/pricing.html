@@ -121,91 +121,83 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 <section class="page-hero">
   <div class="eyebrow">PRICING</div>
   <h1>從免費開始<br>用得越多<em>越划算</em>。</h1>
-  <p>透明定價、無隱藏費用、隨時可降級或取消。所有方案皆包含金流串接、Email 通知、QR 報到。</p>
-  <div class="cycle-toggle" id="cycleToggle">
-    <button data-cycle="m">月付</button>
-    <button class="on" data-cycle="y">年付 <span class="save">省 20%</span></button>
-  </div>
+  <p>透明定價、無隱藏費用、隨時可降級或取消。價格與功能以實際方案設定為準。</p>
 </section>
 
 <section style="padding-top:48px">
-  <div class="plans-row">
+  <!-- Plan cards — hydrated from config/sales.plans via getPublicPlans(); the static
+       cards below are an SEO/no-JS fallback that mirrors the default plan matrix. -->
+  <div class="plans-row" id="plansRow">
     <div class="plan">
       <h3>免費版 Free</h3>
-      <p class="tag">想先試試水溫，或一年只辦 1 場小活動</p>
+      <p class="tag">想先試試水溫，或只辦小型活動</p>
       <div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">/永久免費</span></div>
       <div class="price-foot">無需信用卡</div>
       <ul>
         <li><b>1</b> 個進行中活動</li>
-        <li>每活動 <b>50</b> 筆報名</li>
-        <li>金流（手續費 <b>5%</b>）</li>
-        <li>Email 通知</li>
-        <li>基礎統計儀表板</li>
-        <li class="muted">QR 報到</li>
-        <li class="muted">AI 助理</li>
-        <li class="muted">證書 / 名牌</li>
+        <li>每活動 <b>60</b> 筆報名</li>
+        <li>金流手續費 <b>5%</b></li>
+        <li>線上金流收款</li>
       </ul>
       <a href="/signup.html?plan=free" class="btn btn-ghost btn-block">開始使用</a>
     </div>
-
     <div class="plan">
       <h3>入門版 Starter</h3>
       <p class="tag">適合單次活動、小型工作室</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num" data-price-m="590" data-price-y="472">472</span><span class="price-suf">/月</span></div>
-      <div class="price-foot" data-foot-m="月付方案" data-foot-y="年付 NT$ 5,664（月付為 NT$ 590）">年付 NT$ 5,664（月付為 NT$ 590）</div>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">4,990</span><span class="price-suf">/年</span></div>
+      <div class="price-foot">未含稅</div>
       <ul>
-        <li><b>5</b> 個進行中活動</li>
-        <li>每活動 <b>500</b> 筆報名</li>
-        <li>金流（手續費 <b>1%</b>）</li>
-        <li>Email + LINE 通知</li>
-        <li><b>QR 報到</b></li>
-        <li>條件邏輯表單</li>
-        <li class="muted">AI 助理</li>
-        <li class="muted">3 位協作管理員</li>
+        <li><b>3</b> 個進行中活動</li>
+        <li>每活動 <b>300</b> 筆報名</li>
+        <li>金流手續費 <b>3%</b></li>
+        <li>線上金流收款</li>
+        <li>匯出報表</li>
+        <li>評分</li>
+        <li>QR 報到</li>
       </ul>
       <a href="/signup.html?plan=starter" class="btn btn-ghost btn-block">升級 Starter</a>
     </div>
-
     <div class="plan featured">
       <span class="badge-feat">Most Popular</span>
       <h3>專業版 Pro</h3>
       <p class="tag">學校 / 中型機構 · 完整功能 · 含 AI</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num" data-price-m="1490" data-price-y="1192">1,192</span><span class="price-suf">/月</span></div>
-      <div class="price-foot" data-foot-m="月付方案" data-foot-y="年付 NT$ 14,304（月付為 NT$ 1,490）">年付 NT$ 14,304（月付為 NT$ 1,490）</div>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">13,990</span><span class="price-suf">/年</span></div>
+      <div class="price-foot">未含稅</div>
       <ul>
-        <li><b>無限</b> 進行中活動</li>
-        <li>每活動 <b>5,000</b> 筆報名</li>
-        <li>金流（手續費 <b>1%</b>，含發票）</li>
-        <li><b>AI 助理</b> 5,000 次/月</li>
-        <li>名牌 / 證書產生</li>
-        <li><b>3</b> 位協作管理員</li>
-        <li>客製化網域</li>
-        <li>API 存取</li>
+        <li><b>15</b> 個進行中活動</li>
+        <li>每活動 <b>1,500</b> 筆報名</li>
+        <li>金流手續費 <b>2%</b></li>
+        <li>線上金流收款</li>
+        <li>匯出報表</li>
+        <li>評分 · 多評審評分</li>
+        <li>公告群發</li>
+        <li>QR 報到</li>
+        <li>AI 助理</li>
       </ul>
       <a href="/signup.html?plan=pro" class="btn btn-accent btn-block">升級 Pro →</a>
     </div>
-
     <div class="plan">
       <h3>團隊版 Team</h3>
       <p class="tag">大型機構 / 政府單位 / 跨團隊協作</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num">3,990</span><span class="price-suf">/月起</span></div>
-      <div class="price-foot">依規模客製報價</div>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">39,900</span><span class="price-suf">/年</span></div>
+      <div class="price-foot">未含稅</div>
       <ul>
-        <li><b>無限</b> 活動 + 報名</li>
-        <li>金流（手續費 <b>0.6%</b>）</li>
-        <li><b>無限</b> AI 助理</li>
-        <li><b>無限</b> 管理員 + 角色權限</li>
-        <li>SSO / SAML 單一登入</li>
-        <li>SLA 99.95% 保證</li>
-        <li>專屬客戶經理</li>
-        <li>專案導入服務</li>
+        <li><b>無限</b> 進行中活動</li>
+        <li><b>無限</b> 報名名額</li>
+        <li>金流手續費 <b>1%</b></li>
+        <li>線上金流收款</li>
+        <li>匯出報表</li>
+        <li>評分 · 多評審評分</li>
+        <li>公告群發</li>
+        <li>QR 報到</li>
+        <li>AI 助理</li>
       </ul>
-      <a href="/contact.html?topic=team-plan" class="btn btn-primary btn-block">聯繫業務</a>
+      <a href="/signup.html?plan=team" class="btn btn-primary btn-block">升級 Team</a>
     </div>
   </div>
 
   <p class="text-c mute mt-6" style="font:400 12.5px/1.5 var(--f-tc); margin-top:32px">
-    年付方案享 20% 折扣 · 所有金額未含稅 · NT$ = 新台幣 · 接受發票申請統編
+    所有金額未含稅 · NT$ = 新台幣 · 接受發票申請統編 · 銀行轉帳免收金流手續費
   </p>
 </section>
 
@@ -219,44 +211,27 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       <thead>
         <tr>
           <th>功能</th>
-          <th><div class="pn">Free</div><div class="pp">$0</div></th>
-          <th><div class="pn">Starter</div><div class="pp">$472/月</div></th>
-          <th class="feat"><div class="pn">Pro</div><div class="pp">$1,192/月</div></th>
-          <th><div class="pn">Team</div><div class="pp">客製</div></th>
+          <th><div class="pn">Free</div></th>
+          <th><div class="pn">Starter</div></th>
+          <th class="feat"><div class="pn">Pro</div></th>
+          <th><div class="pn">Team</div></th>
         </tr>
       </thead>
-      <tbody>
-        <tr class="section-row"><td colspan="5">活動容量</td></tr>
-        <tr><td>進行中活動數</td><td>1</td><td>5</td><td><b>無限</b></td><td><b>無限</b></td></tr>
-        <tr><td>每活動報名上限</td><td>50</td><td>500</td><td><b>5,000</b></td><td><b>無限</b></td></tr>
-        <tr><td>歷史活動保留</td><td>3 個月</td><td>1 年</td><td><b>3 年</b></td><td><b>永久</b></td></tr>
-        <tr class="section-row"><td colspan="5">金流與發票</td></tr>
-        <tr><td>金流串接（信用卡 / ATM / 超商 / LINE Pay）</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>平台手續費（每筆）</td><td>5%</td><td>1%</td><td><b>1%</b></td><td><b>0.6%</b></td></tr>
-        <tr><td>電子發票自動寄送</td><td><span class="n">—</span></td><td>—</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>B2B 三聯發票</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr class="section-row"><td colspan="5">表單與報名</td></tr>
-        <tr><td>拖放式表單設計器</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>條件邏輯欄位</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>多階段表單</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>檔案上傳欄位</td><td>5 MB</td><td>50 MB</td><td><b>500 MB</b></td><td><b>無限</b></td></tr>
-        <tr class="section-row"><td colspan="5">報到與證書</td></tr>
-        <tr><td>QR Code 報到</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>名牌 / 證書 PDF 產生</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>批次寄送證書</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr class="section-row"><td colspan="5">AI 助理</td></tr>
-        <tr><td>智慧問答（給報名者）</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><b>5,000 次/月</b></td><td><b>無限</b></td></tr>
-        <tr><td>AI 撰寫 Email / 公告</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>AI 摘要報名動態</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr class="section-row"><td colspan="5">協作與權限</td></tr>
-        <tr><td>協作管理員</td><td>1</td><td>1</td><td><b>3</b></td><td><b>無限</b></td></tr>
-        <tr><td>角色權限管理（RBAC）</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>SSO / SAML</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td></tr>
-        <tr><td>稽核日誌</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td>30 天</td><td><b>1 年</b></td></tr>
-        <tr class="section-row"><td colspan="5">支援</td></tr>
-        <tr><td>客服管道</td><td>Email</td><td>Email</td><td><b>Email + LINE</b></td><td><b>專屬經理</b></td></tr>
-        <tr><td>SLA 保證可用性</td><td>—</td><td>99%</td><td>99.5%</td><td><b>99.95%</b></td></tr>
-        <tr><td>導入訓練</td><td>—</td><td>—</td><td>2 hr 線上</td><td><b>客製</b></td></tr>
+      <!-- tbody hydrated from config/sales.plans; static rows below mirror the defaults. -->
+      <tbody id="cmpBody">
+        <tr class="section-row"><td colspan="5">方案與容量</td></tr>
+        <tr><td>年訂閱費（NT$/年）</td><td>免費</td><td>4,990</td><td><b>13,990</b></td><td><b>39,900</b></td></tr>
+        <tr><td>同時進行中活動數</td><td>1</td><td>3</td><td><b>15</b></td><td><b>無限</b></td></tr>
+        <tr><td>每活動報名上限</td><td>60</td><td>300</td><td><b>1,500</b></td><td><b>無限</b></td></tr>
+        <tr><td>PayUNI 金流手續費（每筆）</td><td>5%</td><td>3%</td><td><b>2%</b></td><td><b>1%</b></td></tr>
+        <tr class="section-row"><td colspan="5">功能</td></tr>
+        <tr><td>線上金流收款</td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>匯出報表</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>評分</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>多評審評分</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>公告群發</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>QR 報到</td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
+        <tr><td>AI 助理</td><td><span class="n">—</span></td><td><span class="n">—</span></td><td><span class="y">✓</span></td><td><span class="y">✓</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -312,6 +287,11 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
 </footer>
 
+<!-- Firebase (public getPublicPlans only) -->
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
 <script src="/shared/app-state.js"></script>
 <script>
 (function () {
@@ -325,21 +305,49 @@ footer { background:var(--bg); padding:48px 32px 24px; }
     location.reload();
   });
 
-  // Cycle toggle (month / year) - swaps prices in-place
-  document.querySelectorAll('#cycleToggle button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('#cycleToggle button').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      var cycle = b.dataset.cycle; // 'm' or 'y'
-      // Swap any element with data-price-m / data-price-y
-      document.querySelectorAll('[data-price-m]').forEach(function (el) {
-        el.textContent = (cycle === 'y' ? el.dataset.priceY : el.dataset.priceM).replace(/(\d)(?=(\d{3})+$)/g, '$1,');
-      });
-      document.querySelectorAll('[data-foot-m]').forEach(function (el) {
-        el.textContent = cycle === 'y' ? el.dataset.footY : el.dataset.footM;
-      });
-    });
-  });
+  // ===== Hydrate plan cards + comparison table from config/sales.plans =====
+  var PFEAT = [['payment','線上金流收款'],['csvExport','匯出報表'],['scoring','評分'],['multiJudge','多評審評分'],['campaigns','公告群發'],['checkin','QR 報到'],['ai','AI 助理'],['certificate','名牌 / 證書']];
+  var PTIERS = [
+    ['free','免費版 Free','想先試試水溫，或只辦小型活動','btn-ghost','/signup.html?plan=free','開始使用'],
+    ['starter','入門版 Starter','適合單次活動、小型工作室','btn-ghost','/signup.html?plan=starter','升級 Starter'],
+    ['pro','專業版 Pro','學校 / 中型機構 · 完整功能 · 含 AI','btn-accent','/signup.html?plan=pro','升級 Pro →'],
+    ['team','團隊版 Team','大型機構 / 政府單位 / 跨團隊協作','btn-primary','/signup.html?plan=team','升級 Team']
+  ];
+  function _n(x){ return Number(x||0).toLocaleString(); }
+  function _limTxt(v){ return (v===0||v==null) ? '無限' : _n(v); }
+  function renderPricing(plans){
+    var row = document.getElementById('plansRow');
+    if (row) {
+      row.innerHTML = PTIERS.map(function(tt){
+        var t=tt[0], p=plans[t]||{}, f=p.features||{};
+        var feat = PFEAT.filter(function(ff){ return f[ff[0]]===true; }).map(function(ff){ return '<li>'+ff[1]+'</li>'; }).join('');
+        var priceBlock = (Number(p.price)||0) > 0
+          ? '<div class="price"><span class="price-cur">NT$</span><span class="price-num">'+_n(p.price)+'</span><span class="price-suf">/年</span></div><div class="price-foot">未含稅</div>'
+          : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">/永久免費</span></div><div class="price-foot">無需信用卡</div>';
+        return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">Most Popular</span>':'')+
+          '<h3>'+tt[1]+'</h3><p class="tag">'+tt[2]+'</p>'+priceBlock+
+          '<ul><li><b>'+_limTxt(p.maxActiveEvents)+'</b> 個進行中活動</li><li>每活動 <b>'+_limTxt(p.maxCapacity)+'</b> 筆報名</li><li>金流手續費 <b>'+(Number(p.feePct)||0)+'%</b></li>'+feat+'</ul>'+
+          '<a href="'+tt[4]+'" class="btn '+tt[3]+' btn-block">'+tt[5]+'</a></div>';
+      }).join('');
+    }
+    var cmp = document.getElementById('cmpBody');
+    if (cmp) {
+      var TS = ['free','starter','pro','team'];
+      var cell = function(t,k){ return ((plans[t]&&plans[t].features&&plans[t].features[k])===true) ? '<td><span class="y">✓</span></td>' : '<td><span class="n">—</span></td>'; };
+      var numRow = function(label,fn){ return '<tr><td>'+label+'</td>'+TS.map(function(t){ return '<td>'+fn(plans[t]||{})+'</td>'; }).join('')+'</tr>'; };
+      cmp.innerHTML =
+        '<tr class="section-row"><td colspan="5">方案與容量</td></tr>'+
+        numRow('年訂閱費（NT$/年）', function(p){ return (Number(p.price)||0)>0 ? _n(p.price) : '免費'; })+
+        numRow('同時進行中活動數', function(p){ return _limTxt(p.maxActiveEvents); })+
+        numRow('每活動報名上限', function(p){ return _limTxt(p.maxCapacity); })+
+        numRow('PayUNI 金流手續費（每筆）', function(p){ return (Number(p.feePct)||0)+'%'; })+
+        '<tr class="section-row"><td colspan="5">功能</td></tr>'+
+        PFEAT.map(function(ff){ return '<tr><td>'+ff[1]+'</td>'+TS.map(function(t){ return cell(t,ff[0]); }).join('')+'</tr>'; }).join('');
+    }
+  }
+  if (window.google && google.script && google.script.run) {
+    google.script.run.withSuccessHandler(function(res){ if (res && res.plans) renderPricing(res.plans); }).withFailureHandler(function(){}).getPublicPlans();
+  }
 })();
 </script>
 </body>
