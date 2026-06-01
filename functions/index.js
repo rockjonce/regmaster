@@ -20,6 +20,16 @@ setGlobalOptions({ region: "us-central1", concurrency: 80 });
 function fmtNow() {
   return new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
 }
+// Normalise a stored timestamp to a "YYYY-MM-DD" key for daily aggregation.
+// fmtNow() yields zh-TW format like "2026/6/1 下午12:00:00" (slashes, non-padded),
+// so a naive substring(0,10) breaks chart bucketing — handle both that and ISO.
+function toDayKey(s) {
+  s = String(s || "").trim();
+  if (!s) return "";
+  let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (m) return m[1] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[3]).padStart(2, "0");
+  return "";
+}
 function hashPwd(p) {
   return crypto.createHash("sha256").update(p).digest("hex");
 }
@@ -1780,7 +1790,7 @@ exports.getDashboardStats = compAuthCallable(async (data) => {
     if (isAccepted) accepted++;
     if (isWaitlist) waitlist++;
     if (isPayWait) payWait++;
-    const day = (t.registrationTime || "").substring(0, 10);
+    const day = toDayKey(t.registrationTime);
     if (day) dailyMap[day] = (dailyMap[day] || 0) + 1;
     const grp = t.group || "未分組";
     groupMap[grp] = (groupMap[grp] || 0) + 1;
@@ -2937,7 +2947,7 @@ async function buildOrgStatsContext(username, role, compId) {
       if (st.startsWith("備取")) waitlist++;
       if (String(t.paymentStatus || "").includes("已確認")) paid++; else payWait++;
       const g = t.group || "未分組"; groupMap[g] = (groupMap[g] || 0) + 1;
-      const day = (t.registrationTime || "").slice(0, 10); if (day) dailyMap[day] = (dailyMap[day] || 0) + 1;
+      const day = toDayKey(t.registrationTime); if (day) dailyMap[day] = (dailyMap[day] || 0) + 1;
     });
     return { total, accepted, waitlist, cancelled, paid, payWait, groupMap, dailyMap };
   }
