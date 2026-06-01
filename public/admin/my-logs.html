@@ -57,7 +57,7 @@
     </header>
     <div class="main-c">
       <div style="margin-bottom:18px">
-        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px">操作紀錄 / My Activity</h1>
+        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px">操作紀錄</h1>
         <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)">這裡列出您帳號的重要操作紀錄 — 何時、做了什麼，方便日後查核。</p>
       </div>
       <div class="ro-note">
@@ -115,7 +115,7 @@
     var rows = LOGS.filter(function (l) {
       if (STATE.filter !== 'all' && classify(l.action) !== STATE.filter) return false;
       if (STATE.q) {
-        var hay = (l.action + ' ' + l.target + ' ' + l.detail).toLowerCase();
+        var hay = ((l.operator || l.user || '') + ' ' + l.action + ' ' + (l.compName || '') + ' ' + l.target + ' ' + l.detail).toLowerCase();
         if (hay.indexOf(STATE.q.toLowerCase()) === -1) return false;
       }
       return true;
@@ -127,11 +127,15 @@
     }
     document.getElementById('logCard').innerHTML = rows.map(function (l) {
       var cls = classify(l.action);
+      var label = l.compName || l.target || '';
+      var metaBits = [];
+      if (l.detail) metaBits.push(escapeHtml(l.detail));
+      if (l.compName && l.target) metaBits.push('ID：' + escapeHtml(l.target));
       return '<div class="log-row">' +
         '<div class="ic c-' + cls + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + ICONS[cls] + '</svg></div>' +
-        '<div class="body"><div class="who-act">' + escapeHtml(l.action || '') +
-          (l.target ? ' <span class="target">' + escapeHtml(l.target) + '</span>' : '') +
-        '</div>' + (l.detail ? '<div class="meta">' + escapeHtml(l.detail) + '</div>' : '') + '</div>' +
+        '<div class="body"><div class="who-act"><b>' + escapeHtml(l.operator || l.user || '—') + '</b> · ' + escapeHtml(l.action || '') +
+          (label ? ' <span class="target">' + escapeHtml(label) + '</span>' : '') +
+        '</div>' + (metaBits.length ? '<div class="meta">' + metaBits.join(' · ') + '</div>' : '') + '</div>' +
         '<div class="ts">' + escapeHtml(l.time || '') + '</div>' +
       '</div>';
     }).join('');

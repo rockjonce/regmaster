@@ -633,12 +633,45 @@ exports.getMyAuditLogs = authCallable(["system", "competition"], async (data, re
   const limit = Math.min(parseInt(data.limit, 10) || 200, 500);
   // No orderBy (avoids a composite index); fetch this user's entries then sort in JS.
   const snap = await db.collection("auditLogs").where("user", "==", username).get();
-  const rows = snap.docs.map(d => {
+  let rows = snap.docs.map(d => {
     const l = d.data();
-    return { time: l.time || "", user: l.user || "", action: l.action || "", target: l.target || "", detail: (l.detail || "").substring(0, 160) };
+    // operator: the account that performed the action (future multi-operator events).
+    return { time: l.time || "", user: l.user || "", operator: l.user || "", action: l.action || "", target: l.target || "", detail: (l.detail || "").substring(0, 160), compName: "" };
   });
   rows.sort((a, b) => String(b.time).localeCompare(String(a.time)));
-  return rows.slice(0, limit);
+  rows = rows.slice(0, limit);
+
+  // Enrich each row with the human-readable ACTIVITY NAME. The audit `target` holds
+  // either a compId, a teamId, or some other id (code/email/username). Build:
+  //   1) compId -> name  (load the caller's own competitions)
+  //   2) teamId -> compId (batched getAll on the leftover targets)
+  try {
+    const compMap = {};
+    const compSnap = await db.collection("competitions").where("creator", "==", username).get();
+    compSnap.docs.forEach(d => {
+      const c = d.data(); const cfg = c.config || {};
+      compMap[d.id] = cfg.competitionName || c.name || d.id;
+    });
+    // Targets that are NOT a known compId might be teamIds — resolve them in one batch.
+    const leftover = [...new Set(rows.map(r => r.target).filter(t => t && !compMap[t]))];
+    const teamComp = {}; // teamId -> { compId, teamName }
+    if (leftover.length) {
+      const refs = leftover.slice(0, 500).map(id => db.collection("teams").doc(id));
+      const docs = await db.getAll(...refs);
+      docs.forEach(d => {
+        if (d.exists) { const t = d.data(); teamComp[d.id] = { compId: t.compId || "", teamName: t.teamNameCN || t.teamName || "" }; }
+      });
+    }
+    rows.forEach(r => {
+      if (compMap[r.target]) { r.compName = compMap[r.target]; }
+      else if (teamComp[r.target]) {
+        const tc = teamComp[r.target];
+        r.compName = (compMap[tc.compId] || "") + (tc.teamName ? "／" + tc.teamName : "");
+      }
+    });
+  } catch (e) { /* enrichment is best-effort; raw target still shown */ }
+
+  return rows;
 });
 
 // ===== Competition CRUD =====
@@ -2699,17 +2732,43 @@ exports.askCompetitionAI = callable(async (data) => {
   const desc = cfg.description || "";
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return { answer: "AI 未設定" };
+  // Pull the ORGANISER's unit name + contact info from their account so the AI can
+  // answer as that unit's assistant and surface official contact details.
+  let orgName = "", orgEmail = "", orgPhone = "";
+  if (ownerUser) {
+    try {
+      const accSnap = await db.collection("accounts").where("username", "==", ownerUser).limit(1).get();
+      if (!accSnap.empty) {
+        const acc = accSnap.docs[0].data();
+        orgName = acc.organizationName || acc.displayName || "";
+        orgEmail = acc.email || "";
+        orgPhone = acc.phone || "";
+      }
+    } catch (e) { /* best-effort */ }
+  }
   /* Build comprehensive context from rules, description, and config */
   let ctx = "活動規則/規章：\n" + rules.substring(0, 4000);
   if (desc) ctx += "\n\n活動說明：\n" + desc.replace(/<[^>]*>/g, ' ').substring(0, 2000);
   ctx += "\n\n活動名稱：" + (cfg.competitionName || comp.name || "");
   if (cfg.sessions && cfg.sessions.length) { ctx += "\n活動梯次："; cfg.sessions.forEach(function(s, i) { ctx += "\n梯次" + (i+1) + "：" + (s.startDate || "") + " ~ " + (s.endDate || ""); }); }
   if (comp.deadline) ctx += "\n報名截止：" + comp.deadline;
+  if (orgName || orgEmail || orgPhone) {
+    ctx += "\n\n主辦單位資訊：";
+    if (orgName) ctx += "\n單位名稱：" + orgName;
+    if (orgEmail) ctx += "\n聯絡 Email：" + orgEmail;
+    if (orgPhone) ctx += "\n聯絡電話：" + orgPhone;
+  }
+  const persona =
+    "你是「" + (orgName || (cfg.competitionName || comp.name || "本活動主辦單位")) + "」的官方活動 AI 助理，" +
+    "代表主辦單位回答報名者的提問。請以親切、專業、代表主辦方的口吻回覆。" +
+    "若報名者詢問聯絡方式、洽詢窗口或如何聯繫主辦，請優先提供上方「主辦單位資訊」中的聯絡 Email 與電話；" +
+    "若上方未提供某項聯絡資訊，才引導對方參考活動說明或於系統內留言。" +
+    "請僅根據以上提供的活動與主辦單位資訊回答，勿杜撰不存在的細節。";
   try {
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: ctx + "\n問題：" + question + "\n請依照問題的語言回答。簡潔明瞭。" }] }],
+        contents: [{ parts: [{ text: persona + "\n\n" + ctx + "\n\n問題：" + question + "\n請依照問題的語言回答。簡潔明瞭。" }] }],
         generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
       })
     });
