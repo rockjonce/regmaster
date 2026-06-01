@@ -134,7 +134,7 @@ body { min-height:100vh; background:var(--surface-2); }
     <div class="eyebrow">SETUP YOUR WORKSPACE</div>
     <div class="s-item on" data-step="1">
       <div class="n"><span>1</span></div>
-      <div class="body"><h5>歡迎</h5><p>確認帳號狀態與試用方案</p><div class="est">~ 30 秒</div></div>
+      <div class="body"><h5>歡迎</h5><p>確認帳號狀態與方案</p><div class="est">~ 30 秒</div></div>
     </div>
     <div class="s-item" data-step="2">
       <div class="n"><span>2</span></div>
@@ -164,8 +164,8 @@ body { min-height:100vh; background:var(--surface-2); }
 
       <div class="complete-checklist">
         <div class="row"><div class="ck"></div>帳號已開通 · <b id="emailEcho">your@email.com</b></div>
-        <div class="row"><div class="ck"></div>方案：<b id="planEcho">14 天免費試用</b></div>
-        <div class="row"><div class="ck"></div>14 天內所有功能無限制使用</div>
+        <div class="row"><div class="ck"></div>方案：<b id="planEcho">免費版 Free</b></div>
+        <div class="row"><div class="ck"></div>Free 版永久免費，需要時再升級</div>
       </div>
 
       <div class="foot-actions">
@@ -213,7 +213,7 @@ body { min-height:100vh; background:var(--surface-2); }
       <div class="fields">
         <div>
           <label class="label" for="orgName">組織全名 *</label>
-          <input class="input" id="orgName" placeholder="例如：國立臺北科技大學 資訊工程系">
+          <input class="input" id="orgName" placeholder="例如：某某大學 資訊工程系 / 某某協會">
         </div>
         <div>
           <label class="label" for="orgNameEN">英文名稱</label>
@@ -315,13 +315,13 @@ body { min-height:100vh; background:var(--surface-2); }
       <div class="complete-checklist">
         <div class="row"><div class="ck"></div>帳號已開通並驗證</div>
         <div class="row"><div class="ck"></div>組織資訊已建立</div>
-        <div class="row"><div class="ck"></div>免費單次活動授權碼可用</div>
-        <div class="row"><div class="ck"></div>14 天試用期已啟動</div>
+        <div class="row"><div class="ck"></div>Free 方案已啟用</div>
+        <div class="row"><div class="ck"></div>可立即建立第一場活動</div>
       </div>
 
       <div class="tip-box">
         <div class="ic-tag">★</div>
-        <div class="body">需要支援？<strong>客戶成功經理</strong>會在試用期間主動聯繫您，提供 1 對 1 的免費上手協助。也可隨時於 AI 助理對話框提問。</div>
+        <div class="body">需要協助？可隨時於 AI 助理對話框提問，或來信 <strong>support@calculator.com.tw</strong>，我們很樂意協助你上手。</div>
       </div>
 
       <div class="foot-actions">
@@ -349,12 +349,12 @@ body { min-height:100vh; background:var(--surface-2); }
   }
 
   // Pre-fill from session + ?plan=
-  var planMap = { trial: '14 天免費試用', free: '免費版', starter: '入門版 Starter', pro: '專業版 Pro' };
+  var planMap = { trial: '免費版 Free', free: '免費版 Free', starter: '入門版 Starter', pro: '專業版 Pro', team: '團隊版 Team' };
   var savedPlan = '';
-  try { savedPlan = localStorage.getItem('regmaster_signup_plan') || 'trial'; } catch (e) {}
+  try { savedPlan = localStorage.getItem('regmaster_signup_plan') || 'free'; } catch (e) {}
   document.getElementById('welcomeName').textContent = '您好 ' + ((me && me.displayName) || '主辦人') + '！';
   document.getElementById('emailEcho').textContent = (me && me.email) || (me && me.username) || '已驗證信箱';
-  document.getElementById('planEcho').textContent = planMap[savedPlan] || '14 天免費試用';
+  document.getElementById('planEcho').textContent = planMap[savedPlan] || '免費版 Free';
 
   // ---- Step navigation ----
   var currentStep = 1;

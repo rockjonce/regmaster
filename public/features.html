@@ -137,7 +137,8 @@ section { padding:80px 32px; border-bottom:1px solid var(--hairline); }
 .cta-strip h2 { font:700 40px/1.2 var(--f-display); letter-spacing:-.02em; margin-bottom:10px; }
 .cta-strip p { color:rgba(255,255,255,.7); margin-bottom:28px; font:400 15px/1.5 var(--f-tc); }
 .cta-strip .btn-accent { background:var(--surface); color:var(--ink); border-color:var(--surface); }
-.cta-strip .btn-ghost { color:var(--surface); border-color:rgba(255,255,255,.18); }
+.cta-strip .btn-ghost { background:transparent; color:#fff; border-color:rgba(255,255,255,.5); }
+.cta-strip .btn-ghost:hover { background:rgba(255,255,255,.12); border-color:#fff; }
 
 footer { background:var(--bg); padding:48px 32px 24px; }
 .f-foot { max-width:1280px; margin:0 auto; padding-top:24px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font:400 12.5px/1 var(--f-tc); color:var(--muted); }
@@ -153,6 +154,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 <nav class="nav">
   <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span></a>
   <div class="links">
+    <a href="/events/">探索活動</a>
     <a href="/pricing.html">方案</a>
     <a href="/features.html" class="on">功能</a>
     <a href="/about.html">關於</a>
@@ -162,7 +164,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
     <button class="theme-toggle" id="themeToggle">🌗</button>
     <button class="theme-toggle" id="langToggle">中/EN</button>
     <a href="/login.html" class="btn btn-quiet btn-sm">登入</a>
-    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm">免費試用</a>
+    <a href="/signup.html?plan=free" class="btn btn-primary btn-sm">免費開始</a>
   </div>
 </nav>
 
@@ -172,18 +174,18 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   <p>RegMaster 把過去你需要 5 套工具才能完成的事，整合成一個操作直覺的後台。</p>
 
   <div class="feature-tabs">
-    <button class="on"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>表單設計</button>
-    <button><svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>AI 助理</button>
-    <button><svg data-hero viewBox="0 0 24 24"><path d="M3 12l3-3 4 4 7-7M14 6h7v7"/></svg>即時統計</button>
-    <button><svg data-hero viewBox="0 0 24 24"><path d="M3 10h18M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>金流串接</button>
-    <button><svg data-hero viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/></svg>QR 報到</button>
-    <button><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>證書 / 名牌</button>
+    <button class="on" data-go="f-form"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>表單設計</button>
+    <button data-go="f-ai"><svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>AI 助理</button>
+    <button data-go="f-stats"><svg data-hero viewBox="0 0 24 24"><path d="M3 12l3-3 4 4 7-7M14 6h7v7"/></svg>即時統計</button>
+    <button data-go="f-pay"><svg data-hero viewBox="0 0 24 24"><path d="M3 10h18M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>金流串接</button>
+    <button data-go="f-qr"><svg data-hero viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/></svg>QR 報到</button>
+    <button data-go="f-cert"><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>證書 / 名牌</button>
   </div>
 </section>
 
 <section>
   <div class="container">
-    <div class="feat-block">
+    <div class="feat-block" id="f-form" style="scroll-margin-top:80px">
       <div class="copy">
         <div class="eyebrow">表單設計器</div>
         <h2>拖一拖<br>就完成的<br>專業報名表單。</h2>
@@ -195,7 +197,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
           <li>中英雙語：自動依瀏覽器語言切換</li>
           <li>必填驗證、檔案大小、格式限制、防重覆送出</li>
         </ul>
-        <a href="/signup.html?plan=trial" class="btn btn-primary mt-4">看互動 Demo →</a>
+        <a href="/signup.html?plan=free" class="btn btn-primary mt-4">看互動 Demo →</a>
       </div>
       <div class="visual">
         <div class="fb-demo">
@@ -220,7 +222,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       </div>
     </div>
 
-    <div class="feat-block flip">
+    <div class="feat-block flip" id="f-ai" style="scroll-margin-top:80px">
       <div class="copy">
         <div class="eyebrow">AI 智慧助理</div>
         <h2>內建 AI 助理<br>幫你回 99% 的<br>重複問題。</h2>
@@ -232,7 +234,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
           <li>支援繁中 / 簡中 / 英文，可指定回答語言</li>
           <li>所有對話可匯出，作為 FAQ 改善依據</li>
         </ul>
-        <a href="/signup.html?plan=trial" class="btn btn-primary mt-4">了解 AI 機制 →</a>
+        <a href="/signup.html?plan=free" class="btn btn-primary mt-4">了解 AI 機制 →</a>
       </div>
       <div class="visual" style="background:var(--ink); border-color:var(--ink); padding:0">
         <div class="ai-demo">
@@ -259,7 +261,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       </div>
     </div>
 
-    <div class="feat-block">
+    <div class="feat-block" id="f-stats" style="scroll-margin-top:80px">
       <div class="copy">
         <div class="eyebrow">即時統計</div>
         <h2>每一筆報名<br>都是一個<br>洞見。</h2>
@@ -276,7 +278,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
         <div class="dash-demo">
           <div class="top">
             <h5>報名趨勢</h5>
-            <div class="seg"><span>7天</span><span class="on">14天</span><span>30天</span></div>
+            <div class="seg"><span>7天</span><span class="on">30天</span><span>90天</span></div>
           </div>
           <div class="stats">
             <div><div class="l">總報名</div><div class="v">142</div><div class="d">↑ 18 今日</div></div>
@@ -298,18 +300,17 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       </div>
     </div>
 
-    <div class="feat-block flip">
+    <div class="feat-block flip" id="f-pay" style="scroll-margin-top:80px">
       <div class="copy">
         <div class="eyebrow">金流與發票</div>
-        <h2>5 種付款方式<br>一鍵啟用<br>內建電子發票。</h2>
-        <p>串接 PayUni 與綠界，T+7 撥款。電子發票自動寄送、B2B 統編支援、退費操作只要 2 秒。</p>
+        <h2>線上付款<br>一鍵啟用<br>對帳清楚。</h2>
+        <p>串接 PayUNI 線上金流，平台代收後依週期撥款。報名者可線上刷卡，或選擇銀行轉帳直接匯入主辦方帳戶。</p>
         <ul>
-          <li>信用卡 (Visa / Master / JCB / 美國運通)</li>
-          <li>ATM 虛擬帳號 / 超商代碼 / LINE Pay / Apple Pay</li>
-          <li>電子發票自動產生並寄送</li>
-          <li>B2B 三聯式發票（統編自動驗證）</li>
-          <li>分期付款、早鳥優惠、團體折扣</li>
-          <li>退費僅需 1 個按鈕，3 秒完成</li>
+          <li>信用卡線上付款（PayUNI）</li>
+          <li>銀行 / ATM 轉帳（末 5 碼快速對帳）</li>
+          <li>折扣碼、團報優惠</li>
+          <li>平台代收轉付：每筆訂單結算、已轉/未轉一目了然</li>
+          <li>🚧 電子發票自動寄送、B2B 三聯式（即將推出）</li>
         </ul>
       </div>
       <div class="visual">
@@ -327,7 +328,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       </div>
     </div>
 
-    <div class="feat-block">
+    <div class="feat-block" id="f-qr" style="scroll-margin-top:80px">
       <div class="copy">
         <div class="eyebrow">QR 報到</div>
         <h2>到場狀態<br>用一支手機<br>就能管理。</h2>
@@ -376,9 +377,9 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       </div>
     </div>
 
-    <div class="feat-block flip">
+    <div class="feat-block flip" id="f-cert" style="scroll-margin-top:80px">
       <div class="copy">
-        <div class="eyebrow">證書與名牌</div>
+        <div class="eyebrow">證書與名牌 · 🚧 即將推出</div>
         <h2>專業證書<br>和名牌<br>批次產生。</h2>
         <p>上傳一份範本，系統自動套版每位報名者的姓名、組別、證號。PDF 一鍵下載、Email 批次寄送。</p>
         <ul>
@@ -395,7 +396,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
           <h6>結業證書</h6>
           <div class="name">陳 ○ 廷</div>
           <p class="desc">茲證明上述人員於 2026 年 4 月 12 日完成<br><b style="color:var(--ink);font-weight:600">春季校園程式競賽</b><br>並表現優異</p>
-          <div class="sig">No. RM-2026-0142 · 主辦 北科大資工系</div>
+          <div class="sig">No. RM-2026-0142 · 主辦 某科技大學</div>
         </div>
       </div>
     </div>
@@ -409,30 +410,30 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
   <div class="mini-grid">
     <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div><h4>批次 Email 模板</h4><p>10 種預設模板，AI 協助擬稿，500 封一次寄。</p></div>
-    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></div><h4>條款 / EULA 簽署</h4><p>內建電子簽名、IP 紀錄、時間戳，符合電子簽章法。</p></div>
+    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></div><h4>條款 / EULA 簽署 🚧</h4><p>內建電子簽名、IP 紀錄、時間戳（即將推出）。</p></div>
     <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M17 8l4 4m0 0l-4 4m4-4H7"/></svg></div><h4>CSV / Excel 匯出</h4><p>一鍵匯出，欄位可自訂，支援 Big5 / UTF-8。</p></div>
     <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M12 6V4M12 20v-2M6 12H4M20 12h-2M7.05 7.05L5.64 5.64M18.36 18.36l-1.41-1.41M16.95 7.05l1.41-1.41M5.64 18.36l1.41-1.41"/></svg></div><h4>明 / 暗模式</h4><p>自動偵測或手動切換，後台與報名頁皆支援。</p></div>
-    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg></div><h4>稽核日誌</h4><p>所有操作有跡可循，誰、何時、改了什麼。</p></div>
-    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M3 10h18M3 14h18"/></svg></div><h4>角色權限</h4><p>主辦 / 工讀 / 評審分權限，避免誤操作。</p></div>
-    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg></div><h4>客製化網域</h4><p>用 reg.your-domain.com 跑活動，更顯專業。</p></div>
-    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4"/></svg></div><h4>API / Webhook</h4><p>串接 Zapier、自家 CRM、Google Sheet、Slack。</p></div>
+    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg></div><h4>稽核日誌 🚧</h4><p>所有操作有跡可循，誰、何時、改了什麼（即將推出）。</p></div>
+    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M3 10h18M3 14h18"/></svg></div><h4>角色權限 🚧</h4><p>主辦 / 工讀 / 評審分權限，避免誤操作（即將推出）。</p></div>
+    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg></div><h4>客製化網域 🚧</h4><p>用 reg.your-domain.com 跑活動（即將推出）。</p></div>
+    <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4"/></svg></div><h4>API / Webhook 🚧</h4><p>串接 Zapier、自家 CRM、Google Sheet、Slack（即將推出）。</p></div>
     <div class="mini"><div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M9 17l-3-3m0 0l3-3m-3 3h12M9 5l-3 3m0 0l3 3"/></svg></div><h4>退費 / 改名</h4><p>1 個按鈕完成，自動同步到金流與發票。</p></div>
   </div>
 </section>
 
 <section class="cta-strip">
   <h2>看完功能，<br>不如直接玩玩看？</h2>
-  <p>14 天免費試用，所有功能無限制體驗。</p>
+  <p>Free 終生免費，立即開始；各項功能依方案開放體驗。</p>
   <div class="flex aic gap-3 jcc">
-    <a href="/signup.html?plan=trial" class="btn btn-accent btn-lg">免費開始</a>
+    <a href="/signup.html?plan=free" class="btn btn-accent btn-lg">免費開始</a>
     <a href="/pricing.html" class="btn btn-ghost btn-lg">看方案定價</a>
   </div>
 </section>
 
 <footer>
   <div class="f-foot">
-    <span>© 2026 RegMaster · Made with ☕ in Taipei</span>
-    <span class="mono">SOC 2 · ISO 27001 · 個資法合規</span>
+    <span>© 2026 RegMaster · 廣天國際有限公司</span>
+    <span class="mono">SSL 加密傳輸 · 個資法合規</span>
   </div>
 </footer>
 
@@ -442,6 +443,15 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   AppState.init();
   document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
   document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); location.reload(); });
+  // Feature tabs → smooth-scroll to the matching section.
+  document.querySelectorAll('.feature-tabs button[data-go]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.feature-tabs button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var el = document.getElementById(b.dataset.go);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 })();
 </script>
 </body>
