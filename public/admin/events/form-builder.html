@@ -624,11 +624,17 @@ body { background:var(--bg); overflow:hidden; }
     birthday: '✓ 自動驗證：日期格式 + 不可為未來',
     passport: '✓ 自動驗證：護照號碼長度（6–9 碼，英數）',
     passportIssueDate: '✓ 自動驗證：日期格式 + 不可為未來',
-    passportExpiry: '✓ 自動驗證：日期格式 + 須晚於今日'
+    passportExpiry: '✓ 自動驗證：日期格式 + 須晚於今日',
+    website: '✓ 自動驗證：網址格式（未填 http(s):// 會自動補上 https://）'
+  };
+  // Type-level fallback — shows the badge for any field of this type, even custom
+  // ones without a legacyKey (e.g. a 網址 field added from the type dropdown).
+  var VALIDATION_HINTS_BY_TYPE = {
+    url: '✓ 自動驗證：網址格式（未填 http(s):// 會自動補上 https://）'
   };
   function renderValidationBadge(f) {
     var key = f.legacyKey;
-    var hint = key ? VALIDATION_HINTS[key] : null;
+    var hint = (key && VALIDATION_HINTS[key]) || VALIDATION_HINTS_BY_TYPE[f.type] || null;
     if (!hint) return '';
     return '<div class="ins-row" style="margin-top:8px"><div class="lbl">系統內建驗證</div>' +
       '<div style="padding:10px 12px; background:var(--ok-soft, rgba(16,185,129,.08)); border:1px solid var(--ok-200, rgba(16,185,129,.25)); border-radius:7px; font:400 12px/1.5 var(--f-tc); color:var(--ok-700, #047857)">' +
