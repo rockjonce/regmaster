@@ -296,8 +296,8 @@ body { background:var(--bg); overflow:hidden; }
             <div class="sp-body">
               <div class="ft-item b1" draggable="true" data-type="text" data-legacy="guardianName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6>監護人姓名</h6></div>
               <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="guardianPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>監護人電話</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="checkbox" data-legacy="guardianConsent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6>家長同意</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="checkbox" data-legacy="consent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6>條款/肖像權同意</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="radio" data-legacy="guardianConsent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6>家長同意</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="radio" data-legacy="consent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6>條款/肖像權同意</h6></div>
             </div>
           </div>
           <div class="sp-group">
@@ -400,8 +400,8 @@ body { background:var(--bg); overflow:hidden; }
       : k === 'eduLevel' ? ['國小','國中','高中職','五專','大學','碩士','博士','社會人士']
       : k === 'referralSource' ? ['親友介紹','社群媒體(FB‧IG)','官方網站','電子報','學校公告','其他']
       : k === 'transportation' ? ['自行前往','搭乘接駁車','大眾運輸']
-      : k === 'guardianConsent' ? ['我同意未成年子女參加本活動']
-      : k === 'consent' ? ['我已閱讀並同意活動條款及肖像權授權']
+      : k === 'guardianConsent' ? ['同意','不同意']
+      : k === 'consent' ? ['同意','不同意']
       : k === 'emergencyRelation' ? ['父親','母親','配偶','子女','兄弟姐妹','祖父母','監護人','親戚','朋友','師長','其他']
       : k === 'dietary' ? ['豬肉','牛肉','雞肉','海鮮','全素']
       : k === 'tshirt' ? ['XS','S','M','L','XL','2XL','3XL']

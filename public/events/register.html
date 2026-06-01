@@ -754,7 +754,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   // ---- formSchema-aware field engine (V3 independent) ----
   var SCHEMA = null, STU_DEFS = [], STU_DEFS_PER_CARD = [], TCH_DEFS = [], TCH_DEFS_PER_CARD = [], CUSTOM_DEFS = [], LABEL_MAP = {};
   function sectionsByRole(role) { return SCHEMA ? SCHEMA.sections.filter(function (s) { return (s.role || 'custom') === role; }) : []; }
-  function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', guardianPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', salutation:'select', city:'select', eduLevel:'select', referralSource:'select', transportation:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', invoiceType:'select', guardianConsent:'checkbox', consent:'checkbox', healthNote:'textarea', accessibility:'textarea', idNumber:'idnumber' })[k] || 'text'; }
+  function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', guardianPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', salutation:'select', city:'select', eduLevel:'select', referralSource:'select', transportation:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', invoiceType:'select', guardianConsent:'radio', consent:'radio', healthNote:'textarea', accessibility:'textarea', idNumber:'idnumber' })[k] || 'text'; }
   function optsFor(k) {
     return k === 'gender' ? GENDER_OPTS.slice()
       : k === 'salutation' ? ['先生','小姐','女士','太太','老師','教授','博士','醫師']
@@ -762,8 +762,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       : k === 'eduLevel' ? ['國小','國中','高中職','五專','大學','碩士','博士','社會人士']
       : k === 'referralSource' ? ['親友介紹','社群媒體(FB‧IG)','官方網站','電子報','學校公告','其他']
       : k === 'transportation' ? ['自行前往','搭乘接駁車','大眾運輸']
-      : k === 'guardianConsent' ? ['我同意未成年子女參加本活動']
-      : k === 'consent' ? ['我已閱讀並同意活動條款及肖像權授權']
+      : k === 'guardianConsent' ? ['同意','不同意']
+      : k === 'consent' ? ['同意','不同意']
       : k === 'nationality' ? COUNTRY_OPTS.slice()
       : k === 'dietary' ? (CFG.dietaryOptions || [])
       : k === 'tshirt' ? (CFG.tshirtOptions || [])

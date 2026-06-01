@@ -5910,7 +5910,7 @@ function buildFormSchemaFromLegacy(cfg) {
     invoiceType: 'select', invoiceTitle: 'text', taxId: 'text', accommodation: 'select', lineId: 'text',
     salutation: 'select', city: 'select', eduLevel: 'select', studentId: 'text', referralSource: 'select',
     transportation: 'select', accessibility: 'textarea', guardianName: 'text', guardianPhone: 'tel',
-    guardianConsent: 'checkbox', consent: 'checkbox'
+    guardianConsent: 'radio', consent: 'radio'
   };
 
   // Strict rule: 1 區塊 = 1 人. Split legacy memberCount=N into N student sections
