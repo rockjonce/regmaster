@@ -760,11 +760,15 @@
   }
   function memberKVs(m) {
     var fields = [
-      ['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
+      ['尊稱','salutation'],['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
       ['身分證','idNumber'],['護照','passport'],['國籍','nationality'],
-      ['學校','school'],['系所','department'],['年級','grade'],['職稱','jobTitle'],['服務單位','organization'],
-      ['Email','email'],['電話','phone'],['郵遞區號','postalCode'],['地址','address'],
-      ['飲食','dietary'],['飲食限制','dietaryRestriction'],['T-shirt','tshirt'],['住宿','accommodation']
+      ['學校','school'],['教育階段','eduLevel'],['系所','department'],['年級','grade'],['班級','classroom'],['學號','studentId'],['職稱','jobTitle'],['服務單位','organization'],
+      ['Email','email'],['電話','phone'],['居住縣市','city'],['郵遞區號','postalCode'],['地址','address'],['LINE ID','lineId'],
+      ['緊急聯絡人','emergencyName'],['緊急聯絡電話','emergencyPhone'],['緊急聯絡關係','emergencyRelation'],
+      ['監護人姓名','guardianName'],['監護人電話','guardianPhone'],['家長同意','guardianConsent'],
+      ['飲食','dietary'],['飲食限制','dietaryRestriction'],['特殊需求/無障礙','accessibility'],['血型','bloodType'],['T-shirt','tshirt'],['交通方式','transportation'],['住宿','accommodation'],
+      ['如何得知本活動','referralSource'],['條款/肖像權同意','consent'],
+      ['發票類型','invoiceType'],['發票抬頭','invoiceTitle'],['統一編號','taxId']
     ];
     var rows = fields.map(function (f) { return kv(f[0], m[f[1]]); }).join('');
     if (m.customAnswers && typeof m.customAnswers === 'object') {

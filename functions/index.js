@@ -5831,7 +5831,10 @@ const LEGACY_FIELD_KEYS = new Set([
   'gender','nationality','classroom','organization','jobTitle','postalCode',
   // V3 item 5 — additional special fields (confirmed with product)
   'emergencyName','emergencyPhone','emergencyRelation','dietaryRestriction',
-  'bloodType','healthNote','invoiceType','invoiceTitle','taxId','accommodation','lineId'
+  'bloodType','healthNote','invoiceType','invoiceTitle','taxId','accommodation','lineId',
+  // V3.1 — additional special fields
+  'salutation','city','eduLevel','studentId','referralSource','transportation',
+  'accessibility','guardianName','guardianPhone','guardianConsent','consent'
 ]);
 
 function deriveLegacyFromFormSchema(formSchema) {
@@ -5890,7 +5893,10 @@ function buildFormSchemaFromLegacy(cfg) {
     organization: '服務單位', jobTitle: '職稱', postalCode: '郵遞區號',
     emergencyName: '緊急聯絡人', emergencyPhone: '緊急聯絡電話', emergencyRelation: '緊急聯絡關係',
     dietaryRestriction: '飲食限制 / 過敏', bloodType: '血型', healthNote: '特殊健康狀況',
-    invoiceType: '發票類型', invoiceTitle: '發票抬頭', taxId: '統一編號', accommodation: '住宿需求', lineId: 'LINE ID'
+    invoiceType: '發票類型', invoiceTitle: '發票抬頭', taxId: '統一編號', accommodation: '住宿需求', lineId: 'LINE ID',
+    salutation: '尊稱', city: '居住縣市', eduLevel: '教育階段', studentId: '學號', referralSource: '如何得知本活動',
+    transportation: '交通方式', accessibility: '特殊需求/無障礙', guardianName: '監護人姓名', guardianPhone: '監護人電話',
+    guardianConsent: '家長同意', consent: '條款/肖像權同意'
   };
   const FIELD_TYPES = {
     chineseName: 'text', englishName: 'text', idNumber: 'idnumber',
@@ -5901,7 +5907,10 @@ function buildFormSchemaFromLegacy(cfg) {
     organization: 'text', jobTitle: 'text', postalCode: 'text',
     emergencyName: 'text', emergencyPhone: 'tel', emergencyRelation: 'text',
     dietaryRestriction: 'select', bloodType: 'select', healthNote: 'textarea',
-    invoiceType: 'select', invoiceTitle: 'text', taxId: 'text', accommodation: 'select', lineId: 'text'
+    invoiceType: 'select', invoiceTitle: 'text', taxId: 'text', accommodation: 'select', lineId: 'text',
+    salutation: 'select', city: 'select', eduLevel: 'select', studentId: 'text', referralSource: 'select',
+    transportation: 'select', accessibility: 'textarea', guardianName: 'text', guardianPhone: 'tel',
+    guardianConsent: 'checkbox', consent: 'checkbox'
   };
 
   // Strict rule: 1 區塊 = 1 人. Split legacy memberCount=N into N student sections
