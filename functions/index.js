@@ -2938,12 +2938,9 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
 
   let ctx = "你是 RegMaster 線上報名平台的系統設定 AI 助理。\n";
   ctx += "回覆規則：\n";
-  ctx += "1. 嚴格禁止使用任何 Markdown 符號，包含 # * ** ` ``` - > 等\n";
-  ctx += "2. 用純文字回答，段落之間用空行分隔\n";
-  ctx += "3. 需要列點時使用「數字加頓號」格式，例如：1、 2、 3、\n";
-  ctx += "4. 需要強調時用「」括起來，不要用星號或粗體\n";
-  ctx += "5. 回答簡潔明瞭，具系統化結構\n";
-  ctx += "6. 依照問題的語言回答\n\n";
+  ctx += "1. 可使用簡單的 Markdown（粗體 **、清單 - 或 1.、小標題 #）讓回答清楚易讀\n";
+  ctx += "2. 回答簡潔明瞭，具系統化結構；段落之間用空行分隔\n";
+  ctx += "3. 依照問題的語言回答\n\n";
 
   ctx += "=== 操作手冊參考內容 ===\n" + ragContext + "\n\n";
 
@@ -3001,7 +2998,6 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
     const json = await res.json();
     let answer = "";
     try { json.candidates[0].content.parts.forEach(p => { if (p.text) answer += p.text; }); } catch(e) { answer = "AI 無法回答"; }
-    answer = answer.replace(/#{1,6}\s?/g, "").replace(/\*{1,3}([^*]+)\*{1,3}/g, "「$1」").replace(/`{1,3}([^`]*)`{1,3}/g, "$1").replace(/^[-•]\s/gm, "").replace(/^>\s?/gm, "");
     return { answer };
   } catch(e) {
     await rotateGeminiKey();

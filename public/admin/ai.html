@@ -64,6 +64,32 @@
 .scope-picker { display:flex; gap:4px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; margin-bottom:14px; }
 .scope-picker button { flex:1; padding:6px 8px; font:500 11.5px/1 var(--f-tc); color:var(--muted); border-radius:5px; }
 .scope-picker button.on { background:var(--ink); color:white; }
+a.kb-item { display:block; text-decoration:none; color:inherit; transition:.12s; }
+a.kb-item:hover { border-color:var(--ink); background:var(--surface); }
+a.kb-item h6 { display:flex; align-items:center; gap:5px; }
+a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--muted); }
+
+/* Animated typing indicator */
+.typing { display:flex; gap:5px; align-items:center; padding:3px 2px; }
+.typing span { width:7px; height:7px; border-radius:50%; background:var(--muted); display:inline-block; animation:typingBlink 1.2s infinite ease-in-out; }
+.typing span:nth-child(2){ animation-delay:.18s; }
+.typing span:nth-child(3){ animation-delay:.36s; }
+@keyframes typingBlink { 0%,80%,100%{ opacity:.25; transform:translateY(0); } 40%{ opacity:1; transform:translateY(-3px); } }
+
+/* Rendered markdown inside AI bubbles */
+.msg.ai .bubble { white-space:normal; }
+.msg.ai .bubble p { margin:0 0 8px; }
+.msg.ai .bubble p:last-child { margin-bottom:0; }
+.msg.ai .bubble ul, .msg.ai .bubble ol { margin:6px 0 10px; padding-left:22px; }
+.msg.ai .bubble li { margin:3px 0; }
+.msg.ai .bubble .md-h { font-weight:700; margin:10px 0 4px; }
+.msg.ai .bubble .md-h:first-child { margin-top:0; }
+.msg.ai .bubble strong { font-weight:700; }
+.msg.ai .bubble em { font-style:italic; }
+.msg.ai .bubble a { color:var(--acc); text-decoration:underline; word-break:break-all; }
+.msg.ai .bubble code.md-code { background:var(--surface-2); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font:500 12.5px/1.5 var(--f-mono); }
+.msg.ai .bubble pre.md-pre { background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; overflow-x:auto; margin:6px 0; }
+.msg.ai .bubble pre.md-pre code { font:500 12.5px/1.6 var(--f-mono); white-space:pre; }
 
 .empty-chat { text-align:center; padding:60px 24px; color:var(--muted); }
 .empty-chat .ic { width:60px; height:60px; margin:0 auto 18px; border-radius:14px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:#fbcd5b; display:grid; place-items:center; }
@@ -143,11 +169,8 @@
         <select id="compSelect" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:7px; margin-bottom:14px; display:none">
           <option value="">選擇活動⋯</option>
         </select>
-        <h4>知識庫</h4>
-        <div class="kb-item"><h6>📘 操作手冊</h6><p>所有功能的詳細說明文件</p></div>
-        <div class="kb-item"><h6>❓ 常見問題</h6><p>用戶常問的問題集</p></div>
-        <div class="kb-item"><h6>📊 數據分析範本</h6><p>常見的分析問題與報表</p></div>
-        <p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--acc-soft); border-radius:9px; margin-top:14px">💡 AI 助理可回答系統操作與活動設定問題，會參考操作手冊內容作答，對話紀錄自動保存。</p>
+        <h4 id="kbTitle">知識庫</h4>
+        <div id="kbPanel"></div>
       </aside>
     </div>
   </main>
@@ -160,6 +183,38 @@
   var me = AppState.getMe();
   if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+
+  // Minimal, XSS-safe Markdown renderer (escape first, then add formatting tags).
+  function mdInline(t) {
+    t = t.replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return t;
+  }
+  function mdToHtml(src) {
+    var s = escapeHtml(src || '');
+    var fences = [];
+    s = s.replace(/```([\s\S]*?)```/g, function (_, c) { fences.push(c.replace(/^\n/, '').replace(/\n$/, '')); return 'RMFENCE' + (fences.length - 1) + 'END'; });
+    var lines = s.split('\n'), html = '', i = 0, para = [];
+    function flushPara() { if (para.length) { html += '<p>' + para.map(mdInline).join('<br>') + '</p>'; para = []; } }
+    while (i < lines.length) {
+      var ln = lines[i];
+      var f = ln.match(/^RMFENCE(\d+)END$/);
+      if (f) { flushPara(); html += '<pre class="md-pre"><code>' + fences[+f[1]] + '</code></pre>'; i++; continue; }
+      var h = ln.match(/^\s{0,3}#{1,6}\s+(.+)$/);
+      if (h) { flushPara(); html += '<div class="md-h">' + mdInline(h[1]) + '</div>'; i++; continue; }
+      var mu = ln.match(/^\s*[-*•]\s+(.+)$/);
+      if (mu) { flushPara(); html += '<ul class="md-ul">'; while (i < lines.length && (mu = lines[i].match(/^\s*[-*•]\s+(.+)$/))) { html += '<li>' + mdInline(mu[1]) + '</li>'; i++; } html += '</ul>'; continue; }
+      var mo = ln.match(/^\s*\d+[.、)]\s+(.+)$/);
+      if (mo) { flushPara(); html += '<ol class="md-ol">'; while (i < lines.length && (mo = lines[i].match(/^\s*\d+[.、)]\s+(.+)$/))) { html += '<li>' + mdInline(mo[1]) + '</li>'; i++; } html += '</ol>'; continue; }
+      if (ln.trim() === '') { flushPara(); i++; continue; }
+      para.push(ln); i++;
+    }
+    flushPara();
+    return html;
+  }
   document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('orgName').textContent = me.displayName || me.username;
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
@@ -252,12 +307,46 @@
     }
     box.innerHTML = MESSAGES.map(function (m) {
       var avLabel = m.role === 'user' ? (me.displayName || me.username).charAt(0).toUpperCase() : '✦';
+      var inner;
+      if (m._typing) {
+        inner = '<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+      } else {
+        var body = m.role === 'ai' ? mdToHtml(m.content) : escapeHtml(m.content);
+        inner = '<div class="bubble">' + body + '</div><div class="ts">' + escapeHtml((m.createdAt || '').slice(11, 19)) + '</div>';
+      }
       return '<div class="msg ' + escapeHtml(m.role) + '">' +
         '<div class="av-m ' + escapeHtml(m.role) + '">' + escapeHtml(avLabel) + '</div>' +
-        '<div><div class="bubble">' + escapeHtml(m.content) + '</div><div class="ts">' + escapeHtml((m.createdAt || '').slice(11, 19)) + '</div></div>' +
+        '<div>' + inner + '</div>' +
       '</div>';
     }).join('');
     box.scrollTop = box.scrollHeight;
+  }
+
+  // ---- Knowledge-base panel: reflect the ACTUAL sources the AI reads per scope ----
+  var OPEN_IC = '<svg class="open-ic" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9M5 5h6M5 5v14h14v-6"/></svg>';
+  function hintBox(t) { return '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--acc-soft); border-radius:9px; margin-top:14px">💡 ' + t + '</p>'; }
+  function renderKbPanel() {
+    var panel = document.getElementById('kbPanel');
+    var title = document.getElementById('kbTitle');
+    if (SCOPE === 'comp') {
+      title.textContent = '知識庫 · 此活動';
+      var sel = document.getElementById('compSelect');
+      var compName = (sel && sel.selectedIndex >= 0) ? sel.options[sel.selectedIndex].textContent : '';
+      if (!SELECTED_COMP) {
+        panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">請先於上方選擇活動 — AI 將依該活動的規章、競賽說明與主辦單位資訊回答。</p>';
+        return;
+      }
+      panel.innerHTML =
+        '<div class="kb-item"><h6>📋 競賽規章</h6><p>報名規則與規章內容（含上傳的規章 PDF）</p></div>' +
+        '<div class="kb-item"><h6>📝 競賽說明</h6><p>活動介紹、梯次與報名截止等資訊</p></div>' +
+        '<a class="kb-item" href="/admin/settings.html"><h6>🏢 主辦單位資訊' + OPEN_IC + '</h6><p>單位名稱與聯絡方式（Email／電話），可於設定補齊</p></a>' +
+        hintBox('AI 會以「' + escapeHtml(compName || '主辦單位') + '」官方助理的口吻，依規章、競賽說明與主辦資訊回答報名者；被問到聯絡方式時優先提供主辦單位 Email／電話。');
+    } else {
+      title.textContent = '知識庫';
+      panel.innerHTML =
+        '<a class="kb-item" href="/Manual.html" target="_blank" rel="noopener"><h6>📘 操作手冊' + OPEN_IC + '</h6><p>所有功能的詳細說明文件，點擊開啟完整手冊</p></a>' +
+        hintBox('AI 助理會參考「操作手冊」內容，回答系統操作與活動設定問題，對話紀錄自動保存。');
+    }
   }
 
   // Scope picker
@@ -267,11 +356,13 @@
       b.classList.add('on');
       SCOPE = b.dataset.scope;
       document.getElementById('compSelect').style.display = SCOPE === 'comp' ? '' : 'none';
+      renderKbPanel();
       loadConvs();
     });
   });
   document.getElementById('compSelect').addEventListener('change', function (e) {
     SELECTED_COMP = e.target.value;
+    renderKbPanel();
     loadConvs();
   });
 
@@ -339,6 +430,7 @@
       .appendMessage(convId, 'user', text);
   }
 
+  renderKbPanel();
   loadConvs();
 })();
 </script>
