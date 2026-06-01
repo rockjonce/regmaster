@@ -438,7 +438,7 @@
   var now = new Date();
   var hr = now.getHours();
   var greetWord = hr < 6 ? '凌晨好' : hr < 12 ? '早安' : hr < 18 ? '午安' : '晚安';
-  var emoji = hr < 6 ? '🌙' : hr < 12 ? '☀️' : hr < 18 ? '🌤' : '🌙';
+  var emoji = hr < 6 ? '🌙' : hr < 12 ? '☀️' : hr < 18 ? '🌤️' : '🌙';
   document.getElementById('greet').textContent = greetWord + '，' + (me.displayName || me.username) + ' ' + emoji;
   document.getElementById('todayDate').textContent = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0');
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
