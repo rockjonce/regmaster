@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>公告 / EDM · 主辦後台 · RegMaster</title>
+<title>通知 / EDM · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -95,7 +95,7 @@
       <div class="l-grp">本活動</div>
       <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg>總覽</a>
       <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
-      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>公告 / EDM</a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>通知 / EDM</a>
       <a class="nav-it" id="paymentsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg>付款</a>
       <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
       <a class="nav-it" id="checkinLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>報到</a>
@@ -103,10 +103,10 @@
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>公告 / EDM</b></div>
+      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>通知 / EDM</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
-    <div id="loadingState" class="loading-c">載入公告⋯</div>
+    <div id="loadingState" class="loading-c">載入通知⋯</div>
     <div class="main-3" id="content" style="display:none">
       <aside class="left-c">
         <div class="steps-hint">
@@ -150,7 +150,7 @@
           </div>
           <div class="email-canvas">
             <h1><input id="bodyTitleInput" placeholder="信件標題（讀者第一眼看到）"></h1>
-            <div class="body-edit"><textarea id="bodyContent" placeholder="開始寫信⋯&#10;&#10;可使用換行符。系統會自動套上 RegMaster 模板（含 logo、頁尾）。"></textarea></div>
+            <div class="body-edit"><textarea id="bodyContent" placeholder="開始寫信⋯&#10;&#10;可用純文字（換行會保留），或基本內聯 HTML（如 <b> <a> <table> 等）。&#10;系統會自動套上 RegMaster 模板（含 logo、頁尾），並於儲存／發送前檢查 Outlook 相容性。"></textarea></div>
           </div>
         </div>
       </section>
@@ -190,8 +190,41 @@
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('meName').textContent = me.displayName || me.username;
 
-  var CAMPS = [], SELECTED = null;
+  var CAMPS = [], SELECTED = null, COMP_NAME = '';
   var CHANNELS = ['email'];
+
+  // ---- Item 4: Outlook-compatible HTML check for inline-HTML email bodies ----
+  function looksLikeHtml(s) { return /<([a-z][a-z0-9]*)\b[^>]*>/i.test(s || ''); }
+  function validateEmailHtml(body) {
+    var issues = [];
+    if (!looksLikeHtml(body)) return { ok: true, issues: issues };  // plain text is always fine
+    var b = String(body || '');
+    var add = function (level, msg, fix) { issues.push({ level: level, msg: msg, fix: fix }); };
+    if (/<script\b/i.test(b)) add('error', '含有 <script> 程式碼', 'Email 不支援 JavaScript，請移除所有 <script>。');
+    if (/<style\b/i.test(b)) add('error', '含有 <style> 區塊', 'Outlook 對 <style> 支援不完整，請改用「行內樣式」style="..." 寫在各標籤上。');
+    if (/<link\b/i.test(b)) add('error', '含有外部 <link> 樣式表', 'Email 無法載入外部 CSS，請改用行內樣式。');
+    if (/<(iframe|video|audio|form|object|embed|svg|canvas)\b/i.test(b)) add('error', '含有不支援的元素（iframe / video / form / svg 等）', '請移除這些元素，Email 用戶端（尤其 Outlook）不會顯示。');
+    if (/display\s*:\s*(inline-)?(flex|grid)/i.test(b)) add('error', '使用了 flex / grid 版面', 'Outlook 不支援 flex/grid，請改用 <table> 排版。');
+    if (/position\s*:\s*(absolute|fixed|sticky|relative)/i.test(b)) add('error', '使用了 position 定位', 'Outlook 會忽略 position，請改用 <table> 與內距（padding）排版。');
+    if (/\bfloat\s*:/i.test(b)) add('warn', '使用了 float', '部分 Outlook 版本對 float 支援不佳，建議改用 <table>。');
+    if (/background-image|\burl\s*\(/i.test(b)) add('warn', '使用了背景圖 background-image', 'Outlook 對背景圖支援有限，建議改用實心背景色或 <img>。');
+    if (/\b\d+(\.\d+)?(rem|vw|vh|vmin|vmax)\b/i.test(b)) add('warn', '使用了 rem / vw 等相對單位', 'Email 建議使用 px 固定單位或百分比 (%)。');
+    return { ok: !issues.some(function (x) { return x.level === 'error'; }), issues: issues };
+  }
+  // Returns true if it's OK to proceed (no blocking errors). Shows a guidance dialog otherwise.
+  function htmlCheckPasses(body) {
+    var r = validateEmailHtml(body);
+    var errors = r.issues.filter(function (x) { return x.level === 'error'; });
+    if (errors.length) {
+      uiAlert('信件內容的 HTML 不符合 Email（含 Outlook）顯示規格，請修正後再儲存／發送：\n\n' +
+        errors.map(function (e, i) { return (i + 1) + '. ' + e.msg + '\n　建議：' + e.fix; }).join('\n\n'),
+        { title: 'HTML 需要修正' });
+      return false;
+    }
+    var warns = r.issues.filter(function (x) { return x.level === 'warn'; });
+    if (warns.length) uiToast('提醒：' + warns.map(function (w) { return w.msg; }).join('、') + '（仍可寄送，建議優化）', 'warn');
+    return true;
+  }
   var CAN_SEND = true;   // resolved from the caller's plan (公告群發 = PRO+)
   google.script.run
     .withSuccessHandler(function (p) { CAN_SEND = !!(p && p.features && p.features.campaigns); applySendGate(); })
@@ -214,6 +247,7 @@
       CAMPS = r[0] || [];
       var bundle = r[1] || {};
       var cfg = bundle.config || {};
+      COMP_NAME = cfg.competitionName || '';
       document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
       document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
       document.getElementById('loadingState').style.display = 'none';
@@ -385,6 +419,7 @@
 
   document.getElementById('saveCampBtn').addEventListener('click', function () {
     if (!SELECTED) return alert('請先選一個範本');
+    if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;   // Outlook HTML gate
     var payload = {
       subject: document.getElementById('subjectInput').value.trim(),
       body: document.getElementById('bodyContent').value,
@@ -405,6 +440,7 @@
       uiAlert('公告群發（EDM）為 Pro 以上方案功能。\n升級至 Pro 後，即可一次將公告 Email 寄送給符合條件的所有報名者（可依已付款 / 未付款 / 候補篩選）。\n\n請至「方案與授權」頁升級方案，或聯繫客服洽詢。', { title: '需要升級方案', okText: '前往升級' }).then(function () { location.href = '/admin/license.html'; });
       return;
     }
+    if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;   // Outlook HTML gate
     uiConfirm('立即發送給 ' + document.getElementById('recipCount').textContent + ' 位收件人？', { title: '發送公告', okText: '立即發送' }).then(function (ok) {
     if (!ok) return;
     var payload = {
@@ -435,8 +471,13 @@
 
   // ----- Item 12: email preview (internal modal, RegMaster template) -----
   function buildPreviewHtml(subject, bodyText) {
-    var body = escapeHtml(bodyText || '').replace(/\n/g, '<br>');
+    // Render inline HTML as-is (matches the actual send, which wraps the raw body); plain
+    // text just gets newline → <br>. Outlook compatibility is enforced separately on save/send.
+    var body = String(bodyText || '').replace(/\n/g, '<br>');
     var LOGO = 'https://regmaster-v3.web.app/favicon.png';
+    var nameBand = COMP_NAME
+      ? '<tr><td style="background:#eef3fb;border-bottom:1px solid #dbe6f5;padding:9px 24px;text-align:center;font-size:13px;color:#0A437A;font-weight:600">活動：' + escapeHtml(COMP_NAME) + '</td></tr>'
+      : '';
     return '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="margin:0;padding:0;background:#f0f4f8;font-family:Segoe UI,Roboto,Arial,sans-serif">' +
       '<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f0f4f8"><tr><td align="center" style="padding:20px 10px">' +
@@ -446,6 +487,7 @@
         '<td style="vertical-align:middle;padding-left:12px"><span style="font-size:19px;font-weight:800;color:#fff;letter-spacing:.4px">RegMaster</span><span style="display:block;font-size:11px;color:rgba(255,255,255,.65);margin-top:1px">線上活動報名平台</span></td>' +
       '</tr></table></td></tr>' +
       '<tr><td style="background:#0D5BA8;padding:18px 24px;text-align:center"><h2 style="margin:0;font-size:20px;font-weight:800;color:#fff">' + escapeHtml(subject || '活動公告') + '</h2></td></tr>' +
+      nameBand +
       '<tr><td style="padding:28px 24px;background:#fff;color:#333;font-size:15px;line-height:1.7">' + body + '</td></tr>' +
       '<tr><td style="background:#f1f5f9;padding:16px 24px;text-align:center;font-size:12px;color:#64748b"><div>Copyright © RegMaster Pro</div><div style="margin-top:4px;color:#94a3b8">此為系統自動發送之信件，請勿直接回覆。</div></td></tr>' +
       '</table></td></tr></table></body></html>';

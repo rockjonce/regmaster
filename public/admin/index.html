@@ -309,7 +309,7 @@
             <div class="head-c">
               <div>
                 <h3>報名趨勢</h3>
-                <div class="sub-c">最近 30 天 · 跨所有活動</div>
+                <div class="sub-c" id="trendSub">最近 30 天 · 跨所有活動</div>
               </div>
               <div class="filters">
                 <button data-r="7">7 天</button>
@@ -336,7 +336,7 @@
               </svg>
             </div>
             <div class="chart-leg">
-              <div class="l-i"><span class="dot-l" style="background:var(--acc)"></span>近 30 天 <b id="legTotal">—</b></div>
+              <div class="l-i"><span class="dot-l" style="background:var(--acc)"></span>近 <span id="legDays">30</span> 天 <b id="legTotal">—</b></div>
               <div class="l-i" style="margin-left:auto" id="legChange"></div>
             </div>
           </div>
@@ -505,7 +505,8 @@
   }).then(function (compsWithStats) {
     renderKPIs(compsWithStats);
     renderActiveEvents(compsWithStats);
-    renderTrendChart(compsWithStats);
+    TREND_COMPS = compsWithStats;
+    renderTrendChart(TREND_COMPS, TREND_DAYS);
     return Promise.all([fetchInsights(), fetchTodos()]);
   }).then(function (results) {
     renderInsights(results[0]);
@@ -592,49 +593,63 @@
     document.getElementById('activeEventsList').innerHTML = html;
   }
 
-  function renderTrendChart(comps) {
-    // Build daily registration counts from comps[*].stats.daily if available, else flat
-    // Aggregate last 30 days
-    var days = 30;
-    var pts = new Array(days).fill(0);
+  var TREND_COMPS = [], TREND_DAYS = 30;
+  function renderTrendChart(comps, days) {
+    days = days || TREND_DAYS || 30;
+    comps = comps || TREND_COMPS || [];
+    // getDashboardStats returns stats.dailyTrend = [{date,count}]. Aggregate into a map.
+    var dayMap = {};
     comps.forEach(function (c) {
-      var daily = c.stats && c.stats.daily || {};
-      var now = Date.now();
-      for (var i = 0; i < days; i++) {
-        var d = new Date(now - (days - 1 - i) * 86400000);
-        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        pts[i] += (daily[key] || 0);
-      }
+      var arr = (c.stats && c.stats.dailyTrend) || [];
+      arr.forEach(function (p) { if (p && p.date) dayMap[p.date] = (dayMap[p.date] || 0) + (p.count || 0); });
     });
+    var pts = new Array(days).fill(0);
+    var now = Date.now();
+    for (var i = 0; i < days; i++) {
+      var d = new Date(now - (days - 1 - i) * 86400000);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      pts[i] = dayMap[key] || 0;
+    }
     var total = pts.reduce(function (a, b) { return a + b; }, 0);
+    var sub = document.getElementById('trendSub'); if (sub) sub.textContent = '最近 ' + days + ' 天 · 跨所有活動';
+    var ld = document.getElementById('legDays'); if (ld) ld.textContent = days;
     var maxV = Math.max.apply(null, pts);
     if (maxV === 0) {
-      // No real data — show a flat line at bottom
       document.getElementById('trendLine').setAttribute('d', 'M0 180 L600 180');
       document.getElementById('trendArea').setAttribute('d', 'M0 180 L600 180 L600 200 L0 200 Z');
       document.getElementById('legTotal').textContent = '0 筆';
-      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">尚無報名資料</span>';
+      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">此期間尚無報名資料</span>';
       return;
     }
     var pathPts = pts.map(function (v, i) {
-      var x = i / (days - 1) * 600;
+      var x = days > 1 ? (i / (days - 1) * 600) : 0;
       var y = 200 - (v / maxV) * 170 - 10;
       return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
     }).join(' ');
     document.getElementById('trendLine').setAttribute('d', pathPts);
     document.getElementById('trendArea').setAttribute('d', pathPts + ' L600 200 L0 200 Z');
     document.getElementById('legTotal').textContent = total.toLocaleString() + ' 筆';
-    var firstHalf = pts.slice(0, days/2).reduce(function (a, b) { return a + b; }, 0);
-    var secondHalf = pts.slice(days/2).reduce(function (a, b) { return a + b; }, 0);
+    var half = Math.floor(days / 2);
+    var firstHalf = pts.slice(0, half).reduce(function (a, b) { return a + b; }, 0);
+    var secondHalf = pts.slice(half).reduce(function (a, b) { return a + b; }, 0);
     if (firstHalf > 0) {
       var growth = (secondHalf - firstHalf) / firstHalf * 100;
       var sign = growth >= 0 ? '↑' : '↓';
       var color = growth >= 0 ? 'var(--ok-700)' : 'var(--err-700)';
-      document.getElementById('legChange').innerHTML = '<span style="color:' + color + '"><b>' + sign + ' ' + Math.abs(growth).toFixed(1) + '%</b></span> 後 15 天 vs 前 15 天';
+      document.getElementById('legChange').innerHTML = '<span style="color:' + color + '"><b>' + sign + ' ' + Math.abs(growth).toFixed(1) + '%</b></span> 後半段 vs 前半段';
     } else {
-      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">' + secondHalf + ' 筆於近 15 天</span>';
+      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">' + secondHalf + ' 筆於近期</span>';
     }
   }
+  // Wire the 7 / 30 / 90 day range toggle.
+  document.querySelectorAll('.chart-card .filters button[data-r]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.chart-card .filters button[data-r]').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      TREND_DAYS = parseInt(b.dataset.r, 10) || 30;
+      renderTrendChart(TREND_COMPS, TREND_DAYS);
+    });
+  });
 
   function renderInsights(data) {
     var insights = (data && data.insights) || [];

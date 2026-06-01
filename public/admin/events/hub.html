@@ -101,6 +101,17 @@
   .layout-evt { grid-template-columns:1fr; }
   .kpis-evt { grid-template-columns:repeat(2,1fr); }
 }
+@media (max-width: 640px) {
+  /* Narrow phones: stack the hero so the title gets full width (no per-character wrap),
+     and drop the action buttons onto their own row below. */
+  .evt-hero { padding:22px 16px 18px; }
+  .hero-inner { grid-template-columns:1fr; gap:16px; align-items:start; }
+  .hero-inner .l h1 { font:800 22px/1.28 var(--f-display); max-width:none; margin-bottom:8px; }
+  .hero-inner .l .meta-h { gap:8px 16px; font-size:12.5px; }
+  .hero-inner .r { justify-content:flex-start; width:100%; }
+  .hero-inner .r .btn-h { flex:1 1 auto; justify-content:center; }
+  .tabs-bar { padding:0 14px; top:56px; }
+}
 </style>
 </head>
 <body>
@@ -132,7 +143,7 @@
       <a class="nav-it" data-tab="overview"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>總覽</a>
       <a class="nav-it" data-tab="settings"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-1 3l2 2"/></svg>設定</a>
       <a class="nav-it" id="registrationsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>報名管理 <span class="ct" id="navRegCt">0</span></a>
-      <a class="nav-it" data-tab="announcements"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>公告</a>
+      <a class="nav-it" data-tab="announcements"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>通知</a>
       <a class="nav-it" data-tab="scoring"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
       <a class="nav-it" data-tab="checkin"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>QR 報到</a>
     </div>
@@ -184,7 +195,7 @@
         <a data-tab="overview" class="on">總覽</a>
         <a data-tab="settings">設定</a>
         <a data-tab="registrations">報名管理 <span class="ct" id="tabRegCt">0</span></a>
-        <a data-tab="announcements">公告</a>
+        <a data-tab="announcements">通知</a>
         <a data-tab="scoring">評分</a>
         <a data-tab="checkin">QR 報到</a>
       </div>
@@ -238,7 +249,7 @@
                 </a>
                 <a class="tool-tile" data-goto="/announcements">
                   <div class="ic-t b3"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg></div>
-                  <div class="body-t"><h6>發布公告</h6><p>群發 Email / 訊息</p></div>
+                  <div class="body-t"><h6>發布通知</h6><p>群發 Email / 訊息</p></div>
                   <span class="arr">→</span>
                 </a>
                 <a class="tool-tile" data-goto="/checkin">
@@ -282,9 +293,9 @@
         <div class="tab-pane" data-pane="announcements" style="display:none">
           <div class="tab-stub">
             <div class="ic">📢</div>
-            <h3>公告管理</h3>
+            <h3>通知管理</h3>
             <p>新增 / 編輯 / 刪除活動公告，並可同步寄 Email 給已報名者。（SMS / LINE 通道將於後續版本提供）</p>
-            <a id="legacyAnnLink" href="#" class="btn btn-primary">開啟公告管理 →</a>
+            <a id="legacyAnnLink" href="#" class="btn btn-primary">開啟通知管理 →</a>
           </div>
         </div>
         <div class="tab-pane" data-pane="scoring" style="display:none">
@@ -536,7 +547,7 @@
     document.getElementById('legacyScoreLink').href = base + '/scoring';
     document.getElementById('legacyCheckinLink').href = base + '/checkin';
     document.getElementById('legacyRegLink').textContent = '開啟付款管理 →';
-    document.getElementById('legacyAnnLink').textContent = '開啟公告管理 →';
+    document.getElementById('legacyAnnLink').textContent = '開啟通知管理 →';
     document.getElementById('legacyScoreLink').textContent = '開啟評分頁 →';
     document.getElementById('legacyCheckinLink').textContent = '開啟報到頁 →';
   }
