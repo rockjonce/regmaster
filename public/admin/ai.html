@@ -271,7 +271,13 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
         e.stopPropagation();
         uiConfirm('刪除此對話？', { title: '刪除對話', okText: '刪除', danger: true }).then(function (ok) {
           if (!ok) return;
-          google.script.run.withSuccessHandler(function () { if (SELECTED && SELECTED.id === b.dataset.del) { SELECTED = null; renderMessages(); } loadConvs(); }).deleteConversation(b.dataset.del);
+          var row = b.closest('.conv');
+          if (row) { row.style.opacity = '.45'; row.style.pointerEvents = 'none'; }
+          b.innerHTML = '⋯';
+          google.script.run
+            .withSuccessHandler(function () { if (SELECTED && SELECTED.id === b.dataset.del) { SELECTED = null; renderMessages(); } loadConvs(); })
+            .withFailureHandler(function () { if (row) { row.style.opacity = ''; row.style.pointerEvents = ''; } b.innerHTML = '×'; uiAlert('刪除失敗，請稍後再試。'); })
+            .deleteConversation(b.dataset.del);
         });
       });
     });
@@ -325,27 +331,47 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
   // ---- Knowledge-base panel: reflect the ACTUAL sources the AI reads per scope ----
   var OPEN_IC = '<svg class="open-ic" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9M5 5h6M5 5v14h14v-6"/></svg>';
   function hintBox(t) { return '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--acc-soft); border-radius:9px; margin-top:14px">💡 ' + t + '</p>'; }
+  var KB_CACHE = {};
+  function currentCompName() {
+    var sel = document.getElementById('compSelect');
+    return (sel && sel.selectedIndex >= 0) ? sel.options[sel.selectedIndex].textContent : '';
+  }
+  function paintCompKb(st, compName) {
+    var panel = document.getElementById('kbPanel');
+    if (SCOPE !== 'comp') return;
+    var items = '';
+    if (st.hasRules) items += '<div class="kb-item"><h6>📋 活動規章</h6><p>報名規則與規章內容（含上傳的規章 PDF）</p></div>';
+    if (st.hasDescription) items += '<div class="kb-item"><h6>📝 活動說明</h6><p>活動介紹、梯次與報名截止等資訊</p></div>';
+    if (st.hasRegData) items += '<div class="kb-item"><h6>📊 報名資料與統計</h6><p>此活動即時報名／付款數據（' + (st.regCount || 0) + ' 筆），可詢問轉換率與提升建議</p></div>';
+    if (st.hasOrgInfo) items += '<a class="kb-item" href="/admin/settings.html"><h6>🏢 主辦單位資訊' + OPEN_IC + '</h6><p>單位名稱與聯絡方式（Email／電話）</p></a>';
+    if (!items) {
+      panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">此活動尚未設定知識庫內容（規章 / 說明），也尚無報名資料。可至活動設定補齊。</p>';
+      return;
+    }
+    panel.innerHTML = items + hintBox('AI 會依此活動的' + (st.hasRegData ? '報名數據、' : '') + '規章與說明回答，並可提供報名轉換率分析與提升建議。');
+  }
   function renderKbPanel() {
     var panel = document.getElementById('kbPanel');
     var title = document.getElementById('kbTitle');
     if (SCOPE === 'comp') {
       title.textContent = '知識庫 · 此活動';
-      var sel = document.getElementById('compSelect');
-      var compName = (sel && sel.selectedIndex >= 0) ? sel.options[sel.selectedIndex].textContent : '';
       if (!SELECTED_COMP) {
-        panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">請先於上方選擇活動 — AI 將依該活動的規章、競賽說明與主辦單位資訊回答。</p>';
+        panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">請先於上方選擇活動 — AI 將依該活動的報名數據、規章與說明回答。</p>';
         return;
       }
-      panel.innerHTML =
-        '<div class="kb-item"><h6>📋 競賽規章</h6><p>報名規則與規章內容（含上傳的規章 PDF）</p></div>' +
-        '<div class="kb-item"><h6>📝 競賽說明</h6><p>活動介紹、梯次與報名截止等資訊</p></div>' +
-        '<a class="kb-item" href="/admin/settings.html"><h6>🏢 主辦單位資訊' + OPEN_IC + '</h6><p>單位名稱與聯絡方式（Email／電話），可於設定補齊</p></a>' +
-        hintBox('AI 會以「' + escapeHtml(compName || '主辦單位') + '」官方助理的口吻，依規章、競賽說明與主辦資訊回答報名者；被問到聯絡方式時優先提供主辦單位 Email／電話。');
+      if (KB_CACHE[SELECTED_COMP]) { paintCompKb(KB_CACHE[SELECTED_COMP], currentCompName()); return; }
+      panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px">載入此活動知識庫⋯</p>';
+      var reqComp = SELECTED_COMP;
+      google.script.run
+        .withSuccessHandler(function (st) { KB_CACHE[reqComp] = st || {}; if (SCOPE === 'comp' && SELECTED_COMP === reqComp) paintCompKb(KB_CACHE[reqComp], currentCompName()); })
+        .withFailureHandler(function () { if (SCOPE === 'comp' && SELECTED_COMP === reqComp) paintCompKb({ hasRules: true, hasDescription: true, hasOrgInfo: true, hasRegData: false }, currentCompName()); })
+        .getCompKbStatus(reqComp);
     } else {
       title.textContent = '知識庫';
       panel.innerHTML =
         '<a class="kb-item" href="/Manual.html" target="_blank" rel="noopener"><h6>📘 操作手冊' + OPEN_IC + '</h6><p>所有功能的詳細說明文件，點擊開啟完整手冊</p></a>' +
-        hintBox('AI 助理會參考「操作手冊」內容，回答系統操作與活動設定問題，對話紀錄自動保存。');
+        '<div class="kb-item"><h6>📊 所有活動報名數據</h6><p>跨所有活動的即時報名／付款統計，可詢問轉換率、付款問題與提升建議</p></div>' +
+        hintBox('AI 會參考「操作手冊」與你所有活動的報名數據作答，並可提供跨活動的報名／轉換建議。');
     }
   }
 
@@ -367,10 +393,17 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
   });
 
   document.getElementById('newConvBtn').addEventListener('click', function () {
+    var btn = this;
+    if (btn.disabled) return;
+    var orig = btn.textContent;
+    btn.disabled = true; btn.textContent = '建立中⋯';
+    function done() { btn.disabled = false; btn.textContent = orig; }
     google.script.run
       .withSuccessHandler(function (res) {
+        done();
         if (res && res.success) { loadConvs(); setTimeout(function () { selectConv(res.id); }, 200); }
       })
+      .withFailureHandler(function () { done(); uiAlert('建立對話失敗，請稍後再試。'); })
       .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', '新對話 ' + new Date().toLocaleString());
   });
 
@@ -414,9 +447,12 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
         // Show typing indicator
         MESSAGES.push({ role: 'ai', content: '思考中⋯', createdAt: new Date().toISOString(), _typing: true });
         renderMessages();
-        // 2. Call AI
+        // 2. Call AI — always the auth-gated admin AI (organiser context). When a
+        // specific activity is selected, pass its compId so the AI scopes to that
+        // activity's settings + live registration data. (The registrant-facing
+        // askCompetitionAI is NOT used here, to avoid exposing private reg data.)
         var aiCall = SCOPE === 'comp' && SELECTED_COMP
-          ? function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askCompetitionAI(SELECTED_COMP, text); }
+          ? function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, SELECTED_COMP); }
           : function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, ''); };
         aiCall(function (aiRes) {
           MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });

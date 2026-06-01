@@ -158,6 +158,7 @@
     getScores:["compId"],
     askCompetitionAI:["compId","question"],
     askAdminAI:["question","compId"],
+    getCompKbStatus:["compId"],
     uploadRulesPdf:["compId","base64Data","fileName"],
     uploadTeamFile:["compId","teamId","base64Data","fileName"],
     getTeamFileData:["teamId"],

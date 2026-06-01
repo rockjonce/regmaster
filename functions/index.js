@@ -2922,6 +2922,74 @@ exports.getKnowledgeBaseStatus = authCallable(["system"], async () => {
   return { count: snap.size, updatedAt };
 });
 
+// Build a registration-data + statistics context for the organiser AI.
+// Scoped to the caller's OWN activities only (security). This is ONLY used by the
+// auth-gated askAdminAI — never by the public registrant-facing askCompetitionAI.
+async function buildOrgStatsContext(username, role, compId) {
+  function statusBuckets(tSnap) {
+    let total = 0, accepted = 0, waitlist = 0, cancelled = 0, paid = 0, payWait = 0;
+    const groupMap = {}, dailyMap = {};
+    tSnap.docs.forEach(d => {
+      const t = d.data(); const st = t.status || "";
+      if (st === "已取消") { cancelled++; return; }
+      total++;
+      if (st === "正取") accepted++;
+      if (st.startsWith("備取")) waitlist++;
+      if (String(t.paymentStatus || "").includes("已確認")) paid++; else payWait++;
+      const g = t.group || "未分組"; groupMap[g] = (groupMap[g] || 0) + 1;
+      const day = (t.registrationTime || "").slice(0, 10); if (day) dailyMap[day] = (dailyMap[day] || 0) + 1;
+    });
+    return { total, accepted, waitlist, cancelled, paid, payWait, groupMap, dailyMap };
+  }
+  if (compId) {
+    const [compDoc, tSnap] = await Promise.all([
+      db.collection("competitions").doc(compId).get(),
+      db.collection("teams").where("compId", "==", compId).get()
+    ]);
+    if (!compDoc.exists) return "";
+    const comp = compDoc.data();
+    const s = statusBuckets(tSnap);
+    const views = comp.viewCount || 0;
+    const conv = views > 0 ? ((s.total / views) * 100).toFixed(1) + "%" : "（尚無瀏覽數據）";
+    const payRate = s.total > 0 ? ((s.paid / s.total) * 100).toFixed(1) + "%" : "0%";
+    let c = "\n=== 此活動報名資料與統計（即時）===\n";
+    c += "報名總數（不含已取消）：" + s.total + "\n";
+    c += "正取：" + s.accepted + "，備取：" + s.waitlist + "，已取消：" + s.cancelled + "\n";
+    c += "已付款：" + s.paid + "，待付款／待確認：" + s.payWait + "，付款完成率：" + payRate + "\n";
+    c += "頁面瀏覽數：" + views + "，瀏覽→報名轉換率：" + conv + "\n";
+    c += "名額上限：" + (comp.maxTeams || "不限") + "\n";
+    const gl = Object.keys(s.groupMap).map(g => g + "：" + s.groupMap[g]).join("，");
+    if (gl) c += "各組別報名數：" + gl + "\n";
+    const days = Object.keys(s.dailyMap).sort();
+    if (days.length) c += "近 7 日每日報名：" + days.slice(-7).map(d => d + " (" + s.dailyMap[d] + ")").join("，") + "\n";
+    return c;
+  }
+  // No compId — aggregate across the caller's activities (system role sees none here).
+  if (role !== "competition") return "";
+  const snap = await db.collection("competitions").where("creator", "==", username).get();
+  if (snap.empty) return "";
+  let evCount = 0, openCount = 0, tTotal = 0, tPaid = 0, tPayWait = 0, tViews = 0;
+  const perEvent = [];
+  for (const doc of snap.docs) {
+    const comp = doc.data(); evCount++;
+    if (comp.isOpen) openCount++;
+    const tSnap = await db.collection("teams").where("compId", "==", doc.id).get();
+    const s = statusBuckets(tSnap);
+    const views = comp.viewCount || 0;
+    tTotal += s.total; tPaid += s.paid; tPayWait += s.payWait; tViews += views;
+    const conv = views > 0 ? ((s.total / views) * 100).toFixed(1) + "%" : "—";
+    perEvent.push((comp.name || doc.id) + "：報名 " + s.total + "，已付款 " + s.paid + "，待付款 " + s.payWait + "，瀏覽 " + views + "，轉換 " + conv + (comp.isOpen ? "，開放中" : "，未開放"));
+  }
+  const overallConv = tViews > 0 ? ((tTotal / tViews) * 100).toFixed(1) + "%" : "（尚無瀏覽數據）";
+  const overallPay = tTotal > 0 ? ((tPaid / tTotal) * 100).toFixed(1) + "%" : "0%";
+  let c = "\n=== 你所有活動的報名資料與統計（彙總，即時）===\n";
+  c += "活動總數：" + evCount + "（開放中 " + openCount + "）\n";
+  c += "報名總數：" + tTotal + "，已付款：" + tPaid + "，待付款／待確認：" + tPayWait + "\n";
+  c += "整體付款完成率：" + overallPay + "，整體瀏覽→報名轉換率：" + overallConv + "，總瀏覽數：" + tViews + "\n";
+  c += "\n各活動概況：\n" + perEvent.map((e, i) => (i + 1) + "、 " + e).join("\n") + "\n";
+  return c;
+}
+
 exports.askAdminAI = compAuthCallable(async (data, request) => {
   await requireFeature(request.authUser, "ai");
   const { question, compId } = data;
@@ -2940,7 +3008,8 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
   ctx += "回覆規則：\n";
   ctx += "1. 可使用簡單的 Markdown（粗體 **、清單 - 或 1.、小標題 #）讓回答清楚易讀\n";
   ctx += "2. 回答簡潔明瞭，具系統化結構；段落之間用空行分隔\n";
-  ctx += "3. 依照問題的語言回答\n\n";
+  ctx += "3. 依照問題的語言回答\n";
+  ctx += "4. 你可參考下方「報名資料與統計」回答報名轉換率、付款狀況等數據問題，並據此提供具體、可執行的提升報名／轉換建議\n\n";
 
   ctx += "=== 操作手冊參考內容 ===\n" + ragContext + "\n\n";
 
@@ -2987,6 +3056,9 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
     } catch(e) {}
   }
 
+  // Live registration data + statistics (scoped to the caller's own activities).
+  try { ctx += await buildOrgStatsContext(request.authUser.username, request.authUser.role, compId); } catch (e) {}
+
   try {
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -3003,6 +3075,31 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
     await rotateGeminiKey();
     return { answer: "AI 暫時無法使用：" + e.message };
   }
+});
+
+// Tells the admin AI page which knowledge sources actually EXIST for an activity,
+// so the KB panel can hide empty ones (規章/說明/報名資料/主辦資訊).
+exports.getCompKbStatus = compAuthCallable(async (data) => {
+  const compId = data.compId;
+  if (!compId) return {};
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return {};
+  const comp = compDoc.data();
+  const cfg = comp.config || {};
+  const hasRules = !!((comp.rulesText && comp.rulesText.trim()) || comp.rulesPdfId);
+  const hasDescription = (cfg.description || "").replace(/<[^>]*>/g, "").trim().length > 0;
+  let orgName = "", orgEmail = "", orgPhone = "";
+  if (comp.creator) {
+    try {
+      const a = await db.collection("accounts").where("username", "==", comp.creator).limit(1).get();
+      if (!a.empty) { const ac = a.docs[0].data(); orgName = ac.organizationName || ac.displayName || ""; orgEmail = ac.email || ""; orgPhone = ac.phone || ""; }
+    } catch (e) {}
+  }
+  const hasOrgInfo = !!(orgName || orgEmail || orgPhone);
+  const tSnap = await db.collection("teams").where("compId", "==", compId).get();
+  let regCount = 0;
+  tSnap.docs.forEach(d => { if ((d.data().status || "") !== "已取消") regCount++; });
+  return { hasRules, hasDescription, hasOrgInfo, regCount, hasRegData: regCount > 0 };
 });
 
 
