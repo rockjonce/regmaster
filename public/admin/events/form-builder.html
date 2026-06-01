@@ -630,7 +630,9 @@ body { background:var(--bg); overflow:hidden; }
   // Type-level fallback — shows the badge for any field of this type, even custom
   // ones without a legacyKey (e.g. a 網址 field added from the type dropdown).
   var VALIDATION_HINTS_BY_TYPE = {
-    url: '✓ 自動驗證：網址格式（未填 http(s):// 會自動補上 https://）'
+    url: '✓ 自動驗證：網址格式（未填 http(s):// 會自動補上 https://）',
+    email: '✓ 自動驗證：Email 格式（user@domain.tld）',
+    idnumber: '✓ 自動驗證：中華民國身分證 / 居留證字號（首字英文 + 9 碼，含 checksum）'
   };
   function renderValidationBadge(f) {
     var key = f.legacyKey;
