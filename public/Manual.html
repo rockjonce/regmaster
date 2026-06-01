@@ -83,10 +83,15 @@
 .m-hero .ver{display:inline-block;position:relative;margin-top:14px;background:rgba(61,107,255,.26);color:#cdd9ff;border:1px solid rgba(123,156,255,.4);padding:4px 13px;border-radius:20px;font:700 11px/1 var(--f-mono);letter-spacing:.04em}
 
 /* language toggle */
-.m-lang{display:flex;justify-content:center;gap:8px;margin:0 0 18px}
-.m-lang button{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink-2);font:700 13px/1 var(--f-display);cursor:pointer;transition:.16s}
-.m-lang button:hover{border-color:var(--ink-3)}
-.m-lang button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.m-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px;flex-wrap:wrap}
+.m-home{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink-2);font:600 13px/1 var(--f-display);text-decoration:none;transition:.16s}
+.m-home:hover{border-color:var(--ink-3);color:var(--ink);box-shadow:var(--sh-sm)}
+.m-home svg{width:15px;height:15px}
+.m-langseg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.m-langseg button{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:0;border-radius:999px;background:transparent;color:var(--ink-3);font:700 12.5px/1 var(--f-display);cursor:pointer;transition:.16s}
+.m-langseg button:hover{color:var(--ink)}
+.m-langseg button.active{background:var(--ink);color:#fff}
+@media(max-width:480px){ .m-topbar{justify-content:center} }
 
 /* table of contents */
 .m-toc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:18px}
@@ -208,10 +213,13 @@ body[data-lang="en"] .zh{display:none !important}
 <body data-lang="zh">
 <div class="m-wrap">
 
-  <!-- language toggle -->
-  <div class="m-lang">
-    <button data-l="zh" class="active" onclick="switchLang('zh')">🇹🇼 中文</button>
-    <button data-l="en" onclick="switchLang('en')">🇬🇧 English</button>
+  <!-- top bar: home + language toggle -->
+  <div class="m-topbar">
+    <a class="m-home" href="/"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg><span class="zh">返回首頁</span><span class="en">Home</span></a>
+    <div class="m-langseg">
+      <button data-l="zh" class="active" onclick="switchLang('zh')">🇹🇼 中文</button>
+      <button data-l="en" onclick="switchLang('en')">🇬🇧 English</button>
+    </div>
   </div>
 
   <!-- hero -->
@@ -724,7 +732,7 @@ body[data-lang="en"] .zh{display:none !important}
     document.body.dataset.lang = l;
     try{ localStorage.setItem('rm_manual_lang', l); }catch(e){}
     document.documentElement.lang = (l === 'en') ? 'en' : 'zh-Hant';
-    document.querySelectorAll('.m-lang button').forEach(function(b){
+    document.querySelectorAll('.m-langseg button').forEach(function(b){
       b.classList.toggle('active', b.dataset.l === l);
     });
   }
