@@ -90,6 +90,7 @@
     markNotificationRead:["nid"],
     markAllNotificationsRead:["role","username"],
     getAuditLogs:["limit"],
+    getMyAuditLogs:["limit"],
     clearAuditLogs:[],
     checkInTeam:["teamId","user"],
     duplicateCompetition:["compId","newName","creator"],

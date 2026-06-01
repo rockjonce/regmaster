@@ -96,6 +96,7 @@
     evtNavHtml +
     '<div class="nav-grp"><div class="l-grp">管理</div>' +
       item('/admin/license.html', '方案與授權', IC.lic) +
+      item('/admin/my-logs.html', '操作紀錄', IC.log) +
       item('/admin/settings.html', '設定', IC.gear) +
     '</div>' +
     (isSystem ?

@@ -626,6 +626,21 @@ exports.getAuditLogs = authCallable(["system"], async (data) => {
   });
 });
 
+// Organiser-facing read-only audit log — returns the caller's OWN operation history.
+// (System admins see everything via getAuditLogs.)
+exports.getMyAuditLogs = authCallable(["system", "competition"], async (data, request) => {
+  const username = request.authUser.username;
+  const limit = Math.min(parseInt(data.limit, 10) || 200, 500);
+  // No orderBy (avoids a composite index); fetch this user's entries then sort in JS.
+  const snap = await db.collection("auditLogs").where("user", "==", username).get();
+  const rows = snap.docs.map(d => {
+    const l = d.data();
+    return { time: l.time || "", user: l.user || "", action: l.action || "", target: l.target || "", detail: (l.detail || "").substring(0, 160) };
+  });
+  rows.sort((a, b) => String(b.time).localeCompare(String(a.time)));
+  return rows.slice(0, limit);
+});
+
 // ===== Competition CRUD =====
 async function getCompStats(compId) {
   const snap = await db.collection("teams").where("compId", "==", compId).get();

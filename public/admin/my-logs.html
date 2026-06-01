@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>操作紀錄 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/ui-dialog.js"></script>
+<style>
+.filt-row { padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:11px; margin-bottom:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.search-w { flex:1; max-width:320px; position:relative; }
+.search-w svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:13px; height:13px; color:var(--muted); }
+.search-w input { width:100%; padding:8px 11px 8px 32px; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; font:400 12.5px/1.4 var(--f-tc); }
+.f-pill { padding:7px 11px; background:var(--surface); border:1px solid var(--line); border-radius:7px; font:500 12px/1 var(--f-tc); color:var(--ink-2); cursor:pointer; display:flex; gap:5px; align-items:center; }
+.f-pill.on { background:var(--ink); color:white; border-color:var(--ink); }
+
+.ro-note { display:flex; align-items:center; gap:8px; padding:9px 13px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; font:500 12px/1.4 var(--f-tc); color:var(--ink-3); margin-bottom:14px; }
+.ro-note svg { width:14px; height:14px; flex-shrink:0; color:var(--muted); }
+
+.log-card { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.log-row { padding:14px 18px; border-bottom:1px solid var(--line-2); display:grid; grid-template-columns:36px 1fr auto; gap:12px; align-items:flex-start; transition:.12s; }
+.log-row:last-child { border-bottom:0; }
+.log-row:hover { background:var(--surface-2); }
+.log-row .ic { width:32px; height:32px; border-radius:7px; display:grid; place-items:center; color:white; flex-shrink:0; margin-top:1px; }
+.log-row .ic.c-create { background:var(--ok-500); }
+.log-row .ic.c-update { background:var(--acc); }
+.log-row .ic.c-delete { background:var(--err-500); }
+.log-row .ic.c-login { background:var(--ink-3); }
+.log-row .ic.c-pay { background:#16A34A; }
+.log-row .ic.c-other { background:var(--ink-2); }
+.log-row .ic svg { width:13px; height:13px; }
+.log-row .body { min-width:0; }
+.log-row .body .who-act { font:400 13.5px/1.55 var(--f-tc); color:var(--ink); }
+.log-row .body .who-act b { font-weight:600; }
+.log-row .body .who-act .target { padding:1px 6px; background:var(--surface-2); border:1px solid var(--line); border-radius:4px; font:500 12px/1.4 var(--f-mono); color:var(--ink-2); margin:0 2px; }
+.log-row .body .meta { font:500 11px/1.4 var(--f-mono); color:var(--muted); margin-top:4px; display:flex; gap:10px; }
+.log-row .ts { font:500 11px/1 var(--f-mono); color:var(--muted); flex-shrink:0; }
+
+.empty { padding:60px 20px; text-align:center; color:var(--muted); }
+.skel { padding:40px 20px; text-align:center; color:var(--muted); font:500 13px/1.5 var(--f-mono); }
+@media (max-width:600px){ .log-row { grid-template-columns:28px 1fr; } .log-row .ts { grid-column:2; } }
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="side"></aside>
+  <main>
+    <header class="head">
+      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><b>操作紀錄</b></div>
+      <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+    </header>
+    <div class="main-c">
+      <div style="margin-bottom:18px">
+        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px">操作紀錄 / My Activity</h1>
+        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)">這裡列出您帳號的重要操作紀錄 — 何時、做了什麼，方便日後查核。</p>
+      </div>
+      <div class="ro-note">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        本頁僅供檢視，紀錄無法編輯或刪除，以確保稽核完整性。
+      </div>
+      <div class="filt-row">
+        <div class="search-w"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input id="searchInput" placeholder="搜尋操作 / 目標..."></div>
+        <button class="f-pill on" data-f="all">全部 <span id="cAll">0</span></button>
+        <button class="f-pill" data-f="create">建立</button>
+        <button class="f-pill" data-f="update">修改</button>
+        <button class="f-pill" data-f="delete">刪除</button>
+        <button class="f-pill" data-f="pay">付款</button>
+        <select id="limitSel" style="margin-left:auto; padding:7px 10px; border:1px solid var(--line); border-radius:7px; font:500 12px/1 var(--f-tc)">
+          <option value="200">最近 200 筆</option>
+          <option value="500">最近 500 筆</option>
+        </select>
+      </div>
+      <div class="log-card" id="logCard"><div class="skel">載入中⋯</div></div>
+    </div>
+  </main>
+</div>
+<script src="/shared/app-state.js"></script>
+<script src="/shared/admin-nav.js"></script>
+<script>
+(function(){
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
+  function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  document.getElementById('meName').textContent = me.displayName || me.username;
+
+  var LOGS = [], STATE = { filter: 'all', q: '' };
+
+  function classify(action) {
+    var a = String(action || '').toLowerCase();
+    if (a.indexOf('建立') >= 0 || a.indexOf('create') >= 0 || a.indexOf('saveform') >= 0) return 'create';
+    if (a.indexOf('刪除') >= 0 || a.indexOf('delete') >= 0) return 'delete';
+    if (a.indexOf('登入') >= 0 || a.indexOf('login') >= 0) return 'login';
+    if (a.indexOf('付款') >= 0 || a.indexOf('payment') >= 0 || a.indexOf('paid') >= 0 || a.indexOf('升級') >= 0) return 'pay';
+    if (a.indexOf('修改') >= 0 || a.indexOf('update') >= 0 || a.indexOf('save') >= 0) return 'update';
+    return 'other';
+  }
+  var ICONS = {
+    create: '<path d="M12 5v14M5 12h14"/>',
+    update: '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7m-2-9l4 4-11 11H7v-4l11-11z"/>',
+    delete: '<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6v14a2 2 0 002 2h8a2 2 0 002-2V6"/>',
+    login: '<path d="M9 21h12V3H9M3 12h12l-4-4m0 8l4-4"/>',
+    pay: '<path d="M3 10h18M3 14h18M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5"/>',
+    other: '<circle cx="12" cy="12" r="9"/>'
+  };
+
+  function render() {
+    var rows = LOGS.filter(function (l) {
+      if (STATE.filter !== 'all' && classify(l.action) !== STATE.filter) return false;
+      if (STATE.q) {
+        var hay = (l.action + ' ' + l.target + ' ' + l.detail).toLowerCase();
+        if (hay.indexOf(STATE.q.toLowerCase()) === -1) return false;
+      }
+      return true;
+    });
+    document.getElementById('cAll').textContent = LOGS.length;
+    if (rows.length === 0) {
+      document.getElementById('logCard').innerHTML = '<div class="empty"><h3 style="font:700 18px/1.3 var(--f-display); margin-bottom:6px">尚無操作紀錄</h3><p>當您建立活動、修改設定或完成付款時，紀錄會顯示在這裡。</p></div>';
+      return;
+    }
+    document.getElementById('logCard').innerHTML = rows.map(function (l) {
+      var cls = classify(l.action);
+      return '<div class="log-row">' +
+        '<div class="ic c-' + cls + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + ICONS[cls] + '</svg></div>' +
+        '<div class="body"><div class="who-act">' + escapeHtml(l.action || '') +
+          (l.target ? ' <span class="target">' + escapeHtml(l.target) + '</span>' : '') +
+        '</div>' + (l.detail ? '<div class="meta">' + escapeHtml(l.detail) + '</div>' : '') + '</div>' +
+        '<div class="ts">' + escapeHtml(l.time || '') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function load() {
+    document.getElementById('logCard').innerHTML = '<div class="skel">載入中⋯</div>';
+    google.script.run
+      .withSuccessHandler(function (res) { LOGS = res || []; render(); })
+      .withFailureHandler(function () { document.getElementById('logCard').innerHTML = '<div class="empty">無法載入紀錄</div>'; })
+      .getMyAuditLogs(parseInt(document.getElementById('limitSel').value));
+  }
+  document.getElementById('searchInput').addEventListener('input', function (e) { STATE.q = e.target.value; render(); });
+  document.querySelectorAll('.f-pill').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.f-pill').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      STATE.filter = b.dataset.f;
+      render();
+    });
+  });
+  document.getElementById('limitSel').addEventListener('change', load);
+  load();
+})();
+</script>
+</body>
+</html>
