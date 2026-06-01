@@ -745,7 +745,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     invoiceType: '發票類型', invoiceTitle: '發票抬頭', taxId: '統一編號', accommodation: '住宿需求', lineId: 'LINE ID',
     salutation: '尊稱', city: '居住縣市', eduLevel: '教育階段', studentId: '學號', referralSource: '如何得知本活動',
     transportation: '交通方式', accessibility: '特殊需求/無障礙', guardianName: '監護人姓名', guardianPhone: '監護人電話',
-    guardianConsent: '家長同意', consent: '條款/肖像權同意'
+    guardianConsent: '家長同意', consent: '條款/肖像權同意', website: '網站'
   };
   var GENDER_OPTS = ['男生', '女生'];
   var TW_CITY_OPTS = ['台北市','新北市','桃園市','台中市','台南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣'];
@@ -754,7 +754,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   // ---- formSchema-aware field engine (V3 independent) ----
   var SCHEMA = null, STU_DEFS = [], STU_DEFS_PER_CARD = [], TCH_DEFS = [], TCH_DEFS_PER_CARD = [], CUSTOM_DEFS = [], LABEL_MAP = {};
   function sectionsByRole(role) { return SCHEMA ? SCHEMA.sections.filter(function (s) { return (s.role || 'custom') === role; }) : []; }
-  function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', guardianPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', salutation:'select', city:'select', eduLevel:'select', referralSource:'select', transportation:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', invoiceType:'select', guardianConsent:'radio', consent:'radio', healthNote:'textarea', accessibility:'textarea', idNumber:'idnumber' })[k] || 'text'; }
+  function inferType(k) { return ({ email:'email', phone:'tel', emergencyPhone:'tel', guardianPhone:'tel', birthday:'date', dietary:'select', tshirt:'select', gender:'select', salutation:'select', city:'select', eduLevel:'select', referralSource:'select', transportation:'select', nationality:'select', dietaryRestriction:'select', bloodType:'select', accommodation:'select', invoiceType:'select', guardianConsent:'radio', consent:'radio', website:'url', healthNote:'textarea', accessibility:'textarea', idNumber:'idnumber' })[k] || 'text'; }
   function optsFor(k) {
     return k === 'gender' ? GENDER_OPTS.slice()
       : k === 'salutation' ? ['先生','小姐','女士','太太','老師','教授','博士','醫師']
@@ -847,8 +847,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var ccOpts = COUNTRY_CODES.map(function (c) { return '<option value="' + escapeHtml(c[1]) + '"' + (c[1] === '+886' ? ' selected' : '') + '>' + escapeHtml(c[0]) + ' ' + escapeHtml(c[1]) + '</option>'; }).join('');
       return '<div style="display:flex; gap:6px"><select id="' + domId + '_cc" style="width:170px; flex-shrink:0">' + ccOpts + '</select><input type="tel" id="' + domId + '_num" style="flex:1" placeholder="例：912345678" inputmode="tel"><input type="hidden" id="' + domId + '"></div>';
     }
-    var it = (t === 'email') ? 'email' : (t === 'tel') ? 'tel' : (t === 'date') ? 'date' : (t === 'number') ? 'number' : 'text';
-    return '<input type="' + it + '" id="' + domId + '">';
+    var it = (t === 'email') ? 'email' : (t === 'tel') ? 'tel' : (t === 'date') ? 'date' : (t === 'number') ? 'number' : (t === 'url') ? 'url' : 'text';
+    var ph = (t === 'url') ? ' placeholder="例：https://example.com" inputmode="url"' : '';
+    return '<input type="' + it + '" id="' + domId + '"' + ph + '>';
   }
   // Build a .fld wrapper for a field (prefix scopes the id; e.g. "student_0_" or "cq_")
   function buildFieldHtml(def, prefix) {
@@ -1075,6 +1076,14 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (wrap) wrap.classList.remove('error');
       if (def.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的 Email 格式錯誤'); return false; }
       if (def.type === 'idnumber' && v && /^[A-Za-z][0-9]{9}$/.test(v) && !validateTWID(v)) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的「' + def.label + '」身分證號碼格式不正確'); return false; }
+      // 網址欄位：未填協定時自動補 https://，再驗證為合法網址
+      if (def.type === 'url' && v) {
+        v = String(v).trim();
+        if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+        if (!/^https?:\/\/([\w¡-￿-]+\.)+[a-z¡-￿]{2,}(:\d+)?(\/[^\s]*)?$/i.test(v)) {
+          if (wrap) wrap.classList.add('error'); showErr(who + ' 的「' + def.label + '」請輸入有效的網址（例：https://example.com）'); return false;
+        }
+      }
       // FB5: built-in validation for special fields (taxId / phone / postalCode / dates / passport / mobile)
       var specialErr = validateSpecial(def, v);
       if (specialErr) { if (wrap) wrap.classList.add('error'); showErr(who + ' 的「' + specialErr + '」'); return false; }

@@ -5834,7 +5834,7 @@ const LEGACY_FIELD_KEYS = new Set([
   'bloodType','healthNote','invoiceType','invoiceTitle','taxId','accommodation','lineId',
   // V3.1 — additional special fields
   'salutation','city','eduLevel','studentId','referralSource','transportation',
-  'accessibility','guardianName','guardianPhone','guardianConsent','consent'
+  'accessibility','guardianName','guardianPhone','guardianConsent','consent','website'
 ]);
 
 function deriveLegacyFromFormSchema(formSchema) {
@@ -5896,7 +5896,7 @@ function buildFormSchemaFromLegacy(cfg) {
     invoiceType: '發票類型', invoiceTitle: '發票抬頭', taxId: '統一編號', accommodation: '住宿需求', lineId: 'LINE ID',
     salutation: '尊稱', city: '居住縣市', eduLevel: '教育階段', studentId: '學號', referralSource: '如何得知本活動',
     transportation: '交通方式', accessibility: '特殊需求/無障礙', guardianName: '監護人姓名', guardianPhone: '監護人電話',
-    guardianConsent: '家長同意', consent: '條款/肖像權同意'
+    guardianConsent: '家長同意', consent: '條款/肖像權同意', website: '網站'
   };
   const FIELD_TYPES = {
     chineseName: 'text', englishName: 'text', idNumber: 'idnumber',
@@ -5910,7 +5910,7 @@ function buildFormSchemaFromLegacy(cfg) {
     invoiceType: 'select', invoiceTitle: 'text', taxId: 'text', accommodation: 'select', lineId: 'text',
     salutation: 'select', city: 'select', eduLevel: 'select', studentId: 'text', referralSource: 'select',
     transportation: 'select', accessibility: 'textarea', guardianName: 'text', guardianPhone: 'tel',
-    guardianConsent: 'radio', consent: 'radio'
+    guardianConsent: 'radio', consent: 'radio', website: 'url'
   };
 
   // Strict rule: 1 區塊 = 1 人. Split legacy memberCount=N into N student sections
