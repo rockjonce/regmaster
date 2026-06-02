@@ -6809,7 +6809,10 @@ exports.listMyRegistrationsBySocial = callable(async (data) => {
       deadline: c.deadline || "", status: t.status || "", paymentStatus: t.paymentStatus || "",
       group: t.group || "", teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
       registrationTime: t.registrationTime || "", category: cfg.category || "", isOpen: c.isOpen === true,
-      requiresPayment: !!(cfg.registrationFee && cfg.registrationFee > 0)
+      requiresPayment: !!(cfg.registrationFee && cfg.registrationFee > 0),
+      // Caller proved ownership via verified social identity → return own password so
+      // edit/refund flows work without re-entry (password is the registrant's own).
+      password: t.password || ""
     });
   }
   regs.sort((a, b) => (b.registrationTime || "").localeCompare(a.registrationTime || ""));

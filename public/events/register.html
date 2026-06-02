@@ -517,7 +517,28 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     .getRegistrationBundle(compId);
 
   // ===== 編輯模式：報名編號+密碼 → 預填 → 以 updateRegistration 儲存（不重新付款）=====
+  function applyEdit(pwd, res) {
+    EDIT = { teamId: editTeamId, pwd: pwd }; IS_EDIT = true;
+    NEEDS_PAYMENT = false;
+    try { prefillFromTeam(res.team || {}, res.students || [], res.teachers || []); } catch (e) {}
+    document.title = '修改報名 · ' + (CFG.competitionName || '');
+    var hd = document.querySelector('#layout h1, .wizard-title'); if (hd) hd.textContent = '修改報名資料';
+    updateSubmitButtonLabel();
+  }
   function enterEditMode() {
+    // 若由「我的報名」社群登入帶入已驗證密碼 → 直接靜默載入，免再輸入
+    var carried = '';
+    try { carried = sessionStorage.getItem('rm_edit_' + editTeamId) || ''; sessionStorage.removeItem('rm_edit_' + editTeamId); } catch (e) {}
+    if (carried) {
+      google.script.run.withSuccessHandler(function (res) {
+        if (res && res.success) applyEdit(carried, res);
+        else showEditGate();   // 密碼失效 → 回到輸入閘
+      }).withFailureHandler(function () { showEditGate(); }).loginTeam(compId, editTeamId, carried);
+      return;
+    }
+    showEditGate();
+  }
+  function showEditGate() {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.6);display:grid;place-items:center;padding:16px';
     ov.innerHTML =
@@ -536,12 +557,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       err.textContent = '載入中⋯';
       google.script.run.withSuccessHandler(function (res) {
         if (!res || !res.success) { err.textContent = (res && res.message) || '密碼錯誤'; return; }
-        EDIT = { teamId: editTeamId, pwd: pwd }; IS_EDIT = true;
-        NEEDS_PAYMENT = false;   // 編輯不重新付款
-        try { prefillFromTeam(res.team || {}, res.students || [], res.teachers || []); } catch (e) {}
-        document.title = '修改報名 · ' + (CFG.competitionName || '');
-        var hd = document.querySelector('#layout h1, .wizard-title'); if (hd) hd.textContent = '修改報名資料';
-        updateSubmitButtonLabel();
+        applyEdit(pwd, res);
         if (ov.parentNode) document.body.removeChild(ov);
       }).withFailureHandler(function (e) { err.textContent = (e && e.message) || '載入失敗'; }).loginTeam(compId, editTeamId, pwd);
     });

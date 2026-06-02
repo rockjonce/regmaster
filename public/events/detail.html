@@ -782,6 +782,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
           '<div id="mErr" style="font:500 12.5px/1.5 var(--f-tc);color:var(--err-700)"></div>' +
           '<button id="mForgot" style="background:none;border:0;color:var(--acc);font:500 12.5px/1.4 var(--f-tc);cursor:pointer;text-align:left;padding:0">忘記密碼？</button>' +
           '<div id="mForgotBox"></div>' +
+          '<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><hr style="flex:1;border:0;border-top:1px solid var(--line)"><span style="font:500 11px/1 var(--f-mono);color:var(--muted)">或用已綁定的社群帳號</span><hr style="flex:1;border:0;border-top:1px solid var(--line)"></div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button id="mLoginG" class="btn btn-ghost" style="flex:1">用 Google 登入</button>' +
+            '<button id="mLoginL" class="btn btn-ghost" style="flex:1">用 LINE 登入</button>' +
+          '</div>' +
+          '<p style="font:400 11px/1.5 var(--f-tc);color:var(--muted);margin:2px 0 0">社群登入會列出你名下所有報名（曾在此綁定者），可直接選擇修改或退費。</p>' +
         '</div>' +
         '<div id="mView"></div>' +
       '</div>';
@@ -809,9 +815,31 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var tEl = ov.querySelector('#mTeam'), pEl = ov.querySelector('#mPwd'), err = ov.querySelector('#mErr');
     // Prefill team id from ?team= if present
     var qTeam = qs.get('team'); if (qTeam) tEl.value = qTeam;
+    // 社群登入 → 列出名下所有報名（帶到 我的報名）
+    ov.querySelector('#mLoginG').addEventListener('click', function () {
+      if (typeof firebase === 'undefined' || !firebase.auth) { err.textContent = 'Google 元件未載入，請重新整理'; return; }
+      err.style.color = 'var(--ink-3)'; err.textContent = 'Google 登入中⋯';
+      var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
+      firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
+        google.script.run.withSuccessHandler(function (res) {
+          try { firebase.auth().signOut(); } catch (e) {}
+          if (res && res.success) {
+            if (!(res.registrations || []).length) { err.style.color = 'var(--err-700)'; err.textContent = '此 Google 帳號尚未綁定任何報名，請先用報名編號+密碼登入並綁定。'; return; }
+            try { sessionStorage.setItem('rm_social_regs', JSON.stringify(res.registrations)); } catch (e) {}
+            location.href = '/my.html?social=google';
+          } else { err.style.color = 'var(--err-700)'; err.textContent = (res && res.message) || '登入失敗'; }
+        }).withFailureHandler(function (e) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || '登入失敗'; }).listMyRegistrationsBySocial('google', idToken);
+      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || 'Google 登入失敗'; } else { err.textContent = ''; } });
+    });
+    ov.querySelector('#mLoginL').addEventListener('click', function () {
+      var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      try { sessionStorage.setItem('line_oauth_state', state); sessionStorage.setItem('line_oauth_mode', 'lookupReg'); } catch (e) {}
+      location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
+        encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
+    });
     ov.querySelector('#mGo').addEventListener('click', function () {
       var teamId = tEl.value.trim().toUpperCase(), pwd = pEl.value;
-      if (!teamId || !pwd) { err.textContent = '請輸入報名編號與密碼'; return; }
+      if (!teamId || !pwd) { err.style.color = 'var(--err-700)'; err.textContent = '請輸入報名編號與密碼'; return; }
       err.textContent = '登入中⋯';
       google.script.run.withSuccessHandler(function (res) {
         if (!res || !res.success) { err.textContent = (res && res.message) || '登入失敗'; return; }

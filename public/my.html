@@ -180,6 +180,7 @@
   var ALL = [];
   var STATE_FILTER = 'all';
   var lookupMode = 'email';
+  var PWD_BY_TEAM = {};   // 社群登入查得的報名 → 其團隊密碼（憑此免再輸密碼即可改/退）
 
   document.querySelectorAll('#lookupTabs button').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -309,7 +310,7 @@
         actions += '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>';
       }
       if (r.status !== '已取消') {
-        actions += '<a class="btn btn-ghost" href="/events/register.html?id=' + encodeURIComponent(r.compId) + '&edit=' + encodeURIComponent(r.teamId) + '">修改報名</a>';
+        actions += '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">修改報名</button>';
         actions += '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">申請退費</button>';
       }
       return '<div class="reg-card">' +
@@ -324,12 +325,22 @@
 
   // ===== 申請退費 (registrant) =====
   document.getElementById('regList').addEventListener('click', function (e) {
+    var eb = e.target.closest('[data-edit]');
+    if (eb) {
+      var ep = eb.getAttribute('data-edit').split('|');
+      var ecomp = decodeURIComponent(ep[0]), eteam = decodeURIComponent(ep[1]);
+      // 社群登入已驗證身分 → 帶入密碼讓編輯頁免再輸入
+      if (PWD_BY_TEAM[eteam]) { try { sessionStorage.setItem('rm_edit_' + eteam, PWD_BY_TEAM[eteam]); } catch (x) {} }
+      location.href = '/events/register.html?id=' + encodeURIComponent(ecomp) + '&edit=' + encodeURIComponent(eteam);
+      return;
+    }
     var btn = e.target.closest('[data-refund]');
     if (!btn) return;
     var parts = btn.getAttribute('data-refund').split('|');
-    openRefundModal(decodeURIComponent(parts[0]), decodeURIComponent(parts[1]), parts.slice(2).join('|'));
+    var tid = decodeURIComponent(parts[1]);
+    openRefundModal(decodeURIComponent(parts[0]), tid, parts.slice(2).join('|'), PWD_BY_TEAM[tid] || '');
   });
-  function openRefundModal(compId, teamId, name) {
+  function openRefundModal(compId, teamId, name, knownPwd) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:16px';
     ov.innerHTML =
@@ -354,6 +365,14 @@
     ov.querySelector('#rfX').addEventListener('click', close);
     var msg = ov.querySelector('#rfMsg');
     function setMsg(t, ok) { msg.textContent = t || ''; msg.style.color = ok ? 'var(--ok-700, #047857)' : 'var(--err-700, #b91c1c)'; }
+
+    // 社群登入已帶出密碼 → 自動填入並查詢，免再輸入
+    if (knownPwd) {
+      ov.querySelector('#rfPwd').value = knownPwd;
+      ov.querySelector('#rfPwd').closest('div').querySelector('#rfPwd').style.display = 'none';
+      var hint = ov.querySelector('p'); if (hint) hint.innerHTML = escapeHtml(name) + '<br>系統將依退費政策計算可退金額。退款由主辦方處理，平台不經手金流。';
+      setTimeout(function () { ov.querySelector('#rfCheck').click(); }, 0);
+    }
 
     ov.querySelector('#rfCheck').addEventListener('click', function () {
       var pwd = ov.querySelector('#rfPwd').value;
@@ -390,7 +409,13 @@
   }
 
   // ===== 社群登入查詢 =====
-  function showSocialRegs(regs) { ALL = regs || []; renderList(); document.getElementById('lookupCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function showSocialRegs(regs) {
+    regs = regs || [];
+    PWD_BY_TEAM = {};
+    regs.forEach(function (r) { if (r.password) PWD_BY_TEAM[r.teamId] = r.password; });
+    ALL = regs; renderList();
+    document.getElementById('lookupCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   document.getElementById('socialG').addEventListener('click', function () {
     var el = document.getElementById('lookupErr');
     if (typeof firebase === 'undefined' || !firebase.auth) { el.textContent = 'Google 元件未載入，請重新整理'; el.style.display = 'block'; return; }
@@ -413,8 +438,8 @@
 
   // Auto-trigger if ?email= in URL (e.g. from email link)
   var qs = new URLSearchParams(location.search);
-  // Return from LINE social lookup → render stashed results
-  if (qs.get('social') === 'line') {
+  // Return from social lookup (Google popup-then-redirect, or LINE redirect) → render stashed results
+  if (qs.get('social')) {
     try { var stashed = JSON.parse(sessionStorage.getItem('rm_social_regs') || '[]'); sessionStorage.removeItem('rm_social_regs'); if (stashed.length) showSocialRegs(stashed); } catch (e) {}
   }
   if (qs.get('email')) {
