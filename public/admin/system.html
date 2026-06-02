@@ -198,7 +198,7 @@ body { background:var(--bg); }
     <div class="main-c" id="content" style="display:none">
       <div style="margin-bottom:18px">
         <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px">系統設定</h1>
-        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)">參數、帳號、授權碼、分析、回饋與 AI 金鑰的集中管理</p>
+        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)">參數、帳號、報名帳號、授權碼、分析與回饋的集中管理</p>
       </div>
 
       <div class="tabbar">
@@ -206,11 +206,11 @@ body { background:var(--bg); }
         <a data-tab="params"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg>參數設定</a>
         <a data-tab="plans"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18M7 3v18"/></svg>方案設定</a>
         <a data-tab="accounts"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 11l2 2 4-4"/></svg>帳號管理 <span class="ct" id="ctAccts"></span></a>
+        <a data-tab="registrants"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>報名帳號 <span class="ct" id="ctRegs"></span></a>
         <a data-tab="licenses"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>授權碼 <span class="ct" id="ctLics"></span></a>
         <a data-tab="billing"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>帳務管理 <span class="ct" id="ctBilling"></span></a>
         <a data-tab="analytics"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>使用者分析</a>
         <a data-tab="feedback"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>意見回饋 <span class="ct" id="ctFb"></span></a>
-        <a data-tab="aikeys"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13l8-8M16 5l3 3M14 7l3 3"/></svg>AI 金鑰 <span class="ct" id="ctKeys"></span></a>
       </div>
 
       <!-- ============ 平台總覽 (was Super Admin) ============ -->
@@ -266,6 +266,28 @@ body { background:var(--bg); }
         <div style="display:flex; gap:10px; justify-content:flex-end; max-width:none">
           <button class="btn btn-ghost" id="paramsReload">重新載入</button>
           <button class="btn btn-primary" id="paramsSave">儲存參數</button>
+        </div>
+
+        <!-- AI 金鑰 + 知識庫（原「AI 金鑰」分頁整併至參數設定） -->
+        <div class="card" style="margin-top:18px">
+          <div class="ch"><div><h3>Gemini API 金鑰 <span class="ct" id="ctKeys"></span></h3><p>AI 助理使用；系統會在多把金鑰間自動輪替以分散額度</p></div></div>
+          <div class="cb">
+            <div id="keysList"><div class="empty">載入中⋯</div></div>
+            <div class="row-2" style="margin-top:14px; align-items:end">
+              <div class="fld" style="margin:0"><label class="lbl">新增金鑰</label><input id="newKey" placeholder="AIza..." autocomplete="off"></div>
+              <div><button class="btn btn-ghost btn-block" id="addKeyBtn">＋ 加入清單</button></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end"><button class="btn btn-primary" id="saveKeysBtn">儲存金鑰</button></div>
+        <div class="card" style="margin-top:18px">
+          <div class="ch"><div><h3>AI 知識庫（向量檢索）</h3><p>把操作手冊轉成向量索引，AI 助理回答時會做語意比對檢索，找出最相關的內容。新增/修改手冊後請重建一次。</p></div></div>
+          <div class="cb">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
+              <div id="kbStatus" style="font:500 13px/1.5 var(--f-tc); color:var(--ink-2)">查詢中⋯</div>
+              <button class="btn btn-primary" id="rebuildKbBtn">重建知識庫</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -485,29 +507,13 @@ body { background:var(--bg); }
         </div>
       </div>
 
-      <!-- ============ AI 金鑰 ============ -->
-      <div class="pane" data-pane="aikeys">
+      <!-- ============ 報名帳號 ============ -->
+      <div class="pane" data-pane="registrants">
         <div class="card">
-          <div class="ch"><div><h3>Gemini API 金鑰</h3><p>AI 助理使用；系統會在多把金鑰間自動輪替以分散額度</p></div></div>
-          <div class="cb">
-            <div id="keysList"><div class="empty">載入中⋯</div></div>
-            <div class="row-2" style="margin-top:14px; align-items:end">
-              <div class="fld" style="margin:0"><label class="lbl">新增金鑰</label><input id="newKey" placeholder="AIza..." autocomplete="off"></div>
-              <div><button class="btn btn-ghost btn-block" id="addKeyBtn">＋ 加入清單</button></div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; gap:10px; justify-content:flex-end">
-          <button class="btn btn-primary" id="saveKeysBtn">儲存金鑰</button>
-        </div>
-
-        <div class="card" style="margin-top:18px">
-          <div class="ch"><div><h3>AI 知識庫（向量檢索）</h3><p>把操作手冊轉成向量索引，AI 助理回答時會做語意比對檢索，找出最相關的內容。新增/修改手冊後請重建一次。</p></div></div>
-          <div class="cb">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
-              <div id="kbStatus" style="font:500 13px/1.5 var(--f-tc); color:var(--ink-2)">查詢中⋯</div>
-              <button class="btn btn-primary" id="rebuildKbBtn">重建知識庫</button>
-            </div>
+          <div class="ch"><div><h3>報名帳號</h3><p>平台上所有報名者的 Email 與其社群綁定狀態。刪除僅解除該 Email 的社群綁定，不影響其報名資料。</p></div><button class="icon-btn" id="reloadRegsBtn">重新整理</button></div>
+          <div class="tbl-wrap">
+            <table class="tbl"><thead><tr><th>Email</th><th>姓名</th><th>報名數</th><th>Google</th><th>LINE</th><th></th></tr></thead>
+            <tbody id="regsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -1275,6 +1281,33 @@ body { background:var(--bg); }
       .saveGeminiKeys(keys);
   });
 
+  // ================= 報名帳號 =================
+  function loadRegistrants() {
+    google.script.run.withSuccessHandler(function (res) {
+      var list = (res && res.registrants) || [];
+      var ct = document.getElementById('ctRegs'); if (ct) ct.textContent = list.length;
+      var b = document.getElementById('regsBody');
+      if (!list.length) { b.innerHTML = '<tr><td colspan="6" class="empty">尚無報名帳號</td></tr>'; return; }
+      b.innerHTML = list.map(function (r) {
+        var g = r.google ? '<span class="pill" style="background:rgba(66,133,244,.1);color:#1a73e8;border:1px solid rgba(66,133,244,.25)">已綁定</span>' : '<span class="muted">—</span>';
+        var l = r.line ? '<span class="pill" style="background:rgba(6,199,85,.12);color:#06994a;border:1px solid rgba(6,199,85,.3)">已綁定</span>' : '<span class="muted">—</span>';
+        var del = (r.google || r.line) ? '<button class="icon-btn danger" data-unbind="' + esc(r.email) + '">解除綁定</button>' : '';
+        return '<tr><td class="muted">' + esc(r.email) + '</td><td>' + esc(r.name || '') + '</td><td>' + (r.regCount || 0) + '</td><td>' + g + '</td><td>' + l + '</td><td style="text-align:right">' + del + '</td></tr>';
+      }).join('');
+      b.querySelectorAll('[data-unbind]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var em = btn.dataset.unbind;
+          uiConfirm('解除「' + em + '」的社群綁定？該報名者需重新綁定才能用社群登入；報名資料不受影響。', { title: '解除綁定', okText: '解除', danger: true }).then(function (ok) {
+            if (!ok) return;
+            google.script.run.withSuccessHandler(function (r) { if (r && r.success) { toast('已解除綁定 ' + em); loadRegistrants(); } else toast((r && r.message) || '失敗', 'err'); })
+              .withFailureHandler(function (e) { toast(e.message || '失敗', 'err'); }).deleteRegistrantBinding(em);
+          });
+        });
+      });
+    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).listRegistrants();
+  }
+  document.getElementById('reloadRegsBtn').addEventListener('click', loadRegistrants);
+
   // ---------- modal helpers ----------
   function openModal(id) { document.getElementById(id).classList.add('on'); }
   function closeModal(id) { document.getElementById(id).classList.remove('on'); }
@@ -1283,8 +1316,9 @@ body { background:var(--bg); }
   });
 
   var loaders = {
-    overview: loadOverview, params: loadParams, accounts: loadAccounts, licenses: loadLicenses,
-    analytics: loadAnalytics, feedback: loadFeedback, aikeys: loadKeys
+    overview: loadOverview, params: function () { loadParams(); loadKeys(); }, accounts: loadAccounts,
+    registrants: loadRegistrants, licenses: loadLicenses,
+    analytics: loadAnalytics, feedback: loadFeedback
   };
 
   // initial tab (from hash or default to platform overview)
