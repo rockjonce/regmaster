@@ -1485,7 +1485,8 @@ exports.submitRegistration = callable(async (data) => {
     }
   }
 
-  const teamId = generateId("T");
+  // 報名編號 = 活動ID-隨機碼（嵌入活動ID，便於辨識；teamId 仍為文件 ID 與所有引用鍵）
+  const teamId = compId + "-" + generateId("T");
   const pwd = generatePassword();
   const perSession = isPerSessionQuota(cfg);
 

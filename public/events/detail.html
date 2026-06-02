@@ -560,7 +560,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       registerBtn.style.opacity = '.5';
       registerBtn.textContent = '報名已截止';
     }
-    lookupBtn.href = '/my.html?comp=' + encodeURIComponent(compId);
+    lookupBtn.href = 'javascript:void(0)';
+    lookupBtn.addEventListener('click', function (e) { e.preventDefault(); openManageModal(); });
 
     // Countdown
     var deadDate = parseDate(cfg.deadline);
@@ -750,6 +751,96 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   }
   if (aiSendBtn) aiSendBtn.addEventListener('click', aiSend);
   if (aiInput) aiInput.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); aiSend(); } });
+
+  // ===== 查詢 / 管理我的報名（報名編號 + 密碼）=====
+  function mkOverlay() {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.55);display:grid;place-items:center;padding:16px';
+    document.body.appendChild(ov);
+    return ov;
+  }
+  function openManageModal() {
+    var ov = mkOverlay();
+    ov.innerHTML =
+      '<div style="background:var(--surface);border-radius:16px;max-width:480px;width:100%;padding:26px;max-height:92vh;overflow:auto">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font:700 18px/1.3 var(--f-display)">查詢 / 管理我的報名</h3><button id="mX" style="background:none;border:0;font-size:24px;cursor:pointer;color:var(--muted)">×</button></div>' +
+        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:16px">輸入報名成功後取得的<b>報名編號</b>與<b>密碼</b>登入。</p>' +
+        '<div id="mLogin" style="display:flex;flex-direction:column;gap:10px">' +
+          '<input id="mTeam" placeholder="報名編號（例 ' + escapeHtml(compId) + '-T...）" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<input id="mPwd" type="password" placeholder="密碼" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<button id="mGo" class="btn btn-primary btn-block">登入</button>' +
+          '<div id="mErr" style="font:500 12.5px/1.5 var(--f-tc);color:var(--err-700)"></div>' +
+        '</div>' +
+        '<div id="mView"></div>' +
+      '</div>';
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#mX').addEventListener('click', close);
+    var tEl = ov.querySelector('#mTeam'), pEl = ov.querySelector('#mPwd'), err = ov.querySelector('#mErr');
+    // Prefill team id from ?team= if present
+    var qTeam = qs.get('team'); if (qTeam) tEl.value = qTeam;
+    ov.querySelector('#mGo').addEventListener('click', function () {
+      var teamId = tEl.value.trim().toUpperCase(), pwd = pEl.value;
+      if (!teamId || !pwd) { err.textContent = '請輸入報名編號與密碼'; return; }
+      err.textContent = '登入中⋯';
+      google.script.run.withSuccessHandler(function (res) {
+        if (!res || !res.success) { err.textContent = (res && res.message) || '登入失敗'; return; }
+        renderManage(ov, teamId, pwd, res);
+      }).withFailureHandler(function (e) { err.textContent = (e && e.message) || '登入失敗'; }).loginTeam(compId, teamId, pwd);
+    });
+    pEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('#mGo').click(); });
+  }
+  function renderManage(ov, teamId, pwd, res) {
+    ov.querySelector('#mLogin').style.display = 'none';
+    var t = res.team || {}, mem = (res.students || []).concat(res.teachers || []);
+    var paid = String(t.paymentStatus || '').indexOf('已確認') !== -1;
+    var memHtml = mem.map(function (m) { return '<li>' + escapeHtml((m.role || '') + '：' + (m.chineseName || m.name || '') + (m.email ? '（' + m.email + '）' : '')) + '</li>'; }).join('');
+    var v = ov.querySelector('#mView');
+    v.innerHTML =
+      '<div style="border:1px solid var(--line);border-radius:11px;padding:16px;margin-bottom:14px;font:400 13.5px/1.8 var(--f-tc)">' +
+        '<b style="font:700 15px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || teamId) + '</b><br>' +
+        '報名編號：<span style="font-family:var(--f-mono)">' + escapeHtml(teamId) + '</span><br>' +
+        (t.group ? '組別：' + escapeHtml(t.group) + '<br>' : '') +
+        '狀態：' + escapeHtml(t.status || '正取') + '　付款：' + escapeHtml(t.paymentStatus || '待確認') +
+        (memHtml ? '<ul style="margin:10px 0 0;padding-left:20px">' + memHtml + '</ul>' : '') +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' +
+        (!paid ? '<a class="btn btn-primary btn-block" href="/events/payment.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(teamId) + '">前往付款 →</a>' : '') +
+        '<button id="mRefund" class="btn btn-ghost btn-block">申請退費</button>' +
+      '</div>' +
+      '<p style="font:400 11.5px/1.6 var(--f-tc);color:var(--muted);margin-top:10px">如需修改報名資料，請聯繫主辦方協助更新。</p>' +
+      '<div id="mRefundBox" style="margin-top:12px"></div>';
+    v.querySelector('#mRefund').addEventListener('click', function () { renderRefund(v.querySelector('#mRefundBox'), teamId, pwd); });
+  }
+  function renderRefund(box, teamId, pwd) {
+    box.innerHTML = '<p style="font:400 12.5px/1.5 var(--f-tc);color:var(--muted)">查詢可退金額中⋯</p>';
+    google.script.run.withSuccessHandler(function (res) {
+      if (!res || !res.success) { box.innerHTML = '<p style="color:var(--err-700);font:500 12.5px/1.5 var(--f-tc)">' + escapeHtml((res && res.message) || '查詢失敗') + '</p>'; return; }
+      if (res.refundStatus === 'requested' || res.refundStatus === 'approved') { box.innerHTML = '<p style="font:500 12.5px/1.6 var(--f-tc)">您已有退費申請處理中，請耐心等候主辦方。</p>'; return; }
+      var c = res.calc || {};
+      if (c.eventDateMissing || c.pastStart || !c.hasPolicy) {
+        var why = c.pastStart ? '活動已開始或結束，線上退費已關閉' : (c.eventDateMissing ? '本活動未設定活動日期' : '主辦方尚未設定退費政策');
+        box.innerHTML = '<p style="font:500 12.5px/1.6 var(--f-tc);color:var(--ink-3)">' + why + '，請直接聯繫主辦方辦理退費。</p>'; return;
+      }
+      box.innerHTML =
+        '<div style="border:1px dashed var(--line);border-radius:10px;padding:14px;font:400 13px/1.7 var(--f-tc)">' +
+          '距活動 <b>' + c.daysBefore + ' 天</b>，可退 <b>' + c.pct + '%</b> ＝ <b style="color:var(--ok-700,#047857)">NT$' + c.calcRefund + '</b>' +
+          '<input id="rAcct" placeholder="退款帳戶（銀行/分行/帳號/戶名）" style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
+          '<textarea id="rReason" rows="2" placeholder="退費原因（可選）" style="width:100%;margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)"></textarea>' +
+          '<button id="rSend" class="btn btn-primary btn-block" style="margin-top:8px">送出退費申請</button>' +
+          '<div id="rMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div>' +
+        '</div>';
+      box.querySelector('#rSend').addEventListener('click', function () {
+        var acct = box.querySelector('#rAcct').value.trim(), reason = box.querySelector('#rReason').value.trim(), msg = box.querySelector('#rMsg');
+        if (!acct) { msg.style.color = 'var(--err-700)'; msg.textContent = '請填寫退款帳戶'; return; }
+        this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = '送出中⋯';
+        google.script.run.withSuccessHandler(function (r) {
+          if (r && r.success) { box.innerHTML = '<p style="color:var(--ok-700,#047857);font:600 13px/1.6 var(--f-tc)">✓ 退費申請已送出（應退 ' + r.pct + '% ＝ NT$' + r.calcRefund + '），待主辦方審核退款。</p>'; }
+          else { msg.style.color = 'var(--err-700)'; msg.textContent = (r && r.message) || '送出失敗'; }
+        }).withFailureHandler(function (e) { msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || '送出失敗'; }).requestRefund(compId, teamId, pwd, acct, reason);
+      });
+    }).withFailureHandler(function (e) { box.innerHTML = '<p style="color:var(--err-700)">' + escapeHtml(e && e.message || '查詢失敗') + '</p>'; }).getRefundPreview(compId, teamId, pwd);
+  }
 })();
 </script>
 </body>
