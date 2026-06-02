@@ -1928,6 +1928,18 @@ async function organiserEmail(creator) {
   const a = await db.collection("accounts").where("username", "==", creator).limit(1).get();
   return a.empty ? "" : (a.docs[0].data().email || "");
 }
+async function organiserContact(creator) {
+  if (!creator) return { name: "", email: "" };
+  const a = await db.collection("accounts").where("username", "==", creator).limit(1).get();
+  if (a.empty) return { name: "", email: "" };
+  const ac = a.docs[0].data();
+  return { name: ac.organizationName || ac.displayName || "", email: ac.email || "" };
+}
+// Footer line with the organiser's unit name + email for registrant-facing emails.
+function contactFooter(c) {
+  if (!c || (!c.name && !c.email)) return "";
+  return '主辦單位：' + escMail(c.name || "（未提供）") + (c.email ? '　·　聯絡 Email：' + escMail(c.email) : '');
+}
 async function queueMail(to, subject, html, text) {
   const arr = Array.isArray(to) ? to.filter(Boolean) : (to ? [to] : []);
   if (!arr.length) return;
@@ -2030,6 +2042,7 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
   const tDoc = await db.collection("teams").doc(r.teamId).get();
   const compDoc = await db.collection("competitions").doc(r.compId).get();
   const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
+  const contact = await organiserContact(compDoc.exists ? compDoc.data().creator : "");
   if (action === "reject") {
     await rRef.update({ status: "rejected", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
     if (tDoc.exists) { const t = tDoc.data(); await tDoc.ref.update({ refundStatus: FieldValue.delete(), status: t.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() }); }
@@ -2038,7 +2051,7 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
       const html = emailWrap("退費申請未通過", `
         <p>您在活動「<b>${escMail(compName)}</b>」的退費申請（隊伍 ${escMail(r.teamNameCN || r.teamId)}）未通過審核。</p>
         ${note ? `<p><b>主辦方說明：</b>${escMail(note)}</p>` : ""}
-        <p>您的報名仍然有效。如有疑問請直接聯繫主辦方。</p>`);
+        <p>您的報名仍然有效。如有疑問請直接聯繫主辦方。</p>`, contactFooter(contact));
       await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費申請結果 — " + compName, html);
     } catch (e) {}
     return { success: true };
@@ -2052,7 +2065,7 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
         <p>您在活動「<b>${escMail(compName)}</b>」的退費申請（隊伍 ${escMail(r.teamNameCN || r.teamId)}）已核准。</p>
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
           <b>應退金額：</b>${r.policyPct}% ＝ NT$${r.calcRefund}</div>
-        <p>主辦方將依您提供的退款帳戶辦理退款，完成後您會再收到一封通知。</p>`);
+        <p>主辦方將依您提供的退款帳戶辦理退款，完成後您會再收到一封通知。</p>`, contactFooter(contact));
       await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費申請已核准 — " + compName, html);
     } catch (e) {}
     return { success: true };
@@ -2081,11 +2094,12 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
   try {
     const compDoc = await db.collection("competitions").doc(r.compId).get();
     const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
+    const contact = await organiserContact(compDoc.exists ? compDoc.data().creator : "");
     const html = emailWrap("退費已完成", `
       <p>您在活動「<b>${escMail(compName)}</b>」的退費（隊伍 ${escMail(r.teamNameCN || r.teamId)}）已由主辦方完成處理。</p>
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
         <b>實際退款金額：</b>NT$${actual}${refundMethod ? `<br><b>退款方式：</b>${escMail(refundMethod)}` : ""}</div>
-      <p>您的報名資格已取消、名額已釋出。感謝您的參與，期待下次再見！</p>`);
+      <p>您的報名資格已取消、名額已釋出。感謝您的參與，期待下次再見！</p>`, contactFooter(contact));
     await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費已完成 — " + compName, html);
   } catch (e) {}
   return { success: true };
