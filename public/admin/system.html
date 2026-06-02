@@ -613,11 +613,11 @@ body { background:var(--bg); }
       b.innerHTML = orgs.map(function (o) {
         var stat = o.locked ? 'err' : o.emailVerified ? 'ok' : 'warn';
         var statLabel = o.locked ? '已鎖定' : o.emailVerified ? '正常' : '未驗證';
-        var plan = (o.intendedPlan || 'free');
+        var planCell = o.role === 'system' ? '<span class="muted">—</span>' : '<span class="pill neutral">' + esc((o.tier || 'free').toUpperCase()) + '</span>';
         return '<tr>' +
           '<td><div class="org-cell"><div class="av-o">' + esc((o.displayName || o.username || '?').charAt(0).toUpperCase()) + '</div><div><h6>' + esc(o.displayName || o.username) + '</h6><p>' + esc(o.email || '') + '</p></div></div></td>' +
           '<td>' + (o.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">主辦方</span>') + '</td>' +
-          '<td><span class="pill neutral">' + esc(plan.toUpperCase()) + '</span></td>' +
+          '<td>' + planCell + '</td>' +
           '<td>' + (o.compCount || 0) + ' / ' + (o.totalTeams || 0) + '</td>' +
           '<td><span class="pill ' + stat + '">' + statLabel + '</span></td>' +
           '<td class="muted">' + esc(o.createdAt || '') + '</td></tr>';

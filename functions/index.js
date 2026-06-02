@@ -5872,22 +5872,25 @@ exports.listAllOrgs = authCallable(["system"], async () => {
     compsByCreator[k].totalTeams += (c.teamCount || 0);
   });
 
-  const orgs = acctSnap.docs.map(d => {
+  const orgs = [];
+  for (const d of acctSnap.docs) {
     const a = d.data();
     const stats = compsByCreator[a.username] || { count: 0, totalTeams: 0 };
-    return {
+    // Show the REAL current plan (from active licenses), not the stale signup intent.
+    const tier = a.role === 'system' ? '' : await getEffectiveTier(a.username);
+    orgs.push({
       username: a.username,
       displayName: a.displayName || '',
       email: a.email || '',
       role: a.role,
-      intendedPlan: a.intendedPlan || 'free',
+      tier: tier,                          // effective tier: free/starter/pro/team ('' for system)
       createdAt: a.createdAt || '',
       compCount: stats.count,
       totalTeams: stats.totalTeams,
       emailVerified: !!a.emailVerified,
       locked: !!(a.lockedUntil && new Date(a.lockedUntil) > new Date())
-    };
-  });
+    });
+  }
   orgs.sort((a, b) => b.compCount - a.compCount);
   return { orgs };
 });
