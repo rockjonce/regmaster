@@ -10,6 +10,7 @@
 
 <script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-auth-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
 <script src="/shared/track-visit.js"></script>
@@ -349,6 +350,15 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   }
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  if (qs.get('bound') === 'line') {
+    setTimeout(function () {
+      var t = document.createElement('div');
+      t.textContent = '✓ 已綁定 LINE 帳號';
+      t.style.cssText = 'position:fixed;left:50%;top:20px;transform:translateX(-50%);z-index:500;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font:600 13px/1 var(--f-tc);box-shadow:0 6px 24px rgba(0,0,0,.18)';
+      document.body.appendChild(t);
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
+    }, 600);
+  }
   function parseDate(s) {
     if (!s) return null;
     var d = new Date(s);
@@ -809,8 +819,38 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         '<a class="btn btn-ghost btn-block" href="/events/register.html?id=' + encodeURIComponent(compId) + '&edit=' + encodeURIComponent(teamId) + '">修改報名資料</a>' +
         '<button id="mRefund" class="btn btn-ghost btn-block">申請退費</button>' +
       '</div>' +
-      '<div id="mRefundBox" style="margin-top:12px"></div>';
+      '<div id="mRefundBox" style="margin-top:12px"></div>' +
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)">' +
+        '<p style="font:500 12px/1.5 var(--f-tc);color:var(--ink-3);margin-bottom:8px">綁定社群帳號，下次免輸入報名編號／密碼即可查詢報名：</p>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button id="mBindG" class="btn btn-ghost" style="flex:1">綁定 Google</button>' +
+          '<button id="mBindL" class="btn btn-ghost" style="flex:1">綁定 LINE</button>' +
+        '</div>' +
+        '<div id="mBindMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div>' +
+      '</div>';
     v.querySelector('#mRefund').addEventListener('click', function () { renderRefund(v.querySelector('#mRefundBox'), teamId, pwd); });
+    var bmsg = v.querySelector('#mBindMsg');
+    v.querySelector('#mBindG').addEventListener('click', function () {
+      if (typeof firebase === 'undefined' || !firebase.auth) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = 'Google 元件未載入，請重新整理'; return; }
+      bmsg.style.color = 'var(--ink-3)'; bmsg.textContent = 'Google 授權中⋯';
+      var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
+      firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
+        google.script.run.withSuccessHandler(function (res) {
+          try { firebase.auth().signOut(); } catch (e) {}
+          if (res && res.success) { bmsg.style.color = 'var(--ok-700,#047857)'; bmsg.textContent = '✓ 已綁定 Google（' + (res.name || '') + '）'; }
+          else { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (res && res.message) || '綁定失敗'; }
+        }).withFailureHandler(function (e) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || '綁定失敗'; }).bindRegistrantSocial(compId, teamId, pwd, 'google', idToken);
+      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || 'Google 綁定失敗'; } });
+    });
+    v.querySelector('#mBindL').addEventListener('click', function () {
+      var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      try {
+        sessionStorage.setItem('line_oauth_state', state); sessionStorage.setItem('line_oauth_mode', 'bindReg');
+        sessionStorage.setItem('rm_bind_comp', compId); sessionStorage.setItem('rm_bind_team', teamId); sessionStorage.setItem('rm_bind_pwd', pwd);
+      } catch (e) {}
+      location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
+        encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
+    });
   }
   function renderRefund(box, teamId, pwd) {
     box.innerHTML = '<p style="font:400 12.5px/1.5 var(--f-tc);color:var(--muted)">查詢可退金額中⋯</p>';

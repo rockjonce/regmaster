@@ -10,6 +10,7 @@
 
 <script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-auth-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
 
@@ -123,8 +124,15 @@
         <input class="input" id="lookupValue" placeholder="輸入 Email" autocomplete="email">
         <button class="btn btn-primary btn-lg btn-block" id="lookupBtn">查詢 →</button>
       </div>
-      <p style="font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-top:14px">
-        若需查詢隊伍密碼或修改報名資料，請至活動詳情頁使用<b>報名編號 + 密碼</b>登入。
+      <div style="display:flex;align-items:center;gap:10px;margin:14px 0 12px">
+        <hr style="flex:1;border:0;border-top:1px solid var(--line)"><span style="font:500 11px/1 var(--f-mono);color:var(--muted)">或用社群帳號</span><hr style="flex:1;border:0;border-top:1px solid var(--line)">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" id="socialG" style="flex:1">用 Google 登入</button>
+        <button class="btn btn-ghost" id="socialL" style="flex:1">用 LINE 登入</button>
+      </div>
+      <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:12px">
+        曾在報名管理頁綁定 Google／LINE 者，可直接用社群登入查詢全部報名。若需修改報名資料，請至活動詳情頁使用<b>報名編號 + 密碼</b>登入。
       </p>
     </div>
   </div>
@@ -380,8 +388,34 @@
     });
   }
 
+  // ===== 社群登入查詢 =====
+  function showSocialRegs(regs) { ALL = regs || []; renderList(); document.getElementById('lookupCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  document.getElementById('socialG').addEventListener('click', function () {
+    var el = document.getElementById('lookupErr');
+    if (typeof firebase === 'undefined' || !firebase.auth) { el.textContent = 'Google 元件未載入，請重新整理'; el.style.display = 'block'; return; }
+    el.style.display = 'none';
+    var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
+    firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
+      google.script.run.withSuccessHandler(function (res) {
+        try { firebase.auth().signOut(); } catch (e) {}
+        if (res && res.success) showSocialRegs(res.registrations);
+        else { el.textContent = (res && res.message) || '查詢失敗'; el.style.display = 'block'; }
+      }).withFailureHandler(function (e) { el.textContent = (e && e.message) || '查詢失敗'; el.style.display = 'block'; }).listMyRegistrationsBySocial('google', idToken);
+    }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { el.textContent = (e && e.message) || 'Google 登入失敗'; el.style.display = 'block'; } });
+  });
+  document.getElementById('socialL').addEventListener('click', function () {
+    var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { sessionStorage.setItem('line_oauth_state', state); sessionStorage.setItem('line_oauth_mode', 'lookupReg'); } catch (e) {}
+    location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
+      encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
+  });
+
   // Auto-trigger if ?email= in URL (e.g. from email link)
   var qs = new URLSearchParams(location.search);
+  // Return from LINE social lookup → render stashed results
+  if (qs.get('social') === 'line') {
+    try { var stashed = JSON.parse(sessionStorage.getItem('rm_social_regs') || '[]'); sessionStorage.removeItem('rm_social_regs'); if (stashed.length) showSocialRegs(stashed); } catch (e) {}
+  }
   if (qs.get('email')) {
     document.getElementById('lookupValue').value = qs.get('email');
     document.getElementById('lookupBtn').click();

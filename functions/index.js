@@ -6733,6 +6733,58 @@ exports.listMyRegistrationsByEmail = callable(async (data) => {
   return { success: true, registrations: regs };
 });
 
+// ===== 報名者社群綁定（報名後在管理頁綁定，以便日後免輸入編號密碼）=====
+async function verifySocial(provider, token) {
+  if (provider === "google") {
+    const dec = await admin.auth().verifyIdToken(token);
+    return { field: "registrantGoogleSub", nameField: "registrantGoogleName", sub: dec.uid, name: dec.name || dec.email || "" };
+  }
+  if (provider === "line") {
+    const id = await lineExchangeAndVerify(token);
+    return { field: "registrantLineId", nameField: "registrantLineName", sub: id.lineUserId, name: id.name || "" };
+  }
+  throw new Error("未知的綁定方式");
+}
+// Bind a verified social identity to a registration (proven by team password).
+exports.bindRegistrantSocial = callable(async (data) => {
+  const { compId, teamId, password, provider, token } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  if (tDoc.data().password !== password) return { success: false, message: "密碼錯誤" };
+  let s;
+  try { s = await verifySocial(provider, token); }
+  catch (e) { return { success: false, message: (provider === "line" ? "LINE" : "Google") + " 驗證失敗：" + e.message }; }
+  const upd = {}; upd[s.field] = s.sub; upd[s.nameField] = s.name;
+  await tDoc.ref.update(upd);
+  return { success: true, provider, name: s.name };
+});
+// List all the registrant's registrations by a verified social identity.
+exports.listMyRegistrationsBySocial = callable(async (data) => {
+  const { provider, token } = data;
+  let s;
+  try { s = await verifySocial(provider, token); }
+  catch (e) { return { success: false, message: (provider === "line" ? "LINE" : "Google") + " 驗證失敗：" + e.message }; }
+  const sn = await db.collection("teams").where(s.field, "==", s.sub).get();
+  const regs = [];
+  for (const tDoc of sn.docs) {
+    const t = tDoc.data();
+    if (t.status === "已取消") continue;
+    const cDoc = await db.collection("competitions").doc(t.compId).get();
+    if (!cDoc.exists) continue;
+    const c = cDoc.data(); const cfg = c.config || {};
+    regs.push({
+      teamId: t.teamId || tDoc.id, compId: t.compId,
+      competitionName: cfg.competitionName || c.name || "", competitionDate: cfg.competitionDate || "",
+      deadline: c.deadline || "", status: t.status || "", paymentStatus: t.paymentStatus || "",
+      group: t.group || "", teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
+      registrationTime: t.registrationTime || "", category: cfg.category || "", isOpen: c.isOpen === true,
+      requiresPayment: !!(cfg.registrationFee && cfg.registrationFee > 0)
+    });
+  }
+  regs.sort((a, b) => (b.registrationTime || "").localeCompare(a.registrationTime || ""));
+  return { success: true, registrations: regs };
+});
+
 // ===== Onboarding state: get + save =====
 // Per-user wizard progress. Stored in `onboarding/{username}`.
 // Both callables require authentication (user can only access their own).

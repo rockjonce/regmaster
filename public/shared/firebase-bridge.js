@@ -78,6 +78,8 @@
     unlinkProvider:["provider"],
     lineLoginCallback:["code","redirectUri"],
     linkLineAccount:["code","redirectUri"],
+    bindRegistrantSocial:["compId","teamId","password","provider","token"],
+    listMyRegistrationsBySocial:["provider","token"],
     loginVerifyTotp:["username","password","code"],
     getTotpStatus:[],
     generateTotpSecret:[],

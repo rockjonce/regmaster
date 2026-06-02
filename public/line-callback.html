@@ -58,6 +58,32 @@ a.btn-back { display:inline-block; margin-top:18px; padding:10px 18px; backgroun
   } catch (e) {}
   if (!savedState || savedState !== state) { fail('登入狀態驗證失敗（可能逾時或重複開啟），請重新登入。'); return; }
 
+  if (mode === 'bindReg') {
+    // 報名者綁定 LINE 到某筆報名（憑報名編號+密碼）
+    var bc = '', bt = '', bp = '';
+    try { bc = sessionStorage.getItem('rm_bind_comp') || ''; bt = sessionStorage.getItem('rm_bind_team') || ''; bp = sessionStorage.getItem('rm_bind_pwd') || ''; sessionStorage.removeItem('rm_bind_comp'); sessionStorage.removeItem('rm_bind_team'); sessionStorage.removeItem('rm_bind_pwd'); } catch (e) {}
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) location.href = '/events/detail.html?id=' + encodeURIComponent(bc) + '&bound=line';
+        else fail((res && res.message) || 'LINE 綁定失敗', '/events/detail.html?id=' + encodeURIComponent(bc), '返回活動');
+      })
+      .withFailureHandler(function (e) { fail((e && e.message) || 'LINE 綁定失敗', '/events/detail.html?id=' + encodeURIComponent(bc), '返回活動'); })
+      .bindRegistrantSocial(bc, bt, bp, 'line', code);
+    return;
+  }
+
+  if (mode === 'lookupReg') {
+    // 報名者用 LINE 查詢所有報名 → 結果暫存 sessionStorage，回 my.html 呈現
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) { try { sessionStorage.setItem('rm_social_regs', JSON.stringify(res.registrations || [])); } catch (e) {} location.href = '/my.html?social=line'; }
+        else fail((res && res.message) || 'LINE 查詢失敗', '/my.html', '返回我的報名');
+      })
+      .withFailureHandler(function (e) { fail((e && e.message) || 'LINE 查詢失敗', '/my.html', '返回我的報名'); })
+      .listMyRegistrationsBySocial('line', code);
+    return;
+  }
+
   if (mode === 'link') {
     // Bind LINE to the currently logged-in account, then back to settings.
     var me = AppState.getMe();
