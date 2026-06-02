@@ -377,6 +377,89 @@ exports.unlinkProvider = authCallable(["system", "competition"], async (data, re
   return { success: true };
 });
 
+// ===== LINE Login (OAuth2 + OIDC) =====
+// Channel ID is public; the secret lives in config/line (never in the repo/frontend).
+const LINE_CHANNEL_ID = "2010261408";
+const LINE_REDIRECT = "https://regmaster-v3.web.app/line-callback.html";
+async function lineExchangeAndVerify(code, redirectUri) {
+  const cfgDoc = await db.collection("config").doc("line").get();
+  const secret = cfgDoc.exists ? (cfgDoc.data().channelSecret || "") : "";
+  if (!secret) throw new Error("LINE 尚未設定");
+  const redir = redirectUri || LINE_REDIRECT;
+  // 1) Exchange the authorization code for tokens
+  const tokRes = await fetch("https://api.line.me/oauth2/v2.1/token", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code", code, redirect_uri: redir,
+      client_id: LINE_CHANNEL_ID, client_secret: secret
+    }).toString()
+  });
+  const tok = await tokRes.json();
+  if (!tok.id_token) throw new Error(tok.error_description || tok.error || "code 交換失敗");
+  // 2) Verify the id_token (LINE validates signature/issuer/audience and returns the payload)
+  const vRes = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ id_token: tok.id_token, client_id: LINE_CHANNEL_ID }).toString()
+  });
+  const v = await vRes.json();
+  if (!v.sub) throw new Error(v.error_description || v.error || "id_token 驗證失敗");
+  return { lineUserId: v.sub, name: v.name || "", email: (v.email || "").toLowerCase().trim() };
+}
+
+// Public: LINE login → match by lineUserId → email(auto-link) → auto-create 主辦方.
+exports.lineLoginCallback = callable(async (data) => {
+  try {
+    const id = await lineExchangeAndVerify(data.code, data.redirectUri);
+    let snap = await db.collection("accounts").where("lineUserId", "==", id.lineUserId).limit(1).get();
+    let linkedByEmail = false;
+    if (snap.empty && id.email) {
+      snap = await db.collection("accounts").where("email", "==", id.email).limit(1).get();
+      if (snap.empty) snap = await db.collection("accounts").where("username", "==", id.email).limit(1).get();
+      if (!snap.empty) linkedByEmail = true;
+    }
+    if (!snap.empty) {
+      const doc = snap.docs[0], acct = doc.data();
+      if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) return { success: false, message: "帳號鎖定中，請稍後再試" };
+      const sessionToken = generateSessionToken();
+      const upd = { loginFails: 0, lockedUntil: "", sessionToken };
+      if (!acct.lineUserId) { upd.lineUserId = id.lineUserId; upd.lineDisplayName = id.name; }
+      await doc.ref.update(upd);
+      await auditLog(acct.username, linkedByEmail ? "LINE 登入(自動綁定)" : "LINE 登入", "", id.email || id.lineUserId);
+      return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName || acct.username, sessionToken };
+    }
+    // Auto-create
+    const username = id.email || ("line_" + id.lineUserId.slice(-12));
+    const sessionToken = generateSessionToken();
+    await db.collection("accounts").add({
+      username, passwordHash: "", role: "competition", displayName: id.name || "LINE 使用者",
+      email: id.email || "", emailVerified: !!id.email, lineUserId: id.lineUserId, lineDisplayName: id.name || "",
+      createdAt: fmtNow(), loginFails: 0, lockedUntil: "", sessionToken
+    });
+    await auditLog(username, "LINE 註冊", "", id.email || id.lineUserId);
+    return { success: true, username, role: "competition", displayName: id.name || "LINE 使用者", sessionToken, isNew: true };
+  } catch (e) {
+    return { success: false, message: "LINE 登入失敗：" + e.message };
+  }
+});
+
+// Bind a LINE identity to the CURRENTLY LOGGED-IN account.
+exports.linkLineAccount = authCallable(["system", "competition"], async (data, request) => {
+  try {
+    const id = await lineExchangeAndVerify(data.code, data.redirectUri);
+    const exist = await db.collection("accounts").where("lineUserId", "==", id.lineUserId).limit(1).get();
+    if (!exist.empty && exist.docs[0].data().username !== request.authUser.username) {
+      return { success: false, message: "此 LINE 帳號已綁定到其他帳號" };
+    }
+    const snap = await db.collection("accounts").where("username", "==", request.authUser.username).limit(1).get();
+    if (snap.empty) return { success: false, message: "帳號不存在" };
+    await snap.docs[0].ref.update({ lineUserId: id.lineUserId, lineDisplayName: id.name || "" });
+    await auditLog(request.authUser.username, "綁定 LINE", "", id.email || id.lineUserId);
+    return { success: true, lineDisplayName: id.name || "" };
+  } catch (e) {
+    return { success: false, message: "LINE 綁定失敗：" + e.message };
+  }
+});
+
 // ===== TOTP 2FA — login step 2 + enrollment management =====
 // Step 2 of password login when 2FA is on: re-check password + the 6-digit code.
 exports.loginVerifyTotp = callable(async (data) => {

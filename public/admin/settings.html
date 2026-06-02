@@ -192,9 +192,9 @@
               <div class="toggle-row">
                 <div class="body" style="display:flex;align-items:center;gap:10px">
                   <svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0"><path fill="#06C755" d="M24 10.3C24 4.6 18.6 0 12 0S0 4.6 0 10.3c0 5.1 4.3 9.4 10 10.2.4.1.9.3 1.1.6.1.3.1.7.1 1l-.2 1.1c-.1.3-.3 1.3 1.1.7s7.5-4.4 10.2-7.6c1.9-2 2.6-4.1 2.6-6z"/></svg>
-                  <div><h6>LINE 帳號</h6><p id="lineLinkState">即將推出</p></div>
+                  <div><h6>LINE 帳號</h6><p id="lineLinkState">查詢狀態中⋯</p></div>
                 </div>
-                <button class="btn btn-ghost btn-sm" id="lineLinkBtn" disabled style="opacity:.5">即將推出</button>
+                <button class="btn btn-ghost btn-sm" id="lineLinkBtn" style="display:none">綁定</button>
               </div>
             </div>
           </div>
@@ -482,6 +482,19 @@
         gBtn.style.color = ''; gBtn.style.borderColor = '';
         gBtn.dataset.act = 'link';
       }
+      var lnState = document.getElementById('lineLinkState');
+      var lnBtn = document.getElementById('lineLinkBtn');
+      if (ln.linked) {
+        lnState.textContent = '✓ 已綁定' + (ln.name ? '：' + ln.name : '');
+        lnBtn.style.display = ''; lnBtn.textContent = '解除綁定';
+        lnBtn.style.color = 'var(--err-700)'; lnBtn.style.borderColor = 'var(--err-500)';
+        lnBtn.dataset.act = 'unlink';
+      } else {
+        lnState.textContent = '尚未綁定 — 綁定後可用 LINE 登入此帳號';
+        lnBtn.style.display = ''; lnBtn.textContent = '綁定';
+        lnBtn.style.color = ''; lnBtn.style.borderColor = '';
+        lnBtn.dataset.act = 'link';
+      }
     }).withFailureHandler(function () {
       document.getElementById('googleLinkState').textContent = '無法查詢狀態';
     }).getLinkedProviders();
@@ -517,6 +530,36 @@
       uiAlert((e && e.message) || 'Google 綁定失敗');
     });
   });
+  // LINE link/unlink (OAuth2 redirect for link)
+  document.getElementById('lineLinkBtn').addEventListener('click', function () {
+    var btn = this;
+    if (btn.dataset.act === 'unlink') {
+      uiConfirm('確定要解除 LINE 綁定嗎？解除後將無法用 LINE 登入此帳號。', { title: '解除綁定', okText: '解除', danger: true }).then(function (ok) {
+        if (!ok) return;
+        google.script.run.withSuccessHandler(function (res) {
+          if (res && res.success) { uiToast('已解除 LINE 綁定'); loadLinkedProviders(); }
+          else uiAlert((res && res.message) || '解除失敗');
+        }).withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); }).unlinkProvider('line');
+      });
+      return;
+    }
+    // Link: redirect out to LINE; the callback page calls linkLineAccount and returns here.
+    var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try {
+      sessionStorage.setItem('line_oauth_state', state);
+      sessionStorage.setItem('line_oauth_mode', 'link');
+      sessionStorage.setItem('line_oauth_next', '/admin/settings.html');
+    } catch (e) {}
+    location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code' +
+      '&client_id=2010261408' +
+      '&redirect_uri=' + encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') +
+      '&state=' + encodeURIComponent(state) +
+      '&scope=' + encodeURIComponent('openid profile email');
+  });
+  // Toast after returning from a successful LINE bind
+  if (new URLSearchParams(location.search).get('linked') === 'line') {
+    setTimeout(function () { uiToast('✓ 已綁定 LINE 帳號'); }, 300);
+  }
   loadLinkedProviders();
 
   function loadSessions() {

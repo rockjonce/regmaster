@@ -76,6 +76,8 @@
     linkGoogleAccount:["idToken"],
     getLinkedProviders:[],
     unlinkProvider:["provider"],
+    lineLoginCallback:["code","redirectUri"],
+    linkLineAccount:["code","redirectUri"],
     loginVerifyTotp:["username","password","code"],
     getTotpStatus:[],
     generateTotpSecret:[],
