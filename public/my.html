@@ -214,6 +214,7 @@
       .withSuccessHandler(function (res) {
         btn.disabled = false; btn.textContent = oldText;
         if (res && res.success) {
+          PWD_BY_TEAM = {};   // Email/電話查詢屬弱驗證 → 唯讀（只有活動詳情可點）
           ALL = res.registrations || [];
           render();
         } else {
@@ -305,13 +306,22 @@
       if (r.category) meta += '<span class="pill">' + escapeHtml(r.category) + '</span>';
       meta += statusPill(r, cls);
 
+      // 完整權限僅限「社群登入（已驗證 Email）」查得的報名；Email/電話查詢為唯讀。
+      var full = !!PWD_BY_TEAM[r.teamId];
+      var dis = ' disabled title="請用 Google／LINE 登入以管理此報名" style="opacity:.45;cursor:not-allowed"';
       var actions = '<a class="btn btn-ghost" href="/events/detail.html?id=' + encodeURIComponent(r.compId) + '">活動詳情</a>';
       if (cls === 'unpaid') {
-        actions += '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>';
+        actions += full
+          ? '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>'
+          : '<button class="btn btn-primary"' + dis + '>前往付款 →</button>';
       }
       if (r.status !== '已取消') {
-        actions += '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">修改報名</button>';
-        actions += '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">申請退費</button>';
+        actions += full
+          ? '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">修改報名</button>'
+          : '<button class="btn btn-ghost"' + dis + '>修改報名</button>';
+        actions += full
+          ? '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">申請退費</button>'
+          : '<button class="btn btn-ghost"' + dis + '>申請退費</button>';
       }
       return '<div class="reg-card">' +
         date +

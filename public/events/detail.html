@@ -878,6 +878,18 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       '</div>';
     v.querySelector('#mRefund').addEventListener('click', function () { renderRefund(v.querySelector('#mRefundBox'), teamId, pwd); });
     var bmsg = v.querySelector('#mBindMsg');
+    function markBound(which) {
+      var b = v.querySelector(which === 'google' ? '#mBindG' : '#mBindL');
+      if (!b) return; b.textContent = '✓ 已綁定 ' + (which === 'google' ? 'Google' : 'LINE'); b.disabled = true; b.style.opacity = '.55'; b.dataset.bound = '1';
+    }
+    // #6 已綁定狀態：依此報名成員 Email 查詢，已綁定者顯示「已綁定」、不需再做
+    (function () {
+      var emails = mem.map(function (m) { return m.email; }).filter(Boolean);
+      if (!emails.length) return;
+      google.script.run.withSuccessHandler(function (st) {
+        st = st || {}; if (st.google) markBound('google'); if (st.line) markBound('line');
+      }).withFailureHandler(function () {}).getRegistrantStatus(emails, '');
+    })();
     v.querySelector('#mBindG').addEventListener('click', function () {
       if (typeof firebase === 'undefined' || !firebase.auth) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = 'Google 元件未載入，請重新整理'; return; }
       bmsg.style.color = 'var(--ink-3)'; bmsg.textContent = 'Google 授權中⋯';
@@ -885,7 +897,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
         google.script.run.withSuccessHandler(function (res) {
           try { firebase.auth().signOut(); } catch (e) {}
-          if (res && res.success) { bmsg.style.color = 'var(--ok-700,#047857)'; bmsg.textContent = '✓ 已綁定 Google（' + (res.name || '') + '）'; }
+          if (res && res.success) { bmsg.style.color = 'var(--ok-700,#047857)'; bmsg.textContent = '✓ 已綁定 Google（' + (res.email || '') + '），日後可用 Google 登入查詢全部報名'; markBound('google'); }
           else { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (res && res.message) || '綁定失敗'; }
         }).withFailureHandler(function (e) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || '綁定失敗'; }).bindRegistrantSocial(compId, teamId, pwd, 'google', idToken);
       }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || 'Google 綁定失敗'; } });

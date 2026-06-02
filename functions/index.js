@@ -6764,59 +6764,118 @@ exports.listMyRegistrationsByEmail = callable(async (data) => {
   return { success: true, registrations: regs };
 });
 
-// ===== 報名者社群綁定（報名後在管理頁綁定，以便日後免輸入編號密碼）=====
-async function verifySocial(provider, token) {
+// ===== 報名者身分：以「社群帳號已驗證的 Email」為識別 =====
+// 社群登入 → 該 Email → 名下所有報名（完整權限）。Email/電話手動查詢 → 唯讀。
+// registrants/{emailLower} 記錄綁定狀態，供「已綁定」顯示與系統管理員「報名帳號」分頁。
+async function verifySocialIdentity(provider, token) {
   if (provider === "google") {
     const dec = await admin.auth().verifyIdToken(token);
-    return { field: "registrantGoogleSub", nameField: "registrantGoogleName", sub: dec.uid, name: dec.name || dec.email || "" };
+    if (dec.email_verified === false) throw new Error("此 Google 帳號 Email 尚未驗證");
+    return { provider, sub: dec.uid, name: dec.name || "", email: (dec.email || "").toLowerCase().trim() };
   }
   if (provider === "line") {
     const id = await lineExchangeAndVerify(token);
-    return { field: "registrantLineId", nameField: "registrantLineName", sub: id.lineUserId, name: id.name || "" };
+    return { provider, sub: id.lineUserId, name: id.name || "", email: (id.email || "").toLowerCase().trim() };
   }
-  throw new Error("未知的綁定方式");
+  throw new Error("未知的社群登入方式");
 }
-// Bind a verified social identity to a registration (proven by team password).
+async function upsertRegistrant(s) {
+  if (!s.email) return;
+  const upd = { email: s.email, updatedAt: fmtNow() };
+  if (s.provider === "google") { upd.googleSub = s.sub; upd.googleName = s.name; }
+  if (s.provider === "line") { upd.lineUserId = s.sub; upd.lineName = s.name; }
+  await db.collection("registrants").doc(s.email).set(upd, { merge: true });
+}
+// All registrations whose member email matches. includePassword for verified (social) callers.
+async function regsByEmail(email, includePassword) {
+  const e = String(email || "").trim();
+  if (!e) return [];
+  const sn = await db.collection("members").where("email", "==", e).get();
+  const teamIds = new Set();
+  sn.docs.forEach(d => { const m = d.data(); if (m.teamId) teamIds.add(m.teamId); });
+  const regs = [];
+  for (const tid of teamIds) {
+    const tDoc = await db.collection("teams").doc(tid).get();
+    if (!tDoc.exists) continue;
+    const t = tDoc.data();
+    if (t.status === "已取消") continue;
+    const cDoc = await db.collection("competitions").doc(t.compId).get();
+    if (!cDoc.exists) continue;
+    const c = cDoc.data(); const cfg = c.config || {};
+    const row = {
+      teamId: t.teamId || tid, compId: t.compId,
+      competitionName: cfg.competitionName || c.name || "", competitionDate: cfg.competitionDate || "",
+      deadline: c.deadline || "", status: t.status || "", paymentStatus: t.paymentStatus || "",
+      group: t.group || "", teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
+      registrationTime: t.registrationTime || "", category: cfg.category || "", isOpen: c.isOpen === true,
+      requiresPayment: !!(cfg.registrationFee && cfg.registrationFee > 0)
+    };
+    if (includePassword) row.password = t.password || "";
+    regs.push(row);
+  }
+  regs.sort((a, b) => (b.registrationTime || "").localeCompare(a.registrationTime || ""));
+  return regs;
+}
+// Explicit bind from a team's manage view (proven by team password); records the social↔email link.
 exports.bindRegistrantSocial = callable(async (data) => {
   const { compId, teamId, password, provider, token } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   if (tDoc.data().password !== password) return { success: false, message: "密碼錯誤" };
   let s;
-  try { s = await verifySocial(provider, token); }
+  try { s = await verifySocialIdentity(provider, token); }
   catch (e) { return { success: false, message: (provider === "line" ? "LINE" : "Google") + " 驗證失敗：" + e.message }; }
-  const upd = {}; upd[s.field] = s.sub; upd[s.nameField] = s.name;
-  await tDoc.ref.update(upd);
-  return { success: true, provider, name: s.name };
+  if (!s.email) return { success: false, message: provider === "line" ? "LINE 未提供 Email（請確認已開啟 Email 權限）" : "無法取得 Google Email" };
+  await upsertRegistrant(s);
+  return { success: true, provider, email: s.email };
 });
-// List all the registrant's registrations by a verified social identity.
+// Social login: verified Email → all registrations under it (full access). Also records the binding.
 exports.listMyRegistrationsBySocial = callable(async (data) => {
   const { provider, token } = data;
   let s;
-  try { s = await verifySocial(provider, token); }
+  try { s = await verifySocialIdentity(provider, token); }
   catch (e) { return { success: false, message: (provider === "line" ? "LINE" : "Google") + " 驗證失敗：" + e.message }; }
-  const sn = await db.collection("teams").where(s.field, "==", s.sub).get();
-  const regs = [];
-  for (const tDoc of sn.docs) {
-    const t = tDoc.data();
-    if (t.status === "已取消") continue;
-    const cDoc = await db.collection("competitions").doc(t.compId).get();
-    if (!cDoc.exists) continue;
-    const c = cDoc.data(); const cfg = c.config || {};
-    regs.push({
-      teamId: t.teamId || tDoc.id, compId: t.compId,
-      competitionName: cfg.competitionName || c.name || "", competitionDate: cfg.competitionDate || "",
-      deadline: c.deadline || "", status: t.status || "", paymentStatus: t.paymentStatus || "",
-      group: t.group || "", teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
-      registrationTime: t.registrationTime || "", category: cfg.category || "", isOpen: c.isOpen === true,
-      requiresPayment: !!(cfg.registrationFee && cfg.registrationFee > 0),
-      // Caller proved ownership via verified social identity → return own password so
-      // edit/refund flows work without re-entry (password is the registrant's own).
-      password: t.password || ""
-    });
+  if (!s.email) return { success: false, message: "無法取得此社群帳號的 Email，請改用報名編號+密碼登入。" };
+  await upsertRegistrant(s);
+  const regs = await regsByEmail(s.email, true);
+  return { success: true, email: s.email, registrations: regs };
+});
+// Bind status for a set of emails (for 已綁定 display in the team manage view).
+exports.getRegistrantStatus = callable(async (data) => {
+  const emails = Array.isArray(data.emails) ? data.emails : (data.email ? [data.email] : []);
+  let google = false, line = false, boundEmail = "";
+  for (const em of emails) {
+    const e = String(em || "").trim().toLowerCase(); if (!e) continue;
+    const d = await db.collection("registrants").doc(e).get();
+    if (d.exists) { const r = d.data(); if (r.googleSub) google = true; if (r.lineUserId) line = true; if (r.googleSub || r.lineUserId) boundEmail = e; }
   }
-  regs.sort((a, b) => (b.registrationTime || "").localeCompare(a.registrationTime || ""));
-  return { success: true, registrations: regs };
+  return { google, line, boundEmail };
+});
+// System admin: 報名帳號 — collect all registrant emails + bound status.
+exports.listRegistrants = authCallable(["system"], async () => {
+  const memSnap = await db.collection("members").get();
+  const byEmail = {};
+  memSnap.docs.forEach(d => {
+    const m = d.data(); const e = String(m.email || "").trim().toLowerCase(); if (!e) return;
+    if (!byEmail[e]) byEmail[e] = { email: e, regCount: 0, names: new Set() };
+    byEmail[e].regCount++; if (m.chineseName) byEmail[e].names.add(m.chineseName);
+  });
+  const regSnap = await db.collection("registrants").get();
+  const bound = {}; regSnap.docs.forEach(d => { bound[d.id] = d.data(); });
+  const list = Object.keys(byEmail).map(e => {
+    const b = bound[e] || {};
+    return { email: e, regCount: byEmail[e].regCount, name: Array.from(byEmail[e].names).slice(0, 3).join("、"), google: !!b.googleSub, line: !!b.lineUserId };
+  });
+  Object.keys(bound).forEach(e => { if (!byEmail[e]) list.push({ email: e, regCount: 0, name: "", google: !!bound[e].googleSub, line: !!bound[e].lineUserId }); });
+  list.sort((a, b) => b.regCount - a.regCount);
+  return { registrants: list };
+});
+exports.deleteRegistrantBinding = authCallable(["system"], async (data) => {
+  const e = String(data.email || "").trim().toLowerCase();
+  if (!e) return { success: false, message: "缺少 email" };
+  await db.collection("registrants").doc(e).delete().catch(() => {});
+  await auditLog("system", "解除報名帳號綁定", e, "");
+  return { success: true };
 });
 
 // ===== Onboarding state: get + save =====
