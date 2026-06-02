@@ -1861,6 +1861,37 @@ exports.loginTeam = callable(async (data) => {
   return { success: true, team: safeTeam, students, teachers };
 });
 
+// 報名者忘記密碼：將「報名編號 + 密碼」重新寄到報名時填的 Email（不在畫面顯示）。
+exports.recoverTeamPassword = callable(async (data) => {
+  const { compId, email } = data;
+  const e = String(email || "").trim();
+  const generic = { success: true, message: "若該 Email 有報名此活動，我們已將報名編號與密碼寄出，請查收信箱。" };
+  if (!compId || !e) return generic;
+  // Find this activity's members with that email (bounded per competition).
+  const memSnap = await db.collection("members").where("compId", "==", compId).get();
+  const teamIds = new Set();
+  memSnap.docs.forEach(d => { const m = d.data(); if (m.email && String(m.email).trim().toLowerCase() === e.toLowerCase()) teamIds.add(m.teamId); });
+  if (!teamIds.size) return generic;
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
+  const rows = [];
+  for (const tid of teamIds) {
+    const tDoc = await db.collection("teams").doc(tid).get();
+    if (!tDoc.exists) continue;
+    const t = tDoc.data();
+    if (t.status === "已取消") continue;
+    rows.push("報名編號：<b>" + escMail(t.teamId || tid) + "</b>　密碼：<b>" + escMail(t.password || "") + "</b>" + (t.teamNameCN ? "（" + escMail(t.teamNameCN) + "）" : ""));
+  }
+  if (rows.length) {
+    const html = emailWrap("您的報名編號與密碼", `
+      <p>您在活動「<b>${escMail(compName)}</b>」的報名登入資訊如下：</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:2">${rows.join("<br>")}</div>
+      <p style="color:#64748b;font-size:13px">請至活動頁「查詢已報名」以報名編號 + 密碼登入，即可查詢、修改報名或申請退費。</p>`);
+    await queueMail(e, "[RegMaster] 您的報名編號與密碼 — " + compName, html);
+  }
+  return generic;
+});
+
 // ===== 退款機制（主辦方全責；平台不經手金流，只做流程/試算/註記/釋名額）=====
 // 法定下限：主辦方設定的退費% 不得低於下列下限（可更優待，不可更苛）。
 const REFUND_TEMPLATES = {

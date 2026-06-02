@@ -780,12 +780,32 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
           '<input id="mPwd" type="password" placeholder="密碼" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
           '<button id="mGo" class="btn btn-primary btn-block">登入</button>' +
           '<div id="mErr" style="font:500 12.5px/1.5 var(--f-tc);color:var(--err-700)"></div>' +
+          '<button id="mForgot" style="background:none;border:0;color:var(--acc);font:500 12.5px/1.4 var(--f-tc);cursor:pointer;text-align:left;padding:0">忘記密碼？</button>' +
+          '<div id="mForgotBox"></div>' +
         '</div>' +
         '<div id="mView"></div>' +
       '</div>';
+    // 不在點背景時關閉，避免操作中誤觸跳掉；只用「×」關閉
     function close() { if (ov.parentNode) document.body.removeChild(ov); }
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ov.querySelector('#mX').addEventListener('click', close);
+    ov.querySelector('#mForgot').addEventListener('click', function () {
+      var fb = ov.querySelector('#mForgotBox');
+      if (fb.dataset.open) { fb.dataset.open = ''; fb.innerHTML = ''; return; }
+      fb.dataset.open = '1';
+      fb.innerHTML = '<div style="margin-top:8px;padding:12px;border:1px dashed var(--line);border-radius:9px">' +
+        '<p style="font:400 12px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:8px">輸入報名時填寫的 Email，系統會把報名編號與密碼重新寄給您。</p>' +
+        '<input id="fgEmail" type="email" placeholder="報名時的 Email" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
+        '<button id="fgGo" class="btn btn-ghost btn-block" style="margin-top:8px">寄出登入資訊</button>' +
+        '<div id="fgMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div></div>';
+      fb.querySelector('#fgGo').addEventListener('click', function () {
+        var em = fb.querySelector('#fgEmail').value.trim(), msg = fb.querySelector('#fgMsg');
+        if (!em) { msg.style.color = 'var(--err-700)'; msg.textContent = '請輸入 Email'; return; }
+        this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = '寄送中⋯';
+        google.script.run.withSuccessHandler(function (res) {
+          msg.style.color = 'var(--ok-700,#047857)'; msg.textContent = (res && res.message) || '已寄出，請查收信箱。';
+        }).withFailureHandler(function (e) { msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || '寄送失敗'; }).recoverTeamPassword(compId, em);
+      });
+    });
     var tEl = ov.querySelector('#mTeam'), pEl = ov.querySelector('#mPwd'), err = ov.querySelector('#mErr');
     // Prefill team id from ?team= if present
     var qTeam = qs.get('team'); if (qTeam) tEl.value = qTeam;
