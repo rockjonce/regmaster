@@ -269,10 +269,11 @@ exports.loginAccount = callable(async (data) => {
   return { success: false, message: "密碼錯誤（剩" + (5 - fails) + "次）" };
 });
 
-// V3: Google Sign-In — exchange a Firebase ID token (from a Google popup) for
-// an app session. SECURITY: only PRE-PROVISIONED accounts (matched by email)
-// may log in; we never auto-create accounts from a Google identity. This keeps
-// the admin surface closed while letting existing admins skip password entry.
+// V3.1: Google Sign-In — exchange a Firebase ID token (from a Google popup) for
+// an app session. Resolution order:
+//   1) account previously linked by googleSub  → log in
+//   2) account whose email matches              → auto-link this Google identity + log in
+//   3) no account                               → auto-create a new 主辦方 (competition) account
 exports.loginWithGoogle = callable(async (data) => {
   const { idToken } = data;
   if (!idToken) return { success: false, message: "缺少 Google 登入憑證" };
@@ -282,25 +283,98 @@ exports.loginWithGoogle = callable(async (data) => {
   } catch (e) {
     return { success: false, message: "Google 登入驗證失敗，請重試" };
   }
-  const email = (decoded.email || "").toLowerCase().trim();
-  if (!email) return { success: false, message: "無法取得 Google 帳號 Email" };
   if (decoded.email_verified === false) return { success: false, message: "此 Google 帳號的 Email 尚未驗證" };
+  const email = (decoded.email || "").toLowerCase().trim();
+  const googleSub = decoded.uid;   // stable Firebase uid for this Google identity
+  const displayName = decoded.name || (email ? email.split("@")[0] : "使用者");
 
-  // Match an existing account by email, then fall back to username == email
-  let snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
-  if (snap.empty) snap = await db.collection("accounts").where("username", "==", email).limit(1).get();
-  if (snap.empty) {
-    return { success: false, message: "此 Google 帳號（" + email + "）尚未開通，請聯絡系統管理員" };
+  // 1) Previously linked by googleSub
+  let snap = await db.collection("accounts").where("googleSub", "==", googleSub).limit(1).get();
+  // 2) Else match by email and auto-link
+  let linkedByEmail = false;
+  if (snap.empty && email) {
+    snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
+    if (snap.empty) snap = await db.collection("accounts").where("username", "==", email).limit(1).get();
+    if (!snap.empty) linkedByEmail = true;
   }
-  const doc = snap.docs[0];
-  const acct = doc.data();
-  if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) {
-    return { success: false, message: "帳號鎖定中，請稍後再試" };
+  if (!snap.empty) {
+    const doc = snap.docs[0];
+    const acct = doc.data();
+    if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) {
+      return { success: false, message: "帳號鎖定中，請稍後再試" };
+    }
+    const sessionToken = generateSessionToken();
+    const upd = { loginFails: 0, lockedUntil: "", sessionToken };
+    if (!acct.googleSub) { upd.googleSub = googleSub; upd.googleEmail = email; }
+    await doc.ref.update(upd);
+    await auditLog(acct.username, linkedByEmail ? "Google 登入(自動綁定)" : "Google 登入", "", email);
+    return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName || acct.username, sessionToken };
   }
+
+  // 3) No matching account — auto-create a 主辦方 (Free) account from the Google identity.
+  if (!email) return { success: false, message: "無法取得 Google 帳號 Email" };
+  const username = email;   // email is unique → use it as the login id
   const sessionToken = generateSessionToken();
-  await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
-  await auditLog(acct.username, "Google 登入", "", email);
-  return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName || acct.username, sessionToken };
+  await db.collection("accounts").add({
+    username, passwordHash: "", role: "competition", displayName,
+    email, emailVerified: true, googleSub, googleEmail: email,
+    createdAt: fmtNow(), loginFails: 0, lockedUntil: "", sessionToken
+  });
+  await auditLog(username, "Google 註冊", "", email);
+  return { success: true, username, role: "competition", displayName, sessionToken, isNew: true };
+});
+
+// ===== Social account linking (settings → 安全與登入) =====
+// Bind a Google identity to the CURRENTLY LOGGED-IN account.
+exports.linkGoogleAccount = authCallable(["system", "competition"], async (data, request) => {
+  const { idToken } = data;
+  if (!idToken) return { success: false, message: "缺少 Google 憑證" };
+  let decoded;
+  try { decoded = await admin.auth().verifyIdToken(idToken); }
+  catch (e) { return { success: false, message: "Google 驗證失敗，請重試" }; }
+  const email = (decoded.email || "").toLowerCase().trim();
+  const googleSub = decoded.uid;
+  // Reject if this Google identity is already linked to a different account.
+  const exist = await db.collection("accounts").where("googleSub", "==", googleSub).limit(1).get();
+  if (!exist.empty && exist.docs[0].data().username !== request.authUser.username) {
+    return { success: false, message: "此 Google 帳號已綁定到其他帳號" };
+  }
+  const snap = await db.collection("accounts").where("username", "==", request.authUser.username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  await snap.docs[0].ref.update({ googleSub, googleEmail: email });
+  await auditLog(request.authUser.username, "綁定 Google", "", email);
+  return { success: true, googleEmail: email };
+});
+
+// Return which login methods are linked to the current account.
+exports.getLinkedProviders = authCallable(["system", "competition"], async (data, request) => {
+  const a = request.authUser;
+  return {
+    hasPassword: !!a.passwordHash,
+    google: { linked: !!a.googleSub, email: a.googleEmail || "" },
+    line: { linked: !!a.lineUserId, name: a.lineDisplayName || "" }
+  };
+});
+
+// Unlink a social provider. Guard: never remove the account's ONLY login method.
+exports.unlinkProvider = authCallable(["system", "competition"], async (data, request) => {
+  const provider = data.provider;
+  const snap = await db.collection("accounts").where("username", "==", request.authUser.username).limit(1).get();
+  if (snap.empty) return { success: false, message: "帳號不存在" };
+  const acct = snap.docs[0].data();
+  const hasPassword = !!acct.passwordHash;
+  const hasGoogle = !!acct.googleSub, hasLine = !!acct.lineUserId;
+  const remaining = (hasPassword ? 1 : 0) +
+    (provider !== "google" && hasGoogle ? 1 : 0) +
+    (provider !== "line" && hasLine ? 1 : 0);
+  if (remaining < 1) return { success: false, message: "這是您唯一的登入方式，請先設定密碼再解除綁定" };
+  const upd = {};
+  if (provider === "google") { upd.googleSub = FieldValue.delete(); upd.googleEmail = FieldValue.delete(); }
+  else if (provider === "line") { upd.lineUserId = FieldValue.delete(); upd.lineDisplayName = FieldValue.delete(); }
+  else return { success: false, message: "未知的登入方式" };
+  await snap.docs[0].ref.update(upd);
+  await auditLog(request.authUser.username, "解除綁定 " + provider, "", "");
+  return { success: true };
 });
 
 // ===== TOTP 2FA — login step 2 + enrollment management =====

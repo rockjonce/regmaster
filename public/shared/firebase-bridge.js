@@ -73,6 +73,9 @@
   var _argMap = {
     loginAccount:["username","password","_clientInfo"],
     loginWithGoogle:["idToken"],
+    linkGoogleAccount:["idToken"],
+    getLinkedProviders:[],
+    unlinkProvider:["provider"],
     loginVerifyTotp:["username","password","code"],
     getTotpStatus:[],
     generateTotpSecret:[],
