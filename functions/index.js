@@ -1915,6 +1915,25 @@ function computeRefund(comp, team) {
   return out;
 }
 
+// ---- Refund email helpers ----
+function escMail(s) { return String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]); }
+async function refundTeamEmails(teamId) {
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const set = new Set();
+  memSnap.docs.forEach(d => { const e = d.data().email; if (e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) set.add(e); });
+  return [...set];
+}
+async function organiserEmail(creator) {
+  if (!creator) return "";
+  const a = await db.collection("accounts").where("username", "==", creator).limit(1).get();
+  return a.empty ? "" : (a.docs[0].data().email || "");
+}
+async function queueMail(to, subject, html, text) {
+  const arr = Array.isArray(to) ? to.filter(Boolean) : (to ? [to] : []);
+  if (!arr.length) return;
+  await db.collection("mail").add({ to: arr, message: { subject, html, text: text || subject } });
+}
+
 // Templates + floors for the organiser policy editor.
 exports.getRefundTemplates = callable(async () => {
   return { templates: Object.keys(REFUND_TEMPLATES).map(k => ({ key: k, label: REFUND_TEMPLATES[k].label, floors: REFUND_TEMPLATES[k].floors, suggest: REFUND_TEMPLATES[k].suggest })) };
@@ -1960,6 +1979,22 @@ exports.requestRefund = callable(async (data) => {
   });
   await db.collection("teams").doc(teamId).update({ refundStatus: "requested", refundReqId: reqId, statusBeforeRefund: team.status || "正取", status: "退費申請中" });
   await auditLog("", "申請退費", teamId, "退" + calc.pct + "% / NT$" + calc.calcRefund);
+  // Notify organiser (new refund request to review)
+  try {
+    const compName = (comp.config && comp.config.competitionName) || comp.name || "活動";
+    const oEmail = await organiserEmail(comp.creator);
+    const html = emailWrap("收到新的退費申請", `
+      <p>活動「<b>${escMail(compName)}</b>」收到一筆退費申請，請至「報名管理 → 退費申請」審核。</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
+        <b>隊伍：</b>${escMail(team.teamNameCN || teamId)}（${escMail(teamId)}）<br>
+        <b>距活動：</b>${calc.daysBefore} 天<br>
+        <b>政策應退：</b>${calc.pct}% ＝ NT$${calc.calcRefund}<br>
+        <b>退款帳戶：</b>${escMail(refundAccount || "（未填）")}<br>
+        <b>原因：</b>${escMail(reason || "（未填）")}
+      </div>
+      <p style="color:#64748b;font-size:13px">提醒：退款由您自行處理，完成後請於後台「註記已退款」以釋出名額。平台不經手金流。</p>`);
+    await queueMail(oEmail, "[RegMaster] 退費申請通知 — " + compName, html);
+  } catch (e) { /* best-effort */ }
   return { success: true, reqId, pct: calc.pct, calcRefund: calc.calcRefund };
 });
 
@@ -1993,16 +2028,33 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
   const r = rDoc.data();
   if (r.status !== "requested") return { success: false, message: "此申請已處理" };
   const tDoc = await db.collection("teams").doc(r.teamId).get();
+  const compDoc = await db.collection("competitions").doc(r.compId).get();
+  const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
   if (action === "reject") {
     await rRef.update({ status: "rejected", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
     if (tDoc.exists) { const t = tDoc.data(); await tDoc.ref.update({ refundStatus: FieldValue.delete(), status: t.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() }); }
     await auditLog(request.authUser.username, "駁回退費", r.teamId, String(note || ""));
+    try {
+      const html = emailWrap("退費申請未通過", `
+        <p>您在活動「<b>${escMail(compName)}</b>」的退費申請（隊伍 ${escMail(r.teamNameCN || r.teamId)}）未通過審核。</p>
+        ${note ? `<p><b>主辦方說明：</b>${escMail(note)}</p>` : ""}
+        <p>您的報名仍然有效。如有疑問請直接聯繫主辦方。</p>`);
+      await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費申請結果 — " + compName, html);
+    } catch (e) {}
     return { success: true };
   }
   if (action === "approve") {
     await rRef.update({ status: "approved", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
     if (tDoc.exists) await tDoc.ref.update({ refundStatus: "approved" });
     await auditLog(request.authUser.username, "核准退費", r.teamId, "應退NT$" + r.calcRefund);
+    try {
+      const html = emailWrap("退費申請已核准", `
+        <p>您在活動「<b>${escMail(compName)}</b>」的退費申請（隊伍 ${escMail(r.teamNameCN || r.teamId)}）已核准。</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
+          <b>應退金額：</b>${r.policyPct}% ＝ NT$${r.calcRefund}</div>
+        <p>主辦方將依您提供的退款帳戶辦理退款，完成後您會再收到一封通知。</p>`);
+      await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費申請已核准 — " + compName, html);
+    } catch (e) {}
     return { success: true };
   }
   return { success: false, message: "未知動作" };
@@ -2026,6 +2078,16 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
     await db.collection("competitions").doc(r.compId).update({ teamCount: FieldValue.increment(-1) });
   }
   await auditLog(request.authUser.username, "註記已退款", r.teamId, "實退NT$" + actual);
+  try {
+    const compDoc = await db.collection("competitions").doc(r.compId).get();
+    const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
+    const html = emailWrap("退費已完成", `
+      <p>您在活動「<b>${escMail(compName)}</b>」的退費（隊伍 ${escMail(r.teamNameCN || r.teamId)}）已由主辦方完成處理。</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
+        <b>實際退款金額：</b>NT$${actual}${refundMethod ? `<br><b>退款方式：</b>${escMail(refundMethod)}` : ""}</div>
+      <p>您的報名資格已取消、名額已釋出。感謝您的參與，期待下次再見！</p>`);
+    await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費已完成 — " + compName, html);
+  } catch (e) {}
   return { success: true };
 });
 
