@@ -122,7 +122,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
       <div class="card">
         <h3>報名摘要</h3>
         <div class="r-row"><span class="k">活動</span><span class="v" id="cName">—</span></div>
-        <div class="r-row"><span class="k">隊伍編號</span><span class="v" id="cTeamId" style="font-family:var(--f-mono); font-weight:600">—</span></div>
+        <div class="r-row"><span class="k">報名編號</span><span class="v" id="cTeamId" style="font-family:var(--f-mono); font-weight:600">—</span></div>
         <div class="r-row"><span class="k">隊伍名稱</span><span class="v" id="cTeamName">—</span></div>
         <div class="r-row"><span class="k">報名狀態</span><span class="v"><b id="cStatus">—</b></span></div>
         <div class="r-row"><span class="k">付款狀態</span><span class="v"><b id="cPayStatus">—</b></span></div>
@@ -209,7 +209,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
   if (!compId || !teamId) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMsg').textContent = '網址缺少活動或隊伍編號。';
+    document.getElementById('errorMsg').textContent = '網址缺少活動或報名編號。';
     return;
   }
   document.getElementById('crumbDetail').href = '/events/detail.html?id=' + encodeURIComponent(compId);
@@ -253,13 +253,13 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     // The legacy lookupRegistration takes (compId, keyword) where keyword can be teamId
     google.script.run
       .withSuccessHandler(function (res) {
-        if (!res || res.error || !res.team) {
+        if (!res || res.error || !res.found) {
           document.getElementById('loadingState').style.display = 'none';
           document.getElementById('errorState').style.display = 'block';
           document.getElementById('errorMsg').textContent = (res && res.error) || '找不到此筆報名';
           return;
         }
-        render(res.team);
+        render(res);
       })
       .withFailureHandler(function (err) {
         document.getElementById('loadingState').style.display = 'none';
@@ -364,7 +364,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           if (info.accountNumber) lines.push('<b>帳號：</b><span class="copyable" data-copy="' + escapeHtml(info.accountNumber) + '">' + escapeHtml(info.accountNumber) + ' 📋</span>');
           if (info.accountName) lines.push('<b>戶名：</b>' + escapeHtml(info.accountName));
           lines.push('<b>金額：</b>NT$ <span id="manualAmt">' + quoteTotal.toLocaleString() + '</span>');
-          lines.push('<b>備註填寫：</b><span class="copyable" data-copy="' + escapeHtml(team.teamId) + '">' + escapeHtml(team.teamId) + ' 📋</span>（隊伍編號）');
+          lines.push('<b>備註填寫：</b><span class="copyable" data-copy="' + escapeHtml(team.teamId) + '">' + escapeHtml(team.teamId) + ' 📋</span>（報名編號）');
           document.getElementById('bankInfoBox').innerHTML = lines.join('<br>');
           document.querySelectorAll('.copyable').forEach(function (cb) {
             cb.addEventListener('click', function () {

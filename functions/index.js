@@ -1598,7 +1598,7 @@ exports.submitRegistration = callable(async (data) => {
       const bodyHtml = `
         <p style="font-size:16px;line-height:1.6;margin-top:0">您好，您已成功報名 <b>${cfg.competitionName || ''}</b>。</p>
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin:20px 0">
-          <p style="margin:0 0 12px;font-size:15px;color:#64748b">隊伍編號 <span style="display:block;font-size:22px;color:#0A437A;font-weight:900;font-family:monospace;letter-spacing:1px;margin-top:4px">${teamId}</span></p>
+          <p style="margin:0 0 12px;font-size:15px;color:#64748b">報名編號 <span style="display:block;font-size:22px;color:#0A437A;font-weight:900;font-family:monospace;letter-spacing:1px;margin-top:4px">${teamId}</span></p>
           <p style="margin:0 0 12px;font-size:15px;color:#64748b">登入密碼 <span style="display:block;font-size:20px;color:#d97706;font-weight:800;font-family:monospace;letter-spacing:2px;margin-top:4px">${pwd}</span></p>
           <p style="margin:0;font-size:15px;color:#64748b">報名狀態 <span style="display:block;margin-top:6px"><span style="background:#ecfdf5;border:1px solid #10b981;color:#10b981;padding:4px 12px;border-radius:6px;font-weight:bold;font-size:14px">${status}</span></span></p>
         </div>
@@ -1613,9 +1613,9 @@ exports.submitRegistration = callable(async (data) => {
           <td width="10"></td>
           ${calUrl ? `<td style="background-color:#10b981;padding:12px 24px;text-align:center"><a href="${calUrl}" target="_blank" style="color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;font-family:'Segoe UI',Arial,sans-serif">📅 加入行事曆</a></td>` : ''}
         </tr></table>
-        <p style="font-size:14px;color:#ef4444;font-weight:bold;background-color:#fef2f2;padding:12px;margin-bottom:0">⚠️ 請妥善保管您的隊伍編號與密碼，日後登入修改資料需使用此憑證。</p>`;
+        <p style="font-size:14px;color:#ef4444;font-weight:bold;background-color:#fef2f2;padding:12px;margin-bottom:0">⚠️ 請妥善保管您的報名編號與密碼，日後登入修改資料需使用此憑證。</p>`;
       const htmlBody = emailWrap('🎉 報名成功通知', bodyHtml);
-      await db.collection("mail").add({ to: emailList, message: { subject: subject, html: htmlBody, text: `報名成功！您的隊伍編號：${teamId}，密碼：${pwd}` } });
+      await db.collection("mail").add({ to: emailList, message: { subject: subject, html: htmlBody, text: `報名成功！您的報名編號：${teamId}，密碼：${pwd}` } });
     }
   }
   return { success: true, teamId, password: pwd, status };
@@ -2632,9 +2632,9 @@ exports.sendNotificationToTeam = compAuthCallable(async (data, request) => {
   const compName = cDoc.exists ? (cDoc.data().name || "") : "";
 
   // 執行變數替換
-  const fSubj = subject.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, teamId)
+  const fSubj = subject.replace(/{{競賽名稱}}/g, compName).replace(/{{(隊伍編號|報名編號)}}/g, teamId)
     .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
-  const fBody = body.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, teamId)
+  const fBody = body.replace(/{{競賽名稱}}/g, compName).replace(/{{(隊伍編號|報名編號)}}/g, teamId)
     .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
 
   const htmlContent = emailWrap('📨 ' + fSubj, `<div style="font-size:15px;line-height:1.8">${fBody.replace(/\n/g, '<br>')}</div>`,
@@ -2676,9 +2676,9 @@ exports.sendNotificationToAll = compAuthCallable(async (data, request) => {
     if (emails.length === 0) continue;
 
     // 針對每個隊伍執行獨立變數替換
-    const fSubj = subject.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, t.teamId)
+    const fSubj = subject.replace(/{{競賽名稱}}/g, compName).replace(/{{(隊伍編號|報名編號)}}/g, t.teamId)
       .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
-    const fBody = body.replace(/{{競賽名稱}}/g, compName).replace(/{{隊伍編號}}/g, t.teamId)
+    const fBody = body.replace(/{{競賽名稱}}/g, compName).replace(/{{(隊伍編號|報名編號)}}/g, t.teamId)
       .replace(/{{組別}}/g, t.group || "").replace(/{{中文隊名}}/g, t.teamNameCN || "").replace(/{{英文隊名}}/g, t.teamNameEN || "");
 
     const htmlAll = emailWrap('📨 ' + fSubj, `<div style="font-size:15px;line-height:1.8">${fBody.replace(/\n/g, '<br>')}</div>`,
@@ -4022,7 +4022,7 @@ exports.updateTeamStatus = compAuthCallable(async (data, request) => {
       const statusBody = `
         <p style="font-size:16px;line-height:1.6;margin-top:0">您好，您在 <b>${compName}</b> 的隊伍狀態已更新。</p>
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin:20px 0;text-align:center">
-          <p style="margin:0 0 8px;font-size:14px;color:#64748b">隊伍編號</p>
+          <p style="margin:0 0 8px;font-size:14px;color:#64748b">報名編號</p>
           <p style="margin:0 0 16px;font-size:20px;color:#0A437A;font-weight:900;font-family:monospace">${teamId}</p>
           <p style="margin:0 0 8px;font-size:14px;color:#64748b">最新狀態</p>
           <span style="background:#ecfdf5;border:1px solid #10b981;color:#10b981;padding:6px 18px;border-radius:8px;font-weight:bold;font-size:16px">${newStatus}</span>

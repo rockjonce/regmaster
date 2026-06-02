@@ -931,7 +931,7 @@ body { background:var(--bg); }
   function exportBillingSys() {
     if (!BILL_DATA || !(BILL_DATA.orders || []).length) { toast('沒有資料可匯出', 'err'); return; }
     var s = BILL_DATA.summary;
-    var headers = ['活動', '訂單編號', '隊伍編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額', '轉付狀態', '結算編號'];
+    var headers = ['活動', '訂單編號', '報名編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額', '轉付狀態', '結算編號'];
     var rows = BILL_DATA.orders.map(function (o) {
       return [o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net, o.settled ? '已轉付' : '待轉付', o.settlementId || ''];
     });
