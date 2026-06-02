@@ -1097,7 +1097,7 @@
         '<input type="number" min="0" max="100" data-rp="pct" value="' + (t.pct || 0) + '" style="width:80px" data-dirty>' +
         '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">%</span>' +
         '<span data-rp-warn style="font:500 11.5px/1.4 var(--f-tc);color:var(--err-700);margin-left:6px"></span>' +
-        '<button type="button" class="icon-btn danger" data-rp-rm="' + i + '" style="margin-left:auto">刪除</button>' +
+        '<button type="button" class="icon-btn danger" data-rp-rm="' + i + '" title="刪除此級距" style="margin-left:auto;width:30px;height:30px;padding:0;border-radius:8px;font:600 15px/1 var(--f-tc)">✕</button>' +
       '</div>';
     }).join('');
     el.querySelectorAll('[data-rp-rm]').forEach(function (b) { b.addEventListener('click', function () { var arr = readRpTiers(); arr.splice(parseInt(b.dataset.rpRm, 10), 1); renderRpTiers(arr); markDirty(); }); });
@@ -1131,10 +1131,16 @@
       document.getElementById('rp-note').value = (CFG.refundPolicy && CFG.refundPolicy.note) || '';
       sel.addEventListener('change', function () {
         var k = sel.value;
-        document.getElementById('rp-floorHint').textContent = k ? rpFloorHintText(k) : '';
-        // If switching to a template and there are no tiers yet, seed with its suggestion.
-        if (k && !readRpTiers().length && RP_TEMPLATES[k]) renderRpTiers(RP_TEMPLATES[k].suggest.slice());
-        else validateRpRows();
+        if (!k) {
+          // 不啟用退費政策 → 清空所有級距與提示
+          document.getElementById('rp-floorHint').textContent = '';
+          renderRpTiers([]);
+          markDirty();
+          return;
+        }
+        document.getElementById('rp-floorHint').textContent = rpFloorHintText(k);
+        // 切換範本 → 帶入該範本的建議級距
+        renderRpTiers((RP_TEMPLATES[k] && RP_TEMPLATES[k].suggest || []).slice());
         markDirty();
       });
     }).withFailureHandler(function () {}).getRefundTemplates();
