@@ -1381,7 +1381,8 @@ exports.getRegistrationBundle = callable(async (data) => {
     themeColors: cfg.themeColors || "",
     hostName: hostName,
     createdBy: createdBy,
-    eventAiEnabled: eventAiEnabled
+    eventAiEnabled: eventAiEnabled,
+    teamCount: r.teamCount || 0
   };
 });
 

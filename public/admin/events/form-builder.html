@@ -362,6 +362,19 @@ body { background:var(--bg); overflow:hidden; }
   var ORIGINAL_JSON = '';
   var SELECTED = null;  // { secId, fieldId }
   var LEGACY_CFG = null;
+  // 混合鎖：已有人報名後，凍結結構性變更（刪欄位/改型別/增刪區塊），仍允許安全編輯
+  var LOCKED = false, ORIG_FIELD_IDS = {}, ORIG_SECTION_IDS = {};
+  function showLockBanner(n) {
+    if (document.getElementById('lockBanner')) return;
+    var c = document.getElementById('canvas') || document.getElementById('builder');
+    if (!c) return;
+    var b = document.createElement('div');
+    b.id = 'lockBanner';
+    b.style.cssText = 'background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin-bottom:14px;font:400 12.5px/1.6 var(--f-tc);color:#92400e';
+    b.innerHTML = '🔒 <b>此活動已有 ' + n + ' 筆報名</b>，為維持資料一致性，已鎖定結構性變更：<b>不可刪除既有欄位、變更欄位型別、新增或刪除區塊</b>。仍可：新增欄位（預設為選填）、修改標籤/說明、增加選項、調整順序。';
+    c.insertBefore(b, c.firstChild);
+  }
+  function lockedMsg() { uiAlert('此活動已有報名，為維持資料一致性，無法執行此變更（刪除既有欄位／變更型別／增刪區塊）。您仍可新增選填欄位、修改標籤與選項。'); }
 
   var FIELD_META = {
     text: { label: '單行文字', ic: 'b1', icon: '<path d="M4 6h16M4 12h16M4 18h7"/>' },
@@ -429,11 +442,16 @@ body { background:var(--bg); overflow:hidden; }
           (s.fields || []).forEach(function (f) { if (!f.id) f.id = uid('f'); });
         });
         ORIGINAL_JSON = JSON.stringify(SCHEMA);
-        // Get legacy cfg for import button
+        // Capture the original structure to distinguish existing vs newly-added fields/sections.
+        ORIG_FIELD_IDS = {}; ORIG_SECTION_IDS = {};
+        SCHEMA.sections.forEach(function (s) { ORIG_SECTION_IDS[s.id] = true; (s.fields || []).forEach(function (f) { ORIG_FIELD_IDS[f.id] = true; }); });
+        // Get legacy cfg + registration count (drives the soft-lock once people have registered).
         google.script.run.withSuccessHandler(function (b) {
           LEGACY_CFG = b && b.config;
           if (b && b.config) document.getElementById('crumbHub').textContent = b.config.competitionName || compId;
           document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+          LOCKED = !!(b && b.teamCount > 0);
+          if (LOCKED) showLockBanner(b.teamCount);
         }).getRegistrationBundle(compId);
 
         document.getElementById('loadingState').style.display = 'none';
@@ -502,6 +520,7 @@ body { background:var(--bg); overflow:hidden; }
         var act = btn.dataset.act;
         var id = btn.dataset.id;
         if (act === 'sec-del') {
+          if (LOCKED) { lockedMsg(); return; }
           uiConfirm('刪除整個區塊？', { title: '刪除區塊', okText: '刪除', danger: true }).then(function (ok) {
             if (!ok) return;
             SCHEMA.sections = SCHEMA.sections.filter(function (s) { return s.id !== id; });
@@ -514,6 +533,7 @@ body { background:var(--bg); overflow:hidden; }
           var i2 = SCHEMA.sections.findIndex(function (s) { return s.id === id; });
           if (i2 < SCHEMA.sections.length - 1) { [SCHEMA.sections[i2+1], SCHEMA.sections[i2]] = [SCHEMA.sections[i2], SCHEMA.sections[i2+1]]; render(); markDirty(); }
         } else if (act === 'sec-dup') {
+          if (LOCKED) { lockedMsg(); return; }
           // Item 3: duplicate a section (all fields) with a sequential number suffix.
           var src = SCHEMA.sections.find(function (s) { return s.id === id; });
           if (src) {
@@ -539,11 +559,13 @@ body { background:var(--bg); overflow:hidden; }
           var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
           if (sec) {
             sec.fields = sec.fields || [];
-            sec.fields.push({ id: uid('f'), type: 'text', label: '新欄位', req: true, opts: [] });
+            // 鎖定時新增欄位預設為「選填」，避免既有報名變成缺漏必填
+            sec.fields.push({ id: uid('f'), type: 'text', label: '新欄位', req: !LOCKED, opts: [] });
             render(); markDirty();
           }
         } else if (act === 'field-del') {
           var fid = btn.dataset.fid;
+          if (LOCKED && ORIG_FIELD_IDS[fid]) { lockedMsg(); return; }
           SCHEMA.sections.forEach(function (s) { s.fields = (s.fields || []).filter(function (f) { return f.id !== fid; }); });
           if (SELECTED && SELECTED.fieldId === fid) { SELECTED = null; renderInspector(); }
           render(); markDirty();
@@ -687,7 +709,7 @@ body { background:var(--bg); overflow:hidden; }
         '<div class="ic-f ' + meta.ic + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + meta.icon + '</svg></div>' +
         '<div><h4>' + meta.label + '</h4></div>' +
       '</div>' +
-      '<div class="ins-row"><div class="lbl">欄位類型</div><select data-ins="type">' +
+      '<div class="ins-row"><div class="lbl">欄位類型' + ((LOCKED && ORIG_FIELD_IDS[f.id]) ? ' 🔒' : '') + '</div><select data-ins="type"' + ((LOCKED && ORIG_FIELD_IDS[f.id]) ? ' disabled title="已有報名，既有欄位型別已鎖定"' : '') + '>' +
         Object.keys(FIELD_META).map(function (t) { return '<option value="' + t + '"' + (f.type === t ? ' selected' : '') + '>' + FIELD_META[t].label + '</option>'; }).join('') +
       '</select></div>' +
       '<div class="ins-row"><div class="lbl">標籤文字</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
@@ -896,7 +918,7 @@ body { background:var(--bg); overflow:hidden; }
         if (!targetSec) return;
         if (DRAG.kind === 'palette') {
           var label = labelForLegacy(DRAG.legacyKey) || ((FIELD_META[DRAG.type] || FIELD_META.text).label);
-          var newField = { id: uid('f'), type: DRAG.type, label: label, legacyKey: DRAG.legacyKey || undefined, req: true, opts: [] };
+          var newField = { id: uid('f'), type: DRAG.type, label: label, legacyKey: DRAG.legacyKey || undefined, req: !LOCKED, opts: [] };
           newField.opts = optsForKey(DRAG.legacyKey);
           targetSec.fields = targetSec.fields || [];
           targetSec.fields.push(newField);
@@ -929,7 +951,7 @@ body { background:var(--bg); overflow:hidden; }
     if (!targetSec && SCHEMA.sections.length) targetSec = SCHEMA.sections[SCHEMA.sections.length - 1];
     if (!targetSec) { uiAlert('請先新增區塊，再加入欄位'); return; }
     var label = labelForLegacy(legacyKey) || ((FIELD_META[type] || FIELD_META.text).label);
-    var newField = { id: uid('f'), type: type, label: label, legacyKey: legacyKey || undefined, req: true, opts: [] };
+    var newField = { id: uid('f'), type: type, label: label, legacyKey: legacyKey || undefined, req: !LOCKED, opts: [] };
     newField.opts = optsForKey(legacyKey);
     targetSec.fields = targetSec.fields || [];
     targetSec.fields.push(newField);
@@ -954,6 +976,7 @@ body { background:var(--bg); overflow:hidden; }
   var ROLE_LABELS = { student: '學員', teacher: '指導者', custom: '自訂' };
   function defaultSectionTitle(role) { return role === 'student' ? '學員資料' : role === 'teacher' ? '指導者' : '附加問題'; }
   document.getElementById('addSectionBtn').addEventListener('click', function () {
+    if (LOCKED) { lockedMsg(); return; }
     // 附加問題 (custom) is single-instance — show "(已存在)" on the option when there's
     // already one in the schema, and disable it so the user can't pick it again.
     var customExists = (SCHEMA.sections || []).some(function (s) { return s.role === 'custom'; });
