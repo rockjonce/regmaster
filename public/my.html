@@ -300,6 +300,9 @@
       if (cls === 'unpaid') {
         actions += '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>';
       }
+      if (r.status !== '已取消') {
+        actions += '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">申請退費</button>';
+      }
       return '<div class="reg-card">' +
         date +
         '<div class="body"><h4>' + escapeHtml(r.competitionName) + '</h4>' +
@@ -308,6 +311,73 @@
         '<div class="actions">' + actions + '<span class="teamid">' + escapeHtml(r.teamId) + '</span></div>' +
       '</div>';
     }).join('');
+  }
+
+  // ===== 申請退費 (registrant) =====
+  document.getElementById('regList').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-refund]');
+    if (!btn) return;
+    var parts = btn.getAttribute('data-refund').split('|');
+    openRefundModal(decodeURIComponent(parts[0]), decodeURIComponent(parts[1]), parts.slice(2).join('|'));
+  });
+  function openRefundModal(compId, teamId, name) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:16px';
+    ov.innerHTML =
+      '<div style="background:var(--surface);border-radius:14px;max-width:440px;width:100%;padding:24px;max-height:90vh;overflow:auto">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font:700 17px/1.3 var(--f-display)">申請退費</h3><button id="rfX" style="background:none;border:0;font-size:22px;cursor:pointer;color:var(--muted)">×</button></div>' +
+        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:14px">' + escapeHtml(name) + '<br>請輸入隊伍密碼以查詢可退金額。退款由主辦方處理，平台不經手金流。</p>' +
+        '<div style="display:flex;flex-direction:column;gap:10px">' +
+          '<input id="rfPwd" type="password" placeholder="隊伍密碼" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<button id="rfCheck" class="btn btn-ghost">查詢可退金額</button>' +
+          '<div id="rfPreview" style="font:400 13px/1.7 var(--f-tc)"></div>' +
+          '<div id="rfForm" style="display:none;flex-direction:column;gap:10px">' +
+            '<input id="rfAcct" placeholder="退款帳戶（銀行/分行/帳號/戶名，供主辦方退款）" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+            '<textarea id="rfReason" rows="2" placeholder="退費原因（可選）" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)"></textarea>' +
+            '<button id="rfSubmit" class="btn btn-primary btn-block">送出退費申請</button>' +
+          '</div>' +
+          '<div id="rfMsg" style="font:500 12.5px/1.6 var(--f-tc)"></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#rfX').addEventListener('click', close);
+    var msg = ov.querySelector('#rfMsg');
+    function setMsg(t, ok) { msg.textContent = t || ''; msg.style.color = ok ? 'var(--ok-700, #047857)' : 'var(--err-700, #b91c1c)'; }
+
+    ov.querySelector('#rfCheck').addEventListener('click', function () {
+      var pwd = ov.querySelector('#rfPwd').value;
+      if (!pwd) { setMsg('請輸入隊伍密碼'); return; }
+      setMsg('查詢中⋯', true);
+      google.script.run.withSuccessHandler(function (res) {
+        if (!res || !res.success) { setMsg((res && res.message) || '查詢失敗'); return; }
+        if (res.refundStatus === 'requested' || res.refundStatus === 'approved') { ov.querySelector('#rfPreview').innerHTML = '<b>您已有退費申請處理中</b>（狀態：' + escapeHtml(res.request && res.request.status || '') + '），請耐心等候主辦方處理。'; setMsg(''); return; }
+        var c = res.calc || {};
+        if (c.eventDateMissing) { ov.querySelector('#rfPreview').innerHTML = '本活動未設定活動日期，請直接聯繫主辦方辦理退費。'; return; }
+        if (c.pastStart) { ov.querySelector('#rfPreview').innerHTML = '活動已開始或結束，線上退費已關閉，請直接聯繫主辦方。'; return; }
+        if (!c.hasPolicy) { ov.querySelector('#rfPreview').innerHTML = '主辦方尚未設定退費政策，請直接聯繫主辦方。'; return; }
+        ov.querySelector('#rfPreview').innerHTML = '距活動開始 <b>' + c.daysBefore + ' 天</b>，依退費政策可退 <b>' + c.pct + '%</b>＝實付 NT$' + c.paidAmount + ' × ' + c.pct + '% ＝ <b style="color:var(--ok-700,#047857)">NT$' + c.calcRefund + '</b><br><span style="color:var(--muted);font-size:11.5px">實際退款由主辦方確認後處理，金額可能因主辦方優待條款而更高。</span>';
+        ov.querySelector('#rfForm').style.display = 'flex';
+        setMsg('');
+      }).withFailureHandler(function (e) { setMsg(e && e.message || '查詢失敗'); }).getRefundPreview(compId, teamId, pwd);
+    });
+
+    ov.querySelector('#rfSubmit').addEventListener('click', function () {
+      var pwd = ov.querySelector('#rfPwd').value;
+      var acct = ov.querySelector('#rfAcct').value.trim();
+      var reason = ov.querySelector('#rfReason').value.trim();
+      if (!acct) { setMsg('請填寫退款帳戶'); return; }
+      var b = this; b.disabled = true; setMsg('送出中⋯', true);
+      google.script.run.withSuccessHandler(function (res) {
+        b.disabled = false;
+        if (res && res.success) {
+          ov.querySelector('#rfForm').style.display = 'none';
+          ov.querySelector('#rfPreview').innerHTML = '<b style="color:var(--ok-700,#047857)">✓ 退費申請已送出</b><br>應退 ' + res.pct + '% ＝ NT$' + res.calcRefund + '，待主辦方審核並退款。';
+          setMsg('');
+        } else setMsg((res && res.message) || '送出失敗');
+      }).withFailureHandler(function (e) { b.disabled = false; setMsg(e && e.message || '送出失敗'); }).requestRefund(compId, teamId, pwd, acct, reason);
+    });
   }
 
   // Auto-trigger if ?email= in URL (e.g. from email link)

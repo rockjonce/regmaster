@@ -424,6 +424,23 @@
               <div class="actions-r"><button type="button" class="btn btn-primary" id="dc-create">建立折扣碼</button></div>
             </div>
           </div>
+
+          <!-- 退費政策 (refund policy) -->
+          <div class="sec">
+            <div class="sec-hd">
+              <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h11a4 4 0 010 8h-3M3 10l4-4M3 10l4 4"/></svg></div>
+              <div><h3>退費政策</h3><p>設定「距活動開始天數 → 退費比例」。報名者線上申請退費後由您審核並退款；平台不經手金流。比例不得低於所選法規範本的法定下限（可更優待）。</p></div>
+            </div>
+            <div class="fld">
+              <div class="lbl">適用法規範本</div>
+              <select id="rp-template" data-dirty><option value="">載入中⋯</option></select>
+              <p id="rp-floorHint" style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:6px"></p>
+            </div>
+            <div class="list-grp" id="rp-tiers"></div>
+            <button type="button" class="add-row" id="rp-addTier">＋ 新增級距</button>
+            <div class="fld" style="margin-top:12px"><div class="lbl">退費說明（顯示給報名者，可選）</div><textarea id="rp-note" rows="2" data-dirty placeholder="例：報名費不含金流手續費；退款將於審核後 7 個工作天內處理。"></textarea></div>
+            <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin-top:6px">活動當天及之後不開放線上退費，報名者須直接聯繫主辦方。退費基準金額＝報名收費總額。</p>
+          </div>
         </div>
 
         <!-- TAB: NOTIFICATION -->
@@ -797,6 +814,7 @@
 
     renderGroupDisc(CFG.groupDiscounts || []);
     loadDiscCodes();
+    initRefundPolicy();
 
     // S2: poster initial state — load thumbnail + enable preview/colour-analysis buttons.
     if (CFG.posterUrl) {
@@ -1053,6 +1071,83 @@
     var total = readFeeItems().reduce(function (n, it) { return n + (it.amount || 0); }, 0);
     document.getElementById('feeTotal').textContent = 'NT$ ' + total.toLocaleString();
   }
+  // ===== 退費政策編輯器 =====
+  var RP_TEMPLATES = {};   // key -> {label, floors:[{minDays,pct}], suggest:[{daysBefore,pct}]}
+  function rpFloorPct(tmplKey, daysBefore) {
+    if (daysBefore <= 0) return 0;
+    var t = RP_TEMPLATES[tmplKey]; if (!t) return 0;
+    var f = (t.floors || []).slice().sort(function (a, b) { return b.minDays - a.minDays; });
+    for (var i = 0; i < f.length; i++) { if (daysBefore >= f[i].minDays) return f[i].pct; }
+    return 0;
+  }
+  function rpFloorHintText(tmplKey) {
+    var t = RP_TEMPLATES[tmplKey]; if (!t) return '';
+    var parts = (t.floors || []).slice().sort(function (a, b) { return b.minDays - a.minDays; })
+      .map(function (f) { return '距活動 ≥' + f.minDays + ' 天 ⇒ 至少退 ' + f.pct + '%'; });
+    return '法定下限（不得低於）：' + parts.join('；') + '；活動當天及之後不開放線上退費。';
+  }
+  function renderRpTiers(tiers) {
+    var el = document.getElementById('rp-tiers');
+    if (!tiers || !tiers.length) { el.innerHTML = '<div class="dc-empty" style="padding:8px;color:var(--muted);font:400 12px/1.5 var(--f-tc)">尚無級距，點下方新增。</div>'; return; }
+    el.innerHTML = tiers.map(function (t, i) {
+      return '<div class="list-row" data-rp-row="' + i + '" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
+        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">距活動 ≥</span>' +
+        '<input type="number" min="0" data-rp="days" value="' + (t.daysBefore || 0) + '" style="width:80px" data-dirty>' +
+        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">天 ⇒ 退</span>' +
+        '<input type="number" min="0" max="100" data-rp="pct" value="' + (t.pct || 0) + '" style="width:80px" data-dirty>' +
+        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">%</span>' +
+        '<span data-rp-warn style="font:500 11.5px/1.4 var(--f-tc);color:var(--err-700);margin-left:6px"></span>' +
+        '<button type="button" class="icon-btn danger" data-rp-rm="' + i + '" style="margin-left:auto">刪除</button>' +
+      '</div>';
+    }).join('');
+    el.querySelectorAll('[data-rp-rm]').forEach(function (b) { b.addEventListener('click', function () { var arr = readRpTiers(); arr.splice(parseInt(b.dataset.rpRm, 10), 1); renderRpTiers(arr); markDirty(); }); });
+    el.querySelectorAll('[data-rp]').forEach(function (inp) { inp.addEventListener('input', function () { validateRpRows(); markDirty(); }); });
+    validateRpRows();
+  }
+  function readRpTiers() {
+    return Array.prototype.map.call(document.querySelectorAll('#rp-tiers [data-rp-row]'), function (row) {
+      return { daysBefore: parseInt(row.querySelector('[data-rp="days"]').value, 10) || 0, pct: Number(row.querySelector('[data-rp="pct"]').value) || 0 };
+    });
+  }
+  function validateRpRows() {
+    var tmpl = document.getElementById('rp-template').value;
+    document.querySelectorAll('#rp-tiers [data-rp-row]').forEach(function (row) {
+      var days = parseInt(row.querySelector('[data-rp="days"]').value, 10) || 0;
+      var pct = Number(row.querySelector('[data-rp="pct"]').value) || 0;
+      var floor = rpFloorPct(tmpl, days);
+      var warn = row.querySelector('[data-rp-warn]');
+      warn.textContent = (pct < floor) ? ('低於法定下限 ' + floor + '%') : '';
+    });
+  }
+  function initRefundPolicy() {
+    google.script.run.withSuccessHandler(function (res) {
+      var sel = document.getElementById('rp-template');
+      (res && res.templates || []).forEach(function (t) { RP_TEMPLATES[t.key] = t; });
+      var cur = (CFG.refundPolicy && CFG.refundPolicy.template) || '';
+      sel.innerHTML = '<option value="">— 不啟用退費政策 —</option>' +
+        (res && res.templates || []).map(function (t) { return '<option value="' + t.key + '"' + (t.key === cur ? ' selected' : '') + '>' + t.label + '</option>'; }).join('');
+      document.getElementById('rp-floorHint').textContent = cur ? rpFloorHintText(cur) : '';
+      renderRpTiers((CFG.refundPolicy && CFG.refundPolicy.tiers) || []);
+      document.getElementById('rp-note').value = (CFG.refundPolicy && CFG.refundPolicy.note) || '';
+      sel.addEventListener('change', function () {
+        var k = sel.value;
+        document.getElementById('rp-floorHint').textContent = k ? rpFloorHintText(k) : '';
+        // If switching to a template and there are no tiers yet, seed with its suggestion.
+        if (k && !readRpTiers().length && RP_TEMPLATES[k]) renderRpTiers(RP_TEMPLATES[k].suggest.slice());
+        else validateRpRows();
+        markDirty();
+      });
+    }).withFailureHandler(function () {}).getRefundTemplates();
+  }
+  document.getElementById('rp-addTier').addEventListener('click', function () {
+    var arr = readRpTiers(); arr.push({ daysBefore: 0, pct: 0 }); renderRpTiers(arr); markDirty();
+  });
+  function collectRefundPolicy() {
+    var tmpl = document.getElementById('rp-template').value;
+    if (!tmpl) return null;   // policy disabled
+    return { template: tmpl, tiers: readRpTiers(), note: document.getElementById('rp-note').value || '' };
+  }
+
   function renderFeeItems(items) {
     var el = document.getElementById('feeItemsList');
     el.innerHTML = (items || []).map(function (it, i) {
@@ -1409,6 +1504,7 @@
       isOpen: document.getElementById('isOpen').classList.contains('on'),
       feeItems: readFeeItems(),
       groupDiscounts: readGroupDisc(),
+      refundPolicy: collectRefundPolicy(),
       payuniEnabled: document.getElementById('payuniEnabled').classList.contains('on'),
       bankEnabled: document.getElementById('bankEnabled').classList.contains('on'),
       bankInfo: (function () {

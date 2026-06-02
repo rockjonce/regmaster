@@ -1130,11 +1130,31 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     "competitionDate", "competitionStartTime", "competitionEndTime", "openImmediate",
     "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
     "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
-    "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts"];
-    
+    "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts", "refundPolicy"];
+
   const jc = {};
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
+
+  // Refund policy: enforce legal floors (organiser may be more generous, never below).
+  if (jc.refundPolicy && typeof jc.refundPolicy === "object") {
+    const rp = jc.refundPolicy;
+    const tmpl = REFUND_TEMPLATES[rp.template] ? rp.template : "general";
+    const tiers = Array.isArray(rp.tiers) ? rp.tiers : [];
+    for (const t of tiers) {
+      const dB = parseInt(t.daysBefore, 10) || 0;
+      const pct = Number(t.pct);
+      const floor = refundFloorPct(tmpl, dB);
+      if (!(pct >= floor)) {
+        throw new HttpsError("failed-precondition", "退費比例違反法定下限：距活動 " + dB + " 天的退費不得低於 " + floor + "%（您設定了 " + pct + "%）");
+      }
+    }
+    jc.refundPolicy = {
+      template: tmpl,
+      tiers: tiers.map(t => ({ daysBefore: parseInt(t.daysBefore, 10) || 0, pct: Number(t.pct) || 0 })).sort((a, b) => b.daysBefore - a.daysBefore),
+      note: String(rp.note || "").slice(0, 500)
+    };
+  }
 
   // U1: 即日起 — overwrite openDate with the server-side save time so the timestamp
   // is exactly when the save happened (not when the checkbox was first ticked), and
@@ -1837,6 +1857,176 @@ exports.loginTeam = callable(async (data) => {
     else teachers.push(m);
   });
   return { success: true, team: safeTeam, students, teachers };
+});
+
+// ===== 退款機制（主辦方全責；平台不經手金流，只做流程/試算/註記/釋名額）=====
+// 法定下限：主辦方設定的退費% 不得低於下列下限（可更優待，不可更苛）。
+const REFUND_TEMPLATES = {
+  travel: {
+    label: "營隊／旅遊型（依國內旅遊定型化契約）",
+    floors: [{ minDays: 41, pct: 95 }, { minDays: 31, pct: 90 }, { minDays: 21, pct: 80 }, { minDays: 2, pct: 70 }, { minDays: 1, pct: 50 }],
+    suggest: [{ daysBefore: 41, pct: 95 }, { daysBefore: 31, pct: 90 }, { daysBefore: 21, pct: 80 }, { daysBefore: 2, pct: 70 }, { daysBefore: 1, pct: 50 }]
+  },
+  course: {
+    label: "課程／工作坊（依短期補習班設立及管理準則§24）",
+    floors: [{ minDays: 1, pct: 90 }],
+    suggest: [{ daysBefore: 1, pct: 90 }]
+  },
+  general: {
+    label: "一般活動／競賽（建議比照旅遊級距）",
+    floors: [{ minDays: 41, pct: 95 }, { minDays: 31, pct: 90 }, { minDays: 21, pct: 80 }, { minDays: 2, pct: 70 }, { minDays: 1, pct: 50 }],
+    suggest: [{ daysBefore: 30, pct: 80 }, { daysBefore: 7, pct: 50 }, { daysBefore: 1, pct: 30 }]
+  }
+};
+function refundFloorPct(template, daysBefore) {
+  if (daysBefore <= 0) return 0;
+  const t = REFUND_TEMPLATES[template] || REFUND_TEMPLATES.general;
+  const sorted = t.floors.slice().sort((a, b) => b.minDays - a.minDays);
+  for (const f of sorted) { if (daysBefore >= f.minDays) return f.pct; }
+  return 0;
+}
+// Whole days from today (Asia/Taipei) until the event date "YYYY-MM-DD".
+function daysUntil(dateStr) {
+  const m = String(dateStr || "").match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (!m) return null;
+  const ev = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  const tw = new Date(Date.now() + 8 * 3600000);
+  const today = Date.UTC(tw.getUTCFullYear(), tw.getUTCMonth(), tw.getUTCDate());
+  return Math.round((ev - today) / 86400000);
+}
+// Given a competition + team, compute the applicable refund per the organiser's policy.
+function computeRefund(comp, team) {
+  const cfg = comp.config || {};
+  const policy = cfg.refundPolicy || null;
+  const paid = Number(cfg.registrationFee || 0);
+  const eventDate = cfg.competitionDate || "";
+  const d = daysUntil(eventDate);
+  const out = { paidAmount: paid, eventDate, daysBefore: d, pct: null, calcRefund: 0,
+    pastStart: false, hasPolicy: !!(policy && Array.isArray(policy.tiers) && policy.tiers.length), eventDateMissing: d === null,
+    template: (policy && policy.template) || "" };
+  if (d === null) return out;
+  if (d <= 0) { out.pastStart = true; return out; }
+  if (!out.hasPolicy) return out;
+  const tiers = policy.tiers.slice().sort((a, b) => b.daysBefore - a.daysBefore);
+  let pct = 0;
+  for (const t of tiers) { if (d >= Number(t.daysBefore)) { pct = Number(t.pct); break; } }
+  out.pct = pct;
+  out.calcRefund = Math.round(paid * pct / 100);
+  return out;
+}
+
+// Templates + floors for the organiser policy editor.
+exports.getRefundTemplates = callable(async () => {
+  return { templates: Object.keys(REFUND_TEMPLATES).map(k => ({ key: k, label: REFUND_TEMPLATES[k].label, floors: REFUND_TEMPLATES[k].floors, suggest: REFUND_TEMPLATES[k].suggest })) };
+});
+
+// Registrant: preview refund policy + any existing request (teamId + password).
+exports.getRefundPreview = callable(async (data) => {
+  const { compId, teamId, password } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  if (team.password !== password) return { success: false, message: "密碼錯誤" };
+  const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
+  const calc = computeRefund(comp, team);
+  let request = null;
+  if (team.refundReqId) { const r = await db.collection("refundRequests").doc(team.refundReqId).get(); if (r.exists) request = r.data(); }
+  return { success: true, calc, refundStatus: team.refundStatus || "", request };
+});
+
+// Registrant: submit a refund/withdrawal request.
+exports.requestRefund = callable(async (data) => {
+  const { compId, teamId, password, refundAccount, reason } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  if (team.password !== password) return { success: false, message: "密碼錯誤" };
+  if (team.status === "已取消") return { success: false, message: "此報名已取消" };
+  if (["requested", "approved"].includes(team.refundStatus || "")) return { success: false, message: "已有退費申請處理中" };
+  const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
+  const calc = computeRefund(comp, team);
+  if (calc.eventDateMissing) return { success: false, message: "本活動未設定活動日期，請直接聯繫主辦方辦理退費" };
+  if (calc.pastStart) return { success: false, message: "活動已開始或結束，線上退費已關閉，請直接聯繫主辦方" };
+  if (!calc.hasPolicy) return { success: false, message: "主辦方尚未設定退費政策，請直接聯繫主辦方" };
+  const reqId = generateId("RF");
+  await db.collection("refundRequests").doc(reqId).set({
+    reqId, compId, creator: comp.creator || "", teamId,
+    teamNameCN: team.teamNameCN || "", requesterName: team.remitterName || team.teamNameCN || "",
+    refundAccount: String(refundAccount || "").slice(0, 200), reason: String(reason || "").slice(0, 500),
+    status: "requested", policyTemplate: (comp.config && comp.config.refundPolicy || {}).template || "",
+    policyPct: calc.pct, paidAmount: calc.paidAmount, calcRefund: calc.calcRefund, daysBefore: calc.daysBefore,
+    actualRefund: 0, refundMethod: "", refundProof: "", refundedAt: "", operator: "", decideNote: "",
+    createdAt: fmtNow(), decidedAt: ""
+  });
+  await db.collection("teams").doc(teamId).update({ refundStatus: "requested", refundReqId: reqId, statusBeforeRefund: team.status || "正取", status: "退費申請中" });
+  await auditLog("", "申請退費", teamId, "退" + calc.pct + "% / NT$" + calc.calcRefund);
+  return { success: true, reqId, pct: calc.pct, calcRefund: calc.calcRefund };
+});
+
+// Registrant: withdraw a pending request.
+exports.withdrawRefund = callable(async (data) => {
+  const { teamId, password } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  if (team.password !== password) return { success: false, message: "密碼錯誤" };
+  if ((team.refundStatus || "") !== "requested") return { success: false, message: "目前無可撤回的申請" };
+  if (team.refundReqId) await db.collection("refundRequests").doc(team.refundReqId).update({ status: "withdrawn", decidedAt: fmtNow() });
+  await db.collection("teams").doc(teamId).update({ refundStatus: FieldValue.delete(), refundReqId: FieldValue.delete(), status: team.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() });
+  return { success: true };
+});
+
+// Organiser: list refund requests for a competition.
+exports.listRefundRequests = compAuthCallable(async (data) => {
+  const snap = await db.collection("refundRequests").where("compId", "==", data.compId).get();
+  const rows = snap.docs.map(d => d.data());
+  rows.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return { requests: rows };
+});
+
+// Organiser: approve / reject a request.
+exports.decideRefund = compAuthCallable(async (data, request) => {
+  const { reqId, action, note } = data;
+  const rRef = db.collection("refundRequests").doc(reqId);
+  const rDoc = await rRef.get();
+  if (!rDoc.exists) return { success: false, message: "找不到申請" };
+  const r = rDoc.data();
+  if (r.status !== "requested") return { success: false, message: "此申請已處理" };
+  const tDoc = await db.collection("teams").doc(r.teamId).get();
+  if (action === "reject") {
+    await rRef.update({ status: "rejected", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
+    if (tDoc.exists) { const t = tDoc.data(); await tDoc.ref.update({ refundStatus: FieldValue.delete(), status: t.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() }); }
+    await auditLog(request.authUser.username, "駁回退費", r.teamId, String(note || ""));
+    return { success: true };
+  }
+  if (action === "approve") {
+    await rRef.update({ status: "approved", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
+    if (tDoc.exists) await tDoc.ref.update({ refundStatus: "approved" });
+    await auditLog(request.authUser.username, "核准退費", r.teamId, "應退NT$" + r.calcRefund);
+    return { success: true };
+  }
+  return { success: false, message: "未知動作" };
+});
+
+// Organiser: after refunding offline, mark refunded → cancel registration + release spot.
+exports.markRefunded = compAuthCallable(async (data, request) => {
+  const { reqId, actualRefund, refundMethod, refundProof } = data;
+  const rRef = db.collection("refundRequests").doc(reqId);
+  const rDoc = await rRef.get();
+  if (!rDoc.exists) return { success: false, message: "找不到申請" };
+  const r = rDoc.data();
+  if (!["requested", "approved"].includes(r.status)) return { success: false, message: "此申請狀態無法註記退款" };
+  const actual = Number(actualRefund);
+  if (!(actual >= 0)) return { success: false, message: "請輸入有效的實退金額" };
+  if (actual < Number(r.calcRefund || 0)) return { success: false, message: "實退金額不得低於政策應退 NT$" + r.calcRefund + "（可更優待、不可更低）" };
+  await rRef.update({ status: "refunded", actualRefund: actual, refundMethod: String(refundMethod || "").slice(0, 40), refundProof: String(refundProof || "").slice(0, 300), operator: request.authUser.username, refundedAt: fmtNow() });
+  const tDoc = await db.collection("teams").doc(r.teamId).get();
+  if (tDoc.exists && tDoc.data().status !== "已取消") {
+    await tDoc.ref.update({ status: "已取消", refundStatus: "refunded", refundedAt: fmtNow() });
+    await db.collection("competitions").doc(r.compId).update({ teamCount: FieldValue.increment(-1) });
+  }
+  await auditLog(request.authUser.username, "註記已退款", r.teamId, "實退NT$" + actual);
+  return { success: true };
 });
 
 exports.updateRegistration = callable(async (data) => {

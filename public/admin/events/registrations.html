@@ -198,7 +198,8 @@
         <div class="search-row">
           <input id="searchInp" placeholder="搜尋編號 / 隊名 / 狀態⋯">
           <span class="help" id="listCount">共 — 筆</span>
-          <button class="btn btn-primary btn-sm" id="exportListBtn" style="margin-left:auto">⬇️ 匯出所有報名資料</button>
+          <button class="btn btn-ghost btn-sm" id="refundReqBtn" style="margin-left:auto">💸 退費申請 <span id="refundReqCt" style="display:none;background:var(--err-500);color:#fff;border-radius:999px;padding:1px 7px;font:600 11px/1.4 var(--f-mono);margin-left:4px"></span></button>
+          <button class="btn btn-primary btn-sm" id="exportListBtn">⬇️ 匯出所有報名資料</button>
         </div>
         <div class="tbl-wrap">
           <table class="tbl">
@@ -236,22 +237,28 @@
 
   // ---------- LOAD ----------
   document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
-  Promise.all([
-    new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationBundle(compId); }),
-    new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r([]); }).getAllTeams(compId); }),
-    new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationStats(compId); })
-  ]).then(function (results) {
-    var bundle = results[0] || {};
-    CFG = bundle.config || {};
-    TEAMS = results[1] || [];
-    STATS = results[2] || {};
-    document.getElementById('crumbHub').textContent = CFG.competitionName || compId;
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    renderKPIs();
-    renderCharts();
-    renderList(TEAMS);
-  });
+  function bootData() {
+    return Promise.all([
+      new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationBundle(compId); }),
+      new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r([]); }).getAllTeams(compId); }),
+      new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationStats(compId); })
+    ]).then(function (results) {
+      var bundle = results[0] || {};
+      CFG = bundle.config || {};
+      TEAMS = results[1] || [];
+      STATS = results[2] || {};
+      document.getElementById('crumbHub').textContent = CFG.competitionName || compId;
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      renderKPIs();
+      renderCharts();
+      renderList(TEAMS);
+      refreshRefundCount();
+    });
+  }
+  function loadAll() { bootData(); }
+  bootData();
+  document.getElementById('refundReqBtn').addEventListener('click', openRefundManager);
 
   // ---------- TABS ----------
   document.querySelectorAll('.tabs-bar a').forEach(function (a) {
@@ -690,6 +697,83 @@
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ov.querySelector('#modalClose').addEventListener('click', close);
     if (typeof onMount === 'function') onMount(ov, close);
+  }
+
+  // ===== 退費申請管理 =====
+  var REFUND_LABEL = { requested: '待審核', approved: '已核准·待退款', refunded: '已退款', rejected: '已駁回', withdrawn: '已撤回' };
+  function refreshRefundCount() {
+    google.script.run.withSuccessHandler(function (res) {
+      var reqs = (res && res.requests) || [];
+      var pending = reqs.filter(function (r) { return r.status === 'requested' || r.status === 'approved'; }).length;
+      var b = document.getElementById('refundReqCt');
+      if (pending > 0) { b.textContent = pending; b.style.display = ''; } else { b.style.display = 'none'; }
+    }).withFailureHandler(function () {}).listRefundRequests(compId);
+  }
+  function openRefundManager() {
+    openModal('退費申請', '<p style="color:var(--muted)">載入中⋯</p>', function (ov, close) {
+      var body = ov.querySelector('.modal-body');
+      function render(reqs) {
+        if (!reqs.length) { body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">目前沒有退費申請。</p>'; return; }
+        body.innerHTML = reqs.map(function (r) {
+          var st = REFUND_LABEL[r.status] || r.status;
+          var stColor = r.status === 'requested' ? 'var(--acc)' : r.status === 'approved' ? '#d97706' : r.status === 'refunded' ? 'var(--ok-700)' : 'var(--muted)';
+          var acts = '';
+          if (r.status === 'requested') {
+            acts = '<button class="btn btn-primary btn-sm" data-act="approve" data-id="' + r.reqId + '">核准</button>' +
+                   '<button class="btn btn-ghost btn-sm" data-act="reject" data-id="' + r.reqId + '">駁回</button>' +
+                   '<button class="btn btn-ghost btn-sm" data-act="mark" data-id="' + r.reqId + '" data-calc="' + (r.calcRefund || 0) + '">直接註記已退款</button>';
+          } else if (r.status === 'approved') {
+            acts = '<button class="btn btn-primary btn-sm" data-act="mark" data-id="' + r.reqId + '" data-calc="' + (r.calcRefund || 0) + '">註記已退款</button>';
+          }
+          return '<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+              '<b style="font:600 14px/1.3 var(--f-display)">' + escapeHtml(r.teamNameCN || r.teamId) + '</b>' +
+              '<span style="font:600 12px/1 var(--f-mono);color:' + stColor + '">' + st + '</span></div>' +
+            '<div style="font:400 12.5px/1.7 var(--f-tc);color:var(--ink-2)">' +
+              '編號 ' + escapeHtml(r.teamId) + '｜實付 NT$' + (r.paidAmount || 0) + '｜距活動 ' + (r.daysBefore != null ? r.daysBefore + ' 天' : '—') +
+              '｜政策應退 <b>' + (r.policyPct != null ? r.policyPct + '%' : '—') + ' = NT$' + (r.calcRefund || 0) + '</b>' +
+              (r.actualRefund ? '｜實退 NT$' + r.actualRefund : '') + '<br>' +
+              (r.reason ? '原因：' + escapeHtml(r.reason) + '<br>' : '') +
+              (r.refundAccount ? '退款帳戶：' + escapeHtml(r.refundAccount) + '<br>' : '') +
+              '申請：' + escapeHtml(r.createdAt || '') +
+            '</div>' +
+            (acts ? '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' + acts + '</div>' : '') +
+          '</div>';
+        }).join('');
+        body.querySelectorAll('[data-act]').forEach(function (btn) {
+          btn.addEventListener('click', function () { doRefundAction(btn.dataset.act, btn.dataset.id, parseInt(btn.dataset.calc, 10) || 0, reload); });
+        });
+      }
+      function reload() {
+        google.script.run.withSuccessHandler(function (res) { render((res && res.requests) || []); refreshRefundCount(); })
+          .withFailureHandler(function (e) { body.innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml(e && e.message || '') + '</p>'; })
+          .listRefundRequests(compId);
+      }
+      reload();
+    });
+  }
+  function doRefundAction(act, reqId, calc, reload) {
+    if (act === 'approve') {
+      google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast('已核准'); reload(); } else uiAlert((r && r.message) || '失敗'); })
+        .withFailureHandler(function (e) { uiAlert(e && e.message || '失敗'); }).decideRefund(reqId, 'approve', '');
+    } else if (act === 'reject') {
+      uiPrompt('駁回原因（會記錄）：', '', { title: '駁回退費申請', inputType: 'text' }).then(function (note) {
+        if (note === null) return;
+        google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast('已駁回'); reload(); } else uiAlert((r && r.message) || '失敗'); })
+          .withFailureHandler(function (e) { uiAlert(e && e.message || '失敗'); }).decideRefund(reqId, 'reject', note);
+      });
+    } else if (act === 'mark') {
+      uiPrompt('請輸入實際退款金額（不得低於政策應退 NT$' + calc + '）：', String(calc), { title: '註記已退款', inputType: 'number' }).then(function (amt) {
+        if (amt === null) return;
+        var actual = Number(amt);
+        if (!(actual >= calc)) { uiAlert('實退金額不得低於 NT$' + calc); return; }
+        uiPrompt('退款方式 / 備註（可選，如：銀行轉帳 末五碼 12345）：', '銀行轉帳', { title: '註記已退款', inputType: 'text' }).then(function (method) {
+          if (method === null) return;
+          google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast('已註記退款，名額已釋出'); reload(); loadAll && loadAll(); } else uiAlert((r && r.message) || '失敗'); })
+            .withFailureHandler(function (e) { uiAlert(e && e.message || '失敗'); }).markRefunded(reqId, actual, method, '');
+        });
+      });
+    }
   }
 
   function openTeamDetail(tid) {
