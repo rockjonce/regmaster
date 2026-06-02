@@ -806,9 +806,9 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         (!paid ? '<a class="btn btn-primary btn-block" href="/events/payment.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(teamId) + '">前往付款 →</a>' : '') +
+        '<a class="btn btn-ghost btn-block" href="/events/register.html?id=' + encodeURIComponent(compId) + '&edit=' + encodeURIComponent(teamId) + '">修改報名資料</a>' +
         '<button id="mRefund" class="btn btn-ghost btn-block">申請退費</button>' +
       '</div>' +
-      '<p style="font:400 11.5px/1.6 var(--f-tc);color:var(--muted);margin-top:10px">如需修改報名資料，請聯繫主辦方協助更新。</p>' +
       '<div id="mRefundBox" style="margin-top:12px"></div>';
     v.querySelector('#mRefund').addEventListener('click', function () { renderRefund(v.querySelector('#mRefundBox'), teamId, pwd); });
   }

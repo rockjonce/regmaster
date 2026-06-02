@@ -466,6 +466,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     customAnswers: {},
     payMethod: ''
   };
+  // Edit mode (?edit=<報名編號>): prefill + save via updateRegistration, skip payment.
+  var IS_EDIT = false, EDIT = null;
+  var editTeamId = (qs.get('edit') || '').trim().toUpperCase();
   // Q2/Q3/Q4: payment computed after CFG loads
   var TOTAL_FEE = 0, NEEDS_PAYMENT = false, AVAILABLE_METHODS = [];
   // T1: step 1 is only meaningful when group/session/team-name fields are configured
@@ -476,6 +479,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   function updateSubmitButtonLabel() {
     var btn = document.getElementById('submitBtn');
     if (!btn) return;
+    if (IS_EDIT) { btn.textContent = '儲存修改 →'; return; }
     if (NEEDS_PAYMENT && STATE.payMethod === 'payuni') btn.textContent = '前往 PayUNI 付款 →';
     else if (NEEDS_PAYMENT && STATE.payMethod === 'atm') btn.textContent = '送出報名（稍後轉帳）→';
     else if (NEEDS_PAYMENT) btn.textContent = '請先選擇付款方式';
@@ -503,6 +507,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       initWizard();
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('layout').style.display = 'grid';
+      if (editTeamId) enterEditMode();
     })
     .withFailureHandler(function (err) {
       document.getElementById('loadingState').style.display = 'none';
@@ -510,6 +515,84 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
     })
     .getRegistrationBundle(compId);
+
+  // ===== 編輯模式：報名編號+密碼 → 預填 → 以 updateRegistration 儲存（不重新付款）=====
+  function enterEditMode() {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.6);display:grid;place-items:center;padding:16px';
+    ov.innerHTML =
+      '<div style="background:var(--surface);border-radius:14px;max-width:400px;width:100%;padding:26px">' +
+        '<h3 style="font:700 18px/1.3 var(--f-display);margin-bottom:6px">修改報名資料</h3>' +
+        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:16px">報名編號：<b style="font-family:var(--f-mono)">' + escapeHtml(editTeamId) + '</b><br>請輸入密碼以載入您的報名資料。</p>' +
+        '<input id="edPwd" type="password" placeholder="密碼" style="width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+        '<button id="edGo" class="btn btn-primary btn-block" style="margin-top:10px">載入</button>' +
+        '<a href="/events/detail.html?id=' + encodeURIComponent(compId) + '" class="btn btn-ghost btn-block" style="margin-top:8px">取消</a>' +
+        '<div id="edErr" style="font:500 12.5px/1.5 var(--f-tc);color:var(--err-700);margin-top:8px"></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var pEl = ov.querySelector('#edPwd'), err = ov.querySelector('#edErr');
+    ov.querySelector('#edGo').addEventListener('click', function () {
+      var pwd = pEl.value; if (!pwd) { err.textContent = '請輸入密碼'; return; }
+      err.textContent = '載入中⋯';
+      google.script.run.withSuccessHandler(function (res) {
+        if (!res || !res.success) { err.textContent = (res && res.message) || '密碼錯誤'; return; }
+        EDIT = { teamId: editTeamId, pwd: pwd }; IS_EDIT = true;
+        NEEDS_PAYMENT = false;   // 編輯不重新付款
+        try { prefillFromTeam(res.team || {}, res.students || [], res.teachers || []); } catch (e) {}
+        document.title = '修改報名 · ' + (CFG.competitionName || '');
+        var hd = document.querySelector('#layout h1, .wizard-title'); if (hd) hd.textContent = '修改報名資料';
+        updateSubmitButtonLabel();
+        if (ov.parentNode) document.body.removeChild(ov);
+      }).withFailureHandler(function (e) { err.textContent = (e && e.message) || '載入失敗'; }).loginTeam(compId, editTeamId, pwd);
+    });
+    pEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('#edGo').click(); });
+  }
+  function setDefValue(def, prefix, val) {
+    if (val === undefined || val === null || val === '') return;
+    var domId = prefix + def.key, t = def.type;
+    if (t === 'radio') {
+      var rs = document.getElementsByName(domId);
+      for (var i = 0; i < rs.length; i++) if (rs[i].value === String(val)) rs[i].checked = true;
+      return;
+    }
+    if (t === 'checkbox') {
+      var vals = Array.isArray(val) ? val.map(String) : String(val).split(/[,，]/).map(function (s) { return s.trim(); });
+      document.querySelectorAll('[data-cbgroup="' + domId + '"]').forEach(function (cb) { if (vals.indexOf(cb.value) >= 0) cb.checked = true; });
+      return;
+    }
+    if (t === 'phoneIntl') {
+      var m = String(val).match(/^(\+\d+)\s*(.*)$/), cc = document.getElementById(domId + '_cc'), num = document.getElementById(domId + '_num'), hid = document.getElementById(domId);
+      if (m) { if (cc) cc.value = m[1]; if (num) num.value = m[2]; } if (hid) hid.value = val;
+      return;
+    }
+    if (t === 'file') return;   // 檔案無法預填
+    var el = document.getElementById(domId); if (el) el.value = val;
+  }
+  function prefillFromTeam(team, students, teachers) {
+    // 隊名
+    if (document.getElementById('teamNameCN')) { document.getElementById('teamNameCN').value = team.teamNameCN || ''; STATE.teamNameCN = team.teamNameCN || ''; }
+    if (document.getElementById('teamNameEN')) { document.getElementById('teamNameEN').value = team.teamNameEN || ''; STATE.teamNameEN = team.teamNameEN || ''; }
+    // 組別
+    if (team.group) { STATE.group = team.group; document.querySelectorAll('#groupRadio .rc').forEach(function (rc) { rc.classList.toggle('on', rc.dataset.group === team.group); }); }
+    // 梯次
+    var sess = team.selectedSessions || (team.selectedSession != null ? [team.selectedSession] : []);
+    if (sess.length) { STATE.selectedSessions = sess.slice(); document.querySelectorAll('.session-card').forEach(function (c) { c.classList.toggle('on', sess.indexOf(parseInt(c.dataset.idx, 10)) >= 0); }); }
+    // 學員 / 指導者欄位
+    students.forEach(function (m, i) { (STU_DEFS_PER_CARD[i] || STU_DEFS).forEach(function (def) { setDefValue(def, 'student_' + i + '_', m[def.key]); }); });
+    teachers.forEach(function (m, j) { (TCH_DEFS_PER_CARD[j] || TCH_DEFS).forEach(function (def) { setDefValue(def, 'teacher_' + j + '_', m[def.key]); }); });
+    // 自訂問題
+    var ca = team.customAnswers || {};
+    CUSTOM_DEFS.forEach(function (def) { setDefValue(def, 'cq_', ca[def.key]); });
+  }
+  function showEditSuccess() {
+    document.getElementById('layout').innerHTML =
+      '<div style="max-width:560px;margin:60px auto;text-align:center;padding:32px;grid-column:1/-1">' +
+        '<div style="font-size:48px;color:var(--ok-700,#047857)">✓</div>' +
+        '<h2 style="font:700 22px/1.3 var(--f-display);margin:12px 0">報名資料已更新</h2>' +
+        '<p style="color:var(--ink-3);font:400 14px/1.6 var(--f-tc)">您的修改已儲存。</p>' +
+        '<a class="btn btn-primary" style="margin-top:18px;display:inline-block" href="/events/detail.html?id=' + encodeURIComponent(compId) + '">回活動頁</a>' +
+      '</div>';
+  }
 
   function initWizard() {
     document.title = '報名 · ' + (CFG.competitionName || '') + ' · RegMaster';
@@ -1282,6 +1365,17 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       remitterAccount: STATE.payMethod === 'atm' ? (STATE.remitterAccountTail || '') : '',
       creditCardOrderNo: ''
     };
+    // 編輯模式：以 updateRegistration 儲存，不重新付款
+    if (IS_EDIT) {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) { showEditSuccess(); }
+          else { btn.disabled = false; updateSubmitButtonLabel(); showErr((res && res.message) || '修改失敗'); }
+        })
+        .withFailureHandler(function (err) { btn.disabled = false; updateSubmitButtonLabel(); showErr((err && err.message) || '網路錯誤'); })
+        .updateRegistration(compId, EDIT.teamId, EDIT.pwd, fd);
+      return;
+    }
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
