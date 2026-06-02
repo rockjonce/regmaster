@@ -132,7 +132,7 @@
         <button class="btn btn-ghost" id="socialL" style="flex:1">用 LINE 登入</button>
       </div>
       <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:12px">
-        曾在報名管理頁綁定 Google／LINE 者，可直接用社群登入查詢全部報名。若需修改報名資料，請至活動詳情頁使用<b>報名編號 + 密碼</b>登入。
+        曾在報名管理頁綁定 Google／LINE 者，可直接用社群登入查詢全部報名。查詢後，於每筆報名點「<b>修改報名</b>」即可輸入密碼修改資料、或「<b>申請退費</b>」。
       </p>
     </div>
   </div>
@@ -309,6 +309,7 @@
         actions += '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>';
       }
       if (r.status !== '已取消') {
+        actions += '<a class="btn btn-ghost" href="/events/register.html?id=' + encodeURIComponent(r.compId) + '&edit=' + encodeURIComponent(r.teamId) + '">修改報名</a>';
         actions += '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">申請退費</button>';
       }
       return '<div class="reg-card">' +
