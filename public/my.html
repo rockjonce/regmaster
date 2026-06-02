@@ -423,8 +423,13 @@
     regs = regs || [];
     PWD_BY_TEAM = {};
     regs.forEach(function (r) { if (r.password) PWD_BY_TEAM[r.teamId] = r.password; });
-    ALL = regs; renderList();
-    document.getElementById('lookupCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    ALL = regs; render();   // render() 會顯示 kpiRow + resultsArea（renderList 只畫卡片）
+    if (!regs.length) {
+      var box = document.getElementById('lookupErr');
+      box.textContent = '此社群帳號的 Email 目前查無報名記錄（請確認報名時使用的 Email 與社群帳號相同）。';
+      box.style.display = 'block';
+    }
+    document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   document.getElementById('socialG').addEventListener('click', function () {
     var el = document.getElementById('lookupErr');
