@@ -295,8 +295,8 @@ body { background:var(--bg); }
         <div class="card">
           <div class="ch"><div><h3>系統帳號</h3><p>主辦方與系統管理員帳號</p></div><button class="btn btn-primary btn-sm" id="addAcctBtn">＋ 新增帳號</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>帳號</th><th>名稱</th><th>角色</th><th>Email</th><th>狀態</th><th></th></tr></thead>
-            <tbody id="acctsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
+            <table class="tbl"><thead><tr><th>帳號</th><th>名稱</th><th>角色</th><th>Email</th><th>登入方式</th><th>狀態</th><th></th></tr></thead>
+            <tbody id="acctsBody"><tr><td colspan="7" class="empty">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -722,13 +722,20 @@ body { background:var(--bg); }
       list = list || [];
       document.getElementById('ctAccts').textContent = list.length;
       var b = document.getElementById('acctsBody');
-      if (!list.length) { b.innerHTML = '<tr><td colspan="6" class="empty">尚無帳號</td></tr>'; return; }
+      if (!list.length) { b.innerHTML = '<tr><td colspan="7" class="empty">尚無帳號</td></tr>'; return; }
+      function provBadges(a) {
+        var p = [];
+        if (a.hasPassword) p.push('<span class="pill" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)">密碼</span>');
+        if (a.hasGoogle) p.push('<span class="pill" title="' + esc(a.googleEmail || '') + '" style="background:rgba(66,133,244,.1);color:#1a73e8;border:1px solid rgba(66,133,244,.25)">Google</span>');
+        if (a.hasLine) p.push('<span class="pill" title="' + esc(a.lineDisplayName || '') + '" style="background:rgba(6,199,85,.12);color:#06994a;border:1px solid rgba(6,199,85,.3)">LINE</span>');
+        return p.length ? '<span style="display:inline-flex;gap:4px;flex-wrap:wrap">' + p.join('') + '</span>' : '<span class="muted">—</span>';
+      }
       b.innerHTML = list.map(function (a) {
         var locked = a.lockedUntil && new Date() < new Date(a.lockedUntil);
         var stat = locked ? '<span class="pill err">已鎖定</span>' : a.emailVerified ? '<span class="pill ok">正常</span>' : '<span class="pill warn">未驗證</span>';
         var roleTag = a.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">主辦方</span>';
         var del = a.username === 'admin' ? '' : '<button class="icon-btn danger" data-del="' + esc(a.username) + '">刪除</button>';
-        return '<tr><td><b>' + esc(a.username) + '</b></td><td>' + esc(a.displayName || '') + '</td><td>' + roleTag + '</td><td class="muted">' + esc(a.email || '') + '</td><td>' + stat + '</td><td style="text-align:right">' + del + '</td></tr>';
+        return '<tr><td><b>' + esc(a.username) + '</b></td><td>' + esc(a.displayName || '') + '</td><td>' + roleTag + '</td><td class="muted">' + esc(a.email || '') + '</td><td>' + provBadges(a) + '</td><td>' + stat + '</td><td style="text-align:right">' + del + '</td></tr>';
       }).join('');
       b.querySelectorAll('[data-del]').forEach(function (btn) {
         btn.addEventListener('click', function () {

@@ -541,7 +541,13 @@ exports.listAccounts = authCallable(["system"], async (data) => {
       lockedUntil: a.lockedUntil || "",
       email: a.email || "",                     // 【新增】：確保回傳 Email
       phone: a.phone || "",                     // 【新增】：確保回傳 電話
-      emailVerified: a.emailVerified || false   // 【新增】：確保回傳 驗證狀態
+      emailVerified: a.emailVerified || false,  // 【新增】：確保回傳 驗證狀態
+      // 登入方式綁定狀態
+      hasPassword: !!a.passwordHash,
+      hasGoogle: !!a.googleSub,
+      googleEmail: a.googleEmail || "",
+      hasLine: !!a.lineUserId,
+      lineDisplayName: a.lineDisplayName || ""
     });
   });
   return list;
