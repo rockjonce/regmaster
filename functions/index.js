@@ -6851,24 +6851,46 @@ exports.getRegistrantStatus = callable(async (data) => {
   }
   return { google, line, boundEmail };
 });
-// System admin: 報名帳號 — collect all registrant emails + bound status.
+// System admin: 報名帳號 — collect all registrant emails + bound status + 摘要.
 exports.listRegistrants = authCallable(["system"], async () => {
-  const memSnap = await db.collection("members").get();
+  const [memSnap, teamSnap, regSnap] = await Promise.all([
+    db.collection("members").get(),
+    db.collection("teams").get(),
+    db.collection("registrants").get()
+  ]);
+  const teamInfo = {};
+  teamSnap.docs.forEach(d => {
+    const t = d.data();
+    teamInfo[t.teamId || d.id] = { compId: t.compId || "", status: t.status || "", paymentStatus: t.paymentStatus || "", registrationTime: t.registrationTime || "" };
+  });
   const byEmail = {};
   memSnap.docs.forEach(d => {
     const m = d.data(); const e = String(m.email || "").trim().toLowerCase(); if (!e) return;
-    if (!byEmail[e]) byEmail[e] = { email: e, regCount: 0, names: new Set() };
-    byEmail[e].regCount++; if (m.chineseName) byEmail[e].names.add(m.chineseName);
+    if (!byEmail[e]) byEmail[e] = { email: e, teams: new Set(), comps: new Set(), names: new Set(), lastReg: "", paid: 0, unpaid: 0 };
+    const o = byEmail[e];
+    if (m.chineseName) o.names.add(m.chineseName);
+    const ti = teamInfo[m.teamId];
+    if (ti && ti.status !== "已取消" && m.teamId && !o.teams.has(m.teamId)) {
+      o.teams.add(m.teamId);
+      if (ti.compId) o.comps.add(ti.compId);
+      const dk = toDayKey(ti.registrationTime); if (dk > o.lastReg) o.lastReg = dk;
+      if (String(ti.paymentStatus).includes("已確認")) o.paid++; else o.unpaid++;
+    }
   });
-  const regSnap = await db.collection("registrants").get();
   const bound = {}; regSnap.docs.forEach(d => { bound[d.id] = d.data(); });
   const list = Object.keys(byEmail).map(e => {
-    const b = bound[e] || {};
-    return { email: e, regCount: byEmail[e].regCount, name: Array.from(byEmail[e].names).slice(0, 3).join("、"), google: !!b.googleSub, line: !!b.lineUserId };
+    const o = byEmail[e]; const b = bound[e] || {};
+    return { email: e, name: Array.from(o.names).slice(0, 3).join("、"), regCount: o.teams.size, activityCount: o.comps.size, lastReg: o.lastReg || "", paid: o.paid, unpaid: o.unpaid, google: !!b.googleSub, line: !!b.lineUserId };
   });
-  Object.keys(bound).forEach(e => { if (!byEmail[e]) list.push({ email: e, regCount: 0, name: "", google: !!bound[e].googleSub, line: !!bound[e].lineUserId }); });
-  list.sort((a, b) => b.regCount - a.regCount);
+  Object.keys(bound).forEach(e => { if (!byEmail[e]) list.push({ email: e, name: "", regCount: 0, activityCount: 0, lastReg: "", paid: 0, unpaid: 0, google: !!bound[e].googleSub, line: !!bound[e].lineUserId }); });
+  list.sort((a, b) => b.regCount - a.regCount || String(b.lastReg).localeCompare(String(a.lastReg)));
   return { registrants: list };
+});
+// System admin: one registrant's registrations (drill-down for 報名數).
+exports.getRegistrantDetail = authCallable(["system"], async (data) => {
+  const e = String(data.email || "").trim().toLowerCase();
+  if (!e) return { registrations: [] };
+  return { email: e, registrations: await regsByEmail(e, false) };
 });
 exports.deleteRegistrantBinding = authCallable(["system"], async (data) => {
   const e = String(data.email || "").trim().toLowerCase();

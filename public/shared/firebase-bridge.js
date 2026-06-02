@@ -82,6 +82,7 @@
     listMyRegistrationsBySocial:["provider","token"],
     getRegistrantStatus:["emails","email"],
     listRegistrants:[],
+    getRegistrantDetail:["email"],
     deleteRegistrantBinding:["email"],
     recoverTeamPassword:["compId","email"],
     loginVerifyTotp:["username","password","code"],
