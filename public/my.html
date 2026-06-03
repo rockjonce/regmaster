@@ -98,40 +98,40 @@
 <nav class="nav">
   <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span></a>
   <div class="links">
-    <a href="/events/">探索活動</a>
+    <a href="/events/" data-i18n="navExplore">探索活動</a>
   </div>
   <div class="actions">
     <button class="theme-toggle" id="themeToggle">🌗</button>
-    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
-    <a href="/login.html" class="btn btn-quiet btn-sm">主辦方登入</a>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
+    <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
   </div>
 </nav>
 
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-eyebrow">MY REGISTRATIONS · 我的報名</div>
-    <h1>所有<em>已報名活動</em>一次掌握。</h1>
-    <p class="lead">輸入您報名時使用的 Email 或電話，即可查詢跨活動的所有報名記錄。</p>
+    <div class="hero-eyebrow" data-i18n="myHeroEyebrow">MY REGISTRATIONS · 我的報名</div>
+    <h1 data-i18n-html="myHeroTitle">所有<em>已報名活動</em>一次掌握。</h1>
+    <p class="lead" data-i18n="myHeroLead">輸入您報名時使用的 Email 或電話，即可查詢跨活動的所有報名記錄。</p>
 
     <div class="lookup-card" id="lookupCard">
-      <h3>查詢我的報名</h3>
+      <h3 data-i18n="myLookupH3">查詢我的報名</h3>
       <div class="tabs" id="lookupTabs">
-        <button class="on" data-mode="email">📧 用 Email</button>
-        <button data-mode="phone">📱 用電話</button>
+        <button class="on" data-mode="email" data-i18n="myTabEmail">📧 用 Email</button>
+        <button data-mode="phone" data-i18n="myTabPhone">📱 用電話</button>
       </div>
       <div class="alert-box err" id="lookupErr" style="display:none"></div>
       <div class="field-stack">
-        <input class="input" id="lookupValue" placeholder="輸入 Email" autocomplete="email">
-        <button class="btn btn-primary btn-lg btn-block" id="lookupBtn">查詢 →</button>
+        <input class="input" id="lookupValue" placeholder="輸入 Email" data-i18n-placeholder="myInputEmailPh" autocomplete="email">
+        <button class="btn btn-primary btn-lg btn-block" id="lookupBtn" data-i18n="myLookupBtn">查詢 →</button>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin:14px 0 12px">
-        <hr style="flex:1;border:0;border-top:1px solid var(--line)"><span style="font:500 11px/1 var(--f-mono);color:var(--muted)">或用社群帳號</span><hr style="flex:1;border:0;border-top:1px solid var(--line)">
+        <hr style="flex:1;border:0;border-top:1px solid var(--line)"><span style="font:500 11px/1 var(--f-mono);color:var(--muted)" data-i18n="myDividerOr">或用社群帳號</span><hr style="flex:1;border:0;border-top:1px solid var(--line)">
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" id="socialG" style="flex:1">用 Google 登入</button>
-        <button class="btn btn-ghost" id="socialL" style="flex:1">用 LINE 登入</button>
+        <button class="btn btn-ghost" id="socialG" style="flex:1" data-i18n="mySocialGoogle">用 Google 登入</button>
+        <button class="btn btn-ghost" id="socialL" style="flex:1" data-i18n="mySocialLine">用 LINE 登入</button>
       </div>
-      <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:12px">
+      <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:12px" data-i18n-html="myLookupNote">
         曾在報名管理頁綁定 Google／LINE 者，可直接用社群登入查詢全部報名。查詢後，於每筆報名點「<b>修改報名</b>」即可輸入密碼修改資料、或「<b>申請退費</b>」。
       </p>
     </div>
@@ -139,29 +139,31 @@
 </section>
 
 <div class="kpi-row" id="kpiRow" style="display:none">
-  <div><div class="lbl">總報名數</div><div class="v" id="kTotal">—</div></div>
-  <div><div class="lbl">即將舉辦</div><div class="v" id="kUpcoming">—</div></div>
-  <div><div class="lbl">待付款</div><div class="v" id="kUnpaid">—</div></div>
-  <div><div class="lbl">已完成</div><div class="v" id="kPaid">—</div></div>
+  <div><div class="lbl" data-i18n="myKpiTotal">總報名數</div><div class="v" id="kTotal">—</div></div>
+  <div><div class="lbl" data-i18n="myKpiUpcoming">即將舉辦</div><div class="v" id="kUpcoming">—</div></div>
+  <div><div class="lbl" data-i18n="myKpiUnpaid">待付款</div><div class="v" id="kUnpaid">—</div></div>
+  <div><div class="lbl" data-i18n="myKpiPaid">已完成</div><div class="v" id="kPaid">—</div></div>
 </div>
 
 <div class="shell" id="resultsArea" style="display:none">
   <div class="tab-row">
     <div class="tab-pills" id="filterTabs">
-      <button class="on" data-f="all">全部 <span class="badge-c" id="cAll">0</span></button>
-      <button data-f="upcoming">即將舉辦 <span class="badge-c" id="cUp">0</span></button>
-      <button data-f="unpaid">待付款 <span class="badge-c" id="cUnp">0</span></button>
-      <button data-f="paid">已付款 <span class="badge-c" id="cPd">0</span></button>
-      <button data-f="past">已過期 <span class="badge-c" id="cPast">0</span></button>
+      <button class="on" data-f="all"><span data-i18n="myFilterAll">全部</span> <span class="badge-c" id="cAll">0</span></button>
+      <button data-f="upcoming"><span data-i18n="myFilterUpcoming">即將舉辦</span> <span class="badge-c" id="cUp">0</span></button>
+      <button data-f="unpaid"><span data-i18n="myFilterUnpaid">待付款</span> <span class="badge-c" id="cUnp">0</span></button>
+      <button data-f="paid"><span data-i18n="myFilterPaid">已付款</span> <span class="badge-c" id="cPd">0</span></button>
+      <button data-f="past"><span data-i18n="myFilterPast">已過期</span> <span class="badge-c" id="cPast">0</span></button>
     </div>
     <div style="flex:1"></div>
-    <button class="btn btn-ghost btn-sm" id="changeEmail">↩ 改用其他 Email</button>
+    <button class="btn btn-ghost btn-sm" id="changeEmail" data-i18n="myChangeEmail">↩ 改用其他 Email</button>
   </div>
 
   <div class="reg-list" id="regList"></div>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-my.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -188,7 +190,7 @@
       b.classList.add('on');
       lookupMode = b.dataset.mode;
       var input = document.getElementById('lookupValue');
-      input.placeholder = lookupMode === 'email' ? '輸入 Email' : '輸入電話';
+      input.placeholder = lookupMode === 'email' ? window.L('myInputEmailPh') : window.L('myInputPhonePh');
       input.type = lookupMode === 'email' ? 'email' : 'tel';
       input.autocomplete = lookupMode === 'email' ? 'email' : 'tel';
     });
@@ -202,12 +204,12 @@
     var box = document.getElementById('lookupErr');
     box.style.display = 'none';
     var v = document.getElementById('lookupValue').value.trim();
-    if (!v) { box.textContent = '請輸入 ' + (lookupMode === 'email' ? 'Email' : '電話'); box.style.display = 'block'; return; }
-    if (lookupMode === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { box.textContent = 'Email 格式不正確'; box.style.display = 'block'; return; }
+    if (!v) { box.textContent = lookupMode === 'email' ? window.L('myErrNeedEmail') : window.L('myErrNeedPhone'); box.style.display = 'block'; return; }
+    if (lookupMode === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { box.textContent = window.L('myErrBadEmail'); box.style.display = 'block'; return; }
 
     var btn = this;
     btn.disabled = true; var oldText = btn.textContent;
-    btn.textContent = '查詢中⋯⋯';
+    btn.textContent = window.L('myLookingUp');
 
     var payload = lookupMode === 'email' ? { email: v, phone: '' } : { email: '', phone: v };
     google.script.run
@@ -218,13 +220,13 @@
           ALL = res.registrations || [];
           render();
         } else {
-          box.textContent = (res && res.message) || '查詢失敗';
+          box.textContent = (res && res.message) || window.L('myErrLookupFail');
           box.style.display = 'block';
         }
       })
       .withFailureHandler(function (err) {
         btn.disabled = false; btn.textContent = oldText;
-        box.textContent = (err && err.message) || '網路錯誤';
+        box.textContent = (err && err.message) || window.L('myErrNetwork');
         box.style.display = 'block';
       })
       .listMyRegistrationsByEmail(payload.email, payload.phone);
@@ -250,10 +252,10 @@
   }
 
   function statusPill(r, cls) {
-    if (cls === 'past') return '<span class="pill">已過期</span>';
-    if (cls === 'paid') return '<span class="pill ok">✓ 已付款</span>';
-    if (cls === 'unpaid') return '<span class="pill warn">待付款</span>';
-    return '<span class="pill ok">即將舉辦</span>';
+    if (cls === 'past') return '<span class="pill">' + window.L('myPillPast') + '</span>';
+    if (cls === 'paid') return '<span class="pill ok">' + window.L('myPillPaid') + '</span>';
+    if (cls === 'unpaid') return '<span class="pill warn">' + window.L('myPillUnpaid') + '</span>';
+    return '<span class="pill ok">' + window.L('myPillUpcoming') + '</span>';
   }
 
   function render() {
@@ -261,10 +263,10 @@
     document.getElementById('resultsArea').style.display = 'block';
     var counts = { all: ALL.length, upcoming: 0, unpaid: 0, paid: 0, past: 0 };
     ALL.forEach(function (r) { var c = classifyReg(r); counts[c]++; });
-    document.getElementById('kTotal').innerHTML = counts.all + ' <em>筆</em>';
-    document.getElementById('kUpcoming').innerHTML = counts.upcoming + ' <em>場</em>';
-    document.getElementById('kUnpaid').innerHTML = counts.unpaid + ' <em>筆</em>';
-    document.getElementById('kPaid').innerHTML = counts.paid + ' <em>筆</em>';
+    document.getElementById('kTotal').innerHTML = counts.all + ' <em>' + window.L('myUnitRecords') + '</em>';
+    document.getElementById('kUpcoming').innerHTML = counts.upcoming + ' <em>' + window.L('myUnitEvents') + '</em>';
+    document.getElementById('kUnpaid').innerHTML = counts.unpaid + ' <em>' + window.L('myUnitRecords') + '</em>';
+    document.getElementById('kPaid').innerHTML = counts.paid + ' <em>' + window.L('myUnitRecords') + '</em>';
     document.getElementById('cAll').textContent = counts.all;
     document.getElementById('cUp').textContent = counts.upcoming;
     document.getElementById('cUnp').textContent = counts.unpaid;
@@ -291,7 +293,8 @@
       return classifyReg(r) === STATE_FILTER;
     });
     if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty-state"><div class="ic">📭</div><h3>沒有符合的報名</h3><p>切換上方的篩選分類試試。</p></div>';
+      list.innerHTML = '<div class="empty-state"><div class="ic">📭</div><h3>' + window.L('myEmptyTitle') + '</h3><p>' + window.L('myEmptyDesc') + '</p></div>';
+      window.applyI18n(list);
       return;
     }
     list.innerHTML = filtered.map(function (r) {
@@ -299,29 +302,29 @@
       var d = parseDate(r.competitionDate) || parseDate(r.deadline);
       var date = d
         ? '<div class="date-block"><div class="m">' + monthsEN[d.getMonth()] + '</div><div class="d">' + String(d.getDate()).padStart(2,'0') + '</div><div class="wd">' + weekdays[d.getDay()] + '</div></div>'
-        : '<div class="date-block"><div class="m">DATE</div><div class="d">—</div><div class="wd">待公告</div></div>';
+        : '<div class="date-block"><div class="m">DATE</div><div class="d">—</div><div class="wd">' + window.L('myDateTBA') + '</div></div>';
       var meta = '';
-      if (r.group) meta += '<span class="pill">組別：' + escapeHtml(r.group) + '</span>';
+      if (r.group) meta += '<span class="pill">' + window.L('myMetaGroupPrefix') + escapeHtml(r.group) + '</span>';
       if (r.teamNameCN) meta += '<span class="pill">' + escapeHtml(r.teamNameCN) + '</span>';
       if (r.category) meta += '<span class="pill">' + escapeHtml(r.category) + '</span>';
       meta += statusPill(r, cls);
 
       // 完整權限僅限「社群登入（已驗證 Email）」查得的報名；Email/電話查詢為唯讀。
       var full = !!PWD_BY_TEAM[r.teamId];
-      var dis = ' disabled title="請用 Google／LINE 登入以管理此報名" style="opacity:.45;cursor:not-allowed"';
-      var actions = '<a class="btn btn-ghost" href="/events/detail.html?id=' + encodeURIComponent(r.compId) + '">活動詳情</a>';
+      var dis = ' disabled title="' + escapeHtml(window.L('myLockedTitle')) + '" style="opacity:.45;cursor:not-allowed"';
+      var actions = '<a class="btn btn-ghost" href="/events/detail.html?id=' + encodeURIComponent(r.compId) + '">' + window.L('myActDetail') + '</a>';
       if (cls === 'unpaid') {
         actions += full
-          ? '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">前往付款 →</a>'
-          : '<button class="btn btn-primary"' + dis + '>前往付款 →</button>';
+          ? '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">' + window.L('myActPay') + '</a>'
+          : '<button class="btn btn-primary"' + dis + '>' + window.L('myActPay') + '</button>';
       }
       if (r.status !== '已取消') {
         actions += full
-          ? '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">修改報名</button>'
-          : '<button class="btn btn-ghost"' + dis + '>修改報名</button>';
+          ? '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">' + window.L('myActEdit') + '</button>'
+          : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActEdit') + '</button>';
         actions += full
-          ? '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">申請退費</button>'
-          : '<button class="btn btn-ghost"' + dis + '>申請退費</button>';
+          ? '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">' + window.L('myActRefund') + '</button>'
+          : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActRefund') + '</button>';
       }
       return '<div class="reg-card">' +
         date +
@@ -331,6 +334,7 @@
         '<div class="actions">' + actions + '<span class="teamid">' + escapeHtml(r.teamId) + '</span></div>' +
       '</div>';
     }).join('');
+    window.applyI18n(list);
   }
 
   // ===== 申請退費 (registrant) =====
@@ -355,16 +359,16 @@
     ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:16px';
     ov.innerHTML =
       '<div style="background:var(--surface);border-radius:14px;max-width:440px;width:100%;padding:24px;max-height:90vh;overflow:auto">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font:700 17px/1.3 var(--f-display)">申請退費</h3><button id="rfX" style="background:none;border:0;font-size:22px;cursor:pointer;color:var(--muted)">×</button></div>' +
-        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:14px">' + escapeHtml(name) + '<br>請輸入隊伍密碼以查詢可退金額。退款由主辦方處理，平台不經手金流。</p>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font:700 17px/1.3 var(--f-display)">' + window.L('myRfTitle') + '</h3><button id="rfX" style="background:none;border:0;font-size:22px;cursor:pointer;color:var(--muted)">×</button></div>' +
+        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:14px">' + escapeHtml(name) + '<br>' + window.L('myRfIntro') + '</p>' +
         '<div style="display:flex;flex-direction:column;gap:10px">' +
-          '<input id="rfPwd" type="password" placeholder="隊伍密碼" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
-          '<button id="rfCheck" class="btn btn-ghost">查詢可退金額</button>' +
+          '<input id="rfPwd" type="password" placeholder="' + escapeHtml(window.L('myRfPwdPh')) + '" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<button id="rfCheck" class="btn btn-ghost">' + window.L('myRfCheckBtn') + '</button>' +
           '<div id="rfPreview" style="font:400 13px/1.7 var(--f-tc)"></div>' +
           '<div id="rfForm" style="display:none;flex-direction:column;gap:10px">' +
-            '<input id="rfAcct" placeholder="退款帳戶（銀行/分行/帳號/戶名，供主辦方退款）" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
-            '<textarea id="rfReason" rows="2" placeholder="退費原因（可選）" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)"></textarea>' +
-            '<button id="rfSubmit" class="btn btn-primary btn-block">送出退費申請</button>' +
+            '<input id="rfAcct" placeholder="' + escapeHtml(window.L('myRfAcctPh')) + '" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+            '<textarea id="rfReason" rows="2" placeholder="' + escapeHtml(window.L('myRfReasonPh')) + '" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)"></textarea>' +
+            '<button id="rfSubmit" class="btn btn-primary btn-block">' + window.L('myRfSubmitBtn') + '</button>' +
           '</div>' +
           '<div id="rfMsg" style="font:500 12.5px/1.6 var(--f-tc)"></div>' +
         '</div>' +
@@ -380,41 +384,41 @@
     if (knownPwd) {
       ov.querySelector('#rfPwd').value = knownPwd;
       ov.querySelector('#rfPwd').closest('div').querySelector('#rfPwd').style.display = 'none';
-      var hint = ov.querySelector('p'); if (hint) hint.innerHTML = escapeHtml(name) + '<br>系統將依退費政策計算可退金額。退款由主辦方處理，平台不經手金流。';
+      var hint = ov.querySelector('p'); if (hint) hint.innerHTML = escapeHtml(name) + '<br>' + window.L('myRfIntroSocial');
       setTimeout(function () { ov.querySelector('#rfCheck').click(); }, 0);
     }
 
     ov.querySelector('#rfCheck').addEventListener('click', function () {
       var pwd = ov.querySelector('#rfPwd').value;
-      if (!pwd) { setMsg('請輸入隊伍密碼'); return; }
-      setMsg('查詢中⋯', true);
+      if (!pwd) { setMsg(window.L('myRfErrNeedPwd')); return; }
+      setMsg(window.L('myRfChecking'), true);
       google.script.run.withSuccessHandler(function (res) {
-        if (!res || !res.success) { setMsg((res && res.message) || '查詢失敗'); return; }
-        if (res.refundStatus === 'requested' || res.refundStatus === 'approved') { ov.querySelector('#rfPreview').innerHTML = '<b>您已有退費申請處理中</b>（狀態：' + escapeHtml(res.request && res.request.status || '') + '），請耐心等候主辦方處理。'; setMsg(''); return; }
+        if (!res || !res.success) { setMsg((res && res.message) || window.L('myRfErrCheckFail')); return; }
+        if (res.refundStatus === 'requested' || res.refundStatus === 'approved') { ov.querySelector('#rfPreview').innerHTML = window.L('myRfExistingPrefix') + escapeHtml(res.request && res.request.status || '') + window.L('myRfExistingSuffix'); setMsg(''); return; }
         var c = res.calc || {};
-        if (c.eventDateMissing) { ov.querySelector('#rfPreview').innerHTML = '本活動未設定活動日期，請直接聯繫主辦方辦理退費。'; return; }
-        if (c.pastStart) { ov.querySelector('#rfPreview').innerHTML = '活動已開始或結束，線上退費已關閉，請直接聯繫主辦方。'; return; }
-        if (!c.hasPolicy) { ov.querySelector('#rfPreview').innerHTML = '主辦方尚未設定退費政策，請直接聯繫主辦方。'; return; }
-        ov.querySelector('#rfPreview').innerHTML = '距活動開始 <b>' + c.daysBefore + ' 天</b>，依退費政策可退 <b>' + c.pct + '%</b>＝實付 NT$' + c.paidAmount + ' × ' + c.pct + '% ＝ <b style="color:var(--ok-700,#047857)">NT$' + c.calcRefund + '</b><br><span style="color:var(--muted);font-size:11.5px">實際退款由主辦方確認後處理，金額可能因主辦方優待條款而更高。</span>';
+        if (c.eventDateMissing) { ov.querySelector('#rfPreview').innerHTML = window.L('myRfNoEventDate'); return; }
+        if (c.pastStart) { ov.querySelector('#rfPreview').innerHTML = window.L('myRfPastStart'); return; }
+        if (!c.hasPolicy) { ov.querySelector('#rfPreview').innerHTML = window.L('myRfNoPolicy'); return; }
+        ov.querySelector('#rfPreview').innerHTML = window.L('myRfPreviewA') + c.daysBefore + window.L('myRfPreviewB') + c.pct + window.L('myRfPreviewC') + c.paidAmount + window.L('myRfPreviewD') + c.pct + window.L('myRfPreviewE') + c.calcRefund + window.L('myRfPreviewF');
         ov.querySelector('#rfForm').style.display = 'flex';
         setMsg('');
-      }).withFailureHandler(function (e) { setMsg(e && e.message || '查詢失敗'); }).getRefundPreview(compId, teamId, pwd);
+      }).withFailureHandler(function (e) { setMsg(e && e.message || window.L('myRfErrCheckFail')); }).getRefundPreview(compId, teamId, pwd);
     });
 
     ov.querySelector('#rfSubmit').addEventListener('click', function () {
       var pwd = ov.querySelector('#rfPwd').value;
       var acct = ov.querySelector('#rfAcct').value.trim();
       var reason = ov.querySelector('#rfReason').value.trim();
-      if (!acct) { setMsg('請填寫退款帳戶'); return; }
-      var b = this; b.disabled = true; setMsg('送出中⋯', true);
+      if (!acct) { setMsg(window.L('myRfErrNeedAcct')); return; }
+      var b = this; b.disabled = true; setMsg(window.L('myRfSubmitting'), true);
       google.script.run.withSuccessHandler(function (res) {
         b.disabled = false;
         if (res && res.success) {
           ov.querySelector('#rfForm').style.display = 'none';
-          ov.querySelector('#rfPreview').innerHTML = '<b style="color:var(--ok-700,#047857)">✓ 退費申請已送出</b><br>應退 ' + res.pct + '% ＝ NT$' + res.calcRefund + '，待主辦方審核並退款。';
+          ov.querySelector('#rfPreview').innerHTML = window.L('myRfDoneA') + res.pct + window.L('myRfDoneB') + res.calcRefund + window.L('myRfDoneC');
           setMsg('');
-        } else setMsg((res && res.message) || '送出失敗');
-      }).withFailureHandler(function (e) { b.disabled = false; setMsg(e && e.message || '送出失敗'); }).requestRefund(compId, teamId, pwd, acct, reason);
+        } else setMsg((res && res.message) || window.L('myRfErrSubmitFail'));
+      }).withFailureHandler(function (e) { b.disabled = false; setMsg(e && e.message || window.L('myRfErrSubmitFail')); }).requestRefund(compId, teamId, pwd, acct, reason);
     });
   }
 
@@ -426,23 +430,23 @@
     ALL = regs; render();   // render() 會顯示 kpiRow + resultsArea（renderList 只畫卡片）
     if (!regs.length) {
       var box = document.getElementById('lookupErr');
-      box.textContent = '此社群帳號的 Email 目前查無報名記錄（請確認報名時使用的 Email 與社群帳號相同）。';
+      box.textContent = window.L('myErrSocialNoRegs');
       box.style.display = 'block';
     }
     document.getElementById('resultsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   document.getElementById('socialG').addEventListener('click', function () {
     var el = document.getElementById('lookupErr');
-    if (typeof firebase === 'undefined' || !firebase.auth) { el.textContent = 'Google 元件未載入，請重新整理'; el.style.display = 'block'; return; }
+    if (typeof firebase === 'undefined' || !firebase.auth) { el.textContent = window.L('myErrGoogleNotLoaded'); el.style.display = 'block'; return; }
     el.style.display = 'none';
     var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
     firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
       google.script.run.withSuccessHandler(function (res) {
         try { firebase.auth().signOut(); } catch (e) {}
         if (res && res.success) showSocialRegs(res.registrations);
-        else { el.textContent = (res && res.message) || '查詢失敗'; el.style.display = 'block'; }
-      }).withFailureHandler(function (e) { el.textContent = (e && e.message) || '查詢失敗'; el.style.display = 'block'; }).listMyRegistrationsBySocial('google', idToken);
-    }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { el.textContent = (e && e.message) || 'Google 登入失敗'; el.style.display = 'block'; } });
+        else { el.textContent = (res && res.message) || window.L('myErrLookupFail'); el.style.display = 'block'; }
+      }).withFailureHandler(function (e) { el.textContent = (e && e.message) || window.L('myErrLookupFail'); el.style.display = 'block'; }).listMyRegistrationsBySocial('google', idToken);
+    }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { el.textContent = (e && e.message) || window.L('myErrGoogleFail'); el.style.display = 'block'; } });
   });
   document.getElementById('socialL').addEventListener('click', function () {
     var state = Math.random().toString(36).slice(2) + Date.now().toString(36);

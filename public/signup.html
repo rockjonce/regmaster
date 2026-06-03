@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>建立帳號 · RegMaster</title>
+<title data-i18n="sgPageTitle">建立帳號 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -115,20 +115,20 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 
     <!-- ============ STATE 1: Create account ============ -->
     <div class="state-pane on" data-s="1">
-      <h1>建立帳號</h1>
-      <p class="sub">已經有帳號了？<a href="/login.html">直接登入 →</a></p>
+      <h1 data-i18n="sgH1">建立帳號</h1>
+      <p class="sub" data-i18n-html="sgHaveAccount">已經有帳號了？<a href="/login.html">直接登入 →</a></p>
 
       <div class="plan-banner" id="planBanner" style="display:none">
         <div class="ic">★</div>
-        <div>已選擇 <b id="planName">免費版 Free</b><span id="planDesc"> · 永久免費，無需信用卡</span></div>
+        <div><span data-i18n="sgPlanChosen">已選擇 </span><b id="planName">免費版 Free</b><span id="planDesc"> · 永久免費，無需信用卡</span></div>
       </div>
 
       <div class="steps">
-        <div class="step-i on" data-step="1"><div class="n"><span>1</span></div><div class="l">建立帳號</div></div>
+        <div class="step-i on" data-step="1"><div class="n"><span>1</span></div><div class="l" data-i18n="sgStep1">建立帳號</div></div>
         <div class="bar"></div>
-        <div class="step-i" data-step="2"><div class="n"><span>2</span></div><div class="l">驗證信箱</div></div>
+        <div class="step-i" data-step="2"><div class="n"><span>2</span></div><div class="l" data-i18n="sgStep2">驗證信箱</div></div>
         <div class="bar"></div>
-        <div class="step-i" data-step="3"><div class="n"><span>3</span></div><div class="l">完成</div></div>
+        <div class="step-i" data-step="3"><div class="n"><span>3</span></div><div class="l" data-i18n="sgStep3">完成</div></div>
       </div>
 
       <div class="alert-box err" id="errBox" style="display:none"></div>
@@ -136,57 +136,57 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       <form class="field-stack" id="signupForm" autocomplete="on" novalidate>
         <div class="row-2">
           <div>
-            <label class="label" for="suUsername">帳號名稱</label>
-            <input class="input" id="suUsername" name="username" type="text" autocomplete="username" required placeholder="例：cs_chen" pattern="[a-zA-Z0-9_]{3,30}" maxlength="30">
-            <div class="help">3–30 字元，可用英數與底線</div>
+            <label class="label" for="suUsername" data-i18n="sgLabelUsername">帳號名稱</label>
+            <input class="input" id="suUsername" name="username" type="text" autocomplete="username" required placeholder="例：cs_chen" data-i18n-placeholder="sgPhUsername" pattern="[a-zA-Z0-9_]{3,30}" maxlength="30">
+            <div class="help" data-i18n="sgHelpUsername">3–30 字元，可用英數與底線</div>
           </div>
           <div>
-            <label class="label" for="suDisplay">顯示名稱</label>
-            <input class="input" id="suDisplay" name="displayName" type="text" required placeholder="您的姓名">
+            <label class="label" for="suDisplay" data-i18n="sgLabelDisplay">顯示名稱</label>
+            <input class="input" id="suDisplay" name="displayName" type="text" required placeholder="您的姓名" data-i18n-placeholder="sgPhDisplay">
           </div>
         </div>
 
         <div>
-          <label class="label" for="suEmail">公司 / 學校信箱</label>
-          <input class="input" id="suEmail" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
-          <div class="help">驗證信會寄到這個信箱</div>
+          <label class="label" for="suEmail" data-i18n="sgLabelEmail">公司 / 學校信箱</label>
+          <input class="input" id="suEmail" name="email" type="email" autocomplete="email" required placeholder="you@company.com" data-i18n-placeholder="sgPhEmail">
+          <div class="help" data-i18n="sgHelpEmail">驗證信會寄到這個信箱</div>
         </div>
 
         <div>
-          <label class="label" for="suPhone">電話 <span style="font:400 11px/1 var(--f-mono); color:var(--muted); margin-left:4px">（選填）</span></label>
-          <input class="input" id="suPhone" name="phone" type="tel" autocomplete="tel" placeholder="0912-345-678">
+          <label class="label" for="suPhone" data-i18n-html="sgLabelPhone">電話 <span style="font:400 11px/1 var(--f-mono); color:var(--muted); margin-left:4px">（選填）</span></label>
+          <input class="input" id="suPhone" name="phone" type="tel" autocomplete="tel" placeholder="0912-345-678" data-i18n-placeholder="sgPhPhone">
         </div>
 
         <div>
-          <label class="label" for="suPwd">設定密碼</label>
-          <input class="input" id="suPwd" name="password" type="password" autocomplete="new-password" required placeholder="至少 10 字元">
+          <label class="label" for="suPwd" data-i18n="sgLabelPwd">設定密碼</label>
+          <input class="input" id="suPwd" name="password" type="password" autocomplete="new-password" required placeholder="至少 10 字元" data-i18n-placeholder="sgPhPwd">
           <div class="pwd-strength" id="pwdStrength"><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div>
           <div class="pwd-check" id="pwdCheck">
-            <span data-check="len">至少 10 字元</span>
-            <span data-check="case">含大小寫字母</span>
-            <span data-check="num">含數字</span>
-            <span data-check="sym">含特殊符號</span>
+            <span data-check="len" data-i18n="sgPwdLen">至少 10 字元</span>
+            <span data-check="case" data-i18n="sgPwdCase">含大小寫字母</span>
+            <span data-check="num" data-i18n="sgPwdNum">含數字</span>
+            <span data-check="sym" data-i18n="sgPwdSym">含特殊符號</span>
           </div>
         </div>
 
         <div class="terms-row">
           <input type="checkbox" id="suAgree" required>
-          <div>我已閱讀並同意 <a href="/terms.html" target="_blank">服務條款</a> 與 <a href="/privacy.html" target="_blank">隱私權政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。</div>
+          <div data-i18n-html="sgAgree">我已閱讀並同意 <a href="/terms.html" target="_blank">服務條款</a> 與 <a href="/privacy.html" target="_blank">隱私權政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。</div>
         </div>
 
         <div class="terms-row" style="background:transparent">
           <input type="checkbox" id="suNewsletter">
-          <div>我願意接收 RegMaster 的產品更新與電子報（可隨時退訂）。</div>
+          <div data-i18n="sgNewsletter">我願意接收 RegMaster 的產品更新與電子報（可隨時退訂）。</div>
         </div>
 
-        <button class="btn btn-primary btn-lg btn-block" id="suBtn" type="submit">建立帳號 →</button>
+        <button class="btn btn-primary btn-lg btn-block" id="suBtn" type="submit" data-i18n="sgSubmitBtn">建立帳號 →</button>
       </form>
     </div>
 
     <!-- ============ STATE 2: Verify OTP ============ -->
     <div class="state-pane" data-s="2">
-      <h1>檢查你的信箱</h1>
-      <p class="sub">我們寄了 6 位數驗證碼到 <b id="emailEcho">your@email.com</b><br>請於 15 分鐘內輸入完成驗證。</p>
+      <h1 data-i18n="sgVerifyH1">檢查你的信箱</h1>
+      <p class="sub" data-i18n-html="sgVerifySub">我們寄了 6 位數驗證碼到 <b id="emailEcho">your@email.com</b><br>請於 15 分鐘內輸入完成驗證。</p>
 
       <div class="alert-box err" id="otpErrBox" style="display:none"></div>
 
@@ -200,13 +200,13 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       </div>
 
       <div class="otp-meta">
-        驗證碼將於 <span class="timer" id="otpTimer">15:00</span> 後失效 · <a id="resendLink">重新寄送驗證信</a>
+        <span data-i18n="sgOtpExpire1">驗證碼將於 </span><span class="timer" id="otpTimer">15:00</span><span data-i18n="sgOtpExpire2"> 後失效 · </span><a id="resendLink" data-i18n="sgResendLink">重新寄送驗證信</a>
       </div>
 
-      <button class="btn btn-primary btn-lg btn-block" id="verifyBtn" type="button">驗證並建立帳號</button>
+      <button class="btn btn-primary btn-lg btn-block" id="verifyBtn" type="button" data-i18n="sgVerifyBtn">驗證並建立帳號</button>
 
       <div style="text-align:center; margin-top:16px; font:400 12px/1 var(--f-tc); color:var(--muted)">
-        填錯信箱？<a href="#" id="backToStep1" style="color:var(--acc)">回上一步重填</a>
+        <span data-i18n="sgWrongEmailPrefix">填錯信箱？</span><a href="#" id="backToStep1" style="color:var(--acc)" data-i18n="sgWrongEmailLink">回上一步重填</a>
       </div>
     </div>
 
@@ -215,12 +215,12 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       <div class="success-icon">
         <svg data-hero viewBox="0 0 24 24" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg>
       </div>
-      <h1 style="text-align:center">帳號建立成功！</h1>
-      <p class="sub" style="text-align:center">您的 Free 方案已啟用。<br>登入後即可開始建立第一場活動。</p>
+      <h1 style="text-align:center" data-i18n="sgSuccessH1">帳號建立成功！</h1>
+      <p class="sub" style="text-align:center" data-i18n-html="sgSuccessSub">您的 Free 方案已啟用。<br>登入後即可開始建立第一場活動。</p>
 
-      <a href="/login.html?just=signup" class="btn btn-primary btn-lg btn-block">前往登入 →</a>
+      <a href="/login.html?just=signup" class="btn btn-primary btn-lg btn-block" data-i18n="sgGoLoginBtn">前往登入 →</a>
 
-      <div style="text-align:center; margin-top:14px; font:400 12px/1 var(--f-tc); color:var(--muted)">
+      <div style="text-align:center; margin-top:14px; font:400 12px/1 var(--f-tc); color:var(--muted)" data-i18n-html="sgNoMail">
         沒收到信？檢查垃圾郵件夾，或 <a href="/contact.html?topic=support" style="color:var(--acc)">聯絡客服</a>
       </div>
     </div>
@@ -228,28 +228,30 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   </div>
 
   <div class="foot">
-    <a href="/terms.html">服務條款</a> · <a href="/privacy.html">隱私權政策</a> · <a href="/contact.html">聯絡我們</a><br>
+    <a href="/terms.html" data-i18n="sgFtTerms">服務條款</a> · <a href="/privacy.html" data-i18n="sgFtPrivacy">隱私權政策</a> · <a href="/contact.html" data-i18n="sgFtContact">聯絡我們</a><br>
     © 2026 RegMaster
   </div>
 </div>
 
 <div class="right">
-  <h2>Free 版永久免費<br>無需信用卡，<em>立刻開始</em>。</h2>
+  <h2 data-i18n-html="sgRightH2">Free 版永久免費<br>無需信用卡，<em>立刻開始</em>。</h2>
   <div class="benefits">
-    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div><div><h5>永久免費起步</h5><p>Free 版沒有時間限制，直接建立活動、設計報名表、收 Email 通知。</p></div></div>
-    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M12 2v6m0 8v6m-10-10h6m4 0h6"/></svg></div><div><h5>需要時再升級</h5><p>AI 助理、QR 報到、線上金流、評分等進階功能，依方案逐步開放。</p></div></div>
-    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></div><div><h5>幾分鐘上手</h5><p>拖拉式表單設計，不用寫程式，也不用看教學影片。</p></div></div>
-    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div><h5>可隨時刪除帳號</h5><p>不想用了，可於設定中一鍵刪除帳號，零留存。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div><div><h5 data-i18n="sgBenefit1H">永久免費起步</h5><p data-i18n="sgBenefit1P">Free 版沒有時間限制，直接建立活動、設計報名表、收 Email 通知。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M12 2v6m0 8v6m-10-10h6m4 0h6"/></svg></div><div><h5 data-i18n="sgBenefit2H">需要時再升級</h5><p data-i18n="sgBenefit2P">AI 助理、QR 報到、線上金流、評分等進階功能，依方案逐步開放。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></div><div><h5 data-i18n="sgBenefit3H">幾分鐘上手</h5><p data-i18n="sgBenefit3P">拖拉式表單設計，不用寫程式，也不用看教學影片。</p></div></div>
+    <div class="benefit"><div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div><h5 data-i18n="sgBenefit4H">可隨時刪除帳號</h5><p data-i18n="sgBenefit4P">不想用了，可於設定中一鍵刪除帳號，零留存。</p></div></div>
   </div>
   <div class="logos">
-    <div class="logos-l">適用於各類主辦單位</div>
+    <div class="logos-l" data-i18n="sgLogosLabel">適用於各類主辦單位</div>
     <div class="logos-grid">
-      <div>大專院校</div><div>政府機關</div><div>公協會</div><div>企業內訓</div>
+      <div data-i18n="sgLgUni">大專院校</div><div data-i18n="sgLgGov">政府機關</div><div data-i18n="sgLgAssoc">公協會</div><div data-i18n="sgLgCorp">企業內訓</div>
     </div>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-signup.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -257,15 +259,15 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   // ---- Plan banner from URL ----
   var plan = (new URLSearchParams(location.search).get('plan') || 'free').toLowerCase();
   var planMap = {
-    trial:   { name: '免費版 Free',     desc: ' · 永久免費，無需信用卡' },
-    free:    { name: '免費版 Free',     desc: ' · 永久免費，無需信用卡' },
-    starter: { name: '入門版 Starter',  desc: ' · 註冊後可於方案頁升級' },
-    pro:     { name: '專業版 Pro',      desc: ' · 註冊後可於方案頁升級' },
-    team:    { name: '團隊版 Team',     desc: ' · 註冊後可於方案頁升級' }
+    trial:   { name: 'sgPlanFreeName',    desc: 'sgPlanFreeDesc' },
+    free:    { name: 'sgPlanFreeName',    desc: 'sgPlanFreeDesc' },
+    starter: { name: 'sgPlanStarterName', desc: 'sgPlanUpgradeDesc' },
+    pro:     { name: 'sgPlanProName',     desc: 'sgPlanUpgradeDesc' },
+    team:    { name: 'sgPlanTeamName',    desc: 'sgPlanUpgradeDesc' }
   };
   if (planMap[plan]) {
-    document.getElementById('planName').textContent = planMap[plan].name;
-    document.getElementById('planDesc').textContent = planMap[plan].desc;
+    document.getElementById('planName').textContent = window.L(planMap[plan].name);
+    document.getElementById('planDesc').textContent = window.L(planMap[plan].desc);
     document.getElementById('planBanner').style.display = 'flex';
   }
 
@@ -318,15 +320,15 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
     var password = pwdInput.value;
     var agree = document.getElementById('suAgree').checked;
 
-    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) { showErr('帳號名稱：3–30 字元，僅可英數與底線'); return; }
-    if (!displayName) { showErr('請填寫顯示名稱'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Email 格式不正確'); return; }
-    if (password.length < 10) { showErr('密碼至少 10 字元'); return; }
-    if (!agree) { showErr('請勾選同意服務條款'); return; }
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) { showErr(window.L('sgErrUsername')); return; }
+    if (!displayName) { showErr(window.L('sgErrDisplay')); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr(window.L('sgErrEmail')); return; }
+    if (password.length < 10) { showErr(window.L('sgErrPwdLen')); return; }
+    if (!agree) { showErr(window.L('sgErrAgree')); return; }
 
     var btn = document.getElementById('suBtn');
     btn.disabled = true; var oldText = btn.textContent;
-    btn.textContent = '送出中...';
+    btn.textContent = window.L('sgBtnSubmitting');
 
     google.script.run
       .withSuccessHandler(function (res) {
@@ -340,12 +342,12 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
           btn.disabled = false; btn.textContent = oldText;
         } else {
           btn.disabled = false; btn.textContent = oldText;
-          showErr((res && res.message) || '建立失敗');
+          showErr((res && res.message) || window.L('sgErrCreateFail'));
         }
       })
       .withFailureHandler(function (err) {
         btn.disabled = false; btn.textContent = oldText;
-        showErr((err && err.message) || '網路錯誤');
+        showErr((err && err.message) || window.L('sgErrNetwork'));
       })
       .requestAccount(username, password, displayName, email, phone, pendingPlan);
   });
@@ -394,11 +396,11 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   document.getElementById('verifyBtn').addEventListener('click', function () {
     hideOtpErr();
     var otp = Array.from(otpInputs).map(function (i) { return i.value; }).join('');
-    if (otp.length !== 6) { showOtpErr('請完整輸入 6 位數驗證碼'); return; }
+    if (otp.length !== 6) { showOtpErr(window.L('sgErrOtpIncomplete')); return; }
 
     var btn = this;
     btn.disabled = true; var oldText = btn.textContent;
-    btn.textContent = '驗證中...';
+    btn.textContent = window.L('sgBtnVerifying');
 
     google.script.run
       .withSuccessHandler(function (res) {
@@ -411,12 +413,12 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
           showState(3);
         } else {
           btn.disabled = false; btn.textContent = oldText;
-          showOtpErr((res && res.message) || '驗證失敗');
+          showOtpErr((res && res.message) || window.L('sgErrVerifyFail'));
         }
       })
       .withFailureHandler(function (err) {
         btn.disabled = false; btn.textContent = oldText;
-        showOtpErr((err && err.message) || '網路錯誤');
+        showOtpErr((err && err.message) || window.L('sgErrNetwork'));
       })
       .verifyAccount(pendingUsername, otp);
   });
@@ -425,11 +427,11 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   document.getElementById('resendLink').addEventListener('click', function (e) {
     e.preventDefault();
     if (!pendingUsername) return;
-    showOtpErr('正在重新寄送...');
+    showOtpErr(window.L('sgResending'));
     // Backend doesn't yet have a dedicated "resend" callable; the cleanest behavior would be a
     // new resendVerification(username) callable. For Phase 2 we direct user to redo step 1.
     setTimeout(function () {
-      showOtpErr('請回到上一步重新填寫表單（驗證碼有效 15 分鐘）');
+      showOtpErr(window.L('sgResendRedo'));
     }, 800);
   });
 

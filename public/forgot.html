@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>忘記密碼 · RegMaster</title>
+<title data-i18n="fgPageTitle">忘記密碼 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -58,26 +58,26 @@ body::before { content:''; position:absolute; inset:0; background-image:linear-g
     <div class="state-pane on" data-s="1">
       <div class="step-header">
         <div class="ic-circle"><svg data-hero viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-        <h1>忘記密碼了？</h1>
-        <p>沒關係。輸入你的註冊信箱，<br>系統會把新密碼寄到你的信箱。</p>
+        <h1 data-i18n="fgTitle">忘記密碼了？</h1>
+        <p data-i18n-html="fgLead">沒關係。輸入你的註冊信箱，<br>系統會把新密碼寄到你的信箱。</p>
       </div>
 
       <div class="alert-box err" id="errBox" style="display:none"></div>
 
       <form id="forgotForm" autocomplete="on">
         <div>
-          <label class="label" for="email">註冊信箱</label>
+          <label class="label" for="email" data-i18n="fgEmailLabel">註冊信箱</label>
           <input class="input" id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com">
         </div>
-        <button class="btn btn-primary btn-lg btn-block" id="submitBtn" type="submit" style="margin-top:18px">寄送新密碼 →</button>
+        <button class="btn btn-primary btn-lg btn-block" id="submitBtn" type="submit" style="margin-top:18px" data-i18n="fgSubmit">寄送新密碼 →</button>
       </form>
 
       <div class="security-note">
         <div class="ic">i</div>
-        <div>為了安全，無論信箱是否存在，系統都會顯示相同回覆。請至信箱（含垃圾郵件夾）查看是否收到信件，<b>15 分鐘內僅能請求一次</b>。</div>
+        <div data-i18n-html="fgSecurityNote">為了安全，無論信箱是否存在，系統都會顯示相同回覆。請至信箱（含垃圾郵件夾）查看是否收到信件，<b>15 分鐘內僅能請求一次</b>。</div>
       </div>
 
-      <div class="foot-link">想起來了？<a href="/login.html">回到登入</a></div>
+      <div class="foot-link"><span data-i18n="fgRemembered">想起來了？</span><a href="/login.html" data-i18n="fgBackLogin">回到登入</a></div>
     </div>
 
     <!-- STATE 2: success -->
@@ -86,23 +86,25 @@ body::before { content:''; position:absolute; inset:0; background-image:linear-g
         <svg data-hero viewBox="0 0 24 24" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg>
       </div>
       <div class="step-header" style="margin-bottom:24px">
-        <h1>請至信箱查看新密碼</h1>
-        <p id="successMsg">若此 Email 已註冊，<br>新密碼將寄送至信箱。</p>
+        <h1 data-i18n="fgSuccessTitle">請至信箱查看新密碼</h1>
+        <p id="successMsg" data-i18n-html="fgSuccessMsg">若此 Email 已註冊，<br>新密碼將寄送至信箱。</p>
       </div>
 
       <div class="security-note" style="margin-top:0">
         <div class="ic">i</div>
-        <div>建議您收到新密碼後立即登入，並至「設定 → 帳號 → 修改密碼」改為自己慣用的密碼。</div>
+        <div data-i18n="fgSuccessNote">建議您收到新密碼後立即登入，並至「設定 → 帳號 → 修改密碼」改為自己慣用的密碼。</div>
       </div>
 
-      <a href="/login.html?just=reset" class="btn btn-primary btn-lg btn-block" style="margin-top:24px">回到登入頁 →</a>
+      <a href="/login.html?just=reset" class="btn btn-primary btn-lg btn-block" style="margin-top:24px" data-i18n="fgBackLoginBtn">回到登入頁 →</a>
 
-      <div class="foot-link">需要協助？<a href="/contact.html?topic=support">聯絡客服</a></div>
+      <div class="foot-link"><span data-i18n="fgNeedHelp">需要協助？</span><a href="/contact.html?topic=support" data-i18n="fgContactSupport">聯絡客服</a></div>
     </div>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-forgot.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -121,11 +123,11 @@ body::before { content:''; position:absolute; inset:0; background-image:linear-g
     hideErr();
 
     var email = document.getElementById('email').value.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Email 格式不正確'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr(window.L('fgInvalidEmail')); return; }
 
     var btn = document.getElementById('submitBtn');
     btn.disabled = true; var oldText = btn.textContent;
-    btn.textContent = '寄送中...';
+    btn.textContent = window.L('fgSending');
 
     google.script.run
       .withSuccessHandler(function (res) {
@@ -137,12 +139,12 @@ body::before { content:''; position:absolute; inset:0; background-image:linear-g
           showState(2);
         } else {
           btn.disabled = false; btn.textContent = oldText;
-          showErr((res && res.message) || '寄送失敗，請稍後再試');
+          showErr((res && res.message) || window.L('fgSendFailed'));
         }
       })
       .withFailureHandler(function (err) {
         btn.disabled = false; btn.textContent = oldText;
-        showErr((err && err.message) || '網路錯誤');
+        showErr((err && err.message) || window.L('fgNetworkError'));
       })
       .resetAdminPassword(email);
   });

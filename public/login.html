@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>登入 · RegMaster</title>
+<title data-i18n="lgPageTitle">登入 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -90,92 +90,94 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span>RegMaster</a>
 
   <div class="center-wrap">
-    <h1>歡迎回來</h1>
-    <p class="sub">第一次使用？<a href="/signup.html">建立新帳號 →</a></p>
+    <h1 data-i18n="lgWelcome">歡迎回來</h1>
+    <p class="sub" data-i18n-html="lgSubPrompt">第一次使用？<a href="/signup.html">建立新帳號 →</a></p>
 
     <div class="alert-box err" id="errBox" style="display:none"></div>
     <div class="alert-box ok" id="okBox" style="display:none"></div>
 
     <div class="sso-row">
-      <button class="sso-btn" id="googleBtn" type="button" title="使用 Google 登入" style="opacity:1;pointer-events:auto;cursor:pointer">
+      <button class="sso-btn" id="googleBtn" type="button" data-i18n-title="lgGoogleTitle" title="使用 Google 登入" style="opacity:1;pointer-events:auto;cursor:pointer">
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.33z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.99 7.28-2.66L15.71 17.6a6.84 6.84 0 01-10.21-3.59H1.83v2.84A11 11 0 0012 23z"/><path fill="#FBBC05" d="M5.5 14a6.59 6.59 0 010-4.21V6.95H1.83a11 11 0 000 10.1l3.67-2.85V14z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.07.56 4.21 1.64l3.15-3.15A11 11 0 0012 1a11 11 0 00-10.17 5.95L5.5 9.79A6.61 6.61 0 0112 5.38z"/></svg>
-        使用 Google 登入
+        <span data-i18n="lgGoogleBtn">使用 Google 登入</span>
       </button>
-      <button class="sso-btn" id="lineBtn" type="button" title="使用 LINE 登入" style="opacity:1;pointer-events:auto;cursor:pointer">
+      <button class="sso-btn" id="lineBtn" type="button" data-i18n-title="lgLineTitle" title="使用 LINE 登入" style="opacity:1;pointer-events:auto;cursor:pointer">
         <svg viewBox="0 0 24 24"><path fill="#06C755" d="M19.4 11.2c0-3.5-3.5-6.4-7.8-6.4S3.8 7.7 3.8 11.2c0 3.1 2.7 5.7 6.4 6.3.3 0 .6.2.7.5l.1.7c0 .2-.2.5-.5.4-1.1-.4 4.4-2.6 6.5-4.4 1.5-1.5 2.4-2.5 2.4-3.5z"/></svg>
-        使用 LINE 登入
+        <span data-i18n="lgLineBtn">使用 LINE 登入</span>
       </button>
     </div>
 
-    <div class="divider-or"><hr><span>OR · 用帳號密碼</span><hr></div>
+    <div class="divider-or"><hr><span data-i18n="lgDivider">OR · 用帳號密碼</span><hr></div>
 
     <form class="field-stack" id="loginForm" autocomplete="on">
       <div>
-        <label class="label" for="username">帳號</label>
-        <input class="input" id="username" name="username" type="text" autocomplete="username" required placeholder="您的帳號或 Email">
+        <label class="label" for="username" data-i18n="lgUsernameLabel">帳號</label>
+        <input class="input" id="username" name="username" type="text" autocomplete="username" required data-i18n-placeholder="lgUsernamePh" placeholder="您的帳號或 Email">
       </div>
       <div>
         <div class="flex jcb aic mb-2">
-          <label class="label" for="password" style="margin:0">密碼</label>
-          <a href="/forgot.html" style="font:500 12px/1 var(--f-tc); color:var(--acc)">忘記密碼？</a>
+          <label class="label" for="password" style="margin:0" data-i18n="lgPasswordLabel">密碼</label>
+          <a href="/forgot.html" style="font:500 12px/1 var(--f-tc); color:var(--acc)" data-i18n="lgForgot">忘記密碼？</a>
         </div>
-        <input class="input" id="password" name="password" type="password" autocomplete="current-password" required placeholder="輸入密碼">
+        <input class="input" id="password" name="password" type="password" autocomplete="current-password" required data-i18n-placeholder="lgPasswordPh" placeholder="輸入密碼">
       </div>
       <label class="flex aic gap-2" style="font:400 13px/1 var(--f-tc); color:var(--ink-2); margin:4px 0 6px">
-        <input type="checkbox" id="rememberMe" checked style="width:16px;height:16px"> 30 天內保持登入
+        <input type="checkbox" id="rememberMe" checked style="width:16px;height:16px"> <span data-i18n="lgRemember">30 天內保持登入</span>
       </label>
-      <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit" style="margin-top:8px">登入 →</button>
+      <button class="btn btn-primary btn-lg btn-block" id="loginBtn" type="submit" style="margin-top:8px" data-i18n="lgLoginBtn">登入 →</button>
     </form>
 
     <form class="field-stack" id="totpForm" autocomplete="off" style="display:none">
       <div class="totp-head">
         <span class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>
         <div>
-          <h2>兩步驟驗證</h2>
-          <p>多一道保護，確保是你本人登入。</p>
+          <h2 data-i18n="lgTotpTitle">兩步驟驗證</h2>
+          <p data-i18n="lgTotpDesc">多一道保護，確保是你本人登入。</p>
         </div>
       </div>
       <div>
-        <label class="label" for="totpCode">驗證碼</label>
+        <label class="label" for="totpCode" data-i18n="lgTotpLabel">驗證碼</label>
         <input class="input" id="totpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="● ● ● ● ● ●">
-        <p class="totp-hint">開啟 Google Authenticator 等驗證 App，輸入目前顯示的 6 位數驗證碼。</p>
+        <p class="totp-hint" data-i18n="lgTotpHint">開啟 Google Authenticator 等驗證 App，輸入目前顯示的 6 位數驗證碼。</p>
       </div>
-      <button class="btn btn-primary btn-lg btn-block" id="totpBtn" type="submit">驗證並登入 →</button>
-      <button class="btn btn-ghost btn-block" id="totpBack" type="button">← 返回帳號密碼</button>
+      <button class="btn btn-primary btn-lg btn-block" id="totpBtn" type="submit" data-i18n="lgTotpBtn">驗證並登入 →</button>
+      <button class="btn btn-ghost btn-block" id="totpBack" type="button" data-i18n="lgTotpBack">← 返回帳號密碼</button>
     </form>
   </div>
 
   <div class="foot">
-    <a href="/terms.html">服務條款</a> · <a href="/privacy.html">隱私權政策</a> · <a href="/contact.html">聯絡我們</a><br>
-    © 2026 RegMaster · v3.0
+    <a href="/terms.html" data-i18n="lgFtTerms">服務條款</a> · <a href="/privacy.html" data-i18n="lgFtPrivacy">隱私權政策</a> · <a href="/contact.html" data-i18n="lgFtContact">聯絡我們</a><br>
+    <span data-i18n="lgFtCopyright">© 2026 RegMaster · v3.0</span>
   </div>
 </div>
 
 <div class="right">
   <div class="badge">
     <span class="pill">v3 NEW</span>
-    AI 助理已上線 — 自動接住報名者的問題
+    <span data-i18n="lgBadge">AI 助理已上線 — 自動接住報名者的問題</span>
   </div>
-  <h2>報名後台<br>不再是<em>苦差事</em>。</h2>
-  <p class="lead">從競賽、研習到夏令營，RegMaster 把報名、收費、對帳、通知與報到整合成一個後台。</p>
+  <h2 data-i18n-html="lgRightH2">報名後台<br>不再是<em>苦差事</em>。</h2>
+  <p class="lead" data-i18n="lgRightLead">從競賽、研習到夏令營，RegMaster 把報名、收費、對帳、通知與報到整合成一個後台。</p>
 
   <div class="testimonial">
-    <blockquote>過去用表單工具收兩百多人報名很累，活動前還在熬夜對帳。改用系統化流程後，幾分鐘就搞定，省下大量行政時間。</blockquote>
+    <blockquote data-i18n="lgQuote">過去用表單工具收兩百多人報名很累，活動前還在熬夜對帳。改用系統化流程後，幾分鐘就搞定，省下大量行政時間。</blockquote>
     <cite>
       <div class="av">主</div>
-      <div>某科技大學<span>競賽承辦團隊</span></div>
+      <div data-i18n-html="lgQuoteOrg">某科技大學<span>競賽承辦團隊</span></div>
     </cite>
   </div>
 
   <div class="stats-row">
-    <div class="stat"><div class="num">1</div><div class="lbl">一個後台</div></div>
-    <div class="stat"><div class="num">0</div><div class="lbl">不用寫程式</div></div>
-    <div class="stat"><div class="num">AI</div><div class="lbl">智慧助理</div></div>
-    <div class="stat"><div class="num">TW</div><div class="lbl">在地設計</div></div>
+    <div class="stat"><div class="num">1</div><div class="lbl" data-i18n="lgStat1Lbl">一個後台</div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl" data-i18n="lgStat2Lbl">不用寫程式</div></div>
+    <div class="stat"><div class="num">AI</div><div class="lbl" data-i18n="lgStat3Lbl">智慧助理</div></div>
+    <div class="stat"><div class="num">TW</div><div class="lbl" data-i18n="lgStat4Lbl">在地設計</div></div>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-login.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -196,11 +198,11 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   // Show post-signup success message (?just=signup)
   var justParam = new URLSearchParams(location.search).get('just');
   if (justParam === 'signup') {
-    showOk('帳號已建立並驗證完成！請用您的帳號密碼登入。');
+    showOk(window.L('lgMsgSignupOk'));
   } else if (justParam === 'reset') {
-    showOk('密碼已重設。請用新密碼登入。');
+    showOk(window.L('lgMsgResetOk'));
   } else if (new URLSearchParams(location.search).get('expired') === '1') {
-    showErr('登入已過期，請重新登入。');
+    showErr(window.L('lgMsgExpired'));
   }
 
   // Collect minimal client info for security audit (same shape legacy SPA uses)
@@ -220,12 +222,12 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 
     var username = document.getElementById('username').value.trim();
     var password = document.getElementById('password').value;
-    if (!username || !password) { showErr('請輸入帳號與密碼'); return; }
+    if (!username || !password) { showErr(window.L('lgMsgNeedCreds')); return; }
 
     var btn = document.getElementById('loginBtn');
     btn.disabled = true;
     var oldText = btn.textContent;
-    btn.textContent = '登入中...';
+    btn.textContent = window.L('lgMsgLoggingIn');
 
     google.script.run
       .withSuccessHandler(function (res) {
@@ -242,13 +244,13 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
         } else {
           btn.disabled = false;
           btn.textContent = oldText;
-          showErr(res && res.message ? res.message : '登入失敗');
+          showErr(res && res.message ? res.message : window.L('lgMsgLoginFailed'));
         }
       })
       .withFailureHandler(function (err) {
         btn.disabled = false;
         btn.textContent = oldText;
-        showErr((err && err.message) || '網路錯誤，請稍後再試');
+        showErr((err && err.message) || window.L('lgMsgNetError'));
       })
       .loginAccount(username, password, getClientInfo());
   });
@@ -257,7 +259,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   var TOTP_CREDS = null;
   function finishLogin(res) {
     AppState.setMe({ username: res.username, role: res.role, displayName: res.displayName, sessionToken: res.sessionToken });
-    showOk('登入成功，正在轉跳...');
+    showOk(window.L('lgMsgLoginOk'));
     var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
     setTimeout(function () { location.href = nextUrl; }, 600);
   }
@@ -271,16 +273,16 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   document.getElementById('totpForm').addEventListener('submit', function (e) {
     e.preventDefault();
     hideAlerts();
-    if (!TOTP_CREDS) { showErr('請重新登入'); return; }
+    if (!TOTP_CREDS) { showErr(window.L('lgMsgReLogin')); return; }
     var code = document.getElementById('totpCode').value.replace(/\D/g, '');
-    if (code.length !== 6) { showErr('請輸入 6 位數驗證碼'); return; }
-    var b = document.getElementById('totpBtn'); b.disabled = true; var ot = b.textContent; b.textContent = '驗證中...';
+    if (code.length !== 6) { showErr(window.L('lgMsgNeed6')); return; }
+    var b = document.getElementById('totpBtn'); b.disabled = true; var ot = b.textContent; b.textContent = window.L('lgMsgVerifying');
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) { finishLogin(res); }
-        else { b.disabled = false; b.textContent = ot; showErr((res && res.message) || '驗證失敗'); }
+        else { b.disabled = false; b.textContent = ot; showErr((res && res.message) || window.L('lgMsgVerifyFailed')); }
       })
-      .withFailureHandler(function (err) { b.disabled = false; b.textContent = ot; showErr((err && err.message) || '驗證失敗'); })
+      .withFailureHandler(function (err) { b.disabled = false; b.textContent = ot; showErr((err && err.message) || window.L('lgMsgVerifyFailed')); })
       .loginVerifyTotp(TOTP_CREDS.username, TOTP_CREDS.password, code);
   });
 
@@ -314,7 +316,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       var st = document.createElement('style'); st.textContent = '@keyframes rmspin{to{transform:rotate(360deg)}}'; document.head.appendChild(st);
       document.body.appendChild(_ovl);
     }
-    _ovl.querySelector('#_ovlMsg').textContent = msg || '處理中⋯';
+    _ovl.querySelector('#_ovlMsg').textContent = msg || window.L('lgMsgProcessing');
     _ovl.style.display = 'grid';
   }
   function hideLoading() { if (_ovl) _ovl.style.display = 'none'; }
@@ -324,7 +326,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   if (googleBtn) {
     googleBtn.addEventListener('click', function () {
       hideAlerts();
-      if (typeof firebase === 'undefined' || !firebase.auth) { showErr('Google 登入元件尚未載入，請重新整理'); return; }
+      if (typeof firebase === 'undefined' || !firebase.auth) { showErr(window.L('lgMsgGoogleNotLoaded')); return; }
       var provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       googleBtn.style.pointerEvents = 'none';
@@ -332,38 +334,38 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       function reset() { googleBtn.style.pointerEvents = 'auto'; googleBtn.style.opacity = '1'; }
 
       firebase.auth().signInWithPopup(provider).then(function (result) {
-        showLoading('Google 登入中，請稍候⋯');
+        showLoading(window.L('lgMsgGoogleLoading'));
         return result.user.getIdToken();
       }).then(function (idToken) {
         google.script.run
           .withSuccessHandler(function (res) {
             if (res && res.success) {
               AppState.setMe({ username: res.username, role: res.role, displayName: res.displayName, sessionToken: res.sessionToken });
-              showOk('登入成功，正在轉跳...');
+              showOk(window.L('lgMsgLoginOk'));
               var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
               setTimeout(function () { location.href = nextUrl; }, 600);
             } else {
               hideLoading(); reset();
-              showErr(res && res.message ? res.message : 'Google 登入失敗');
+              showErr(res && res.message ? res.message : window.L('lgMsgGoogleFailed'));
               try { firebase.auth().signOut(); } catch (e) {}
             }
           })
           .withFailureHandler(function (err) {
             hideLoading(); reset();
-            showErr((err && err.message) || 'Google 登入失敗，請稍後再試');
+            showErr((err && err.message) || window.L('lgMsgGoogleFailedRetry'));
           })
           .loginWithGoogle(idToken);
       }).catch(function (e) {
         hideLoading(); reset();
         var code = (e && e.code) || '';
         if (code === 'auth/operation-not-allowed') {
-          showErr('Google 登入尚未在後台啟用，請聯絡管理員');
+          showErr(window.L('lgMsgGoogleNotEnabled'));
         } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
           /* user closed the popup — stay silent */
         } else if (code === 'auth/unauthorized-domain') {
-          showErr('此網域未授權 Google 登入');
+          showErr(window.L('lgMsgGoogleUnauthDomain'));
         } else {
-          showErr((e && e.message) || 'Google 登入失敗');
+          showErr((e && e.message) || window.L('lgMsgGoogleFailed'));
         }
       });
     });

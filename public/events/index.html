@@ -132,84 +132,86 @@ aside.filters { padding:24px 0; }
 <nav class="nav">
   <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span></a>
   <div class="links">
-    <a href="/events/" class="on">探索活動</a>
-    <a href="/pricing.html">方案</a>
-    <a href="/features.html">功能</a>
-    <a href="/about.html">關於</a>
-    <a href="/contact.html">聯絡</a>
+    <a href="/events/" class="on" data-i18n="navExplore">探索活動</a>
+    <a href="/pricing.html" data-i18n="navPricing">方案</a>
+    <a href="/features.html" data-i18n="navFeatures">功能</a>
+    <a href="/about.html" data-i18n="navAbout">關於</a>
+    <a href="/contact.html" data-i18n="navContact">聯絡</a>
   </div>
   <div class="actions">
     <button class="theme-toggle" id="themeToggle">🌗</button>
     <button class="theme-toggle" id="langToggle">中/EN</button>
-    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
-    <a href="/login.html" class="btn btn-quiet btn-sm">主辦方登入</a>
-    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm">免費試用</a>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
+    <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
+    <a href="/signup.html?plan=trial" class="btn btn-primary btn-sm" data-i18n="evNavTrial">免費試用</a>
   </div>
 </nav>
 
 <section class="page-hero">
   <div class="hero-inner">
-    <div class="hero-eyebrow">DISCOVER · 探索活動</div>
-    <h1>找一場<em>值得參加</em>的活動。</h1>
-    <p id="heroSubtitle">載入活動中⋯⋯</p>
+    <div class="hero-eyebrow" data-i18n="evHeroEyebrow">DISCOVER · 探索活動</div>
+    <h1 data-i18n-html="evHeroTitle">找一場<em>值得參加</em>的活動。</h1>
+    <p id="heroSubtitle" data-i18n="evHeroLoading">載入活動中⋯⋯</p>
 
     <div class="search-bar">
-      <input id="searchInput" placeholder="🔍 試試「黑客松」「研討會」「工作坊」⋯⋯">
+      <input id="searchInput" data-i18n-placeholder="evSearchPlaceholder" placeholder="🔍 試試「黑客松」「研討會」「工作坊」⋯⋯">
       <select id="categorySelect">
-        <option value="">📂 所有類別</option>
+        <option value="" data-i18n="evCatAllOption">📂 所有類別</option>
       </select>
-      <button id="searchBtn">搜尋</button>
+      <button id="searchBtn" data-i18n="evSearchBtn">搜尋</button>
     </div>
 
     <div class="quick-chips" id="quickChips">
-      <span class="qchip on" data-cat="">🌟 全部</span>
+      <span class="qchip on" data-cat="" data-i18n="evChipAll">🌟 全部</span>
       <!-- categories populated dynamically -->
     </div>
   </div>
 </section>
 
 <div class="sort-row">
-  <span class="results-meta" id="resultsMeta">為您找到 <strong>—</strong> 場活動</span>
+  <span class="results-meta" id="resultsMeta" data-i18n-html="evResultsInit">為您找到 <strong>—</strong> 場活動</span>
   <div class="toggles" id="sortToggles">
-    <button class="on" data-sort="popular">🔥 熱門</button>
-    <button data-sort="recent">⏰ 最近開賣</button>
-    <button data-sort="upcoming">📅 即將舉辦</button>
+    <button class="on" data-sort="popular" data-i18n="evSortPopular">🔥 熱門</button>
+    <button data-sort="recent" data-i18n="evSortRecent">⏰ 最近開賣</button>
+    <button data-sort="upcoming" data-i18n="evSortUpcoming">📅 即將舉辦</button>
   </div>
 </div>
 
 <div class="shell">
   <aside class="filters">
     <div class="filter-group">
-      <h5>狀態</h5>
-      <label><input type="checkbox" id="filterOpen" checked><span class="ck"></span>報名中<span class="count" id="cntOpen">—</span></label>
-      <label><input type="checkbox" id="filterUpcoming"><span class="ck"></span>即將開放<span class="count" id="cntUpcoming">—</span></label>
-      <label><input type="checkbox" id="filterClosed"><span class="ck"></span>已截止<span class="count" id="cntClosed">—</span></label>
+      <h5 data-i18n="evFilterStatus">狀態</h5>
+      <label><input type="checkbox" id="filterOpen" checked><span class="ck"></span><span data-i18n="evStatusOpen">報名中</span><span class="count" id="cntOpen">—</span></label>
+      <label><input type="checkbox" id="filterUpcoming"><span class="ck"></span><span data-i18n="evStatusUpcoming">即將開放</span><span class="count" id="cntUpcoming">—</span></label>
+      <label><input type="checkbox" id="filterClosed"><span class="ck"></span><span data-i18n="evStatusClosed">已截止</span><span class="count" id="cntClosed">—</span></label>
     </div>
     <div class="filter-group">
-      <h5>類別</h5>
+      <h5 data-i18n="evFilterCategory">類別</h5>
       <div id="catFilterList"><!-- populated dynamically --></div>
     </div>
     <div class="filter-group">
-      <h5>規模</h5>
-      <label><input type="checkbox"><span class="ck"></span>50 人以下</label>
-      <label><input type="checkbox"><span class="ck"></span>50–500 人</label>
-      <label><input type="checkbox"><span class="ck"></span>500+ 人</label>
+      <h5 data-i18n="evFilterScale">規模</h5>
+      <label><input type="checkbox"><span class="ck"></span><span data-i18n="evScaleSmall">50 人以下</span></label>
+      <label><input type="checkbox"><span class="ck"></span><span data-i18n="evScaleMid">50–500 人</span></label>
+      <label><input type="checkbox"><span class="ck"></span><span data-i18n="evScaleLarge">500+ 人</span></label>
     </div>
   </aside>
 
   <div>
     <div class="events-grid" id="eventsGrid">
-      <div class="loading-state">正在從伺服器載入活動清單⋯⋯</div>
+      <div class="loading-state" data-i18n="evLoadingList">正在從伺服器載入活動清單⋯⋯</div>
     </div>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-events-index.js"></script>
 <script>
 (function () {
   AppState.init();
   document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
-  document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); location.reload(); });
+  document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); });
 
   var ALL = [];
   var FILTERED = [];
@@ -259,26 +261,26 @@ aside.filters { padding:24px 0; }
       var wd = ['SUN','MON','TUE','WED','THU','FRI','SAT'][dl.getDay()];
       dateLabel = '<div class="date-stamp"><div class="d">' + (dl.getMonth()+1).toString().padStart(2,'0') + '.' + dn + '</div><div class="m">' + wd + ' · ' + mn + '</div></div>';
     }
-    var statusLabel = status === 'open' ? '<div class="label">🎟 報名中</div>'
-                     : status === 'upcoming' ? '<div class="label">⏰ 即將開放</div>'
-                     : '<div class="label closed">已截止</div>';
+    var statusLabel = status === 'open' ? '<div class="label">' + window.L('evPillOpen') + '</div>'
+                     : status === 'upcoming' ? '<div class="label">' + window.L('evPillUpcoming') + '</div>'
+                     : '<div class="label closed">' + window.L('evPillClosed') + '</div>';
     var teamMeta = c.maxTeams > 0
-      ? '<div class="progress-mini"><div class="lbl"><span>已報名</span><strong>' + (c.teamCount||0) + ' / ' + c.maxTeams + '</strong></div><div class="bar ' + barClass + '"><div style="width:' + (ratio*100).toFixed(0) + '%"></div></div></div>'
-      : '<div class="progress-mini"><div class="lbl"><span>已報名</span><strong>' + (c.teamCount||0) + '</strong></div></div>';
+      ? '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + (c.teamCount||0) + ' / ' + c.maxTeams + '</strong></div><div class="bar ' + barClass + '"><div style="width:' + (ratio*100).toFixed(0) + '%"></div></div></div>'
+      : '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + (c.teamCount||0) + '</strong></div></div>';
     var posterImg = c.posterUrl ? '<img class="poster-img" src="' + escapeHtml(c.posterUrl) + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\'">' : '';
     return '<a class="event-card" href="/events/detail.html?id=' + encodeURIComponent(c.compId) + '">' +
       '<div class="ev-cover ' + pickCover(idx) + '">' + posterImg + statusLabel + dateLabel +
-        (status === 'open' ? '<div class="badge-bottom"><span class="dot-l"></span>' + (c.teamCount||0) + ' 已報名</div>' : '') +
+        (status === 'open' ? '<div class="badge-bottom"><span class="dot-l"></span>' + (c.teamCount||0) + ' ' + window.L('evRegistered') + '</div>' : '') +
       '</div>' +
       '<div class="ev-body">' +
         '<div class="ev-tags">' + (c.category ? '<span class="t">' + escapeHtml(c.category) + '</span>' : '') + '</div>' +
-        '<h3>' + escapeHtml(c.name || '(未命名活動)') + '</h3>' +
+        '<h3>' + escapeHtml(c.name || window.L('evUntitled')) + '</h3>' +
         '<div class="ev-meta">' +
           (c.competitionDate ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><b>' + escapeHtml(c.competitionDate) + '</b></div>' : '') +
-          (c.deadline ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>截止：' + escapeHtml(c.deadline) + '</div>' : '') +
+          (c.deadline ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' + window.L('evDeadlinePrefix') + escapeHtml(c.deadline) + '</div>' : '') +
         '</div>' +
         '<div class="ev-foot">' +
-          '<div class="price"><div class="amt">查看詳情 →</div></div>' + teamMeta +
+          '<div class="price"><div class="amt">' + window.L('evViewDetail') + '</div></div>' + teamMeta +
         '</div>' +
       '</div></a>';
   }
@@ -310,12 +312,13 @@ aside.filters { padding:24px 0; }
 
   function render() {
     var grid = document.getElementById('eventsGrid');
-    document.getElementById('resultsMeta').innerHTML = '為您找到 <strong>' + FILTERED.length + '</strong> 場活動';
+    document.getElementById('resultsMeta').innerHTML = window.L('evResultsPrefix') + '<strong>' + FILTERED.length + '</strong>' + window.L('evResultsSuffix');
     if (FILTERED.length === 0) {
-      grid.innerHTML = '<div class="empty-state"><div class="ic">🔍</div><h3>找不到符合的活動</h3><p>試試清除篩選條件，或瀏覽其他類別。</p></div>';
+      grid.innerHTML = '<div class="empty-state"><div class="ic">🔍</div><h3>' + window.L('evEmptyTitle') + '</h3><p>' + window.L('evEmptyDesc') + '</p></div>';
       return;
     }
     grid.innerHTML = FILTERED.map(renderCard).join('');
+    if (window.applyI18n) window.applyI18n();
   }
 
   function buildCategoryFilters() {
@@ -362,7 +365,7 @@ aside.filters { padding:24px 0; }
     document.getElementById('cntOpen').textContent = o;
     document.getElementById('cntUpcoming').textContent = u;
     document.getElementById('cntClosed').textContent = c;
-    document.getElementById('heroSubtitle').innerHTML = 'RegMaster 上有 <strong style="color:var(--ink); font-weight:700">' + o + '</strong> 場進行中的活動，總計 ' + ALL.length + ' 場。';
+    document.getElementById('heroSubtitle').innerHTML = window.L('evHeroSubPrefix') + '<strong style="color:var(--ink); font-weight:700">' + o + '</strong>' + window.L('evHeroSubMid') + ALL.length + window.L('evHeroSubSuffix');
   }
 
   // Bind controls
@@ -390,17 +393,27 @@ aside.filters { padding:24px 0; }
   if (qs.get('q')) { STATE.q = qs.get('q'); document.getElementById('searchInput').value = STATE.q; }
   if (qs.get('cat')) { STATE.cat = qs.get('cat'); }
 
+  // Re-render JS-generated content (cards, counts, meta) when language switches.
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () {
+      if (ALL.length) { updateStatusCounts(); applyFilters(); }
+    });
+  }
+
   // Load events
   google.script.run
     .withSuccessHandler(function (list) {
       ALL = list || [];
+      // heroSubtitle becomes JS-managed below; drop its static data-i18n so the
+      // applier can't overwrite the live count on later language switches.
+      var hs = document.getElementById('heroSubtitle'); if (hs) hs.removeAttribute('data-i18n');
       buildCategoryFilters();
       updateStatusCounts();
       applyFilters();
     })
     .withFailureHandler(function (err) {
       document.getElementById('eventsGrid').innerHTML =
-        '<div class="empty-state"><div class="ic">⚠️</div><h3>載入失敗</h3><p>' + escapeHtml((err && err.message) || '請稍後再試') + '</p></div>';
+        '<div class="empty-state"><div class="ic">⚠️</div><h3>' + window.L('evLoadFailTitle') + '</h3><p>' + escapeHtml((err && err.message) || window.L('evLoadFailDesc')) + '</p></div>';
     })
     .listCompetitionsPublic();
 })();

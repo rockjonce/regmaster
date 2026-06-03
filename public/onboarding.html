@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>新手引導 · RegMaster</title>
+<title data-i18n="obDocTitle">新手引導 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -126,180 +126,180 @@ body { min-height:100vh; background:var(--surface-2); }
     <span class="ratio" id="progressRatio">1 / 4</span>
     <div class="bar"><div id="progressBar" style="width:25%"></div></div>
   </div>
-  <a class="skip" href="/admin/" id="skipLink">略過設定 →</a>
+  <a class="skip" href="/admin/" id="skipLink" data-i18n="obSkip">略過設定 →</a>
 </nav>
 
 <div class="shell">
   <aside class="steps-rail">
-    <div class="eyebrow">SETUP YOUR WORKSPACE</div>
+    <div class="eyebrow" data-i18n="obRailEyebrow">SETUP YOUR WORKSPACE</div>
     <div class="s-item on" data-step="1">
       <div class="n"><span>1</span></div>
-      <div class="body"><h5>歡迎</h5><p>確認帳號狀態與方案</p><div class="est">~ 30 秒</div></div>
+      <div class="body"><h5 data-i18n="obRail1Title">歡迎</h5><p data-i18n="obRail1Desc">確認帳號狀態與方案</p><div class="est" data-i18n="obRail1Est">~ 30 秒</div></div>
     </div>
     <div class="s-item" data-step="2">
       <div class="n"><span>2</span></div>
-      <div class="body"><h5>建立組織</h5><p>組織名稱與類型</p><div class="est">~ 2 分鐘</div></div>
+      <div class="body"><h5 data-i18n="obRail2Title">建立組織</h5><p data-i18n="obRail2Desc">組織名稱與類型</p><div class="est" data-i18n="obRail2Est">~ 2 分鐘</div></div>
     </div>
     <div class="s-item" data-step="3">
       <div class="n"><span>3</span></div>
-      <div class="body"><h5>邀請夥伴</h5><p>邀請夥伴一起管理（可略過）</p><div class="est">~ 1 分鐘</div></div>
+      <div class="body"><h5 data-i18n="obRail3Title">邀請夥伴</h5><p data-i18n="obRail3Desc">邀請夥伴一起管理（可略過）</p><div class="est" data-i18n="obRail3Est">~ 1 分鐘</div></div>
     </div>
     <div class="s-item" data-step="4">
       <div class="n"><span>4</span></div>
-      <div class="body"><h5>完成</h5><p>準備建立第一場活動</p><div class="est">~ 30 秒</div></div>
+      <div class="body"><h5 data-i18n="obRail4Title">完成</h5><p data-i18n="obRail4Desc">準備建立第一場活動</p><div class="est" data-i18n="obRail4Est">~ 30 秒</div></div>
     </div>
   </aside>
 
   <main class="main-card" id="stepContent">
     <!-- Step 1: Welcome -->
     <div class="step-pane" data-pane="1">
-      <div class="eyebrow">STEP 01</div>
-      <h1>歡迎來到 RegMaster 👋</h1>
-      <p class="lead">花 5 分鐘把工作區設定好，之後辦活動就會非常輕鬆。<br>所有步驟都可以稍後在「設定」頁修改。</p>
+      <div class="eyebrow" data-i18n="obStep1Eyebrow">STEP 01</div>
+      <h1 data-i18n="obStep1Title">歡迎來到 RegMaster 👋</h1>
+      <p class="lead" data-i18n-html="obStep1Lead">花 5 分鐘把工作區設定好，之後辦活動就會非常輕鬆。<br>所有步驟都可以稍後在「設定」頁修改。</p>
 
       <div class="tip-box">
         <div class="ic-tag">★</div>
-        <div class="body"><strong id="welcomeName">您好！</strong>您的帳號已啟用，並獲得一組 <strong>免費單次活動授權碼</strong>（已寄至註冊信箱）。完成設定後，您就能建立第一場活動。</div>
+        <div class="body" data-i18n-html="obStep1Tip"><strong id="welcomeName">您好！</strong>您的帳號已啟用，並獲得一組 <strong>免費單次活動授權碼</strong>（已寄至註冊信箱）。完成設定後，您就能建立第一場活動。</div>
       </div>
 
       <div class="complete-checklist">
-        <div class="row"><div class="ck"></div>帳號已開通 · <b id="emailEcho">your@email.com</b></div>
-        <div class="row"><div class="ck"></div>方案：<b id="planEcho">免費版 Free</b></div>
-        <div class="row"><div class="ck"></div>Free 版永久免費，需要時再升級</div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep1Check1Pre">帳號已開通 · </span><b id="emailEcho">your@email.com</b></div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep1Check2Pre">方案：</span><b id="planEcho">免費版 Free</b></div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep1Check3">Free 版永久免費，需要時再升級</span></div>
       </div>
 
       <div class="foot-actions">
-        <div class="left-meta">步驟 1 / 4</div>
+        <div class="left-meta" data-i18n="obStep1Meta">步驟 1 / 4</div>
         <div class="flex gap-2">
-          <button class="btn btn-primary" data-next="2">繼續 →</button>
+          <button class="btn btn-primary" data-next="2" data-i18n="obStep1Next">繼續 →</button>
         </div>
       </div>
     </div>
 
     <!-- Step 2: Organization -->
     <div class="step-pane" data-pane="2" style="display:none">
-      <div class="eyebrow">STEP 02</div>
-      <h1>來認識你的組織</h1>
-      <p class="lead">這些資訊會出現在報名頁、發票、Email 通知裡。可隨時於設定頁修改。</p>
+      <div class="eyebrow" data-i18n="obStep2Eyebrow">STEP 02</div>
+      <h1 data-i18n="obStep2Title">來認識你的組織</h1>
+      <p class="lead" data-i18n="obStep2Lead">這些資訊會出現在報名頁、發票、Email 通知裡。可隨時於設定頁修改。</p>
 
       <div class="alert-box err" id="step2Err" style="display:none"></div>
 
       <div>
-        <div class="label" style="margin-bottom:10px">組織類型 *</div>
+        <div class="label" style="margin-bottom:10px" data-i18n="obOrgTypeLabel">組織類型 *</div>
         <div class="org-grid" id="orgTypeGrid">
           <div class="org-card" data-type="company">
             <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M3 21h18M3 7v14M21 7v14M5 7L12 3l7 4M9 21V11h6v10"/></svg></div>
-            <h5>公司 / 企業</h5>
-            <p>需要開立發票</p>
+            <h5 data-i18n="obOrgCompanyTitle">公司 / 企業</h5>
+            <p data-i18n="obOrgCompanyDesc">需要開立發票</p>
           </div>
           <div class="org-card on" data-type="school">
             <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5l6 3 6-3v-5"/></svg></div>
-            <h5>學校 / 學術單位</h5>
-            <p>享教育價優惠</p>
+            <h5 data-i18n="obOrgSchoolTitle">學校 / 學術單位</h5>
+            <p data-i18n="obOrgSchoolDesc">享教育價優惠</p>
           </div>
           <div class="org-card" data-type="ngo">
             <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M12 2l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/></svg></div>
-            <h5>非營利 / 社群</h5>
-            <p>免費或低價方案</p>
+            <h5 data-i18n="obOrgNgoTitle">非營利 / 社群</h5>
+            <p data-i18n="obOrgNgoDesc">免費或低價方案</p>
           </div>
         </div>
       </div>
 
       <div class="tip-box" id="orgTip">
         <div class="ic-tag">i</div>
-        <div class="body"><strong>學校 / 學術單位</strong>可享 Pro 方案 30% 折扣，並支援以機構信箱付款。系所名稱建議填寫完整全名以利對帳。</div>
+        <div class="body" data-i18n-html="obOrgTip"><strong>學校 / 學術單位</strong>可享 Pro 方案 30% 折扣，並支援以機構信箱付款。系所名稱建議填寫完整全名以利對帳。</div>
       </div>
 
       <div class="fields">
         <div>
-          <label class="label" for="orgName">組織全名 *</label>
-          <input class="input" id="orgName" placeholder="例如：某某大學 資訊工程系 / 某某協會">
+          <label class="label" for="orgName" data-i18n="obOrgNameLabel">組織全名 *</label>
+          <input class="input" id="orgName" placeholder="例如：某某大學 資訊工程系 / 某某協會" data-i18n-placeholder="obOrgNamePh">
         </div>
         <div>
-          <label class="label" for="orgNameEN">英文名稱</label>
+          <label class="label" for="orgNameEN" data-i18n="obOrgNameENLabel">英文名稱</label>
           <input class="input" id="orgNameEN" placeholder="ABC Co., Ltd.">
         </div>
         <div>
-          <label class="label" for="orgTaxId">統一編號</label>
-          <input class="input" id="orgTaxId" placeholder="8 碼統編">
+          <label class="label" for="orgTaxId" data-i18n="obOrgTaxIdLabel">統一編號</label>
+          <input class="input" id="orgTaxId" placeholder="8 碼統編" data-i18n-placeholder="obOrgTaxIdPh">
         </div>
         <div>
-          <label class="label" for="orgRegion">主要使用地區</label>
+          <label class="label" for="orgRegion" data-i18n="obOrgRegionLabel">主要使用地區</label>
           <select class="select" id="orgRegion">
-            <option value="TW">🇹🇼 台灣</option>
-            <option value="HK">🇭🇰 香港</option>
-            <option value="JP">🇯🇵 日本</option>
-            <option value="SG">🇸🇬 新加坡</option>
+            <option value="TW" data-i18n="obRegionTW">🇹🇼 台灣</option>
+            <option value="HK" data-i18n="obRegionHK">🇭🇰 香港</option>
+            <option value="JP" data-i18n="obRegionJP">🇯🇵 日本</option>
+            <option value="SG" data-i18n="obRegionSG">🇸🇬 新加坡</option>
           </select>
         </div>
         <div class="field-full">
-          <label class="label">辦活動的常見類型 <span style="font:400 11px/1 var(--f-mono); color:var(--muted)">（多選，幫助我們推薦範本）</span></label>
+          <label class="label"><span data-i18n="obEventTypeLabel">辦活動的常見類型 </span><span style="font:400 11px/1 var(--f-mono); color:var(--muted)" data-i18n="obEventTypeHint">（多選，幫助我們推薦範本）</span></label>
           <div class="tags-input" id="eventTypeTags">
-            <input id="tagInput" placeholder="例：程式競賽、研討會（Enter 新增）">
+            <input id="tagInput" placeholder="例：程式競賽、研討會（Enter 新增）" data-i18n-placeholder="obTagInputPh">
           </div>
         </div>
       </div>
 
       <div>
-        <div class="label" style="margin-bottom:10px">你在組織中的角色</div>
+        <div class="label" style="margin-bottom:10px" data-i18n="obRoleLabel">你在組織中的角色</div>
         <div class="role-grid" id="userRoleGrid">
           <div class="role-pick on" data-role="owner">
             <div class="ck"></div>
-            <div><h5>主要負責人 · Owner</h5><p>能管理所有活動、計費與成員</p></div>
+            <div><h5 data-i18n="obRoleOwnerTitle">主要負責人 · Owner</h5><p data-i18n="obRoleOwnerDesc">能管理所有活動、計費與成員</p></div>
           </div>
           <div class="role-pick" data-role="pm">
             <div class="ck"></div>
-            <div><h5>專案經理 · PM</h5><p>負責特定活動的設定與營運</p></div>
+            <div><h5 data-i18n="obRolePmTitle">專案經理 · PM</h5><p data-i18n="obRolePmDesc">負責特定活動的設定與營運</p></div>
           </div>
           <div class="role-pick" data-role="ops">
             <div class="ck"></div>
-            <div><h5>客服 / 報到人員</h5><p>協助處理報名與現場服務</p></div>
+            <div><h5 data-i18n="obRoleOpsTitle">客服 / 報到人員</h5><p data-i18n="obRoleOpsDesc">協助處理報名與現場服務</p></div>
           </div>
           <div class="role-pick" data-role="finance">
             <div class="ck"></div>
-            <div><h5>財務 / 會計</h5><p>處理發票、退款與對帳</p></div>
+            <div><h5 data-i18n="obRoleFinanceTitle">財務 / 會計</h5><p data-i18n="obRoleFinanceDesc">處理發票、退款與對帳</p></div>
           </div>
         </div>
       </div>
 
       <div class="foot-actions">
-        <div class="left-meta">步驟 2 / 4 · 已完成 <strong>50%</strong></div>
+        <div class="left-meta" data-i18n-html="obStep2Meta">步驟 2 / 4 · 已完成 <strong>50%</strong></div>
         <div class="flex gap-2">
-          <button class="btn btn-ghost" data-prev="1">← 上一步</button>
-          <button class="btn btn-primary" data-next="3" id="step2NextBtn">繼續 →</button>
+          <button class="btn btn-ghost" data-prev="1" data-i18n="obPrev">← 上一步</button>
+          <button class="btn btn-primary" data-next="3" id="step2NextBtn" data-i18n="obStep2Next">繼續 →</button>
         </div>
       </div>
     </div>
 
     <!-- Step 3: Invite team -->
     <div class="step-pane" data-pane="3" style="display:none">
-      <div class="eyebrow">STEP 03</div>
-      <h1>邀請夥伴一起管理</h1>
-      <p class="lead">活動很少一個人能完成。邀請夥伴，分權限管理。可稍後再加。</p>
+      <div class="eyebrow" data-i18n="obStep3Eyebrow">STEP 03</div>
+      <h1 data-i18n="obStep3Title">邀請夥伴一起管理</h1>
+      <p class="lead" data-i18n="obStep3Lead">活動很少一個人能完成。邀請夥伴，分權限管理。可稍後再加。</p>
 
       <div class="invite-row">
-        <input class="input" id="inviteEmail" type="email" placeholder="夥伴的 Email">
+        <input class="input" id="inviteEmail" type="email" placeholder="夥伴的 Email" data-i18n-placeholder="obInviteEmailPh">
         <select class="select" id="inviteRole" style="max-width:160px">
-          <option value="pm">專案經理</option>
-          <option value="ops">客服 / 報到</option>
-          <option value="finance">財務</option>
+          <option value="pm" data-i18n="obInviteRolePm">專案經理</option>
+          <option value="ops" data-i18n="obInviteRoleOps">客服 / 報到</option>
+          <option value="finance" data-i18n="obInviteRoleFinance">財務</option>
         </select>
-        <button class="btn btn-ghost" id="addInviteBtn" type="button">＋ 加入</button>
+        <button class="btn btn-ghost" id="addInviteBtn" type="button" data-i18n="obAddInvite">＋ 加入</button>
       </div>
 
       <div class="invite-list" id="inviteList"></div>
 
       <div class="tip-box">
         <div class="ic-tag">i</div>
-        <div class="body">夥伴會收到邀請信，註冊後自動加入你的組織。免費版可邀請 1 位，Pro 版可邀請 3 位。<strong>本步驟可略過</strong>，未來在「設定 → 成員管理」可隨時新增。</div>
+        <div class="body" data-i18n-html="obStep3Tip">夥伴會收到邀請信，註冊後自動加入你的組織。免費版可邀請 1 位，Pro 版可邀請 3 位。<strong>本步驟可略過</strong>，未來在「設定 → 成員管理」可隨時新增。</div>
       </div>
 
       <div class="foot-actions">
-        <div class="left-meta">步驟 3 / 4 · 已完成 <strong>75%</strong></div>
+        <div class="left-meta" data-i18n-html="obStep3Meta">步驟 3 / 4 · 已完成 <strong>75%</strong></div>
         <div class="flex gap-2">
-          <button class="btn btn-ghost" data-prev="2">← 上一步</button>
-          <button class="btn btn-quiet" data-next="4">略過</button>
-          <button class="btn btn-primary" data-next="4">繼續 →</button>
+          <button class="btn btn-ghost" data-prev="2" data-i18n="obPrev">← 上一步</button>
+          <button class="btn btn-quiet" data-next="4" data-i18n="obStep3SkipBtn">略過</button>
+          <button class="btn btn-primary" data-next="4" data-i18n="obStep3Next">繼續 →</button>
         </div>
       </div>
     </div>
@@ -308,27 +308,27 @@ body { min-height:100vh; background:var(--surface-2); }
     <div class="step-pane" data-pane="4" style="display:none">
       <div class="complete-illustration">
         <div class="ic-big"><svg data-hero viewBox="0 0 24 24" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg></div>
-        <h2>設定完成！</h2>
-        <p>準備好建立你的第一場活動了嗎？</p>
+        <h2 data-i18n="obStep4Title">設定完成！</h2>
+        <p data-i18n="obStep4Sub">準備好建立你的第一場活動了嗎？</p>
       </div>
 
       <div class="complete-checklist">
-        <div class="row"><div class="ck"></div>帳號已開通並驗證</div>
-        <div class="row"><div class="ck"></div>組織資訊已建立</div>
-        <div class="row"><div class="ck"></div>Free 方案已啟用</div>
-        <div class="row"><div class="ck"></div>可立即建立第一場活動</div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep4Check1">帳號已開通並驗證</span></div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep4Check2">組織資訊已建立</span></div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep4Check3">Free 方案已啟用</span></div>
+        <div class="row"><div class="ck"></div><span data-i18n="obStep4Check4">可立即建立第一場活動</span></div>
       </div>
 
       <div class="tip-box">
         <div class="ic-tag">★</div>
-        <div class="body">需要協助？可隨時於 AI 助理對話框提問，或來信 <strong>support@calculator.com.tw</strong>，我們很樂意協助你上手。</div>
+        <div class="body" data-i18n-html="obStep4Tip">需要協助？可隨時於 AI 助理對話框提問，或來信 <strong>support@calculator.com.tw</strong>，我們很樂意協助你上手。</div>
       </div>
 
       <div class="foot-actions">
-        <div class="left-meta">步驟 4 / 4 · 100% 完成</div>
+        <div class="left-meta" data-i18n="obStep4Meta">步驟 4 / 4 · 100% 完成</div>
         <div class="flex gap-2">
-          <button class="btn btn-ghost" data-prev="3">← 上一步</button>
-          <a href="/admin/" class="btn btn-primary">建立第一場活動 →</a>
+          <button class="btn btn-ghost" data-prev="3" data-i18n="obPrev">← 上一步</button>
+          <a href="/admin/" class="btn btn-primary" data-i18n="obStep4Cta">建立第一場活動 →</a>
         </div>
       </div>
     </div>
@@ -336,6 +336,8 @@ body { min-height:100vh; background:var(--surface-2); }
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-onboarding.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -349,12 +351,33 @@ body { min-height:100vh; background:var(--surface-2); }
   }
 
   // Pre-fill from session + ?plan=
-  var planMap = { trial: '免費版 Free', free: '免費版 Free', starter: '入門版 Starter', pro: '專業版 Pro', team: '團隊版 Team' };
+  var planKeyMap = { trial: 'obPlanTrial', free: 'obPlanFree', starter: 'obPlanStarter', pro: 'obPlanPro', team: 'obPlanTeam' };
   var savedPlan = '';
   try { savedPlan = localStorage.getItem('regmaster_signup_plan') || 'free'; } catch (e) {}
-  document.getElementById('welcomeName').textContent = '您好 ' + ((me && me.displayName) || '主辦人') + '！';
-  document.getElementById('emailEcho').textContent = (me && me.email) || (me && me.username) || '已驗證信箱';
-  document.getElementById('planEcho').textContent = planMap[savedPlan] || '免費版 Free';
+  // Re-fill the dynamic prefill nodes (welcomeName / emailEcho / planEcho).
+  // welcomeName & planEcho live inside [data-i18n-html] nodes, so applyI18n
+  // overwrites them on language change — re-run this after each apply.
+  function fillPrefill() {
+    var wn = document.getElementById('welcomeName');
+    if (wn) wn.textContent = window.L('obWelcomeGreet') + ' ' + ((me && me.displayName) || window.L('obWelcomeHost')) + window.L('obWelcomeBang');
+    var ee = document.getElementById('emailEcho');
+    if (ee) ee.textContent = (me && me.email) || (me && me.username) || window.L('obEmailFallback');
+    var pe = document.getElementById('planEcho');
+    if (pe) pe.textContent = window.L(planKeyMap[savedPlan] || 'obPlanFree');
+  }
+  fillPrefill();
+  // Re-fill after the initial applyI18n (which runs on DOMContentLoaded inside
+  // i18n.js, registered earlier, and would otherwise reset the dynamic nodes).
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(fillPrefill, 0); });
+  } else {
+    setTimeout(fillPrefill, 0);
+  }
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () {
+      setTimeout(function () { fillPrefill(); renderInvitees(); }, 0);
+    });
+  }
 
   // ---- Step navigation ----
   var currentStep = 1;
@@ -366,7 +389,7 @@ body { min-height:100vh; background:var(--surface-2); }
       var orgName = document.getElementById('orgName').value.trim();
       if (!orgName) {
         var box = document.getElementById('step2Err');
-        box.textContent = '請填寫組織全名';
+        box.textContent = window.L('obErrOrgNameRequired');
         box.style.display = 'block';
         return;
       }
@@ -465,15 +488,15 @@ body { min-height:100vh; background:var(--surface-2); }
   document.getElementById('addInviteBtn').addEventListener('click', function () {
     var email = document.getElementById('inviteEmail').value.trim();
     var role = document.getElementById('inviteRole').value;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Email 格式不正確'); return; }
-    if (invitees.some(function (i) { return i.email === email; })) { alert('已加入過這個 Email'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert(window.L('obErrInvalidEmail')); return; }
+    if (invitees.some(function (i) { return i.email === email; })) { alert(window.L('obErrDupEmail')); return; }
     invitees.push({ email: email, role: role });
     document.getElementById('inviteEmail').value = '';
     renderInvitees();
   });
   function renderInvitees() {
     var list = document.getElementById('inviteList');
-    var roleLabel = { pm: '專案經理', ops: '客服 / 報到', finance: '財務' };
+    var roleLabel = { pm: window.L('obInviteRolePm'), ops: window.L('obInviteRoleOps'), finance: window.L('obInviteRoleFinance') };
     list.innerHTML = invitees.map(function (i, idx) {
       return '<div class="invitee"><span>' + i.email + '</span>' +
              '<span style="color:var(--muted); font:500 11px/1 var(--f-mono); margin-left:8px">' + (roleLabel[i.role] || i.role) + '</span>' +

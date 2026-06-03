@@ -131,17 +131,17 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 <nav class="nav">
   <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span></a>
   <div class="crumbs">
-    <a href="/events/">探索活動</a><span class="sep">/</span>
-    <span class="here" id="crumbName">載入中⋯⋯</span>
+    <a href="/events/" data-i18n="edCrumbExplore">探索活動</a><span class="sep">/</span>
+    <span class="here" id="crumbName" data-i18n="edCrumbLoading">載入中⋯⋯</span>
   </div>
   <div class="actions">
     <button class="theme-toggle" id="themeToggle">🌗</button>
-    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
-    <a href="/login.html" class="btn btn-quiet btn-sm">登入</a>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="edNavMy">我的報名</a>
+    <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="edNavLogin">登入</a>
   </div>
 </nav>
 
-<div id="loadingState" class="skeleton">載入活動資料⋯⋯</div>
+<div id="loadingState" class="skeleton" data-i18n="edLoading">載入活動資料⋯⋯</div>
 
 <div id="content" style="display:none">
   <section class="hero">
@@ -154,7 +154,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         <div class="host-row">
           <div class="av" id="hostAvatar">—</div>
           <div class="body">
-            <div class="lbl">主辦單位</div>
+            <div class="lbl" data-i18n="edHostLabel">主辦單位</div>
             <div class="name" id="hostName">—</div>
             <div class="meta" id="hostMeta">—</div>
           </div>
@@ -163,22 +163,22 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         <div class="facts-grid">
           <div>
             <svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            <div class="lbl">日期</div>
+            <div class="lbl" data-i18n="edFactDate">日期</div>
             <div class="v" id="factDate">—</div>
           </div>
           <div>
             <svg data-hero viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 13a3 3 0 100-6 3 3 0 000 6z"/></svg>
-            <div class="lbl">類別</div>
+            <div class="lbl" data-i18n="edFactCategory">類別</div>
             <div class="v" id="factCategory">—</div>
           </div>
           <div>
             <svg data-hero viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            <div class="lbl">名額</div>
+            <div class="lbl" data-i18n="edFactCapacity">名額</div>
             <div class="v" id="factCapacity">—</div>
           </div>
           <div>
             <svg data-hero viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <div class="lbl">截止</div>
+            <div class="lbl" data-i18n="edFactDeadline">截止</div>
             <div class="v" id="factDeadline">—</div>
           </div>
         </div>
@@ -196,12 +196,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 
         <div class="cta-card">
           <div class="price-row">
-            <div class="amt" id="ctaTitle">準備報名</div>
+            <div class="amt" id="ctaTitle" data-i18n="edCtaTitle">準備報名</div>
           </div>
-          <div class="price-meta" id="ctaSub">即將開始⋯⋯</div>
+          <div class="price-meta" id="ctaSub" data-i18n="edCtaSub">即將開始⋯⋯</div>
 
           <div class="progress" id="ctaProgress"><div style="width:0%"></div></div>
-          <div class="progress-meta"><span>已報名</span><strong id="ctaCount">0 / 0</strong></div>
+          <div class="progress-meta"><span data-i18n="edProgressLabel">已報名</span><strong id="ctaCount">0 / 0</strong></div>
 
           <div class="countdown" id="ctaCountdown" style="display:none">
             <div class="b"><div class="n" id="cdD">00</div><div class="l">DAYS</div></div>
@@ -210,8 +210,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
             <div class="b"><div class="n" id="cdS">00</div><div class="l">SECS</div></div>
           </div>
 
-          <a id="registerBtn" href="#" class="btn btn-primary btn-lg btn-block">立即報名 →</a>
-          <a id="lookupBtn" href="#" class="btn btn-ghost btn-block btn-sm" style="margin-top:8px">查詢已報名</a>
+          <a id="registerBtn" href="#" class="btn btn-primary btn-lg btn-block" data-i18n="edRegisterBtn">立即報名 →</a>
+          <a id="lookupBtn" href="#" class="btn btn-ghost btn-block btn-sm" style="margin-top:8px" data-i18n="edLookupBtn">查詢已報名</a>
         </div>
       </div>
     </div>
@@ -219,73 +219,73 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 
   <div class="tabs-bar">
     <div class="inner">
-      <a href="#about" class="on">活動介紹</a>
-      <a href="#announcements">公告 <span id="annCountBadge"></span></a>
-      <a href="#poster" id="tabPoster" style="display:none">海報</a>
-      <a href="#rules" id="tabRules" style="display:none">規章</a>
+      <a href="#about" class="on" data-i18n="edTabAbout">活動介紹</a>
+      <a href="#announcements"><span data-i18n="edTabAnn">公告</span> <span id="annCountBadge"></span></a>
+      <a href="#poster" id="tabPoster" style="display:none" data-i18n="edTabPoster">海報</a>
+      <a href="#rules" id="tabRules" style="display:none" data-i18n="edTabRules">規章</a>
     </div>
   </div>
 
   <div class="body-shell">
     <div>
       <section class="block" id="about">
-        <h2>關於這場活動</h2>
+        <h2 data-i18n="edAboutH2">關於這場活動</h2>
         <div class="rich-content" id="evDescription">—</div>
       </section>
 
       <section class="block" id="announcements">
-        <h2>公告 <span style="font:500 13px/1 var(--f-mono); color:var(--muted); margin-left:6px" id="annCount">0 則</span></h2>
-        <div id="annList"><p class="lead" style="color:var(--muted)">目前沒有公告。</p></div>
+        <h2><span data-i18n="edAnnH2Prefix">公告</span> <span style="font:500 13px/1 var(--f-mono); color:var(--muted); margin-left:6px" id="annCount" data-i18n="edAnnCountZero">0 則</span></h2>
+        <div id="annList"><p class="lead" style="color:var(--muted)" data-i18n="edAnnEmpty">目前沒有公告。</p></div>
       </section>
 
       <section class="block" id="poster" style="display:none">
-        <h2>活動海報</h2>
-        <div id="posterFull"><p style="color:var(--muted)">主辦方尚未上傳海報。</p></div>
+        <h2 data-i18n="edPosterH2">活動海報</h2>
+        <div id="posterFull"><p style="color:var(--muted)" data-i18n="edPosterEmpty">主辦方尚未上傳海報。</p></div>
       </section>
 
       <section class="block" id="rules" style="display:none">
-        <h2>規章與規則</h2>
+        <h2 data-i18n="edRulesH2">規章與規則</h2>
         <div id="rulesArea">
-          <p style="color:var(--muted)">主辦方尚未上傳規章文件。</p>
+          <p style="color:var(--muted)" data-i18n="edRulesEmpty">主辦方尚未上傳規章文件。</p>
         </div>
       </section>
     </div>
 
     <aside>
       <div class="side-card">
-        <h4>分享活動</h4>
+        <h4 data-i18n="edShareH4">分享活動</h4>
         <div class="share-row">
-          <button id="shareCopy">📋 複製連結</button>
+          <button id="shareCopy" data-i18n="edShareCopy">📋 複製連結</button>
           <button id="shareLine">LINE</button>
           <button id="shareFB">Facebook</button>
         </div>
       </div>
 
       <div class="side-card" id="pdfSideCard" style="display:none">
-        <h4>下載規章</h4>
+        <h4 data-i18n="edPdfH4">下載規章</h4>
         <a class="pdf-link" id="pdfLink" target="_blank">
           <div class="ic">PDF</div>
-          <div>活動規章 PDF<small style="display:block;color:var(--muted);font:400 11px/1.4 var(--f-mono);margin-top:2px">點擊開啟</small></div>
+          <div><span data-i18n="edPdfTitle">活動規章 PDF</span><small style="display:block;color:var(--muted);font:400 11px/1.4 var(--f-mono);margin-top:2px" data-i18n="edPdfHint">點擊開啟</small></div>
         </a>
       </div>
 
       <div class="side-card" id="aiHelpCard">
-        <h4>💬 AI 活動小幫手</h4>
-        <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0 0 10px">關於本活動的問題（時間、組別、費用、規章…）都可以直接詢問 AI。</p>
-        <button id="aiChatOpenBtn" class="btn" style="background:var(--acc); color:#fff; width:100%">開啟 AI 對話</button>
+        <h4 data-i18n="edAiH4">💬 AI 活動小幫手</h4>
+        <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0 0 10px" data-i18n="edAiP">關於本活動的問題（時間、組別、費用、規章…）都可以直接詢問 AI。</p>
+        <button id="aiChatOpenBtn" class="btn" style="background:var(--acc); color:#fff; width:100%" data-i18n="edAiOpenBtn">開啟 AI 對話</button>
       </div>
       <div class="side-card">
-        <h4>需要協助</h4>
-        <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0">活動相關問題請直接洽詢主辦方。其他平台問題請<a href="/contact.html?topic=support" style="color:var(--acc);font-weight:500">聯絡客服</a>。</p>
+        <h4 data-i18n="edHelpH4">需要協助</h4>
+        <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0" data-i18n-html="edHelpP">活動相關問題請直接洽詢主辦方。其他平台問題請<a href="/contact.html?topic=support" style="color:var(--acc);font-weight:500">聯絡客服</a>。</p>
       </div>
     </aside>
   </div>
 </div>
 
 <div id="errorState" class="error-state" style="display:none">
-  <h3>無法載入活動</h3>
-  <p id="errorMsg">找不到此活動，或活動已下架。</p>
-  <a href="/events/" class="btn btn-primary">回到活動列表</a>
+  <h3 data-i18n="edErrTitle">無法載入活動</h3>
+  <p id="errorMsg" data-i18n="edErrMsg">找不到此活動，或活動已下架。</p>
+  <a href="/events/" class="btn btn-primary" data-i18n="edErrBack">回到活動列表</a>
 </div>
 
 <!-- B.3: Activity-scoped AI chatbot (ported from legacy regmaster-pro) -->
@@ -320,21 +320,23 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   #aiChatPanel { right:16px; bottom:16px; left:16px; width:auto; height:75vh; }
 }
 </style>
-<div id="aiChatPanel" role="dialog" aria-label="活動 AI 對話">
+<div id="aiChatPanel" role="dialog" aria-label="活動 AI 對話" data-i18n-aria="edAiPanelAria">
   <div class="hdr">
-    <div><h5>AI 活動小幫手</h5><small>僅回答本活動相關問題</small></div>
-    <button type="button" id="aiChatCloseBtn" title="關閉">×</button>
+    <div><h5 data-i18n="edAiPanelTitle">AI 活動小幫手</h5><small data-i18n="edAiPanelSub">僅回答本活動相關問題</small></div>
+    <button type="button" id="aiChatCloseBtn" title="關閉" data-i18n-title="edAiPanelClose">×</button>
   </div>
   <div class="msgs" id="aiChatMsgs">
-    <div class="msg ai"><div class="bubble">您好！我是 AI 小幫手，本活動的時間、組別、費用、規章內容都可以詢問我。請輸入您的問題。</div></div>
+    <div class="msg ai"><div class="bubble" data-i18n="edAiGreeting">您好！我是 AI 小幫手，本活動的時間、組別、費用、規章內容都可以詢問我。請輸入您的問題。</div></div>
   </div>
   <div class="input-row">
-    <input id="aiChatInput" type="text" placeholder="請輸入問題⋯⋯（按 Enter 送出）" maxlength="200">
-    <button type="button" id="aiChatSendBtn">送出</button>
+    <input id="aiChatInput" type="text" placeholder="請輸入問題⋯⋯（按 Enter 送出）" maxlength="200" data-i18n-placeholder="edAiInputPlaceholder">
+    <button type="button" id="aiChatSendBtn" data-i18n="edAiSendBtn">送出</button>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-events-detail.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -345,7 +347,9 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   if (!compId) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMsg').textContent = '網址未指定活動編號。';
+    var noIdMsg = document.getElementById('errorMsg');
+    noIdMsg.removeAttribute('data-i18n');
+    noIdMsg.textContent = window.L('edErrNoId');
     return;
   }
 
@@ -353,7 +357,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   if (qs.get('bound') === 'line') {
     setTimeout(function () {
       var t = document.createElement('div');
-      t.textContent = '✓ 已綁定 LINE 帳號';
+      t.textContent = window.L('edLineBound');
       t.style.cssText = 'position:fixed;left:50%;top:20px;transform:translateX(-50%);z-index:500;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font:600 13px/1 var(--f-tc);box-shadow:0 6px 24px rgba(0,0,0,.18)';
       document.body.appendChild(t);
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
@@ -401,7 +405,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       if (!data || data.error) {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('errorState').style.display = 'block';
-        if (data && data.error) document.getElementById('errorMsg').textContent = data.error;
+        if (data && data.error) { var em0 = document.getElementById('errorMsg'); em0.removeAttribute('data-i18n'); em0.textContent = data.error; }
         return;
       }
       renderEvent(data, compId);
@@ -409,26 +413,30 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     .withFailureHandler(function (err) {
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('errorState').style.display = 'block';
-      document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
+      var emEl = document.getElementById('errorMsg');
+      emEl.removeAttribute('data-i18n');
+      emEl.textContent = (err && err.message) || window.L('edErrNetwork');
     })
     .getRegistrationBundle(compId);
 
   function renderEvent(d, compId) {
     var cfg = d.config || {};
-    var name = cfg.competitionName || '(未命名活動)';
+    var name = cfg.competitionName || window.L('edUntitled');
     document.title = name + ' · RegMaster';
-    document.getElementById('crumbName').textContent = name;
+    var crumbEl = document.getElementById('crumbName');
+    crumbEl.removeAttribute('data-i18n');
+    crumbEl.textContent = name;
 
     // Tags
     var tags = [];
     if (cfg.category) tags.push({ cls:'', label: cfg.category });
-    if (d.isOpen) tags.push({ cls:'acc', label:'🎟 報名中' });
-    else tags.push({ cls:'danger', label:'已截止' });
+    if (d.isOpen) tags.push({ cls:'acc', label: window.L('edTagOpen') });
+    else tags.push({ cls:'danger', label: window.L('edTagClosed') });
     if (cfg.deadline) {
       var dl = parseDate(cfg.deadline);
       if (dl) {
         var daysLeft = Math.ceil((dl - Date.now()) / 86400000);
-        if (daysLeft > 0 && daysLeft <= 7) tags.push({ cls:'urgent', label:'⚡ 剩 ' + daysLeft + ' 天' });
+        if (daysLeft > 0 && daysLeft <= 7) tags.push({ cls:'urgent', label: window.L('edTagDaysLeft').replace('{n}', daysLeft) });
       }
     }
     document.getElementById('tagsRow').innerHTML = tags.map(function (t) {
@@ -470,8 +478,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     // Host — B.2: backend returns hostName (organizationName || displayName || username)
     var hostName = d.hostName || '';
     document.getElementById('hostAvatar').textContent = (hostName || name || '?').charAt(0);
-    document.getElementById('hostName').textContent = hostName || '活動主辦方';
-    document.getElementById('hostMeta').textContent = '活動編號 ' + compId;
+    document.getElementById('hostName').textContent = hostName || window.L('edHostFallback');
+    document.getElementById('hostMeta').textContent = window.L('edHostMetaPrefix') + compId;
 
     // 活動 AI 助理 — only shown when the event owner's plan includes it (STARTER+).
     var aiCard = document.getElementById('aiHelpCard');
@@ -488,7 +496,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         var st = s.startTime || '';
         var et = s.endTime || '';
         var range;
-        if (!sd) { range = '日期待公告'; }
+        if (!sd) { range = window.L('edDateTBA'); }
         else if (sd === ed) {
           // same-day: show date once, times after
           var tail = '';
@@ -498,7 +506,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
           // multi-day: show full range
           range = sd + (st ? (' ' + st) : '') + ' ～ ' + ed + (et ? (' ' + et) : '');
         }
-        return '<div style="line-height:1.45">' + escapeHtml(s.name || '梯次') + '：' + escapeHtml(range) + '</div>';
+        return '<div style="line-height:1.45">' + escapeHtml(s.name || window.L('edSessionFallback')) + '：' + escapeHtml(range) + '</div>';
       }).join('');
     } else if (competitionDate) {
       var timeSuffix = '';
@@ -507,17 +515,17 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       }
       dateHtml = escapeHtml(competitionDate) + escapeHtml(timeSuffix);
     } else {
-      dateHtml = '<small>待公告</small>';
+      dateHtml = '<small>' + escapeHtml(window.L('edDateTBASmall')) + '</small>';
     }
     document.getElementById('factDate').innerHTML = dateHtml;
-    document.getElementById('factCategory').textContent = cfg.category || '一般活動';
+    document.getElementById('factCategory').textContent = cfg.category || window.L('edCategoryDefault');
     var accepted = d.currentAccepted || 0;
     var max = d.config.maxCapacityLimit || (cfg.maxTeams || 0);
     document.getElementById('factCapacity').innerHTML = (max > 0)
-      ? accepted + ' / ' + max + ' 已報名<small>' + ((accepted / max * 100).toFixed(0)) + '% 已滿</small>'
-      : accepted + ' 已報名<small>未設名額上限</small>';
+      ? accepted + ' / ' + max + escapeHtml(window.L('edRegisteredSuffix')) + '<small>' + ((accepted / max * 100).toFixed(0)) + escapeHtml(window.L('edCapacityFull')) + '</small>'
+      : accepted + escapeHtml(window.L('edRegisteredSuffix')) + '<small>' + escapeHtml(window.L('edNoCapacityLimit')) + '</small>';
     // T3: human-readable date — "2026-06-06T11:00" → "2026-06-06 11:00".
-    document.getElementById('factDeadline').textContent = cfg.deadline ? String(cfg.deadline).replace('T', ' ').slice(0, 16) : '待公告';
+    document.getElementById('factDeadline').textContent = cfg.deadline ? String(cfg.deadline).replace('T', ' ').slice(0, 16) : window.L('edDeadlineTBA');
 
     // Cover — use poster if available. B.4: resolve pfid:DOCID placeholders via getPosterData.
     var cover = document.getElementById('coverArt');
@@ -543,12 +551,16 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     }
 
     // CTA card
+    var ctaTitleEl = document.getElementById('ctaTitle');
+    var ctaSubEl = document.getElementById('ctaSub');
+    ctaTitleEl.removeAttribute('data-i18n');
+    ctaSubEl.removeAttribute('data-i18n');
     if (d.isOpen) {
-      document.getElementById('ctaTitle').textContent = '可報名';
-      document.getElementById('ctaSub').textContent = cfg.deadline ? '報名截止：' + cfg.deadline : '隨時可報名';
+      ctaTitleEl.textContent = window.L('edCtaOpen');
+      ctaSubEl.textContent = cfg.deadline ? window.L('edCtaDeadlinePrefix') + cfg.deadline : window.L('edCtaAnytime');
     } else {
-      document.getElementById('ctaTitle').textContent = '報名已截止';
-      document.getElementById('ctaSub').textContent = '若有疑問請洽詢主辦方';
+      ctaTitleEl.textContent = window.L('edCtaClosedTitle');
+      ctaSubEl.textContent = window.L('edCtaClosedSub');
     }
     var pct = max > 0 ? Math.min(100, accepted / max * 100) : 0;
     var pb = document.getElementById('ctaProgress');
@@ -559,16 +571,17 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 
     var registerBtn = document.getElementById('registerBtn');
     var lookupBtn = document.getElementById('lookupBtn');
+    registerBtn.removeAttribute('data-i18n');
     if (d.isOpen) {
       registerBtn.href = '/events/register.html?id=' + encodeURIComponent(compId);
-      registerBtn.textContent = '立即報名 →';
+      registerBtn.textContent = window.L('edRegisteredNow');
     } else {
       registerBtn.classList.remove('btn-primary');
       registerBtn.classList.add('btn-ghost');
       registerBtn.removeAttribute('href');
       registerBtn.style.cursor = 'not-allowed';
       registerBtn.style.opacity = '.5';
-      registerBtn.textContent = '報名已截止';
+      registerBtn.textContent = window.L('edRegisteredClosed');
     }
     lookupBtn.href = 'javascript:void(0)';
     lookupBtn.addEventListener('click', function (e) { e.preventDefault(); openManageModal(); });
@@ -583,11 +596,13 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     // Description rich content
     document.getElementById('evDescription').innerHTML = cfg.description
       ? renderRich(cfg.description)
-      : '<p style="color:var(--muted)">主辦方尚未填寫詳細介紹。</p>';
+      : '<p style="color:var(--muted)">' + escapeHtml(window.L('edDescEmpty')) + '</p>';
 
     // Announcements
     var anns = d.announcements || [];
-    document.getElementById('annCount').textContent = anns.length + ' 則';
+    var annCountEl = document.getElementById('annCount');
+    annCountEl.removeAttribute('data-i18n');
+    annCountEl.textContent = anns.length + window.L('edAnnSuffix');
     if (anns.length > 0) {
       document.getElementById('annCountBadge').textContent = '(' + anns.length + ')';
       document.getElementById('annList').innerHTML = anns.map(function (a) {
@@ -605,8 +620,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         document.getElementById('pdfSideCard').style.display = 'block';
         document.getElementById('pdfLink').href = pdfUrl;
         document.getElementById('rulesArea').innerHTML =
-          '<p style="margin-bottom:12px">本活動有正式規章 PDF。請於右側下載閱讀。</p>' +
-          '<a class="btn btn-ghost" href="' + escapeHtml(pdfUrl) + '" target="_blank">下載規章 PDF →</a>';
+          '<p style="margin-bottom:12px">' + escapeHtml(window.L('edRulesHasPdf')) + '</p>' +
+          '<a class="btn btn-ghost" href="' + escapeHtml(pdfUrl) + '" target="_blank">' + escapeHtml(window.L('edRulesDownloadBtn')) + '</a>';
       } else if (d.config.rulesText) {
         document.getElementById('rulesArea').innerHTML = '<div class="rich-content">' + renderRich(d.config.rulesText) + '</div>';
       }
@@ -617,9 +632,9 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       document.getElementById('tabPoster').style.display = '';
       document.getElementById('poster').style.display = '';
       resolvePosterUrl(cfg.posterUrl, function (src) {
-        if (!src) { document.getElementById('posterFull').innerHTML = '<p class="help">海報載入失敗</p>'; return; }
+        if (!src) { document.getElementById('posterFull').innerHTML = '<p class="help">' + escapeHtml(window.L('edPosterLoadFail')) + '</p>'; return; }
         document.getElementById('posterFull').innerHTML =
-          '<img src="' + escapeHtml(src) + '" alt="活動海報" style="display:block; max-width:100%; height:auto; border-radius:14px; border:1px solid var(--line)">';
+          '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(window.L('edPosterAlt')) + '" style="display:block; max-width:100%; height:auto; border-radius:14px; border:1px solid var(--line)">';
       });
     }
 
@@ -683,7 +698,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 
   // Share
   document.getElementById('shareCopy').addEventListener('click', function () {
-    navigator.clipboard.writeText(location.href).then(function () { this.textContent = '✓ 已複製'; setTimeout(function(){ document.getElementById('shareCopy').textContent = '📋 複製連結'; }, 1500); }.bind(this));
+    navigator.clipboard.writeText(location.href).then(function () { this.textContent = window.L('edCopied'); setTimeout(function(){ document.getElementById('shareCopy').textContent = window.L('edShareCopy'); }, 1500); }.bind(this));
   });
   document.getElementById('shareLine').addEventListener('click', function () {
     window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(location.href), '_blank');
@@ -739,23 +754,23 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   function aiSend() {
     var q = (aiInput.value || '').trim();
     if (!q) return;
-    if (aiCooldown) { aiAppend('ai', '請稍候再提問⋯'); return; }
+    if (aiCooldown) { aiAppend('ai', window.L('edAiCooldown')); return; }
     aiCooldown = true; setTimeout(function () { aiCooldown = false; }, 8000);
     aiAppend('user', q);
     aiInput.value = '';
     aiSendBtn.disabled = true;
-    aiMsgs.insertAdjacentHTML('beforeend', '<div class="msg ai" id="aiChatLoading"><div class="bubble">⏳ AI 思考中⋯</div></div>');
+    aiMsgs.insertAdjacentHTML('beforeend', '<div class="msg ai" id="aiChatLoading"><div class="bubble">' + aiEsc(window.L('edAiThinking')) + '</div></div>');
     aiMsgs.scrollTop = aiMsgs.scrollHeight;
     google.script.run
       .withSuccessHandler(function (r) {
         var ld = document.getElementById('aiChatLoading'); if (ld) ld.remove();
         aiSendBtn.disabled = false;
-        aiAppend('ai', (r && r.answer) || 'AI 暫時無法回答，請稍後再試。');
+        aiAppend('ai', (r && r.answer) || window.L('edAiFailAnswer'));
       })
       .withFailureHandler(function () {
         var ld = document.getElementById('aiChatLoading'); if (ld) ld.remove();
         aiSendBtn.disabled = false;
-        aiAppend('ai', 'AI 暫時無法連線，請稍後再試。');
+        aiAppend('ai', window.L('edAiFailConnect'));
       })
       .askCompetitionAI(compId, q);
   }
@@ -773,24 +788,25 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var ov = mkOverlay();
     ov.innerHTML =
       '<div style="background:var(--surface);border-radius:16px;max-width:480px;width:100%;padding:26px;max-height:92vh;overflow:auto">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font:700 18px/1.3 var(--f-display)">查詢 / 管理我的報名</h3><button id="mX" style="background:none;border:0;font-size:24px;cursor:pointer;color:var(--muted)">×</button></div>' +
-        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:16px">輸入報名成功後取得的<b>報名編號</b>與<b>密碼</b>登入。</p>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font:700 18px/1.3 var(--f-display)" data-i18n="edModalTitle">查詢 / 管理我的報名</h3><button id="mX" style="background:none;border:0;font-size:24px;cursor:pointer;color:var(--muted)">×</button></div>' +
+        '<p style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:16px" data-i18n-html="edModalIntro">輸入報名成功後取得的<b>報名編號</b>與<b>密碼</b>登入。</p>' +
         '<div id="mLogin" style="display:flex;flex-direction:column;gap:10px">' +
-          '<input id="mTeam" placeholder="報名編號（例 ' + escapeHtml(compId) + '-T...）" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
-          '<input id="mPwd" type="password" placeholder="密碼" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
-          '<button id="mGo" class="btn btn-primary btn-block">登入</button>' +
+          '<input id="mTeam" placeholder="' + escapeHtml(window.L('edModalTeamPh').replace('{id}', compId)) + '" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<input id="mPwd" type="password" placeholder="密碼" data-i18n-placeholder="edModalPwdPh" style="padding:11px 13px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<button id="mGo" class="btn btn-primary btn-block" data-i18n="edModalLoginBtn">登入</button>' +
           '<div id="mErr" style="font:500 12.5px/1.5 var(--f-tc);color:var(--err-700)"></div>' +
-          '<button id="mForgot" style="background:none;border:0;color:var(--acc);font:500 12.5px/1.4 var(--f-tc);cursor:pointer;text-align:left;padding:0">忘記密碼？</button>' +
+          '<button id="mForgot" style="background:none;border:0;color:var(--acc);font:500 12.5px/1.4 var(--f-tc);cursor:pointer;text-align:left;padding:0" data-i18n="edModalForgot">忘記密碼？</button>' +
           '<div id="mForgotBox"></div>' +
-          '<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><hr style="flex:1;border:0;border-top:1px solid var(--line)"><span style="font:500 11px/1 var(--f-mono);color:var(--muted)">或用已綁定的社群帳號</span><hr style="flex:1;border:0;border-top:1px solid var(--line)"></div>' +
+          '<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><hr style="flex:1;border:0;border-top:1px solid var(--line)"><span style="font:500 11px/1 var(--f-mono);color:var(--muted)" data-i18n="edModalSocialDivider">或用已綁定的社群帳號</span><hr style="flex:1;border:0;border-top:1px solid var(--line)"></div>' +
           '<div style="display:flex;gap:8px">' +
-            '<button id="mLoginG" class="btn btn-ghost" style="flex:1">用 Google 登入</button>' +
-            '<button id="mLoginL" class="btn btn-ghost" style="flex:1">用 LINE 登入</button>' +
+            '<button id="mLoginG" class="btn btn-ghost" style="flex:1" data-i18n="edModalLoginG">用 Google 登入</button>' +
+            '<button id="mLoginL" class="btn btn-ghost" style="flex:1" data-i18n="edModalLoginL">用 LINE 登入</button>' +
           '</div>' +
-          '<p style="font:400 11px/1.5 var(--f-tc);color:var(--muted);margin:2px 0 0">社群登入會列出你名下所有報名（曾在此綁定者），可直接選擇修改或退費。</p>' +
+          '<p style="font:400 11px/1.5 var(--f-tc);color:var(--muted);margin:2px 0 0" data-i18n="edModalSocialHint">社群登入會列出你名下所有報名（曾在此綁定者），可直接選擇修改或退費。</p>' +
         '</div>' +
         '<div id="mView"></div>' +
       '</div>';
+    window.applyI18n(ov);
     // 不在點背景時關閉，避免操作中誤觸跳掉；只用「×」關閉
     function close() { if (ov.parentNode) document.body.removeChild(ov); }
     ov.querySelector('#mX').addEventListener('click', close);
@@ -800,18 +816,19 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       fb.dataset.open = '1';
       var preTeam = (ov.querySelector('#mTeam') && ov.querySelector('#mTeam').value.trim()) || '';
       fb.innerHTML = '<div style="margin-top:8px;padding:12px;border:1px dashed var(--line);border-radius:9px">' +
-        '<p style="font:400 12px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:8px">輸入<b>報名編號</b>，系統會將「密碼重設連結」寄到報名時填寫的 Email；點擊連結即可自行設定新密碼（連結 60 分鐘內有效）。</p>' +
-        '<input id="fgTeam" placeholder="報名編號（例 ' + escapeHtml(compId) + '-T...）" value="' + escapeHtml(preTeam) + '" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
-        '<button id="fgGo" class="btn btn-ghost btn-block" style="margin-top:8px">寄出密碼重設連結</button>' +
+        '<p style="font:400 12px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:8px" data-i18n-html="edForgotIntro">輸入<b>報名編號</b>，系統會將「密碼重設連結」寄到報名時填寫的 Email；點擊連結即可自行設定新密碼（連結 60 分鐘內有效）。</p>' +
+        '<input id="fgTeam" placeholder="' + escapeHtml(window.L('edForgotTeamPh').replace('{id}', compId)) + '" value="' + escapeHtml(preTeam) + '" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
+        '<button id="fgGo" class="btn btn-ghost btn-block" style="margin-top:8px" data-i18n="edForgotSendBtn">寄出密碼重設連結</button>' +
         '<div id="fgMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div></div>';
+      window.applyI18n(fb);
       fb.querySelector('#fgGo').addEventListener('click', function () {
         var tid = fb.querySelector('#fgTeam').value.trim().toUpperCase(), msg = fb.querySelector('#fgMsg');
-        if (!tid) { msg.style.color = 'var(--err-700)'; msg.textContent = '請輸入報名編號'; return; }
-        this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = '寄送中⋯';
+        if (!tid) { msg.style.color = 'var(--err-700)'; msg.textContent = window.L('edForgotNeedId'); return; }
+        this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = window.L('edForgotSending');
         var self = this;
         google.script.run.withSuccessHandler(function (res) {
-          msg.style.color = 'var(--ok-700,#047857)'; msg.textContent = (res && res.message) || '若此報名編號存在，重設連結已寄出，請查收信箱。';
-        }).withFailureHandler(function (e) { self.disabled = false; msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || '寄送失敗'; }).requestTeamPasswordReset(tid);
+          msg.style.color = 'var(--ok-700,#047857)'; msg.textContent = (res && res.message) || window.L('edForgotSent');
+        }).withFailureHandler(function (e) { self.disabled = false; msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || window.L('edForgotSendFail'); }).requestTeamPasswordReset(tid);
       });
     });
     var tEl = ov.querySelector('#mTeam'), pEl = ov.querySelector('#mPwd'), err = ov.querySelector('#mErr');
@@ -819,19 +836,19 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var qTeam = qs.get('team'); if (qTeam) tEl.value = qTeam;
     // 社群登入 → 列出名下所有報名（帶到 我的報名）
     ov.querySelector('#mLoginG').addEventListener('click', function () {
-      if (typeof firebase === 'undefined' || !firebase.auth) { err.textContent = 'Google 元件未載入，請重新整理'; return; }
-      err.style.color = 'var(--ink-3)'; err.textContent = 'Google 登入中⋯';
+      if (typeof firebase === 'undefined' || !firebase.auth) { err.textContent = window.L('edLoginGoogleNotLoaded'); return; }
+      err.style.color = 'var(--ink-3)'; err.textContent = window.L('edLoginGoogleIng');
       var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
       firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
         google.script.run.withSuccessHandler(function (res) {
           try { firebase.auth().signOut(); } catch (e) {}
           if (res && res.success) {
-            if (!(res.registrations || []).length) { err.style.color = 'var(--err-700)'; err.textContent = '此 Google 帳號尚未綁定任何報名，請先用報名編號+密碼登入並綁定。'; return; }
+            if (!(res.registrations || []).length) { err.style.color = 'var(--err-700)'; err.textContent = window.L('edLoginGoogleNoBind'); return; }
             try { sessionStorage.setItem('rm_social_regs', JSON.stringify(res.registrations)); } catch (e) {}
             location.href = '/my.html?social=google';
-          } else { err.style.color = 'var(--err-700)'; err.textContent = (res && res.message) || '登入失敗'; }
-        }).withFailureHandler(function (e) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || '登入失敗'; }).listMyRegistrationsBySocial('google', idToken);
-      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || 'Google 登入失敗'; } else { err.textContent = ''; } });
+          } else { err.style.color = 'var(--err-700)'; err.textContent = (res && res.message) || window.L('edLoginFail'); }
+        }).withFailureHandler(function (e) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || window.L('edLoginFail'); }).listMyRegistrationsBySocial('google', idToken);
+      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || window.L('edLoginGoogleFail'); } else { err.textContent = ''; } });
     });
     ov.querySelector('#mLoginL').addEventListener('click', function () {
       var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -841,12 +858,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     });
     ov.querySelector('#mGo').addEventListener('click', function () {
       var teamId = tEl.value.trim().toUpperCase(), pwd = pEl.value;
-      if (!teamId || !pwd) { err.style.color = 'var(--err-700)'; err.textContent = '請輸入報名編號與密碼'; return; }
-      err.textContent = '登入中⋯';
+      if (!teamId || !pwd) { err.style.color = 'var(--err-700)'; err.textContent = window.L('edLoginNeedBoth'); return; }
+      err.textContent = window.L('edLoginIng');
       google.script.run.withSuccessHandler(function (res) {
-        if (!res || !res.success) { err.textContent = (res && res.message) || '登入失敗'; return; }
+        if (!res || !res.success) { err.textContent = (res && res.message) || window.L('edLoginFail'); return; }
         renderManage(ov, teamId, pwd, res);
-      }).withFailureHandler(function (e) { err.textContent = (e && e.message) || '登入失敗'; }).loginTeam(compId, teamId, pwd);
+      }).withFailureHandler(function (e) { err.textContent = (e && e.message) || window.L('edLoginFail'); }).loginTeam(compId, teamId, pwd);
     });
     pEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') ov.querySelector('#mGo').click(); });
   }
@@ -859,22 +876,22 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     v.innerHTML =
       '<div style="border:1px solid var(--line);border-radius:11px;padding:16px;margin-bottom:14px;font:400 13.5px/1.8 var(--f-tc)">' +
         '<b style="font:700 15px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || teamId) + '</b><br>' +
-        '報名編號：<span style="font-family:var(--f-mono)">' + escapeHtml(teamId) + '</span><br>' +
-        (t.group ? '組別：' + escapeHtml(t.group) + '<br>' : '') +
-        '狀態：' + escapeHtml(t.status || '正取') + '　付款：' + escapeHtml(t.paymentStatus || '待確認') +
+        escapeHtml(window.L('edTeamIdLabel')) + '<span style="font-family:var(--f-mono)">' + escapeHtml(teamId) + '</span><br>' +
+        (t.group ? escapeHtml(window.L('edGroupLabel')) + escapeHtml(t.group) + '<br>' : '') +
+        escapeHtml(window.L('edStatusLabel')) + escapeHtml(t.status || window.L('edStatusDefault')) + escapeHtml(window.L('edPayLabelInline')) + escapeHtml(t.paymentStatus || window.L('edPayDefault')) +
         (memHtml ? '<ul style="margin:10px 0 0;padding-left:20px">' + memHtml + '</ul>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +
-        (!paid ? '<a class="btn btn-primary btn-block" href="/events/payment.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(teamId) + '">前往付款 →</a>' : '') +
-        '<a class="btn btn-ghost btn-block" href="/events/register.html?id=' + encodeURIComponent(compId) + '&edit=' + encodeURIComponent(teamId) + '">修改報名資料</a>' +
-        '<button id="mRefund" class="btn btn-ghost btn-block">申請退費</button>' +
+        (!paid ? '<a class="btn btn-primary btn-block" href="/events/payment.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(teamId) + '">' + escapeHtml(window.L('edGoPayBtn')) + '</a>' : '') +
+        '<a class="btn btn-ghost btn-block" href="/events/register.html?id=' + encodeURIComponent(compId) + '&edit=' + encodeURIComponent(teamId) + '">' + escapeHtml(window.L('edEditRegBtn')) + '</a>' +
+        '<button id="mRefund" class="btn btn-ghost btn-block">' + escapeHtml(window.L('edRefundBtn')) + '</button>' +
       '</div>' +
       '<div id="mRefundBox" style="margin-top:12px"></div>' +
       '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)">' +
-        '<p style="font:500 12px/1.5 var(--f-tc);color:var(--ink-3);margin-bottom:8px">綁定社群帳號，下次免輸入報名編號／密碼即可查詢報名：</p>' +
+        '<p style="font:500 12px/1.5 var(--f-tc);color:var(--ink-3);margin-bottom:8px">' + escapeHtml(window.L('edBindHint')) + '</p>' +
         '<div style="display:flex;gap:8px">' +
-          '<button id="mBindG" class="btn btn-ghost" style="flex:1">綁定 Google</button>' +
-          '<button id="mBindL" class="btn btn-ghost" style="flex:1">綁定 LINE</button>' +
+          '<button id="mBindG" class="btn btn-ghost" style="flex:1">' + escapeHtml(window.L('edBindG')) + '</button>' +
+          '<button id="mBindL" class="btn btn-ghost" style="flex:1">' + escapeHtml(window.L('edBindL')) + '</button>' +
         '</div>' +
         '<div id="mBindMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div>' +
       '</div>';
@@ -882,7 +899,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var bmsg = v.querySelector('#mBindMsg');
     function markBound(which) {
       var b = v.querySelector(which === 'google' ? '#mBindG' : '#mBindL');
-      if (!b) return; b.textContent = '✓ 已綁定 ' + (which === 'google' ? 'Google' : 'LINE'); b.disabled = true; b.style.opacity = '.55'; b.dataset.bound = '1';
+      if (!b) return; b.textContent = window.L('edBoundPrefix') + (which === 'google' ? 'Google' : 'LINE'); b.disabled = true; b.style.opacity = '.55'; b.dataset.bound = '1';
     }
     // #6 已綁定狀態：依此報名成員 Email 查詢，已綁定者顯示「已綁定」、不需再做
     (function () {
@@ -893,16 +910,16 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       }).withFailureHandler(function () {}).getRegistrantStatus(emails, '');
     })();
     v.querySelector('#mBindG').addEventListener('click', function () {
-      if (typeof firebase === 'undefined' || !firebase.auth) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = 'Google 元件未載入，請重新整理'; return; }
-      bmsg.style.color = 'var(--ink-3)'; bmsg.textContent = 'Google 授權中⋯';
+      if (typeof firebase === 'undefined' || !firebase.auth) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = window.L('edLoginGoogleNotLoaded'); return; }
+      bmsg.style.color = 'var(--ink-3)'; bmsg.textContent = window.L('edBindGoogleIng');
       var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
       firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
         google.script.run.withSuccessHandler(function (res) {
           try { firebase.auth().signOut(); } catch (e) {}
-          if (res && res.success) { bmsg.style.color = 'var(--ok-700,#047857)'; bmsg.textContent = '✓ 已綁定 Google（' + (res.email || '') + '），日後可用 Google 登入查詢全部報名'; markBound('google'); }
-          else { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (res && res.message) || '綁定失敗'; }
-        }).withFailureHandler(function (e) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || '綁定失敗'; }).bindRegistrantSocial(compId, teamId, pwd, 'google', idToken);
-      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || 'Google 綁定失敗'; } });
+          if (res && res.success) { bmsg.style.color = 'var(--ok-700,#047857)'; bmsg.textContent = window.L('edBindGoogleOkPrefix') + (res.email || '') + window.L('edBindGoogleOkSuffix'); markBound('google'); }
+          else { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (res && res.message) || window.L('edBindFail'); }
+        }).withFailureHandler(function (e) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || window.L('edBindFail'); }).bindRegistrantSocial(compId, teamId, pwd, 'google', idToken);
+      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || window.L('edBindGoogleFail'); } });
     });
     v.querySelector('#mBindL').addEventListener('click', function () {
       var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -915,33 +932,33 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     });
   }
   function renderRefund(box, teamId, pwd) {
-    box.innerHTML = '<p style="font:400 12.5px/1.5 var(--f-tc);color:var(--muted)">查詢可退金額中⋯</p>';
+    box.innerHTML = '<p style="font:400 12.5px/1.5 var(--f-tc);color:var(--muted)">' + escapeHtml(window.L('edRefundQuerying')) + '</p>';
     google.script.run.withSuccessHandler(function (res) {
-      if (!res || !res.success) { box.innerHTML = '<p style="color:var(--err-700);font:500 12.5px/1.5 var(--f-tc)">' + escapeHtml((res && res.message) || '查詢失敗') + '</p>'; return; }
-      if (res.refundStatus === 'requested' || res.refundStatus === 'approved') { box.innerHTML = '<p style="font:500 12.5px/1.6 var(--f-tc)">您已有退費申請處理中，請耐心等候主辦方。</p>'; return; }
+      if (!res || !res.success) { box.innerHTML = '<p style="color:var(--err-700);font:500 12.5px/1.5 var(--f-tc)">' + escapeHtml((res && res.message) || window.L('edRefundQueryFail')) + '</p>'; return; }
+      if (res.refundStatus === 'requested' || res.refundStatus === 'approved') { box.innerHTML = '<p style="font:500 12.5px/1.6 var(--f-tc)">' + escapeHtml(window.L('edRefundProcessing')) + '</p>'; return; }
       var c = res.calc || {};
       if (c.eventDateMissing || c.pastStart || !c.hasPolicy) {
-        var why = c.pastStart ? '活動已開始或結束，線上退費已關閉' : (c.eventDateMissing ? '本活動未設定活動日期' : '主辦方尚未設定退費政策');
-        box.innerHTML = '<p style="font:500 12.5px/1.6 var(--f-tc);color:var(--ink-3)">' + why + '，請直接聯繫主辦方辦理退費。</p>'; return;
+        var why = c.pastStart ? window.L('edRefundWhyPast') : (c.eventDateMissing ? window.L('edRefundWhyNoDate') : window.L('edRefundWhyNoPolicy'));
+        box.innerHTML = '<p style="font:500 12.5px/1.6 var(--f-tc);color:var(--ink-3)">' + escapeHtml(why + window.L('edRefundWhySuffix')) + '</p>'; return;
       }
       box.innerHTML =
         '<div style="border:1px dashed var(--line);border-radius:10px;padding:14px;font:400 13px/1.7 var(--f-tc)">' +
-          '距活動 <b>' + c.daysBefore + ' 天</b>，可退 <b>' + c.pct + '%</b> ＝ <b style="color:var(--ok-700,#047857)">NT$' + c.calcRefund + '</b>' +
-          '<input id="rAcct" placeholder="退款帳戶（銀行/分行/帳號/戶名）" style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
-          '<textarea id="rReason" rows="2" placeholder="退費原因（可選）" style="width:100%;margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)"></textarea>' +
-          '<button id="rSend" class="btn btn-primary btn-block" style="margin-top:8px">送出退費申請</button>' +
+          escapeHtml(window.L('edRefundDistPrefix')) + '<b>' + c.daysBefore + escapeHtml(window.L('edRefundDays')) + '</b>' + escapeHtml(window.L('edRefundCanGet')) + '<b>' + c.pct + escapeHtml(window.L('edRefundEquals')) + '</b><b style="color:var(--ok-700,#047857)">NT$' + c.calcRefund + '</b>' +
+          '<input id="rAcct" placeholder="' + escapeHtml(window.L('edRefundAcctPh')) + '" style="width:100%;margin-top:10px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
+          '<textarea id="rReason" rows="2" placeholder="' + escapeHtml(window.L('edRefundReasonPh')) + '" style="width:100%;margin-top:8px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)"></textarea>' +
+          '<button id="rSend" class="btn btn-primary btn-block" style="margin-top:8px">' + escapeHtml(window.L('edRefundSendBtn')) + '</button>' +
           '<div id="rMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div>' +
         '</div>';
       box.querySelector('#rSend').addEventListener('click', function () {
         var acct = box.querySelector('#rAcct').value.trim(), reason = box.querySelector('#rReason').value.trim(), msg = box.querySelector('#rMsg');
-        if (!acct) { msg.style.color = 'var(--err-700)'; msg.textContent = '請填寫退款帳戶'; return; }
-        this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = '送出中⋯';
+        if (!acct) { msg.style.color = 'var(--err-700)'; msg.textContent = window.L('edRefundNeedAcct'); return; }
+        this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = window.L('edRefundSending');
         google.script.run.withSuccessHandler(function (r) {
-          if (r && r.success) { box.innerHTML = '<p style="color:var(--ok-700,#047857);font:600 13px/1.6 var(--f-tc)">✓ 退費申請已送出（應退 ' + r.pct + '% ＝ NT$' + r.calcRefund + '），待主辦方審核退款。</p>'; }
-          else { msg.style.color = 'var(--err-700)'; msg.textContent = (r && r.message) || '送出失敗'; }
-        }).withFailureHandler(function (e) { msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || '送出失敗'; }).requestRefund(compId, teamId, pwd, acct, reason);
+          if (r && r.success) { box.innerHTML = '<p style="color:var(--ok-700,#047857);font:600 13px/1.6 var(--f-tc)">' + escapeHtml(window.L('edRefundDonePrefix') + r.pct + window.L('edRefundDoneMid') + r.calcRefund + window.L('edRefundDoneSuffix')) + '</p>'; }
+          else { msg.style.color = 'var(--err-700)'; msg.textContent = (r && r.message) || window.L('edRefundSendFail'); }
+        }).withFailureHandler(function (e) { msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || window.L('edRefundSendFail'); }).requestRefund(compId, teamId, pwd, acct, reason);
       });
-    }).withFailureHandler(function (e) { box.innerHTML = '<p style="color:var(--err-700)">' + escapeHtml(e && e.message || '查詢失敗') + '</p>'; }).getRefundPreview(compId, teamId, pwd);
+    }).withFailureHandler(function (e) { box.innerHTML = '<p style="color:var(--err-700)">' + escapeHtml(e && e.message || window.L('edRefundQueryFail')) + '</p>'; }).getRefundPreview(compId, teamId, pwd);
   }
 })();
 </script>

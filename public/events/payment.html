@@ -99,37 +99,37 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
 <nav class="nav">
   <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span></a>
   <div class="crumbs">
-    <a href="/events/">探索活動</a><span class="sep">/</span>
-    <a id="crumbDetail" href="#">活動詳情</a><span class="sep">/</span>
-    <span style="color:var(--ink)">付款</span>
+    <a href="/events/" data-i18n="navExplore">探索活動</a><span class="sep">/</span>
+    <a id="crumbDetail" href="#" data-i18n="pmCrumbDetail">活動詳情</a><span class="sep">/</span>
+    <span style="color:var(--ink)" data-i18n="pmCrumbPayment">付款</span>
   </div>
-  <div class="secure">🔒 SSL 加密交易</div>
+  <div class="secure" data-i18n="pmSecure">🔒 SSL 加密交易</div>
 </nav>
 
-<div id="loadingState" class="skeleton">載入訂單資料⋯⋯</div>
+<div id="loadingState" class="skeleton" data-i18n="pmLoading">載入訂單資料⋯⋯</div>
 
 <div class="shell" id="content" style="display:none">
-  <div class="page-eyebrow">CHECKOUT · 付款</div>
-  <h1 class="page-title">完成付款，正式報名</h1>
-  <p class="page-sub">您的報名已建立，請於主辦方公告的截止日期前完成付款。</p>
+  <div class="page-eyebrow" data-i18n="pmEyebrow">CHECKOUT · 付款</div>
+  <h1 class="page-title" data-i18n="pmTitle">完成付款，正式報名</h1>
+  <p class="page-sub" data-i18n="pmSub">您的報名已建立，請於主辦方公告的截止日期前完成付款。</p>
 
-  <div class="alert-box info" id="paidBanner" style="display:none">
+  <div class="alert-box info" id="paidBanner" style="display:none" data-i18n="pmPaidBanner">
     ✓ 此筆報名已完成付款。您仍可在此頁查詢狀態或下載收據。
   </div>
 
   <div class="row-2">
     <div>
       <div class="card">
-        <h3>報名摘要</h3>
-        <div class="r-row"><span class="k">活動</span><span class="v" id="cName">—</span></div>
-        <div class="r-row"><span class="k">報名編號</span><span class="v" id="cTeamId" style="font-family:var(--f-mono); font-weight:600">—</span></div>
-        <div class="r-row"><span class="k">隊伍名稱</span><span class="v" id="cTeamName">—</span></div>
-        <div class="r-row"><span class="k">報名狀態</span><span class="v"><b id="cStatus">—</b></span></div>
-        <div class="r-row"><span class="k">付款狀態</span><span class="v"><b id="cPayStatus">—</b></span></div>
+        <h3 data-i18n="pmSummaryH">報名摘要</h3>
+        <div class="r-row"><span class="k" data-i18n="pmkEvent">活動</span><span class="v" id="cName">—</span></div>
+        <div class="r-row"><span class="k" data-i18n="pmkTeamId">報名編號</span><span class="v" id="cTeamId" style="font-family:var(--f-mono); font-weight:600">—</span></div>
+        <div class="r-row"><span class="k" data-i18n="pmkTeamName">隊伍名稱</span><span class="v" id="cTeamName">—</span></div>
+        <div class="r-row"><span class="k" data-i18n="pmkRegStatus">報名狀態</span><span class="v"><b id="cStatus">—</b></span></div>
+        <div class="r-row"><span class="k" data-i18n="pmkPayStatus">付款狀態</span><span class="v"><b id="cPayStatus">—</b></span></div>
       </div>
 
       <div class="card" id="methodCard">
-        <h3>選擇付款方式</h3>
+        <h3 data-i18n="pmMethodH">選擇付款方式</h3>
         <div class="alert-box err" id="payErrBox" style="display:none"></div>
 
         <div class="method-grid" id="methodGrid">
@@ -137,49 +137,49 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         </div>
 
         <div id="onlinePayArea" style="display:none; margin-top:16px">
-          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:10px">點擊「前往付款」會跳到 PayUni 安全付款頁面。完成後會自動返回。</p>
-          <button class="btn btn-primary btn-lg btn-block" id="onlinePayBtn">前往 PayUni 付款 →</button>
-          <p style="font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin-top:10px; text-align:center">支援信用卡、ATM 虛擬帳號、超商代碼</p>
+          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:10px" data-i18n="pmOnlineNote">點擊「前往付款」會跳到 PayUni 安全付款頁面。完成後會自動返回。</p>
+          <button class="btn btn-primary btn-lg btn-block" id="onlinePayBtn" data-i18n="pmOnlineBtn">前往 PayUni 付款 →</button>
+          <p style="font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin-top:10px; text-align:center" data-i18n="pmOnlineSupports">支援信用卡、ATM 虛擬帳號、超商代碼</p>
         </div>
 
         <div id="manualPayArea" style="display:none; margin-top:16px">
           <div class="bank-info" id="bankInfoBox">
             <!-- generated based on cfg.bankInfo -->
           </div>
-          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-top:14px">完成轉帳後，主辦方會在 1–3 個工作天內人工核對並更新付款狀態。請耐心等候。</p>
+          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-top:14px" data-i18n="pmManualNote">完成轉帳後，主辦方會在 1–3 個工作天內人工核對並更新付款狀態。請耐心等候。</p>
         </div>
 
         <div id="creditCardArea" style="display:none; margin-top:16px">
-          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:10px">主辦方提供信用卡刷卡連結。</p>
-          <a id="ccLink" href="#" target="_blank" class="btn btn-primary btn-lg btn-block">前往信用卡頁面 →</a>
+          <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:10px" data-i18n="pmCcNote">主辦方提供信用卡刷卡連結。</p>
+          <a id="ccLink" href="#" target="_blank" class="btn btn-primary btn-lg btn-block" data-i18n="pmCcBtn">前往信用卡頁面 →</a>
         </div>
       </div>
 
       <div class="card" id="statusPollCard" style="display:none">
-        <h3>付款狀態</h3>
+        <h3 data-i18n="pmStatusH">付款狀態</h3>
         <div class="status-area pending" id="statusBox">
           <div class="ic-big">⏳</div>
-          <h2>等候付款⋯⋯</h2>
-          <p>系統會即時偵測付款狀態。請勿關閉此頁面。</p>
+          <h2 data-i18n="pmStatusWaitingH">等候付款⋯⋯</h2>
+          <p data-i18n="pmStatusWaitingP">系統會即時偵測付款狀態。請勿關閉此頁面。</p>
         </div>
       </div>
     </div>
 
     <aside>
       <div class="totals">
-        <h4>應付金額</h4>
-        <div class="li"><span class="lbl">報名費</span><span class="v" id="feeAmt">NT$ 0</span></div>
-        <div class="li" id="groupDiscLi" style="display:none"><span class="lbl" id="groupDiscLbl">團報優惠</span><span class="v" id="groupDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
-        <div class="li" id="codeDiscLi" style="display:none"><span class="lbl">折扣碼</span><span class="v" id="codeDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
-        <div class="li total"><span class="lbl">合計</span><span class="v" id="totalAmt">NT$ 0</span></div>
+        <h4 data-i18n="pmTotalsH">應付金額</h4>
+        <div class="li"><span class="lbl" data-i18n="pmLblFee">報名費</span><span class="v" id="feeAmt">NT$ 0</span></div>
+        <div class="li" id="groupDiscLi" style="display:none"><span class="lbl" id="groupDiscLbl" data-i18n="pmLblGroupDisc">團報優惠</span><span class="v" id="groupDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
+        <div class="li" id="codeDiscLi" style="display:none"><span class="lbl" data-i18n="pmLblCodeDisc">折扣碼</span><span class="v" id="codeDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
+        <div class="li total"><span class="lbl" data-i18n="pmLblTotal">合計</span><span class="v" id="totalAmt">NT$ 0</span></div>
         <div style="margin:14px 0 4px">
           <div style="display:flex; gap:6px">
-            <input id="discCodeInput" placeholder="輸入折扣碼" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:500 13px/1 var(--f-mono); text-transform:uppercase">
-            <button class="btn btn-ghost btn-sm" id="applyCodeBtn" type="button">套用</button>
+            <input id="discCodeInput" placeholder="輸入折扣碼" data-i18n-placeholder="pmDiscPlaceholder" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:500 13px/1 var(--f-mono); text-transform:uppercase">
+            <button class="btn btn-ghost btn-sm" id="applyCodeBtn" type="button" data-i18n="pmApplyBtn">套用</button>
           </div>
           <div id="codeMsg" style="font:400 11.5px/1.5 var(--f-tc); margin-top:5px; min-height:16px"></div>
         </div>
-        <div class="small-note">
+        <div class="small-note" data-i18n-html="pmNextSteps">
           <b>下一步：</b><br>
           1. 選擇上方的付款方式<br>
           2. 完成付款<br>
@@ -191,12 +191,14 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
 </div>
 
 <div id="errorState" style="display:none; max-width:680px; margin:80px auto; padding:48px 32px; text-align:center; background:var(--surface); border:1px dashed var(--line); border-radius:18px;">
-  <h3 style="font:700 22px/1.3 var(--f-display); margin-bottom:8px">無法載入訂單</h3>
+  <h3 style="font:700 22px/1.3 var(--f-display); margin-bottom:8px" data-i18n="pmErrLoadTitle">無法載入訂單</h3>
   <p id="errorMsg" style="font:400 14px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:24px"></p>
-  <a href="/events/" class="btn btn-primary">回到活動列表</a>
+  <a href="/events/" class="btn btn-primary" data-i18n="pmErrBackList">回到活動列表</a>
 </div>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-events-payment.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -209,7 +211,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
   if (!compId || !teamId) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMsg').textContent = '網址缺少活動或報名編號。';
+    document.getElementById('errorMsg').textContent = window.L('pmErrUrlMissing');
     return;
   }
   document.getElementById('crumbDetail').href = '/events/detail.html?id=' + encodeURIComponent(compId);
@@ -229,7 +231,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (!data || data.error) {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('errorState').style.display = 'block';
-        document.getElementById('errorMsg').textContent = (data && data.error) || '找不到活動';
+        document.getElementById('errorMsg').textContent = (data && data.error) || window.L('pmErrCompNotFound');
         return;
       }
       CFG = data.config || {};
@@ -245,7 +247,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     .withFailureHandler(function (err) {
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('errorState').style.display = 'block';
-      document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
+      document.getElementById('errorMsg').textContent = (err && err.message) || window.L('pmErrNetwork');
     })
     .getRegistrationBundle(compId);
 
@@ -256,7 +258,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         if (!res || res.error || !res.found) {
           document.getElementById('loadingState').style.display = 'none';
           document.getElementById('errorState').style.display = 'block';
-          document.getElementById('errorMsg').textContent = (res && res.error) || '找不到此筆報名';
+          document.getElementById('errorMsg').textContent = (res && res.error) || window.L('pmErrRegNotFound');
           return;
         }
         render(res);
@@ -264,18 +266,18 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
       .withFailureHandler(function (err) {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('errorState').style.display = 'block';
-        document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
+        document.getElementById('errorMsg').textContent = (err && err.message) || window.L('pmErrNetwork');
       })
       .lookupRegistration(compId, teamId);
   }
 
   function render(team) {
     document.title = '付款 · ' + (CFG.competitionName || '') + ' · RegMaster';
-    document.getElementById('cName').textContent = CFG.competitionName || '—';
+    document.getElementById('cName').textContent = CFG.competitionName || window.L('pmDash');
     document.getElementById('cTeamId').textContent = team.teamId || teamId;
-    document.getElementById('cTeamName').textContent = team.teamNameCN || team.teamNameEN || '—';
-    document.getElementById('cStatus').textContent = team.status || '正取';
-    var payStatus = team.paymentStatus || '待確認';
+    document.getElementById('cTeamName').textContent = team.teamNameCN || team.teamNameEN || window.L('pmDash');
+    document.getElementById('cStatus').textContent = team.status || window.L('pmDefaultRegStatus');
+    var payStatus = team.paymentStatus || window.L('pmDefaultPayStatus');
     document.getElementById('cPayStatus').textContent = payStatus;
     document.getElementById('feeAmt').textContent = 'NT$ ' + fee.toLocaleString();
     document.getElementById('totalAmt').textContent = 'NT$ ' + fee.toLocaleString();
@@ -311,7 +313,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
       appliedCode = (code && q.codeValid) ? q.code : '';
       quoteTotal = q.total;
       var gLi = document.getElementById('groupDiscLi');
-      if (q.groupDiscount > 0) { gLi.style.display = ''; document.getElementById('groupDiscLbl').textContent = q.groupLabel || '團報優惠'; document.getElementById('groupDiscAmt').textContent = '- NT$ ' + q.groupDiscount.toLocaleString(); }
+      if (q.groupDiscount > 0) { gLi.style.display = ''; var gl = document.getElementById('groupDiscLbl'); if (q.groupLabel) { gl.removeAttribute('data-i18n'); gl.textContent = q.groupLabel; } else { gl.setAttribute('data-i18n', 'pmLblGroupDisc'); gl.textContent = window.L('pmLblGroupDisc'); } document.getElementById('groupDiscAmt').textContent = '- NT$ ' + q.groupDiscount.toLocaleString(); }
       else gLi.style.display = 'none';
       var cLi = document.getElementById('codeDiscLi');
       if (q.codeValid && q.codeDiscount > 0) { cLi.style.display = ''; document.getElementById('codeDiscAmt').textContent = '- NT$ ' + q.codeDiscount.toLocaleString(); }
@@ -333,19 +335,21 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var hasCC = !!CFG.creditCardLink;
 
     if (hasPayuni && fee > 0) {
-      html += '<div class="method-card" data-method="payuni"><div class="ck"></div><div class="ic visa">PAY</div><div class="body"><h5>線上付款（PayUni）</h5><p>信用卡 · ATM · 超商代碼 · LINE Pay</p></div></div>';
+      html += '<div class="method-card" data-method="payuni"><div class="ck"></div><div class="ic visa">PAY</div><div class="body"><h5 data-i18n="pmMethodPayuniH">線上付款（PayUni）</h5><p data-i18n="pmMethodPayuniP">信用卡 · ATM · 超商代碼 · LINE Pay</p></div></div>';
     }
     if (hasManual) {
-      html += '<div class="method-card" data-method="manual"><div class="ck"></div><div class="ic atm">ATM</div><div class="body"><h5>銀行 / ATM 轉帳</h5><p>主辦方人工核對（1–3 工作天）</p></div></div>';
+      html += '<div class="method-card" data-method="manual"><div class="ck"></div><div class="ic atm">ATM</div><div class="body"><h5 data-i18n="pmMethodManualH">銀行 / ATM 轉帳</h5><p data-i18n="pmMethodManualP">主辦方人工核對（1–3 工作天）</p></div></div>';
     }
     if (hasCC) {
-      html += '<div class="method-card" data-method="cc-link"><div class="ck"></div><div class="ic visa">CC</div><div class="body"><h5>信用卡刷卡連結</h5><p>跳轉至主辦方提供的金流頁</p></div></div>';
+      html += '<div class="method-card" data-method="cc-link"><div class="ck"></div><div class="ic visa">CC</div><div class="body"><h5 data-i18n="pmMethodCcH">信用卡刷卡連結</h5><p data-i18n="pmMethodCcP">跳轉至主辦方提供的金流頁</p></div></div>';
     }
     if (!hasPayuni && !hasManual && !hasCC) {
-      grid.innerHTML = '<p style="color:var(--muted); padding:24px 0; text-align:center">主辦方尚未設定付款方式，或本活動為免費活動。</p>';
+      grid.innerHTML = '<p style="color:var(--muted); padding:24px 0; text-align:center" data-i18n="pmNoMethods">主辦方尚未設定付款方式，或本活動為免費活動。</p>';
+      if (window.applyI18n) window.applyI18n(grid);
       return;
     }
     grid.innerHTML = html;
+    if (window.applyI18n) window.applyI18n(grid);
 
     grid.querySelectorAll('.method-card').forEach(function (card) {
       card.addEventListener('click', function () {
@@ -359,18 +363,18 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         if (m === 'manual') {
           var info = CFG.bankInfo || {};
           var lines = [];
-          if (info.bankName) lines.push('<b>銀行：</b>' + (info.bankCode ? escapeHtml(info.bankCode) + ' ' : '') + escapeHtml(info.bankName));
-          if (info.branchName || info.branchCode) lines.push('<b>分行：</b>' + (info.branchCode ? escapeHtml(info.branchCode) + ' ' : '') + escapeHtml(info.branchName || ''));
-          if (info.accountNumber) lines.push('<b>帳號：</b><span class="copyable" data-copy="' + escapeHtml(info.accountNumber) + '">' + escapeHtml(info.accountNumber) + ' 📋</span>');
-          if (info.accountName) lines.push('<b>戶名：</b>' + escapeHtml(info.accountName));
-          lines.push('<b>金額：</b>NT$ <span id="manualAmt">' + quoteTotal.toLocaleString() + '</span>');
-          lines.push('<b>備註填寫：</b><span class="copyable" data-copy="' + escapeHtml(team.teamId) + '">' + escapeHtml(team.teamId) + ' 📋</span>（報名編號）');
+          if (info.bankName) lines.push('<b>' + window.L('pmBankLblBank') + '</b>' + (info.bankCode ? escapeHtml(info.bankCode) + ' ' : '') + escapeHtml(info.bankName));
+          if (info.branchName || info.branchCode) lines.push('<b>' + window.L('pmBankLblBranch') + '</b>' + (info.branchCode ? escapeHtml(info.branchCode) + ' ' : '') + escapeHtml(info.branchName || ''));
+          if (info.accountNumber) lines.push('<b>' + window.L('pmBankLblAccount') + '</b><span class="copyable" data-copy="' + escapeHtml(info.accountNumber) + '">' + escapeHtml(info.accountNumber) + ' 📋</span>');
+          if (info.accountName) lines.push('<b>' + window.L('pmBankLblHolder') + '</b>' + escapeHtml(info.accountName));
+          lines.push('<b>' + window.L('pmBankLblAmount') + '</b>NT$ <span id="manualAmt">' + quoteTotal.toLocaleString() + '</span>');
+          lines.push('<b>' + window.L('pmBankLblMemo') + '</b><span class="copyable" data-copy="' + escapeHtml(team.teamId) + '">' + escapeHtml(team.teamId) + ' 📋</span>' + window.L('pmBankMemoSuffix'));
           document.getElementById('bankInfoBox').innerHTML = lines.join('<br>');
           document.querySelectorAll('.copyable').forEach(function (cb) {
             cb.addEventListener('click', function () {
               navigator.clipboard.writeText(cb.dataset.copy).then(function () {
                 var orig = cb.innerHTML;
-                cb.innerHTML = '✓ 已複製';
+                cb.innerHTML = window.L('pmCopied');
                 setTimeout(function () { cb.innerHTML = orig; }, 1200);
               });
             });
@@ -384,12 +388,12 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.getElementById('onlinePayBtn').addEventListener('click', function () {
       hideErr();
       var btn = this;
-      btn.disabled = true; btn.textContent = '產生訂單中⋯⋯';
+      btn.disabled = true; btn.textContent = window.L('pmGeneratingOrder');
       google.script.run
         .withSuccessHandler(function (res) {
           if (!res || !res.success) {
-            btn.disabled = false; btn.textContent = '前往 PayUni 付款 →';
-            showErr((res && res.message) || '無法產生付款訂單');
+            btn.disabled = false; btn.textContent = window.L('pmOnlineBtn');
+            showErr((res && res.message) || window.L('pmErrCreateOrder'));
             return;
           }
           // Auto-submit form to PayUni
@@ -404,8 +408,8 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           document.body.appendChild(f);
           if (res.freeAfterDiscount) {
             // Fully discounted → no PayUni redirect; payment already confirmed.
-            btn.textContent = '✓ 已折抵全額，無需付款';
-            uiAlert('折扣已折抵全部金額，報名付款已完成！').then(function () { location.reload(); });
+            btn.textContent = window.L('pmFullyDiscountedBtn');
+            uiAlert(window.L('pmFullyDiscountedAlert')).then(function () { location.reload(); });
             return;
           }
           // Store orderId so the return page can poll
@@ -414,8 +418,8 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           f.submit();
         })
         .withFailureHandler(function (err) {
-          btn.disabled = false; btn.textContent = '前往 PayUni 付款 →';
-          showErr((err && err.message) || '網路錯誤');
+          btn.disabled = false; btn.textContent = window.L('pmOnlineBtn');
+          showErr((err && err.message) || window.L('pmErrNetwork'));
         })
         .createRegistrationPayment(compId, teamId, appliedCode);
     });
@@ -435,8 +439,8 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           if (res && res.status === 'paid') {
             box.classList.remove('pending'); box.classList.add('paid');
             box.querySelector('.ic-big').textContent = '✓';
-            box.querySelector('h2').textContent = '付款成功！';
-            box.querySelector('p').textContent = '感謝您完成付款，主辦方將儘速確認。';
+            var pH = box.querySelector('h2'); pH.removeAttribute('data-i18n'); pH.setAttribute('data-i18n', 'pmPaidH'); pH.textContent = window.L('pmPaidH');
+            var pP = box.querySelector('p'); pP.setAttribute('data-i18n', 'pmPaidP'); pP.textContent = window.L('pmPaidP');
             try { localStorage.removeItem('regmaster_last_order'); } catch (e) {}
             // Refresh team status
             setTimeout(loadTeam, 1500);
@@ -445,7 +449,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
           if (attempts < 30) setTimeout(tick, 3000);
           else {
             box.classList.add('error'); box.classList.remove('pending');
-            box.querySelector('p').textContent = '若已完成付款，請稍候片刻或重新整理頁面。';
+            var tP = box.querySelector('p'); tP.setAttribute('data-i18n', 'pmTimeoutP'); tP.textContent = window.L('pmTimeoutP');
           }
         })
         .withFailureHandler(function () {
