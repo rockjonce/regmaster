@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>關於我們 · RegMaster</title>
+<title data-i18n="abPageTitle">關於我們 · RegMaster</title>
 <meta name="description" content="RegMaster 是廣天國際有限公司（創立於 2010 年的教育公司）打造的線上活動報名平台。讓辦活動的人能專心辦活動。">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
@@ -93,105 +93,107 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 <body>
 
 <nav class="nav">
-  <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span></a>
+  <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span data-i18n="brandName">RegMaster</span></a>
   <div class="links">
-    <a href="/events/">探索活動</a>
-    <a href="/pricing.html">方案</a>
-    <a href="/features.html">功能</a>
-    <a href="/about.html" class="on">關於</a>
-    <a href="/contact.html">聯絡</a>
+    <a href="/events/" data-i18n="navExplore">探索活動</a>
+    <a href="/pricing.html" data-i18n="navPricing">方案</a>
+    <a href="/features.html" data-i18n="navFeatures">功能</a>
+    <a href="/about.html" class="on" data-i18n="navAbout">關於</a>
+    <a href="/contact.html" data-i18n="navContact">聯絡</a>
   </div>
   <div class="actions">
     <button class="theme-toggle" id="themeToggle">🌗</button>
     <button class="theme-toggle" id="langToggle">中/EN</button>
-    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
-    <a href="/login.html" class="btn btn-quiet btn-sm">主辦方登入</a>
-    <a href="/signup.html?plan=free" class="btn btn-primary btn-sm">免費開始</a>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
+    <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
+    <a href="/signup.html?plan=free" class="btn btn-primary btn-sm" data-i18n="navTrial">免費開始</a>
   </div>
 </nav>
 
 <section class="page-hero">
   <div class="container">
-    <div class="eyebrow">ABOUT REGMASTER</div>
-    <h1>讓辦活動的人，<br>能<em>專心辦活動</em>。</h1>
-    <p>RegMaster 是<strong>廣天國際有限公司</strong>打造的線上活動報名平台。我們相信，主辦方該把時間花在內容與參與者身上，而不是表單、Excel 與一封封通知信。</p>
+    <div class="eyebrow" data-i18n="abHeroEyebrow">ABOUT REGMASTER</div>
+    <h1 data-i18n-html="abHeroTitle">讓辦活動的人，<br>能<em>專心辦活動</em>。</h1>
+    <p data-i18n-html="abHeroP">RegMaster 是<strong>廣天國際有限公司</strong>打造的線上活動報名平台。我們相信，主辦方該把時間花在內容與參與者身上，而不是表單、Excel 與一封封通知信。</p>
   </div>
 </section>
 
 <section>
   <div class="story-grid">
     <div class="story">
-      <div class="eyebrow" style="font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:14px;">OUR STORY</div>
-      <h2 style="font:700 36px/1.1 var(--f-display); letter-spacing:-.02em; margin-bottom:24px">從一場 500 人的<br>競賽開始</h2>
-      <p class="lead">廣天國際有限公司創立於 2010 年，是一家以「教育」為核心的公司（<a href="https://www.calculator.com.tw" target="_blank" rel="noopener" style="color:var(--acc)">www.calculator.com.tw</a>）。多年來，我們陪伴老師、學生與各類單位，把學習與活動辦得更好。</p>
-      <p>2022 年，我們正在籌辦一場 500 人的風力能源競賽。報名用表單、繳費靠 ATM 人工對帳、名單散落在好幾份 Excel、通知只能一封封發 —— 行政流程把人累壞了，真正重要的「活動內容」反而沒時間好好打磨。</p>
-      <p>我們想：辦活動的人從來不缺熱忱，缺的是一套讓熱忱不被瑣事消耗的工具。於是我們動手做 RegMaster，把報名、收費、對帳、通知、報到整合成一個後台，並導入 AI，讓科技實質地幫助每一個想把活動辦好的人。</p>
+      <div class="eyebrow" style="font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:14px;" data-i18n="abStoryEyebrow">OUR STORY</div>
+      <h2 style="font:700 36px/1.1 var(--f-display); letter-spacing:-.02em; margin-bottom:24px" data-i18n-html="abStoryH2">從一場 500 人的<br>競賽開始</h2>
+      <p class="lead" data-i18n-html="abStoryLead">廣天國際有限公司創立於 2010 年，是一家以「教育」為核心的公司（<a href="https://www.calculator.com.tw" target="_blank" rel="noopener" style="color:var(--acc)">www.calculator.com.tw</a>）。多年來，我們陪伴老師、學生與各類單位，把學習與活動辦得更好。</p>
+      <p data-i18n="abStoryP1">2022 年，我們正在籌辦一場 500 人的風力能源競賽。報名用表單、繳費靠 ATM 人工對帳、名單散落在好幾份 Excel、通知只能一封封發 —— 行政流程把人累壞了，真正重要的「活動內容」反而沒時間好好打磨。</p>
+      <p data-i18n="abStoryP2">我們想：辦活動的人從來不缺熱忱，缺的是一套讓熱忱不被瑣事消耗的工具。於是我們動手做 RegMaster，把報名、收費、對帳、通知、報到整合成一個後台，並導入 AI，讓科技實質地幫助每一個想把活動辦好的人。</p>
       <blockquote>
-        我們只是單純地想把一場活動辦好。每一個主辦方，都值得一套更好、更簡單的系統。
-        <cite>— 廣天國際有限公司</cite>
+        <span data-i18n="abStoryQuote">我們只是單純地想把一場活動辦好。每一個主辦方，都值得一套更好、更簡單的系統。</span>
+        <cite data-i18n="abStoryCite">— 廣天國際有限公司</cite>
       </blockquote>
     </div>
 
     <div class="timeline">
-      <div class="tl-item"><div class="tl-yr">2010</div><div class="tl-body"><h4>廣天國際成立</h4><p>以教育為核心，陪伴各類學習與活動。</p></div></div>
-      <div class="tl-item"><div class="tl-yr">2022</div><div class="tl-body"><h4>500 人風力能源競賽</h4><p>籌辦過程被繁瑣的報名與行政流程拖累，萌生自製系統的念頭。</p></div></div>
-      <div class="tl-item"><div class="tl-yr">2023–2024</div><div class="tl-body"><h4>打造 RegMaster</h4><p>從自身辦活動的痛點出發，把報名、收費、對帳、通知、報到整合成一個後台。</p></div></div>
-      <div class="tl-item"><div class="tl-yr">2025</div><div class="tl-body"><h4>導入 AI 助理</h4><p>整合 Gemini，協助回覆報名者問題、產生摘要與洞察。</p></div></div>
-      <div class="tl-item"><div class="tl-yr">2026</div><div class="tl-body"><h4>RegMaster v3 上線</h4><p>全新介面與方案制度，讓更多主辦方都能簡單上手。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2010</div><div class="tl-body"><h4 data-i18n="abTl2010H">廣天國際成立</h4><p data-i18n="abTl2010P">以教育為核心，陪伴各類學習與活動。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2022</div><div class="tl-body"><h4 data-i18n="abTl2022H">500 人風力能源競賽</h4><p data-i18n="abTl2022P">籌辦過程被繁瑣的報名與行政流程拖累，萌生自製系統的念頭。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2023–2024</div><div class="tl-body"><h4 data-i18n="abTl2324H">打造 RegMaster</h4><p data-i18n="abTl2324P">從自身辦活動的痛點出發，把報名、收費、對帳、通知、報到整合成一個後台。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2025</div><div class="tl-body"><h4 data-i18n="abTl2025H">導入 AI 助理</h4><p data-i18n="abTl2025P">整合 Gemini，協助回覆報名者問題、產生摘要與洞察。</p></div></div>
+      <div class="tl-item"><div class="tl-yr">2026</div><div class="tl-body"><h4 data-i18n="abTl2026H">RegMaster v3 上線</h4><p data-i18n="abTl2026P">全新介面與方案制度，讓更多主辦方都能簡單上手。</p></div></div>
     </div>
   </div>
 </section>
 
 <section style="background:var(--surface-2)">
   <div class="section-head">
-    <div class="eyebrow">WHY REGMASTER</div>
-    <h2>把複雜的行政，<br>變成幾個步驟。</h2>
+    <div class="eyebrow" data-i18n="abWhyEyebrow">WHY REGMASTER</div>
+    <h2 data-i18n-html="abWhyH2">把複雜的行政，<br>變成幾個步驟。</h2>
   </div>
   <div class="metrics">
-    <div><div class="num"><em>1</em></div><div class="lbl">一個後台</div><div class="desc">報名、收費、對帳、通知、報到，一處搞定</div></div>
-    <div><div class="num"><em>0</em></div><div class="lbl">不用寫程式</div><div class="desc">拖拉式表單設計，幾分鐘就能上線</div></div>
-    <div><div class="num"><em>AI</em></div><div class="lbl">智慧助理</div><div class="desc">由 Gemini 驅動，協助回覆與分析</div></div>
-    <div><div class="num"><em>TW</em></div><div class="lbl">在地設計</div><div class="desc">懂統編、身分證驗證、台灣金流與對帳</div></div>
+    <div><div class="num"><em>1</em></div><div class="lbl" data-i18n="abMetric1Lbl">一個後台</div><div class="desc" data-i18n="abMetric1Desc">報名、收費、對帳、通知、報到，一處搞定</div></div>
+    <div><div class="num"><em>0</em></div><div class="lbl" data-i18n="abMetric2Lbl">不用寫程式</div><div class="desc" data-i18n="abMetric2Desc">拖拉式表單設計，幾分鐘就能上線</div></div>
+    <div><div class="num"><em>AI</em></div><div class="lbl" data-i18n="abMetric3Lbl">智慧助理</div><div class="desc" data-i18n="abMetric3Desc">由 Gemini 驅動，協助回覆與分析</div></div>
+    <div><div class="num"><em>TW</em></div><div class="lbl" data-i18n="abMetric4Lbl">在地設計</div><div class="desc" data-i18n="abMetric4Desc">懂統編、身分證驗證、台灣金流與對帳</div></div>
   </div>
 </section>
 
 <section>
   <div class="section-head">
-    <div class="eyebrow">OUR VALUES</div>
-    <h2>我們在意的<br>幾件事</h2>
+    <div class="eyebrow" data-i18n="abValuesEyebrow">OUR VALUES</div>
+    <h2 data-i18n-html="abValuesH2">我們在意的<br>幾件事</h2>
   </div>
   <div class="values">
-    <div class="val"><div class="ic-tag">01</div><h4>為主辦方省時間</h4><p>把重複的行政自動化，讓主辦方把心力放回活動內容與參與者身上。</p></div>
-    <div class="val"><div class="ic-tag">02</div><h4>簡單好上手</h4><p>不需要工程師、不需要教學影片，打開就會用。複雜留給系統，簡單留給你。</p></div>
-    <div class="val"><div class="ic-tag">03</div><h4>讓 AI 真正幫上忙</h4><p>AI 不是噱頭。它幫你回答報名者的問題、摘要動態、看見該注意的地方。</p></div>
-    <div class="val"><div class="ic-tag">04</div><h4>資料安全</h4><p>全程 SSL 加密傳輸、嚴謹的存取控制。客戶與報名者的個資，是我們最在意的事。</p></div>
-    <div class="val"><div class="ic-tag">05</div><h4>誠實的定價</h4><p>Free 版永久免費，價目表寫什麼就是什麼，沒有藏起來的隱藏費用。</p></div>
-    <div class="val"><div class="ic-tag">06</div><h4>在地深耕</h4><p>我們在台灣，懂統編、發票、退費、身分驗證與本地金流，而不是照搬國外的 SaaS。</p></div>
+    <div class="val"><div class="ic-tag">01</div><h4 data-i18n="abVal1H">為主辦方省時間</h4><p data-i18n="abVal1P">把重複的行政自動化，讓主辦方把心力放回活動內容與參與者身上。</p></div>
+    <div class="val"><div class="ic-tag">02</div><h4 data-i18n="abVal2H">簡單好上手</h4><p data-i18n="abVal2P">不需要工程師、不需要教學影片，打開就會用。複雜留給系統，簡單留給你。</p></div>
+    <div class="val"><div class="ic-tag">03</div><h4 data-i18n="abVal3H">讓 AI 真正幫上忙</h4><p data-i18n="abVal3P">AI 不是噱頭。它幫你回答報名者的問題、摘要動態、看見該注意的地方。</p></div>
+    <div class="val"><div class="ic-tag">04</div><h4 data-i18n="abVal4H">資料安全</h4><p data-i18n="abVal4P">全程 SSL 加密傳輸、嚴謹的存取控制。客戶與報名者的個資，是我們最在意的事。</p></div>
+    <div class="val"><div class="ic-tag">05</div><h4 data-i18n="abVal5H">誠實的定價</h4><p data-i18n="abVal5P">Free 版永久免費，價目表寫什麼就是什麼，沒有藏起來的隱藏費用。</p></div>
+    <div class="val"><div class="ic-tag">06</div><h4 data-i18n="abVal6H">在地深耕</h4><p data-i18n="abVal6P">我們在台灣，懂統編、發票、退費、身分驗證與本地金流，而不是照搬國外的 SaaS。</p></div>
   </div>
 </section>
 
 <section class="cta-strip">
-  <h2>準備好辦下一場活動了嗎？</h2>
-  <p>Free 版永久免費，幾分鐘就能讓你的活動上線。</p>
+  <h2 data-i18n="abCtaH2">準備好辦下一場活動了嗎？</h2>
+  <p data-i18n="abCtaP">Free 版永久免費，幾分鐘就能讓你的活動上線。</p>
   <div class="flex aic gap-3 jcc">
-    <a href="/signup.html?plan=free" class="btn btn-accent btn-lg">免費開始</a>
-    <a href="/events/" class="btn btn-ghost btn-lg">探索活動</a>
+    <a href="/signup.html?plan=free" class="btn btn-accent btn-lg" data-i18n="abCtaFree">免費開始</a>
+    <a href="/events/" class="btn btn-ghost btn-lg" data-i18n="abCtaExplore">探索活動</a>
   </div>
 </section>
 
 <footer>
   <div class="f-foot">
-    <span>© 2026 RegMaster · 廣天國際有限公司</span>
-    <span class="mono">SSL 加密傳輸 · 個資法合規</span>
+    <span data-i18n="ftCopyright">© 2026 RegMaster · 廣天國際有限公司</span>
+    <span class="mono" data-i18n="ftCompliance">SSL 加密傳輸 · 個資法合規</span>
   </div>
 </footer>
 
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-about.js"></script>
 <script>
 (function () {
   AppState.init();
   document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
-  document.getElementById('langToggle').addEventListener('click', function () { AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); location.reload(); });
+  document.getElementById('langToggle').addEventListener('click', function () { var cur = AppState.getLang(); AppState.setLang(cur === 'en' ? 'zh' : 'en'); });
 })();
 </script>
 <script src="/shared/public-nav.js" defer></script>

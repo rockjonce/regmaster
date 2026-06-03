@@ -102,28 +102,28 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 
 <nav class="nav">
   <a class="brand" href="/">
-    <span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span>RegMaster</span>
+    <span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span><span data-i18n="brandName">RegMaster</span>
   </a>
   <div class="links">
-    <a href="/events/">探索活動</a>
-    <a href="/pricing.html" class="on">方案</a>
-    <a href="/features.html">功能</a>
-    <a href="/about.html">關於</a>
-    <a href="/contact.html">聯絡</a>
+    <a href="/events/" data-i18n="navExplore">探索活動</a>
+    <a href="/pricing.html" class="on" data-i18n="navPricing">方案</a>
+    <a href="/features.html" data-i18n="navFeatures">功能</a>
+    <a href="/about.html" data-i18n="navAbout">關於</a>
+    <a href="/contact.html" data-i18n="navContact">聯絡</a>
   </div>
   <div class="actions">
     <button class="theme-toggle" id="themeToggle">🌗</button>
     <button class="theme-toggle" id="langToggle">中/EN</button>
-    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
-    <a href="/login.html" class="btn btn-quiet btn-sm">主辦方登入</a>
-    <a href="/signup.html?plan=free" class="btn btn-primary btn-sm">免費開始</a>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
+    <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
+    <a href="/signup.html?plan=free" class="btn btn-primary btn-sm" data-i18n="navTrial">免費開始</a>
   </div>
 </nav>
 
 <section class="page-hero">
   <div class="eyebrow">PRICING</div>
-  <h1>從免費開始<br>用得越多<em>越划算</em>。</h1>
-  <p>透明定價、無隱藏費用、隨時可降級或取消。價格與功能以實際方案設定為準。</p>
+  <h1 data-i18n-html="prHeroTitle">從免費開始<br>用得越多<em>越划算</em>。</h1>
+  <p data-i18n="prHeroSub">透明定價、無隱藏費用、隨時可降級或取消。價格與功能以實際方案設定為準。</p>
 </section>
 
 <section style="padding-top:48px">
@@ -201,15 +201,15 @@ footer { background:var(--bg); padding:48px 32px 24px; }
     </div>
   </div>
 
-  <p class="text-c mute mt-6" style="font:400 12.5px/1.5 var(--f-tc); margin-top:32px">
+  <p class="text-c mute mt-6" style="font:400 12.5px/1.5 var(--f-tc); margin-top:32px" data-i18n="prNote">
     所有金額未含稅 · NT$ = 新台幣 · 接受發票申請統編 · 銀行轉帳免收金流手續費
   </p>
 </section>
 
 <section>
   <div class="section-head">
-    <h2>逐項比較</h2>
-    <p>看清楚每一分錢買到了什麼。</p>
+    <h2 data-i18n="prCmpH2">逐項比較</h2>
+    <p data-i18n="prCmpSub">看清楚每一分錢買到了什麼。</p>
   </div>
   <div class="cmp-table container">
     <table>
@@ -244,50 +244,50 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 
 <section>
   <div class="section-head">
-    <h2>關於付費，你可能想問</h2>
+    <h2 data-i18n="prFaqH2">關於付費，你可能想問</h2>
   </div>
   <div class="faq-grid">
     <details class="faq-item" open>
-      <summary>可以隨時升級嗎？費用怎麼算？<span class="plus">+</span></summary>
-      <p>可以。升級立即生效，並以「公平按比例」計算差額：應補金額 ＝ 新方案年費 −（目前方案年費 × 剩餘天數 ÷ 365），付款日起重新計算 365 天。系統會在「方案與授權」頁依當日日期告訴你升級需補多少。目前不提供線上自助降級，如需降級請於到期後重新選擇方案，或聯繫客服。</p>
+      <summary><span data-i18n="prFaqQ1">可以隨時升級嗎？費用怎麼算？</span><span class="plus">+</span></summary>
+      <p data-i18n="prFaqA1">可以。升級立即生效，並以「公平按比例」計算差額：應補金額 ＝ 新方案年費 −（目前方案年費 × 剩餘天數 ÷ 365），付款日起重新計算 365 天。系統會在「方案與授權」頁依當日日期告訴你升級需補多少。目前不提供線上自助降級，如需降級請於到期後重新選擇方案，或聯繫客服。</p>
     </details>
     <details class="faq-item">
-      <summary>PayUNI 金流手續費怎麼算？<span class="plus">+</span></summary>
-      <p>手續費依方案而定（Free 5%、Starter 3%、Pro 2%、Team 1%），以報名者實際線上付款金額計算。平台代收後扣除手續費，再依轉帳週期撥款至你的收款帳戶。<b>銀行 / ATM 轉帳由報名者直接匯入主辦方帳戶，平台不收手續費。</b></p>
+      <summary><span data-i18n="prFaqQ2">PayUNI 金流手續費怎麼算？</span><span class="plus">+</span></summary>
+      <p data-i18n-html="prFaqA2">手續費依方案而定（Free 5%、Starter 3%、Pro 2%、Team 1%），以報名者實際線上付款金額計算。平台代收後扣除手續費，再依轉帳週期撥款至你的收款帳戶。<b>銀行 / ATM 轉帳由報名者直接匯入主辦方帳戶，平台不收手續費。</b></p>
     </details>
     <details class="faq-item">
-      <summary>是學校 / 非營利單位，有優惠嗎？<span class="plus">+</span></summary>
-      <p>歡迎以機構信箱來信 <a href="mailto:sales@calculator.com.tw" style="color:var(--acc)">sales@calculator.com.tw</a> 與我們洽詢，我們會視情況提供協助。</p>
+      <summary><span data-i18n="prFaqQ3">是學校 / 非營利單位，有優惠嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n-html="prFaqA3">歡迎以機構信箱來信 <a href="mailto:sales@calculator.com.tw" style="color:var(--acc)">sales@calculator.com.tw</a> 與我們洽詢，我們會視情況提供協助。</p>
     </details>
     <details class="faq-item">
-      <summary>免費版會強制升級嗎？<span class="plus">+</span></summary>
-      <p>不會。Free 版永久免費，沒有時間限制。當你超過免費版的限制（例如同時 1 個進行中活動、單場 60 人）時，才需要升級或調整。各方案的實際額度以「方案」頁為準。</p>
+      <summary><span data-i18n="prFaqQ4">免費版會強制升級嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n="prFaqA4">不會。Free 版永久免費，沒有時間限制。當你超過免費版的限制（例如同時 1 個進行中活動、單場 60 人）時，才需要升級或調整。各方案的實際額度以「方案」頁為準。</p>
     </details>
     <details class="faq-item">
-      <summary>方案費用可以退費嗎？<span class="plus">+</span></summary>
-      <p>方案訂閱費用如有問題，請於購買後盡速來信客服協助處理。請注意：<b>各活動「報名費」之退費，由該活動主辦方依其公告政策辦理</b>，與平台方案費用不同。</p>
+      <summary><span data-i18n="prFaqQ5">方案費用可以退費嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n-html="prFaqA5">方案訂閱費用如有問題，請於購買後盡速來信客服協助處理。請注意：<b>各活動「報名費」之退費，由該活動主辦方依其公告政策辦理</b>，與平台方案費用不同。</p>
     </details>
     <details class="faq-item">
-      <summary>能開立統編 / 發票嗎？<span class="plus">+</span></summary>
-      <p>購買方案時可提供公司統編。🚧 自動電子發票寄送功能即將推出；在此之前如需發票，請來信客服協助開立。</p>
+      <summary><span data-i18n="prFaqQ6">能開立統編 / 發票嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n="prFaqA6">購買方案時可提供公司統編。🚧 自動電子發票寄送功能即將推出；在此之前如需發票，請來信客服協助開立。</p>
     </details>
   </div>
 </section>
 
 <section class="cta-strip" style="border-bottom:0">
-  <h2>還在猶豫？</h2>
-  <p>Free 版永久免費，就能跑完整個流程。先試試，需要時再升級。</p>
+  <h2 data-i18n="prCtaH2">還在猶豫？</h2>
+  <p data-i18n="prCtaSub">Free 版永久免費，就能跑完整個流程。先試試，需要時再升級。</p>
   <div class="flex aic gap-3 jcc">
-    <a href="/signup.html?plan=free" class="btn btn-accent btn-lg">免費開始</a>
-    <a href="/contact.html?topic=sales" class="btn btn-ghost btn-lg">和我們聊聊</a>
+    <a href="/signup.html?plan=free" class="btn btn-accent btn-lg" data-i18n="prCtaFree">免費開始</a>
+    <a href="/contact.html?topic=sales" class="btn btn-ghost btn-lg" data-i18n="prCtaTalk">和我們聊聊</a>
   </div>
 </section>
 
 <footer>
   <div class="f-inner">
     <div class="f-foot">
-      <span>© 2026 RegMaster · 廣天國際有限公司</span>
-      <span class="mono">SSL 加密傳輸 · 個資法合規</span>
+      <span data-i18n="ftCopyright">© 2026 RegMaster · 廣天國際有限公司</span>
+      <span class="mono" data-i18n="ftCompliance">SSL 加密傳輸 · 個資法合規</span>
     </div>
   </div>
 </footer>
@@ -298,6 +298,8 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-pricing.js"></script>
 <script>
 (function () {
   AppState.init();
@@ -306,33 +308,40 @@ footer { background:var(--bg); padding:48px 32px 24px; }
     AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark');
   });
   document.getElementById('langToggle').addEventListener('click', function () {
-    AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en');
-    location.reload();
+    AppState.setLang(AppState.getLang() === 'en' ? 'zh' : 'en'); // i18n.js applies live (no reload)
   });
 
   // ===== Hydrate plan cards + comparison table from config/sales.plans =====
-  var PFEAT = [['payment','線上金流收款'],['csvExport','匯出報表'],['scoring','評分'],['multiJudge','多評審評分'],['campaigns','公告群發'],['checkin','QR 報到'],['waitlist','允許候補'],['eventAi','活動 AI 助理'],['ai','主辦後台 AI 助理'],['certificate','名牌 / 證書']];
+  // Language-aware: names/taglines from backend en fields; labels via i18n dict.
+  var PFEAT = [['payment','pfPayment'],['csvExport','pfCsv'],['scoring','pfScoring'],['multiJudge','pfMultiJudge'],['campaigns','pfCampaigns'],['checkin','pfCheckin'],['waitlist','pfWaitlist'],['eventAi','pfEventAi'],['ai','pfAdminAi'],['certificate','pfCert']];
   var PTIERS = [
-    ['free','免費版 Free','想先試試水溫，或只辦小型活動','btn-ghost','/signup.html?plan=free','開始使用'],
-    ['starter','入門版 Starter','適合單次活動、小型工作室','btn-ghost','/signup.html?plan=starter','升級 Starter'],
-    ['pro','專業版 Pro','學校 / 中型機構 · 完整功能 · 含 AI','btn-accent','/signup.html?plan=pro','升級 Pro →'],
-    ['team','團隊版 Team','大型機構 / 政府單位 / 跨團隊協作','btn-primary','/signup.html?plan=team','升級 Team']
+    ['free','btn-ghost','/signup.html?plan=free','btnUseFree'],
+    ['starter','btn-ghost','/signup.html?plan=starter','btnUpStarter'],
+    ['pro','btn-accent','/signup.html?plan=pro','btnUpPro'],
+    ['team','btn-primary','/signup.html?plan=team','btnChooseTeam']
   ];
+  var lastPlans = null;
+  function L(k){ return (window.L ? window.L(k) : k); }
+  function lang(){ return window.LANG || 'zh'; }
   function _n(x){ return Number(x||0).toLocaleString(); }
-  function _limTxt(v){ return (v===0||v==null) ? '無限' : _n(v); }
+  function _lim(v){ return (v===0||v==null) ? L('uUnlimited') : _n(v); }
+  function tpl(k,n){ return L(k).replace('{n}', n); }
+  function nameOf(p,key){ var o=p.name; return (o&&(o[lang()]||o.zh)) || L('plan'+key.charAt(0).toUpperCase()+key.slice(1)+'Name'); }
+  function tagOf(p,key){ var o=p.tagline; return (o&&(o[lang()]||o.zh)) || L('plan'+key.charAt(0).toUpperCase()+key.slice(1)+'Tag'); }
   function renderPricing(plans){
+    lastPlans = plans;
     var row = document.getElementById('plansRow');
     if (row) {
       row.innerHTML = PTIERS.map(function(tt){
         var t=tt[0], p=plans[t]||{}, f=p.features||{};
-        var feat = PFEAT.filter(function(ff){ return f[ff[0]]===true; }).map(function(ff){ return '<li>'+ff[1]+'</li>'; }).join('');
+        var feat = PFEAT.filter(function(ff){ return f[ff[0]]===true; }).map(function(ff){ return '<li>'+L(ff[1])+'</li>'; }).join('');
         var priceBlock = (Number(p.price)||0) > 0
-          ? '<div class="price"><span class="price-cur">NT$</span><span class="price-num">'+_n(p.price)+'</span><span class="price-suf">/年</span></div><div class="price-foot">未含稅</div>'
-          : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">/永久免費</span></div><div class="price-foot">無需信用卡</div>';
-        return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">Most Popular</span>':'')+
-          '<h3>'+tt[1]+'</h3><p class="tag">'+tt[2]+'</p>'+priceBlock+
-          '<ul><li><b>'+_limTxt(p.maxActiveEvents)+'</b> 個進行中活動</li><li>每活動 <b>'+_limTxt(p.maxCapacity)+'</b> 筆報名</li><li>金流手續費 <b>'+(Number(p.feePct)||0)+'%</b></li>'+feat+'</ul>'+
-          '<a href="'+tt[4]+'" class="btn '+tt[3]+' btn-block">'+tt[5]+'</a></div>';
+          ? '<div class="price"><span class="price-cur">NT$</span><span class="price-num">'+_n(p.price)+'</span><span class="price-suf">'+L('priceYear')+'</span></div><div class="price-foot">'+L('pfNoTax')+'</div>'
+          : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">'+L('priceForever')+'</span></div><div class="price-foot">'+L('pfNoCard')+'</div>';
+        return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">'+L('badgePopular')+'</span>':'')+
+          '<h3>'+nameOf(p,t)+'</h3><p class="tag">'+tagOf(p,t)+'</p>'+priceBlock+
+          '<ul><li>'+tpl('tActive',_lim(p.maxActiveEvents))+'</li><li>'+tpl('tReg',_lim(p.maxCapacity))+'</li><li>'+tpl('tFee',(Number(p.feePct)||0))+'</li>'+feat+'</ul>'+
+          '<a href="'+tt[2]+'" class="btn '+tt[1]+' btn-block">'+L(tt[3])+'</a></div>';
       }).join('');
     }
     var cmp = document.getElementById('cmpBody');
@@ -341,17 +350,22 @@ footer { background:var(--bg); padding:48px 32px 24px; }
       var cell = function(t,k){ return ((plans[t]&&plans[t].features&&plans[t].features[k])===true) ? '<td><span class="y">✓</span></td>' : '<td><span class="n">—</span></td>'; };
       var numRow = function(label,fn){ return '<tr><td>'+label+'</td>'+TS.map(function(t){ return '<td>'+fn(plans[t]||{})+'</td>'; }).join('')+'</tr>'; };
       cmp.innerHTML =
-        '<tr class="section-row"><td colspan="5">方案與容量</td></tr>'+
-        numRow('年訂閱費（NT$/年）', function(p){ return (Number(p.price)||0)>0 ? _n(p.price) : '免費'; })+
-        numRow('同時進行中活動數', function(p){ return _limTxt(p.maxActiveEvents); })+
-        numRow('每活動報名上限', function(p){ return _limTxt(p.maxCapacity); })+
-        numRow('PayUNI 金流手續費（每筆）', function(p){ return (Number(p.feePct)||0)+'%'; })+
-        '<tr class="section-row"><td colspan="5">功能</td></tr>'+
-        PFEAT.map(function(ff){ return '<tr><td>'+ff[1]+'</td>'+TS.map(function(t){ return cell(t,ff[0]); }).join('')+'</tr>'; }).join('');
+        '<tr class="section-row"><td colspan="5">'+L('prCmpCap')+'</td></tr>'+
+        numRow(L('prRowFee'), function(p){ return (Number(p.price)||0)>0 ? _n(p.price) : L('prFreeWord'); })+
+        numRow(L('prRowEvents'), function(p){ return _lim(p.maxActiveEvents); })+
+        numRow(L('prRowCap'), function(p){ return _lim(p.maxCapacity); })+
+        numRow(L('prRowPayFee'), function(p){ return (Number(p.feePct)||0)+'%'; })+
+        '<tr class="section-row"><td colspan="5">'+L('prCmpFeat')+'</td></tr>'+
+        PFEAT.map(function(ff){ return '<tr><td>'+L(ff[1])+'</td>'+TS.map(function(t){ return cell(t,ff[0]); }).join('')+'</tr>'; }).join('');
     }
   }
   if (window.google && google.script && google.script.run) {
-    google.script.run.withSuccessHandler(function(res){ if (res && res.plans) renderPricing(res.plans); }).withFailureHandler(function(){}).getPublicPlans();
+    google.script.run.withSuccessHandler(function(res){
+      if (res && res.plans) {
+        renderPricing(res.plans);
+        if (window.AppState && window.AppState.on) window.AppState.on('lang-changed', function(){ if (lastPlans) renderPricing(lastPlans); });
+      }
+    }).withFailureHandler(function(){}).getPublicPlans();
   }
 })();
 </script>
