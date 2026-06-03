@@ -130,46 +130,46 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     <div class="body-3" id="content">
       <aside class="left-c">
         <div class="lh">
-          <h3>對話歷史</h3>
-          <button class="new-conv-btn" id="newConvBtn">＋ 新對話</button>
+          <h3 data-i18n="adAiHistory">對話歷史</h3>
+          <button class="new-conv-btn" id="newConvBtn" data-i18n="adAiNewConv">＋ 新對話</button>
         </div>
         <div class="conv-list" id="convList"></div>
       </aside>
       <section class="center-c">
         <header class="chat-h">
           <div class="av-h"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
-          <div><h4>RegMaster AI 助理</h4><p>由 Gemini 驅動 · 可協助活動規劃 / 報名問題 / 數據分析</p></div>
+          <div><h4 data-i18n="adAiChatTitle">RegMaster AI 助理</h4><p data-i18n="adAiChatSub">由 Gemini 驅動 · 可協助活動規劃 / 報名問題 / 數據分析</p></div>
         </header>
         <div class="messages" id="messages">
           <div class="empty-chat">
             <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
-            <h3>有什麼可以幫你的？</h3>
-            <p>新建對話或從左側選擇歷史對話開始。</p>
+            <h3 data-i18n="adAiEmptyTitle">有什麼可以幫你的？</h3>
+            <p data-i18n="adAiEmptyDesc">新建對話或從左側選擇歷史對話開始。</p>
             <div class="suggestions">
-              <div class="sg" data-sg="如何提升報名轉換率？">如何提升報名轉換率？</div>
-              <div class="sg" data-sg="幫我擬一封報名提醒信">幫我擬一封報名提醒信</div>
-              <div class="sg" data-sg="哪些功能可以提升活動體驗？">哪些功能可以提升活動體驗？</div>
-              <div class="sg" data-sg="分析我目前的活動表現">分析我目前的活動表現</div>
+              <div class="sg" data-sg="如何提升報名轉換率？" data-i18n="adAiSg1">如何提升報名轉換率？</div>
+              <div class="sg" data-sg="幫我擬一封報名提醒信" data-i18n="adAiSg2">幫我擬一封報名提醒信</div>
+              <div class="sg" data-sg="哪些功能可以提升活動體驗？" data-i18n="adAiSg3">哪些功能可以提升活動體驗？</div>
+              <div class="sg" data-sg="分析我目前的活動表現" data-i18n="adAiSg4">分析我目前的活動表現</div>
             </div>
           </div>
         </div>
         <div class="input-area">
           <div class="input-wrap">
-            <textarea id="msgInput" placeholder="輸入問題⋯ (Enter 送出，Shift+Enter 換行)" rows="1"></textarea>
+            <textarea id="msgInput" placeholder="輸入問題⋯ (Enter 送出，Shift+Enter 換行)" data-i18n-placeholder="adAiInputPlaceholder" rows="1"></textarea>
             <button class="send-btn" id="sendBtn" disabled><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
           </div>
         </div>
       </section>
       <aside class="right-c">
-        <h4>查詢範圍</h4>
+        <h4 data-i18n="adAiScopeTitle">查詢範圍</h4>
         <div class="scope-picker" id="scopePicker">
-          <button class="on" data-scope="admin">主辦後台</button>
-          <button data-scope="comp">特定活動</button>
+          <button class="on" data-scope="admin" data-i18n="adAiScopeAdmin">主辦後台</button>
+          <button data-scope="comp" data-i18n="adAiScopeComp">特定活動</button>
         </div>
         <select id="compSelect" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:7px; margin-bottom:14px; display:none">
-          <option value="">選擇活動⋯</option>
+          <option value="" data-i18n="adAiSelectComp">選擇活動⋯</option>
         </select>
-        <h4 id="kbTitle">知識庫</h4>
+        <h4 id="kbTitle" data-i18n="adAiKbTitle">知識庫</h4>
         <div id="kbPanel"></div>
       </aside>
     </div>
@@ -177,6 +177,7 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-ai.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -250,15 +251,15 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
   function renderConvs() {
     var list = document.getElementById('convList');
     if (CONVS.length === 0) {
-      list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 16px; font:500 12px/1.5 var(--f-tc)">尚無對話<br>點上方「＋ 新對話」開始</p>';
+      list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 16px; font:500 12px/1.5 var(--f-tc)">' + L('adAiNoConv') + '</p>';
       return;
     }
     list.innerHTML = CONVS.map(function (c) {
       return '<div class="conv" data-id="' + c.id + '">' +
-        '<div class="del-btn" data-del="' + c.id + '" title="刪除">×</div>' +
-        '<div class="nm">' + escapeHtml(c.title || '新對話') + (c.compId ? ' <span class="pill-c">活動</span>' : '') + '</div>' +
-        '<div class="preview">' + escapeHtml(c.lastSnippet || '(尚無訊息)') + '</div>' +
-        '<div class="time">' + escapeHtml(c.updatedAt || '') + ' · ' + (c.messageCount || 0) + ' 則</div>' +
+        '<div class="del-btn" data-del="' + c.id + '" title="' + escapeHtml(L('adAiDelTitle')) + '">×</div>' +
+        '<div class="nm">' + escapeHtml(c.title || L('adAiConvDefaultTitle')) + (c.compId ? ' <span class="pill-c">' + escapeHtml(L('adAiConvActivity')) + '</span>' : '') + '</div>' +
+        '<div class="preview">' + escapeHtml(c.lastSnippet || L('adAiConvNoSnippet')) + '</div>' +
+        '<div class="time">' + escapeHtml(c.updatedAt || '') + ' · ' + (c.messageCount || 0) + ' ' + escapeHtml(L('adAiConvUnit')) + '</div>' +
       '</div>';
     }).join('');
     list.querySelectorAll('.conv').forEach(function (el) {
@@ -270,14 +271,14 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     list.querySelectorAll('[data-del]').forEach(function (b) {
       b.addEventListener('click', function (e) {
         e.stopPropagation();
-        uiConfirm('刪除此對話？', { title: '刪除對話', okText: '刪除', danger: true }).then(function (ok) {
+        uiConfirm(L('adAiConfirmDel'), { title: L('adAiConfirmDelTitle'), okText: L('adAiConfirmDelOk'), danger: true }).then(function (ok) {
           if (!ok) return;
           var row = b.closest('.conv');
           if (row) { row.style.opacity = '.45'; row.style.pointerEvents = 'none'; }
           b.innerHTML = '⋯';
           google.script.run
             .withSuccessHandler(function () { if (SELECTED && SELECTED.id === b.dataset.del) { SELECTED = null; renderMessages(); } loadConvs(); })
-            .withFailureHandler(function () { if (row) { row.style.opacity = ''; row.style.pointerEvents = ''; } b.innerHTML = '×'; uiAlert('刪除失敗，請稍後再試。'); })
+            .withFailureHandler(function () { if (row) { row.style.opacity = ''; row.style.pointerEvents = ''; } b.innerHTML = '×'; uiAlert(L('adAiDelFail')); })
             .deleteConversation(b.dataset.del);
         });
       });
@@ -302,10 +303,10 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     if (!SELECTED || MESSAGES.length === 0) {
       box.innerHTML = '<div class="empty-chat">' +
         '<div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>' +
-        '<h3>' + (SELECTED ? '開始對話' : '有什麼可以幫你的？') + '</h3>' +
-        '<p>' + (SELECTED ? '從下方輸入框送出第一則訊息' : '新建對話或從左側選擇歷史對話開始') + '</p>' +
+        '<h3>' + escapeHtml(SELECTED ? L('adAiEmptyTitleStarted') : L('adAiEmptyTitle')) + '</h3>' +
+        '<p>' + escapeHtml(SELECTED ? L('adAiEmptyDescStarted') : L('adAiEmptyDescPlain')) + '</p>' +
         (!SELECTED ? '<div class="suggestions">' +
-          ['如何提升報名轉換率？','幫我擬一封報名提醒信','哪些功能可以提升活動體驗？','分析我目前的活動表現']
+          [L('adAiSg1'),L('adAiSg2'),L('adAiSg3'),L('adAiSg4')]
             .map(function (s) { return '<div class="sg" data-sg="' + escapeHtml(s) + '">' + escapeHtml(s) + '</div>'; }).join('') +
         '</div>' : '') +
       '</div>';
@@ -313,7 +314,7 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       return;
     }
     box.innerHTML = MESSAGES.map(function (m) {
-      var avLabel = m.role === 'user' ? (me.displayName || me.username).charAt(0).toUpperCase() : '✦';
+      var avLabel = m.role === 'user' ? (me.displayName || me.username).charAt(0).toUpperCase() : L('adAiAvAi');
       var inner;
       if (m._typing) {
         inner = '<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
@@ -341,38 +342,38 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     var panel = document.getElementById('kbPanel');
     if (SCOPE !== 'comp') return;
     var items = '';
-    if (st.hasRules) items += '<div class="kb-item"><h6>📋 活動規章</h6><p>報名規則與規章內容（含上傳的規章 PDF）</p></div>';
-    if (st.hasDescription) items += '<div class="kb-item"><h6>📝 活動說明</h6><p>活動介紹、梯次與報名截止等資訊</p></div>';
-    if (st.hasRegData) items += '<div class="kb-item"><h6>📊 報名資料與統計</h6><p>此活動即時報名／付款數據（' + (st.regCount || 0) + ' 筆），可詢問轉換率與提升建議</p></div>';
-    if (st.hasOrgInfo) items += '<a class="kb-item" href="/admin/settings.html"><h6>🏢 主辦單位資訊' + OPEN_IC + '</h6><p>單位名稱與聯絡方式（Email／電話）</p></a>';
+    if (st.hasRules) items += '<div class="kb-item"><h6>' + escapeHtml(L('adAiKbRulesH')) + '</h6><p>' + escapeHtml(L('adAiKbRulesP')) + '</p></div>';
+    if (st.hasDescription) items += '<div class="kb-item"><h6>' + escapeHtml(L('adAiKbDescH')) + '</h6><p>' + escapeHtml(L('adAiKbDescP')) + '</p></div>';
+    if (st.hasRegData) items += '<div class="kb-item"><h6>' + escapeHtml(L('adAiKbRegDataH')) + '</h6><p>' + escapeHtml(L('adAiKbRegDataP1')) + (st.regCount || 0) + escapeHtml(L('adAiKbRegDataP2')) + '</p></div>';
+    if (st.hasOrgInfo) items += '<a class="kb-item" href="/admin/settings.html"><h6>' + escapeHtml(L('adAiKbOrgH')) + OPEN_IC + '</h6><p>' + escapeHtml(L('adAiKbOrgP')) + '</p></a>';
     if (!items) {
-      panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">此活動尚未設定知識庫內容（規章 / 說明），也尚無報名資料。可至活動設定補齊。</p>';
+      panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">' + escapeHtml(L('adAiKbEmptyComp')) + '</p>';
       return;
     }
-    panel.innerHTML = items + hintBox('AI 會依此活動的' + (st.hasRegData ? '報名數據、' : '') + '規章與說明回答，並可提供報名轉換率分析與提升建議。');
+    panel.innerHTML = items + hintBox(escapeHtml(L('adAiHintCompA')) + (st.hasRegData ? escapeHtml(L('adAiHintCompRegData')) : '') + escapeHtml(L('adAiHintCompB')));
   }
   function renderKbPanel() {
     var panel = document.getElementById('kbPanel');
     var title = document.getElementById('kbTitle');
     if (SCOPE === 'comp') {
-      title.textContent = '知識庫 · 此活動';
+      title.textContent = L('adAiKbTitleComp');
       if (!SELECTED_COMP) {
-        panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">請先於上方選擇活動 — AI 將依該活動的報名數據、規章與說明回答。</p>';
+        panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">' + escapeHtml(L('adAiKbPickComp')) + '</p>';
         return;
       }
       if (KB_CACHE[SELECTED_COMP]) { paintCompKb(KB_CACHE[SELECTED_COMP], currentCompName()); return; }
-      panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px">載入此活動知識庫⋯</p>';
+      panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px">' + escapeHtml(L('adAiKbLoadingComp')) + '</p>';
       var reqComp = SELECTED_COMP;
       google.script.run
         .withSuccessHandler(function (st) { KB_CACHE[reqComp] = st || {}; if (SCOPE === 'comp' && SELECTED_COMP === reqComp) paintCompKb(KB_CACHE[reqComp], currentCompName()); })
         .withFailureHandler(function () { if (SCOPE === 'comp' && SELECTED_COMP === reqComp) paintCompKb({ hasRules: true, hasDescription: true, hasOrgInfo: true, hasRegData: false }, currentCompName()); })
         .getCompKbStatus(reqComp);
     } else {
-      title.textContent = '知識庫';
+      title.textContent = L('adAiKbTitle');
       panel.innerHTML =
-        '<a class="kb-item" href="/Manual.html" target="_blank" rel="noopener"><h6>📘 操作手冊' + OPEN_IC + '</h6><p>所有功能的詳細說明文件，點擊開啟完整手冊</p></a>' +
-        '<div class="kb-item"><h6>📊 所有活動報名數據</h6><p>跨所有活動的即時報名／付款統計，可詢問轉換率、付款問題與提升建議</p></div>' +
-        hintBox('AI 會參考「操作手冊」與你所有活動的報名數據作答，並可提供跨活動的報名／轉換建議。');
+        '<a class="kb-item" href="/Manual.html" target="_blank" rel="noopener"><h6>' + escapeHtml(L('adAiKbManualH')) + OPEN_IC + '</h6><p>' + escapeHtml(L('adAiKbManualP')) + '</p></a>' +
+        '<div class="kb-item"><h6>' + escapeHtml(L('adAiKbAllRegH')) + '</h6><p>' + escapeHtml(L('adAiKbAllRegP')) + '</p></div>' +
+        hintBox(escapeHtml(L('adAiHintAdmin')));
     }
   }
 
@@ -397,15 +398,15 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     var btn = this;
     if (btn.disabled) return;
     var orig = btn.textContent;
-    btn.disabled = true; btn.textContent = '建立中⋯';
+    btn.disabled = true; btn.textContent = L('adAiCreating');
     function done() { btn.disabled = false; btn.textContent = orig; }
     google.script.run
       .withSuccessHandler(function (res) {
         done();
         if (res && res.success) { loadConvs(); setTimeout(function () { selectConv(res.id); }, 200); }
       })
-      .withFailureHandler(function () { done(); uiAlert('建立對話失敗，請稍後再試。'); })
-      .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', '新對話 ' + new Date().toLocaleString());
+      .withFailureHandler(function () { done(); uiAlert(L('adAiCreateFail')); })
+      .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', L('adAiConvDefaultTitle') + ' ' + new Date().toLocaleString());
   });
 
   // Send message
@@ -446,7 +447,7 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       .withSuccessHandler(function () {
         MESSAGES.push({ role: 'user', content: text, createdAt: new Date().toISOString() });
         // Show typing indicator
-        MESSAGES.push({ role: 'ai', content: '思考中⋯', createdAt: new Date().toISOString(), _typing: true });
+        MESSAGES.push({ role: 'ai', content: L('adAiThinking'), createdAt: new Date().toISOString(), _typing: true });
         renderMessages();
         // 2. Call AI — always the auth-gated admin AI (organiser context). When a
         // specific activity is selected, pass its compId so the AI scopes to that
@@ -457,7 +458,7 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
           : function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, ''); };
         aiCall(function (aiRes) {
           MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });
-          var reply = (aiRes && (aiRes.answer || aiRes.reply)) || (aiRes && aiRes.error) || '（AI 暫時無法回應，請稍後再試）';
+          var reply = (aiRes && (aiRes.answer || aiRes.reply)) || (aiRes && aiRes.error) || L('adAiNoReply');
           MESSAGES.push({ role: 'ai', content: reply, createdAt: new Date().toISOString() });
           renderMessages();
           // 3. Append AI message to backend
@@ -469,6 +470,17 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
 
   renderKbPanel();
   loadConvs();
+
+  // Re-render JS-injected content (conversation list, messages, KB panel) when the
+  // language changes; static [data-i18n*] nodes are handled by the shared engine.
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () {
+      renderConvs();
+      renderMessages();
+      renderKbPanel();
+      if (typeof window.applyI18n === 'function') window.applyI18n();
+    });
+  }
 })();
 </script>
 </body>

@@ -158,24 +158,24 @@
   <main>
     <header class="head">
       <div class="crumbs">
-        <a href="/admin/">主辦後台</a><span class="sep">/</span>
-        <a href="/admin/events/">所有活動</a><span class="sep">/</span>
-        <b id="crumbName">載入中⋯</b>
+        <a href="/admin/" data-i18n="aeHubCrumbHome">主辦後台</a><span class="sep">/</span>
+        <a href="/admin/events/" data-i18n="aeHubCrumbEvents">所有活動</a><span class="sep">/</span>
+        <b id="crumbName" data-i18n="aeHubCrumbLoading">載入中⋯</b>
       </div>
       <div class="actions">
-        <button class="btn-ic-h" title="活動公開頁" id="publicBtn">
+        <button class="btn-ic-h" title="活動公開頁" data-i18n-title="aeHubPublicBtnTitle" id="publicBtn">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/></svg>
         </button>
         <div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div>
       </div>
     </header>
 
-    <div id="loadingState" class="loading-c" style="margin-top:60px">載入活動資料⋯</div>
+    <div id="loadingState" class="loading-c" style="margin-top:60px" data-i18n="aeHubLoading">載入活動資料⋯</div>
 
     <div id="errorState" style="display:none; max-width:680px; margin:60px auto; padding:48px 32px; text-align:center; background:var(--surface); border:1px dashed var(--line); border-radius:18px;">
-      <h3 style="font:700 22px/1.3 var(--f-display); margin-bottom:8px">無法載入活動</h3>
+      <h3 style="font:700 22px/1.3 var(--f-display); margin-bottom:8px" data-i18n="aeHubErrTitle">無法載入活動</h3>
       <p id="errorMsg" style="font:400 14px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:24px"></p>
-      <a href="/admin/events/" class="btn btn-primary">回到所有活動</a>
+      <a href="/admin/events/" class="btn btn-primary" data-i18n="aeHubBackToEvents">回到所有活動</a>
     </div>
 
     <div id="content" style="display:none">
@@ -204,20 +204,20 @@
         <!-- OVERVIEW TAB -->
         <div class="tab-pane" data-pane="overview">
           <div class="kpis-evt">
-            <div class="kpi-evt"><div class="h-k"><div class="l-k">總報名</div></div><div class="v-k" id="kTotal">0</div><div class="s-k" id="kTotalSub">尚無報名</div></div>
-            <div class="kpi-evt"><div class="h-k"><div class="l-k">正取</div></div><div class="v-k" id="kAccepted">0</div><div class="s-k">含已確認與待付款</div></div>
-            <div class="kpi-evt"><div class="h-k"><div class="l-k">備取</div></div><div class="v-k" id="kWaitlist">0</div><div class="s-k">等候名額釋出</div></div>
-            <div class="kpi-evt"><div class="h-k"><div class="l-k">待付款</div></div><div class="v-k" id="kPayWait">0</div><div class="s-k">需主辦方追蹤</div></div>
-            <div class="kpi-evt"><div class="h-k"><div class="l-k">已報到</div></div><div class="v-k" id="kCheckin">0</div><div class="s-k">活動當天統計</div></div>
+            <div class="kpi-evt"><div class="h-k"><div class="l-k" data-i18n="aeHubKpiTotal">總報名</div></div><div class="v-k" id="kTotal">0</div><div class="s-k" id="kTotalSub" data-i18n="aeHubKpiTotalNone">尚無報名</div></div>
+            <div class="kpi-evt"><div class="h-k"><div class="l-k" data-i18n="aeHubKpiAccepted">正取</div></div><div class="v-k" id="kAccepted">0</div><div class="s-k" data-i18n="aeHubKpiAcceptedSub">含已確認與待付款</div></div>
+            <div class="kpi-evt"><div class="h-k"><div class="l-k" data-i18n="aeHubKpiWaitlist">備取</div></div><div class="v-k" id="kWaitlist">0</div><div class="s-k" data-i18n="aeHubKpiWaitlistSub">等候名額釋出</div></div>
+            <div class="kpi-evt"><div class="h-k"><div class="l-k" data-i18n="aeHubKpiPayWait">待付款</div></div><div class="v-k" id="kPayWait">0</div><div class="s-k" data-i18n="aeHubKpiPayWaitSub">需主辦方追蹤</div></div>
+            <div class="kpi-evt"><div class="h-k"><div class="l-k" data-i18n="aeHubKpiCheckin">已報到</div></div><div class="v-k" id="kCheckin">0</div><div class="s-k" data-i18n="aeHubKpiCheckinSub">活動當天統計</div></div>
           </div>
 
           <div class="layout-evt">
             <div>
               <div class="sec-card">
                 <div class="h-s">
-                  <h3>活動資訊</h3>
+                  <h3 data-i18n="aeHubSecInfo">活動資訊</h3>
                   <div class="actions-s">
-                    <a data-goto="/edit">編輯設定</a>
+                    <a data-goto="/edit" data-i18n="aeHubEditSettings">編輯設定</a>
                   </div>
                 </div>
                 <div id="infoTable" style="font:400 14px/1.7 var(--f-tc); color:var(--ink-2)">—</div>
@@ -225,46 +225,46 @@
 
               <div class="sec-card">
                 <div class="h-s">
-                  <h3>最近報名</h3>
+                  <h3 data-i18n="aeHubSecRecent">最近報名</h3>
                   <div class="actions-s">
-                    <a data-goto="/payments">查看全部 →</a>
+                    <a data-goto="/payments" data-i18n="aeHubViewAll">查看全部 →</a>
                   </div>
                 </div>
-                <div id="recentRegs">尚無報名資料。</div>
+                <div id="recentRegs" data-i18n="aeHubRecentEmpty">尚無報名資料。</div>
               </div>
             </div>
 
             <aside>
               <div class="sec-card">
-                <h3 style="font:700 14px/1.2 var(--f-display); margin-bottom:14px">活動工具</h3>
+                <h3 style="font:700 14px/1.2 var(--f-display); margin-bottom:14px" data-i18n="aeHubSecTools">活動工具</h3>
                 <a class="tool-tile" data-goto="/edit">
                   <div class="ic-t b1"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></div>
-                  <div class="body-t"><h6>活動設定</h6><p>名稱、欄位、收費</p></div>
+                  <div class="body-t"><h6 data-i18n="aeHubToolSettings">活動設定</h6><p data-i18n="aeHubToolSettingsP">名稱、欄位、收費</p></div>
                   <span class="arr">→</span>
                 </a>
                 <a class="tool-tile" data-goto="/payments">
                   <div class="ic-t b2"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div>
-                  <div class="body-t"><h6>報名與付款</h6><p>確認 / 退費 / 匯出</p></div>
+                  <div class="body-t"><h6 data-i18n="aeHubToolPay">報名與付款</h6><p data-i18n="aeHubToolPayP">確認 / 退費 / 匯出</p></div>
                   <span class="arr">→</span>
                 </a>
                 <a class="tool-tile" data-goto="/announcements">
                   <div class="ic-t b3"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg></div>
-                  <div class="body-t"><h6>發布通知</h6><p>群發 Email / 訊息</p></div>
+                  <div class="body-t"><h6 data-i18n="aeHubToolAnn">發布通知</h6><p data-i18n="aeHubToolAnnP">群發 Email / 訊息</p></div>
                   <span class="arr">→</span>
                 </a>
                 <a class="tool-tile" data-goto="/checkin">
                   <div class="ic-t b4"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg></div>
-                  <div class="body-t"><h6>QR 報到</h6><p>活動當天掃碼</p></div>
+                  <div class="body-t"><h6 data-i18n="aeHubToolCheckin">QR 報到</h6><p data-i18n="aeHubToolCheckinP">活動當天掃碼</p></div>
                   <span class="arr">→</span>
                 </a>
               </div>
 
               <div class="sec-card">
-                <h3 style="font:700 14px/1.2 var(--f-display); margin-bottom:14px">活動狀態</h3>
+                <h3 style="font:700 14px/1.2 var(--f-display); margin-bottom:14px" data-i18n="aeHubSecStatus">活動狀態</h3>
                 <div style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:12px" id="statusInfo">—</div>
-                <button class="btn btn-ghost btn-block" id="toggleOpenBtn">⏸ 關閉報名</button>
-                <a id="publicLink" class="btn btn-ghost btn-block" style="margin-top:8px" target="_blank">公開頁 ↗</a>
-                <button class="btn btn-ghost btn-block" id="copyLinkBtn" style="margin-top:8px">複製公開連結</button>
+                <button class="btn btn-ghost btn-block" id="toggleOpenBtn" data-i18n="aeHubCloseReg">⏸ 關閉報名</button>
+                <a id="publicLink" class="btn btn-ghost btn-block" style="margin-top:8px" target="_blank" data-i18n="aeHubPublicPage">公開頁 ↗</a>
+                <button class="btn btn-ghost btn-block" id="copyLinkBtn" style="margin-top:8px" data-i18n="aeHubCopyLink">複製公開連結</button>
               </div>
             </aside>
           </div>
@@ -274,44 +274,44 @@
         <div class="tab-pane" data-pane="settings" style="display:none">
           <div class="tab-stub" style="background:linear-gradient(135deg, var(--surface), var(--surface-2)); border-color:var(--acc-soft)">
             <div class="ic" style="background:var(--acc-soft); color:var(--acc)">⚙</div>
-            <h3>活動設定（v3）</h3>
-            <p>6 個分頁：基本 / 組別場次 / 報名表單 / 收費 / 通知 / 進階。<br>表單欄位請於專屬「表單設計器」拖放編輯，享受 v3 體驗。</p>
+            <h3 data-i18n="aeHubStubSettingsH">活動設定（v3）</h3>
+            <p data-i18n-html="aeHubStubSettingsP">6 個分頁：基本 / 組別場次 / 報名表單 / 收費 / 通知 / 進階。<br>表單欄位請於專屬「表單設計器」拖放編輯，享受 v3 體驗。</p>
             <div style="display:flex; gap:10px; justify-content:center">
-              <a id="editLinkBtn" href="#" class="btn btn-primary">開啟 v3 設定頁 →</a>
-              <a id="formBuilderLinkBtn" href="#" class="btn btn-ghost">表單設計器</a>
+              <a id="editLinkBtn" href="#" class="btn btn-primary" data-i18n="aeHubStubSettingsBtn">開啟 v3 設定頁 →</a>
+              <a id="formBuilderLinkBtn" href="#" class="btn btn-ghost" data-i18n="aeHubFormBuilder">表單設計器</a>
             </div>
           </div>
         </div>
         <div class="tab-pane" data-pane="registrations" style="display:none">
           <div class="tab-stub">
             <div class="ic">📋</div>
-            <h3>報名與付款管理</h3>
-            <p>查看所有報名清單、確認 / 退費付款、快速銀行對帳，以及匯出名單。</p>
-            <a id="legacyRegLink" href="#" class="btn btn-primary">開啟付款管理 →</a>
+            <h3 data-i18n="aeHubStubRegH">報名與付款管理</h3>
+            <p data-i18n="aeHubStubRegP">查看所有報名清單、確認 / 退費付款、快速銀行對帳，以及匯出名單。</p>
+            <a id="legacyRegLink" href="#" class="btn btn-primary" data-i18n="aeHubStubRegBtn">開啟付款管理 →</a>
           </div>
         </div>
         <div class="tab-pane" data-pane="announcements" style="display:none">
           <div class="tab-stub">
             <div class="ic">📢</div>
-            <h3>通知管理</h3>
-            <p>新增 / 編輯 / 刪除活動公告，並可同步寄 Email 給已報名者。（SMS / LINE 通道將於後續版本提供）</p>
-            <a id="legacyAnnLink" href="#" class="btn btn-primary">開啟通知管理 →</a>
+            <h3 data-i18n="aeHubStubAnnH">通知管理</h3>
+            <p data-i18n="aeHubStubAnnP">新增 / 編輯 / 刪除活動公告，並可同步寄 Email 給已報名者。（SMS / LINE 通道將於後續版本提供）</p>
+            <a id="legacyAnnLink" href="#" class="btn btn-primary" data-i18n="aeHubStubAnnBtn">開啟通知管理 →</a>
           </div>
         </div>
         <div class="tab-pane" data-pane="scoring" style="display:none">
           <div class="tab-stub">
             <div class="ic">🏆</div>
-            <h3>評分系統</h3>
-            <p>多評審、權重、即時排行榜（ACM 風格）、評分匯出。</p>
-            <a id="legacyScoreLink" href="#" class="btn btn-primary">開啟評分頁 →</a>
+            <h3 data-i18n="aeHubStubScoreH">評分系統</h3>
+            <p data-i18n="aeHubStubScoreP">多評審、權重、即時排行榜（ACM 風格）、評分匯出。</p>
+            <a id="legacyScoreLink" href="#" class="btn btn-primary" data-i18n="aeHubStubScoreBtn">開啟評分頁 →</a>
           </div>
         </div>
         <div class="tab-pane" data-pane="checkin" style="display:none">
           <div class="tab-stub">
             <div class="ic">📷</div>
-            <h3>QR Code 報到</h3>
-            <p>全螢幕 QR 掃描器 + 即時報到統計 + 物資配發。</p>
-            <a id="legacyCheckinLink" href="#" class="btn btn-primary">開啟報到頁 →</a>
+            <h3 data-i18n="aeHubStubCheckinH">QR Code 報到</h3>
+            <p data-i18n="aeHubStubCheckinP">全螢幕 QR 掃描器 + 即時報到統計 + 物資配發。</p>
+            <a id="legacyCheckinLink" href="#" class="btn btn-primary" data-i18n="aeHubStubCheckinBtn">開啟報到頁 →</a>
           </div>
         </div>
       </div>
@@ -321,6 +321,7 @@
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-hub.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function () {
@@ -342,7 +343,7 @@
   if (!compId) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMsg').textContent = '網址未指定活動編號。';
+    document.getElementById('errorMsg').textContent = window.L('aeHubErrNoId');
     return;
   }
 
@@ -371,7 +372,7 @@
     if (!bundle || bundle.error) {
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('errorState').style.display = 'block';
-      document.getElementById('errorMsg').textContent = (bundle && bundle.error) || '找不到活動';
+      document.getElementById('errorMsg').textContent = (bundle && bundle.error) || window.L('aeHubErrNotFound');
       return;
     }
     COMP = bundle;
@@ -384,8 +385,8 @@
 
   function render() {
     var cfg = COMP.config || {};
-    var name = cfg.competitionName || '(未命名活動)';
-    document.title = name + ' · 主辦後台 · RegMaster';
+    var name = cfg.competitionName || window.L('aeHubUnnamed');
+    document.title = name + ' · ' + window.L('aeHubCrumbHome') + ' · RegMaster';
     document.getElementById('crumbName').textContent = name;
     document.getElementById('heroTitle').textContent = name;
 
@@ -395,39 +396,39 @@
 
     // Status pills + meta
     var topHtml = '';
-    if (COMP.isOpen) topHtml += '<span class="pill live"><span class="dot-c"></span>LIVE · 報名中</span>';
-    else topHtml += '<span class="pill">已關閉</span>';
+    if (COMP.isOpen) topHtml += '<span class="pill live"><span class="dot-c"></span>' + window.L('aeHubPillLive') + '</span>';
+    else topHtml += '<span class="pill">' + window.L('aeHubPillClosed') + '</span>';
     if (cfg.category) topHtml += '<span class="pill">' + escapeHtml(cfg.category) + '</span>';
     document.getElementById('heroTop').innerHTML = topHtml;
 
     var metaHtml = '';
-    if (cfg.competitionDate) metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>活動日 <b>' + escapeHtml(cfg.competitionDate) + '</b></div>';
+    if (cfg.competitionDate) metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + window.L('aeHubMetaEventDate') + ' <b>' + escapeHtml(cfg.competitionDate) + '</b></div>';
     if (cfg.deadline) {
       var dl = parseDate(cfg.deadline);
       var daysLeft = dl ? Math.ceil((dl - Date.now()) / 86400000) : null;
       // W1: human-readable date — "2026-05-30T12:00" → "2026-05-30 12:00".
       var dlPretty = String(cfg.deadline).replace('T', ' ').slice(0, 16);
-      metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>截止 <b>' + escapeHtml(dlPretty) + (daysLeft !== null && daysLeft > 0 ? '（還有 ' + daysLeft + ' 天）' : '') + '</b></div>';
+      metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' + window.L('aeHubMetaDeadline') + ' <b>' + escapeHtml(dlPretty) + (daysLeft !== null && daysLeft > 0 ? (window.L('aeHubMetaDaysLeftPre') + daysLeft + window.L('aeHubMetaDaysLeftSuf')) : '') + '</b></div>';
     }
-    metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg>已報名 <b>' + (TEAMS.length || 0) + '</b> 人</div>';
+    metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg>' + window.L('aeHubMetaRegPre') + '<b>' + (TEAMS.length || 0) + '</b>' + window.L('aeHubMetaRegSuf') + '</div>';
     document.getElementById('heroMeta').innerHTML = metaHtml;
 
     // Hero actions — W3: 匯出 CSV moved to 報名管理 → 報名列表.
     var publicUrl = location.origin + '/events/detail.html?id=' + encodeURIComponent(compId);
     document.getElementById('heroActions').innerHTML =
-      '<a class="btn-h" id="publicLinkBtn" href="' + publicUrl + '" target="_blank" rel="noopener"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/></svg>公開頁</a>' +
-      '<button class="btn-h" id="copyShareBtn" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>分享連結</button>';
+      '<a class="btn-h" id="publicLinkBtn" href="' + publicUrl + '" target="_blank" rel="noopener"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/></svg>' + window.L('aeHubHeroPublic') + '</a>' +
+      '<button class="btn-h" id="copyShareBtn" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>' + window.L('aeHubHeroShare') + '</button>';
 
     // W2: hardened share button. navigator.clipboard fails on insecure origins / older
     // browsers, so fall back to execCommand and a uiPrompt to copy manually.
     document.getElementById('copyShareBtn').addEventListener('click', function () {
       var btn = this;
-      var restore = function () { btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>分享連結'; };
-      var copied = function () { btn.textContent = '✓ 已複製連結'; setTimeout(restore, 1500); };
+      var restore = function () { btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9"/></svg>' + window.L('aeHubHeroShare'); };
+      var copied = function () { btn.textContent = window.L('aeHubShareCopied'); setTimeout(restore, 1500); };
       var failed = function () {
         // Last resort: show the URL in a uiPrompt so the user can copy manually.
-        if (window.uiPrompt) { uiPrompt('請複製以下連結：', publicUrl, { title: '分享活動連結' }); }
-        else { window.prompt('請複製以下連結：', publicUrl); }
+        if (window.uiPrompt) { uiPrompt(window.L('aeHubSharePromptMsg'), publicUrl, { title: window.L('aeHubSharePromptTitle') }); }
+        else { window.prompt(window.L('aeHubSharePromptMsg'), publicUrl); }
         restore();
       };
       try {
@@ -456,24 +457,24 @@
     // navRegCt lives in the shared shell's "本活動" group; guard in case it's absent.
     var _nrc = document.getElementById('navRegCt'); if (_nrc) _nrc.textContent = TEAMS.length;
     var _trc = document.getElementById('tabRegCt'); if (_trc) _trc.textContent = TEAMS.length;
-    document.getElementById('kTotalSub').textContent = TEAMS.length === 0 ? '尚無報名' : ('占名額上限 ' + (cfg.maxCapacityLimit || COMP.config.maxTeams || '無') + '');
+    document.getElementById('kTotalSub').textContent = TEAMS.length === 0 ? window.L('aeHubKpiTotalNone') : (window.L('aeHubCapPre') + (cfg.maxCapacityLimit || COMP.config.maxTeams || window.L('aeHubCapNone')) + '');
 
     // Info table
     var info = [];
-    info.push({ k: '活動編號', v: '<code style="font-family:var(--f-mono); padding:2px 6px; background:var(--surface-2); border-radius:4px">' + escapeHtml(compId) + '</code>' });
-    if (cfg.category) info.push({ k: '類別', v: escapeHtml(cfg.category) });
+    info.push({ k: window.L('aeHubInfoId'), v: '<code style="font-family:var(--f-mono); padding:2px 6px; background:var(--surface-2); border-radius:4px">' + escapeHtml(compId) + '</code>' });
+    if (cfg.category) info.push({ k: window.L('aeHubInfoCategory'), v: escapeHtml(cfg.category) });
     if (cfg.eventType) {
-      var evtTypeLabel = { single_no_coach: '個人賽（無指導老師）', single_coach: '個人賽（含指導老師）', team_no_coach: '團體賽（無指導老師）', team_coach: '團體賽（含指導老師）' };
-      info.push({ k: '參賽形式', v: escapeHtml(evtTypeLabel[cfg.eventType] || cfg.eventType) });
+      var evtTypeLabel = { single_no_coach: window.L('aeHubEvtTypeSingleNoCoach'), single_coach: window.L('aeHubEvtTypeSingleCoach'), team_no_coach: window.L('aeHubEvtTypeTeamNoCoach'), team_coach: window.L('aeHubEvtTypeTeamCoach') };
+      info.push({ k: window.L('aeHubInfoEventType'), v: escapeHtml(evtTypeLabel[cfg.eventType] || cfg.eventType) });
     }
-    if (cfg.competitionDate) info.push({ k: '活動日期', v: escapeHtml(cfg.competitionDate) });
-    if (cfg.openDate) info.push({ k: '開放日期', v: escapeHtml(cfg.openDate) });
-    if (cfg.deadline) info.push({ k: '截止日期', v: escapeHtml(String(cfg.deadline).replace('T', ' ').slice(0, 16)) });
+    if (cfg.competitionDate) info.push({ k: window.L('aeHubInfoEventDate'), v: escapeHtml(cfg.competitionDate) });
+    if (cfg.openDate) info.push({ k: window.L('aeHubInfoOpenDate'), v: escapeHtml(cfg.openDate) });
+    if (cfg.deadline) info.push({ k: window.L('aeHubInfoDeadline'), v: escapeHtml(String(cfg.deadline).replace('T', ' ').slice(0, 16)) });
     var fee = cfg.registrationFee || 0;
-    info.push({ k: '報名費', v: fee > 0 ? 'NT$ ' + fee.toLocaleString() : '免費' });
-    if ((cfg.groups || []).length) info.push({ k: '組別', v: cfg.groups.map(function (g) { return escapeHtml(typeof g === 'string' ? g : (g.name || g.label || '?')); }).join('、') });
-    if ((cfg.sessions || []).length) info.push({ k: '場次', v: cfg.sessions.length + ' 個場次' });
-    info.push({ k: '報名狀態', v: COMP.isOpen ? '<span style="color:var(--ok-700); font-weight:600">✓ 開放中</span>' : '<span style="color:var(--muted)">⏸ 已關閉</span>' });
+    info.push({ k: window.L('aeHubInfoFee'), v: fee > 0 ? 'NT$ ' + fee.toLocaleString() : window.L('aeHubInfoFeeFree') });
+    if ((cfg.groups || []).length) info.push({ k: window.L('aeHubInfoGroups'), v: cfg.groups.map(function (g) { return escapeHtml(typeof g === 'string' ? g : (g.name || g.label || '?')); }).join('、') });
+    if ((cfg.sessions || []).length) info.push({ k: window.L('aeHubInfoSessions'), v: cfg.sessions.length + window.L('aeHubInfoSessionsUnit') });
+    info.push({ k: window.L('aeHubInfoRegStatus'), v: COMP.isOpen ? '<span style="color:var(--ok-700); font-weight:600">' + window.L('aeHubInfoOpenNow') + '</span>' : '<span style="color:var(--muted)">' + window.L('aeHubInfoClosedNow') + '</span>' });
     document.getElementById('infoTable').innerHTML = '<table style="width:100%; border-collapse:collapse">' +
       info.map(function (r) { return '<tr><td style="padding:6px 12px 6px 0; color:var(--muted); font:500 12.5px/1.5 var(--f-tc); width:120px; vertical-align:top">' + escapeHtml(r.k) + '</td><td style="padding:6px 0; font:400 13.5px/1.5 var(--f-tc); color:var(--ink-2)">' + r.v + '</td></tr>'; }).join('') +
       '</table>';
@@ -483,7 +484,7 @@
       return (b.registrationTime || '').localeCompare(a.registrationTime || '');
     }).slice(0, 5);
     if (sortedTeams.length === 0) {
-      document.getElementById('recentRegs').innerHTML = '<p style="color:var(--muted); padding:20px 0; text-align:center">尚無報名資料。</p>';
+      document.getElementById('recentRegs').innerHTML = '<p style="color:var(--muted); padding:20px 0; text-align:center">' + window.L('aeHubRecentEmpty') + '</p>';
     } else {
       document.getElementById('recentRegs').innerHTML =
         '<div style="display:flex; flex-direction:column; gap:8px">' +
@@ -491,7 +492,7 @@
           return '<div style="display:flex; gap:12px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; align-items:center">' +
             '<div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--blue-500), #1F3FB8); color:white; display:grid; place-items:center; font:700 13px/1 var(--f-display); flex-shrink:0">' + escapeHtml((t.teamNameCN || t.teamId || '?').charAt(0)) + '</div>' +
             '<div style="flex:1; min-width:0">' +
-              '<div style="font:600 13px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || '(無隊名)') + (t.group ? '<span style="margin-left:8px; padding:1px 6px; background:var(--surface); border:1px solid var(--line); border-radius:4px; font:500 11px/1.4 var(--f-mono); color:var(--ink-3)">' + escapeHtml(t.group) + '</span>' : '') + '</div>' +
+              '<div style="font:600 13px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || window.L('aeHubNoTeamName')) + (t.group ? '<span style="margin-left:8px; padding:1px 6px; background:var(--surface); border:1px solid var(--line); border-radius:4px; font:500 11px/1.4 var(--f-mono); color:var(--ink-3)">' + escapeHtml(t.group) + '</span>' : '') + '</div>' +
               '<div style="font:500 11px/1.4 var(--f-mono); color:var(--muted)">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.registrationTime || '') + '</div>' +
             '</div>' +
             '<div style="font:500 11px/1.3 var(--f-tc); color:' + (t.status === '正取' ? 'var(--ok-700)' : 'var(--amber-700, var(--warn-700))') + '">' + escapeHtml(t.status || '') + '</div>' +
@@ -502,37 +503,37 @@
 
     // Status sidebar
     var statusLines = [];
-    if (COMP.isOpen) statusLines.push('✓ 報名<b>開放中</b>');
-    else statusLines.push('⏸ 報名<b>已關閉</b>');
+    if (COMP.isOpen) statusLines.push(window.L('aeHubStatusOpen'));
+    else statusLines.push(window.L('aeHubStatusClosed'));
     var dl = parseDate(cfg.deadline);
     if (dl) {
       var d = Math.ceil((dl - Date.now()) / 86400000);
-      if (d > 0) statusLines.push('還有 <b>' + d + ' 天</b>截止');
-      else statusLines.push('已超過截止日');
+      if (d > 0) statusLines.push(window.L('aeHubStatusDaysPre') + d + window.L('aeHubStatusDaysSuf'));
+      else statusLines.push(window.L('aeHubStatusOverdue'));
     }
     var max = COMP.config.maxCapacityLimit || cfg.maxTeams || 0;
     if (max > 0) {
       var pct = Math.min(100, TEAMS.length / max * 100);
-      statusLines.push('已用名額 <b>' + Math.round(pct) + '%</b>');
+      statusLines.push(window.L('aeHubStatusCapPre') + Math.round(pct) + window.L('aeHubStatusCapSuf'));
     }
     document.getElementById('statusInfo').innerHTML = statusLines.join(' · ');
 
-    document.getElementById('toggleOpenBtn').textContent = COMP.isOpen ? '⏸ 關閉報名' : '▶ 開放報名';
+    document.getElementById('toggleOpenBtn').textContent = COMP.isOpen ? window.L('aeHubCloseReg') : window.L('aeHubOpenReg');
     document.getElementById('toggleOpenBtn').addEventListener('click', function () {
       var btn = this;
-      uiConfirm((COMP.isOpen ? '關閉' : '開放') + '此活動報名？', { title: '報名狀態' }).then(function (ok) {
+      uiConfirm((COMP.isOpen ? window.L('aeHubToggleClose') : window.L('aeHubToggleOpen')) + window.L('aeHubToggleConfirmSuf'), { title: window.L('aeHubToggleTitle') }).then(function (ok) {
         if (!ok) return;
         btn.disabled = true;
         google.script.run
           .withSuccessHandler(function () { location.reload(); })
-          .withFailureHandler(function (err) { btn.disabled = false; uiAlert('失敗：' + (err && err.message)); })
+          .withFailureHandler(function (err) { btn.disabled = false; uiAlert(window.L('aeHubFailPre') + (err && err.message)); })
           .setRegistrationOpen(compId, !COMP.isOpen);
       });
     });
     document.getElementById('publicLink').href = '/events/detail.html?id=' + encodeURIComponent(compId);
     document.getElementById('copyLinkBtn').addEventListener('click', function () {
       navigator.clipboard.writeText(location.origin + '/events/detail.html?id=' + encodeURIComponent(compId)).then(function () {
-        this.textContent = '✓ 已複製'; setTimeout(function () { document.getElementById('copyLinkBtn').textContent = '複製公開連結'; }, 1500);
+        this.textContent = window.L('aeHubCopied'); setTimeout(function () { document.getElementById('copyLinkBtn').textContent = window.L('aeHubCopyLink'); }, 1500);
       }.bind(this));
     });
     document.getElementById('publicBtn').addEventListener('click', function () { window.open('/events/detail.html?id=' + encodeURIComponent(compId), '_blank'); });
@@ -547,10 +548,15 @@
     document.getElementById('legacyAnnLink').href = base + '/announcements';
     document.getElementById('legacyScoreLink').href = base + '/scoring';
     document.getElementById('legacyCheckinLink').href = base + '/checkin';
-    document.getElementById('legacyRegLink').textContent = '開啟付款管理 →';
-    document.getElementById('legacyAnnLink').textContent = '開啟通知管理 →';
-    document.getElementById('legacyScoreLink').textContent = '開啟評分頁 →';
-    document.getElementById('legacyCheckinLink').textContent = '開啟報到頁 →';
+    document.getElementById('legacyRegLink').textContent = window.L('aeHubStubRegBtn');
+    document.getElementById('legacyAnnLink').textContent = window.L('aeHubStubAnnBtn');
+    document.getElementById('legacyScoreLink').textContent = window.L('aeHubStubScoreBtn');
+    document.getElementById('legacyCheckinLink').textContent = window.L('aeHubStubCheckinBtn');
+
+    // Re-run the i18n applier so freshly-injected DOM (hero, KPIs, info table,
+    // status, recent regs) picks up the active language; also re-applies on
+    // language switch via the engine's 'lang-changed' hook.
+    if (window.applyI18n) window.applyI18n();
   }
 
   // Tab switching

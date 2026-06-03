@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>所有活動 · 主辦後台 · RegMaster</title>
+<title data-i18n="aeIdxDocTitle">所有活動 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -163,16 +163,16 @@
   <main>
     <header class="head">
       <div class="crumbs">
-        <a href="/admin/">主辦後台</a><span class="sep">/</span><b>所有活動</b>
+        <a href="/admin/" data-i18n="aeIdxCrumbHome">主辦後台</a><span class="sep">/</span><b data-i18n="aeIdxCrumbHere">所有活動</b>
       </div>
       <div class="quick-search">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
-        <input id="searchInput" placeholder="搜尋活動名稱、類別⋯">
+        <input id="searchInput" placeholder="搜尋活動名稱、類別⋯" data-i18n-placeholder="aeIdxSearchPh">
       </div>
       <div class="actions">
         <button class="btn btn-primary" id="newCompBtn" style="font:600 13px/1 var(--f-tc)">
           <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" style="width:13px; height:13px; vertical-align:-2px; margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>
-          建立活動
+          <span data-i18n="aeIdxCreateBtn">建立活動</span>
         </button>
         <div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div>
       </div>
@@ -181,30 +181,30 @@
     <div class="main-c">
       <div class="page-head">
         <div class="l">
-          <h1>所有活動 <span class="ct-h" id="totalCount">— 場</span></h1>
-          <p id="subline">管理你舉辦過的所有活動 · 點選即可進入活動詳情</p>
+          <h1><span data-i18n="aeIdxPageTitle">所有活動</span> <span class="ct-h" id="totalCount">— 場</span></h1>
+          <p id="subline" data-i18n="aeIdxSubline">管理你舉辦過的所有活動 · 點選即可進入活動詳情</p>
         </div>
       </div>
 
       <div id="errorBanner" class="error-banner" style="display:none"></div>
 
       <div class="stat-strip" id="statStrip">
-        <div class="on" data-filter="all"><div class="l-s">全部</div><div class="v-s" id="ssAll">—<em>場</em></div></div>
-        <div data-filter="live"><div class="l-s"><span class="dot-c" style="background:var(--ok-500)"></span>進行中</div><div class="v-s" id="ssLive">—</div></div>
-        <div data-filter="upcoming"><div class="l-s"><span class="dot-c" style="background:var(--amber-500)"></span>即將開放</div><div class="v-s" id="ssUp">—</div></div>
-        <div data-filter="draft"><div class="l-s"><span class="dot-c" style="background:var(--muted)"></span>草稿</div><div class="v-s" id="ssDr">—</div></div>
-        <div data-filter="ended"><div class="l-s"><span class="dot-c" style="background:var(--ink-3)"></span>已結束</div><div class="v-s" id="ssEd">—</div></div>
+        <div class="on" data-filter="all"><div class="l-s" data-i18n="aeIdxStatAll">全部</div><div class="v-s" id="ssAll">—<em data-i18n="aeIdxUnitEvents">場</em></div></div>
+        <div data-filter="live"><div class="l-s"><span class="dot-c" style="background:var(--ok-500)"></span><span data-i18n="aeIdxStatLive">進行中</span></div><div class="v-s" id="ssLive">—</div></div>
+        <div data-filter="upcoming"><div class="l-s"><span class="dot-c" style="background:var(--amber-500)"></span><span data-i18n="aeIdxStatUpcoming">即將開放</span></div><div class="v-s" id="ssUp">—</div></div>
+        <div data-filter="draft"><div class="l-s"><span class="dot-c" style="background:var(--muted)"></span><span data-i18n="aeIdxStatDraft">草稿</span></div><div class="v-s" id="ssDr">—</div></div>
+        <div data-filter="ended"><div class="l-s"><span class="dot-c" style="background:var(--ink-3)"></span><span data-i18n="aeIdxStatEnded">已結束</span></div><div class="v-s" id="ssEd">—</div></div>
       </div>
 
       <div class="toolbar">
         <div class="search-w">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
-          <input id="filterInput" placeholder="篩選名稱、類別、主辦方帳號⋯">
+          <input id="filterInput" placeholder="篩選名稱、類別、主辦方帳號⋯" data-i18n-placeholder="aeIdxFilterPh">
         </div>
       </div>
 
       <div id="contentArea">
-        <div class="loading-c">載入活動清單⋯</div>
+        <div class="loading-c" data-i18n="aeIdxLoading">載入活動清單⋯</div>
       </div>
     </div>
   </main>
@@ -213,43 +213,44 @@
 <!-- Create event modal -->
 <div class="modal-bg" id="createModal">
   <div class="modal">
-    <h3>建立新活動</h3>
-    <p class="sub">先填基本資料，建立完成後再進入詳細設定。</p>
+    <h3 data-i18n="aeIdxModalTitle">建立新活動</h3>
+    <p class="sub" data-i18n="aeIdxModalSub">先填基本資料，建立完成後再進入詳細設定。</p>
     <div class="error-banner" id="createErr" style="display:none"></div>
     <div class="fld">
-      <label class="lbl" for="newName">活動名稱 *</label>
-      <input id="newName" placeholder="例：2026 春季活動">
+      <label class="lbl" for="newName" data-i18n="aeIdxLblName">活動名稱 *</label>
+      <input id="newName" placeholder="例：2026 春季活動" data-i18n-placeholder="aeIdxNamePh">
     </div>
     <div class="fld">
-      <label class="lbl" for="newCategory">類別</label>
+      <label class="lbl" for="newCategory" data-i18n="aeIdxLblCategory">類別</label>
       <select id="newCategory">
-        <option value="研討會">研討會</option>
-        <option value="競賽">競賽</option>
-        <option value="工作坊">工作坊</option>
-        <option value="夏令營">夏令營</option>
-        <option value="學術論壇">學術論壇</option>
-        <option value="校友活動">校友活動</option>
-        <option value="其他">其他</option>
+        <option value="研討會" data-i18n="aeIdxCatSeminar">研討會</option>
+        <option value="競賽" data-i18n="aeIdxCatCompetition">競賽</option>
+        <option value="工作坊" data-i18n="aeIdxCatWorkshop">工作坊</option>
+        <option value="夏令營" data-i18n="aeIdxCatCamp">夏令營</option>
+        <option value="學術論壇" data-i18n="aeIdxCatForum">學術論壇</option>
+        <option value="校友活動" data-i18n="aeIdxCatAlumni">校友活動</option>
+        <option value="其他" data-i18n="aeIdxCatOther">其他</option>
       </select>
     </div>
     <div class="fld">
-      <label class="lbl" for="newEventType">活動形式</label>
+      <label class="lbl" for="newEventType" data-i18n="aeIdxLblEventType">活動形式</label>
       <select id="newEventType">
-        <option value="single_no_coach">個人報名</option>
-        <option value="single_coach">個人報名（含指導者）</option>
-        <option value="team_no_coach">團體報名</option>
-        <option value="team_coach">團體報名（含指導者）</option>
+        <option value="single_no_coach" data-i18n="aeIdxTypeSingleNoCoach">個人報名</option>
+        <option value="single_coach" data-i18n="aeIdxTypeSingleCoach">個人報名（含指導者）</option>
+        <option value="team_no_coach" data-i18n="aeIdxTypeTeamNoCoach">團體報名</option>
+        <option value="team_coach" data-i18n="aeIdxTypeTeamCoach">團體報名（含指導者）</option>
       </select>
     </div>
     <div class="actions">
-      <button class="btn btn-ghost" id="cancelCreate">取消</button>
-      <button class="btn btn-primary" id="confirmCreate">建立 →</button>
+      <button class="btn btn-ghost" id="cancelCreate" data-i18n="aeIdxCancel">取消</button>
+      <button class="btn btn-primary" id="confirmCreate" data-i18n="aeIdxConfirmCreate">建立 →</button>
     </div>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-index.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function () {
@@ -292,14 +293,14 @@
     if (!grid) return;
     var counts = { all: ALL.length, live: 0, upcoming: 0, draft: 0, ended: 0 };
     ALL.forEach(function (c) { counts[classifyComp(c)]++; });
-    setHtml('ssAll', counts.all + '<em>場</em>');
+    setHtml('ssAll', counts.all + '<em>' + window.L('aeIdxUnitEvents') + '</em>');
     setTxt('ssLive', counts.live);
     setTxt('ssUp', counts.upcoming);
     setTxt('ssDr', counts.draft);
     setTxt('ssEd', counts.ended);
     setTxt('navCompCount', counts.all);
-    setTxt('totalCount', '共 ' + counts.all + ' 場');
-    setTxt('subline', '管理你舉辦過的所有活動 · 進行中 ' + counts.live + ' / 草稿 ' + counts.draft + ' / 歷史 ' + counts.ended);
+    setTxt('totalCount', window.L('aeIdxTotalCount').replace('{n}', counts.all));
+    setTxt('subline', window.L('aeIdxSublinePrefix') + ' · ' + window.L('aeIdxSublineLive') + ' ' + counts.live + ' / ' + window.L('aeIdxSublineDraft') + ' ' + counts.draft + ' / ' + window.L('aeIdxSublineEnded') + ' ' + counts.ended);
 
     var q = (STATE.q || '').toLowerCase();
     var filtered = ALL.filter(function (c) {
@@ -321,12 +322,13 @@
 
     var newCard = '<div class="evt-card new-card" id="newCardBtn"><div class="inner">' +
       '<div class="ic-n"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>' +
-      '<h3>建立新活動</h3>' +
-      '<p>從零開始，或使用模板快速上線</p>' +
-      '<span class="btn-n">開始 →</span>' +
+      '<h3>' + window.L('aeIdxNewCardTitle') + '</h3>' +
+      '<p>' + window.L('aeIdxNewCardDesc') + '</p>' +
+      '<span class="btn-n">' + window.L('aeIdxNewCardStart') + '</span>' +
       '</div></div>';
     var html = newCard + filtered.map(renderCard).join('');
     grid.innerHTML = '<div class="events-grid">' + html + '</div>';
+    if (window.applyI18n) window.applyI18n(grid);
 
     document.getElementById('newCardBtn').addEventListener('click', openCreateModal);
     document.querySelectorAll('.evt-card[data-id]').forEach(function (card) {
@@ -340,10 +342,10 @@
   function renderCard(c, idx) {
     var cls = classifyComp(c);
     var statusHtml;
-    if (cls === 'live') statusHtml = '<div class="status-c live"><span class="dot-c"></span>LIVE · 報名中</div>';
-    else if (cls === 'upcoming') statusHtml = '<div class="status-c draft"><span class="dot-c"></span>即將開放</div>';
-    else if (cls === 'ended') statusHtml = '<div class="status-c ended"><span class="dot-c"></span>已結束</div>';
-    else statusHtml = '<div class="status-c draft"><span class="dot-c"></span>草稿</div>';
+    if (cls === 'live') statusHtml = '<div class="status-c live"><span class="dot-c"></span>' + window.L('aeIdxStatusLive') + '</div>';
+    else if (cls === 'upcoming') statusHtml = '<div class="status-c draft"><span class="dot-c"></span>' + window.L('aeIdxStatusUpcoming') + '</div>';
+    else if (cls === 'ended') statusHtml = '<div class="status-c ended"><span class="dot-c"></span>' + window.L('aeIdxStatusEnded') + '</div>';
+    else statusHtml = '<div class="status-c draft"><span class="dot-c"></span>' + window.L('aeIdxStatusDraft') + '</div>';
 
     var max = c.maxTeams || c.maxCapacityLimit || 0;
     var pct = max > 0 ? Math.min(100, (c.teamCount || 0) / max * 100) : 0;
@@ -351,7 +353,7 @@
     var dl = parseDate(c.deadline);
     var daysLeft = dl ? Math.ceil((dl.getTime() - Date.now()) / 86400000) : null;
     var countdown = '';
-    if (cls === 'live' && daysLeft !== null && daysLeft >= 0) countdown = '<div class="countdown-c">⏰ 還有 ' + daysLeft + ' 天</div>';
+    if (cls === 'live' && daysLeft !== null && daysLeft >= 0) countdown = '<div class="countdown-c">' + window.L('aeIdxCountdown').replace('{n}', daysLeft) + '</div>';
 
     var dateBlock = '';
     if (dl) {
@@ -375,11 +377,11 @@
         '<h3>' + escapeHtml(c.name) + '</h3>' +
         creatorTag +
         '<div class="meta-evt">' +
-          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml(c.deadline || '尚未設定截止日') + '</div>' +
-          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + (c.teamCount || 0) + '</b> 報名' + (max > 0 ? ' / ' + max : '') + '</div>' +
+          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml(c.deadline || window.L('aeIdxNoDeadline')) + '</div>' +
+          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + (c.teamCount || 0) + '</b> ' + window.L('aeIdxRegSuffix') + (max > 0 ? ' / ' + max : '') + '</div>' +
         '</div>' +
         '<div class="progress">' +
-          '<div class="label-p"><span class="l-p">報名進度</span><span class="v-p ' + pctClass + '">' + (c.teamCount || 0) + (max > 0 ? ' / ' + max : '') + ' <span class="pct">' + (max > 0 ? Math.round(pct) + '%' : '無上限') + '</span></span></div>' +
+          '<div class="label-p"><span class="l-p">' + window.L('aeIdxProgressLabel') + '</span><span class="v-p ' + pctClass + '">' + (c.teamCount || 0) + (max > 0 ? ' / ' + max : '') + ' <span class="pct">' + (max > 0 ? Math.round(pct) + '%' : window.L('aeIdxNoLimit')) + '</span></span></div>' +
           '<div class="bar-p ' + pctClass + '"><div style="width:' + pct + '%"></div></div>' +
         '</div>' +
       '</div>' +
@@ -396,19 +398,19 @@
     var id = btn.dataset.id;
     if (action === 'toggle-open') {
       var isOpen = btn.dataset.current === '1';
-      uiConfirm((isOpen ? '關閉' : '開放') + '此活動報名？', { title: '報名狀態' }).then(function (ok) {
+      uiConfirm(window.L('aeIdxConfirmToggle').replace('{action}', isOpen ? window.L('aeIdxToggleClose') : window.L('aeIdxToggleOpen')), { title: window.L('aeIdxRegStatusTitle') }).then(function (ok) {
         if (!ok) return;
         google.script.run
           .withSuccessHandler(function () { load(); })
-          .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+          .withFailureHandler(function (err) { uiAlert(window.L('aeIdxFailPrefix') + (err && err.message)); })
           .setRegistrationOpen(id, !isOpen);
       });
     } else if (action === 'duplicate') {
-      uiPrompt('請輸入新活動名稱', btn.dataset.name + ' (複製)', { title: '複製活動' }).then(function (nm) {
+      uiPrompt(window.L('aeIdxDupPrompt'), btn.dataset.name + window.L('aeIdxDupSuffix'), { title: window.L('aeIdxDupTitle') }).then(function (nm) {
         if (!nm) return;
         google.script.run
-          .withSuccessHandler(function () { uiToast('已建立複本'); load(); })
-          .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+          .withSuccessHandler(function () { uiToast(window.L('aeIdxDupDone')); load(); })
+          .withFailureHandler(function (err) { uiAlert(window.L('aeIdxFailPrefix') + (err && err.message)); })
           .duplicateCompetition(id, nm, me.username);
       });
     }
@@ -422,25 +424,25 @@
   document.getElementById('createModal').addEventListener('click', function (e) { if (e.target === this) closeCreateModal(); });
   document.getElementById('confirmCreate').addEventListener('click', function () {
     var name = document.getElementById('newName').value.trim();
-    if (!name) { document.getElementById('createErr').textContent = '請填寫活動名稱'; document.getElementById('createErr').style.display = 'block'; return; }
+    if (!name) { document.getElementById('createErr').textContent = window.L('aeIdxNeedName'); document.getElementById('createErr').style.display = 'block'; return; }
     var category = document.getElementById('newCategory').value;
     var eventType = document.getElementById('newEventType').value;
-    var btn = this; btn.disabled = true; btn.textContent = '建立中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeIdxCreating');
     google.script.run
       .withSuccessHandler(function (res) {
-        btn.disabled = false; btn.textContent = '建立 →';
+        btn.disabled = false; btn.textContent = window.L('aeIdxConfirmCreate');
         if (res && res.success) {
           closeCreateModal();
           // Go straight to the event hub
           location.href = '/admin/events/' + encodeURIComponent(res.compId);
         } else {
-          document.getElementById('createErr').textContent = (res && res.message) || '建立失敗';
+          document.getElementById('createErr').textContent = (res && res.message) || window.L('aeIdxCreateFail');
           document.getElementById('createErr').style.display = 'block';
         }
       })
       .withFailureHandler(function (err) {
-        btn.disabled = false; btn.textContent = '建立 →';
-        document.getElementById('createErr').textContent = (err && err.message) || '網路錯誤';
+        btn.disabled = false; btn.textContent = window.L('aeIdxConfirmCreate');
+        document.getElementById('createErr').textContent = (err && err.message) || window.L('aeIdxNetworkErr');
         document.getElementById('createErr').style.display = 'block';
       })
       .createCompetition(name, category, eventType);
@@ -481,11 +483,11 @@
         render();
       })
       .withFailureHandler(function (err) {
-        showErr('<b>無法載入活動：</b>' + escapeHtml((err && err.message) || ''));
+        showErr(window.L('aeIdxLoadFail') + escapeHtml((err && err.message) || ''));
         document.getElementById('contentArea').innerHTML = '<div class="events-grid">' +
           '<div class="evt-card new-card" id="newCardBtn"><div class="inner">' +
           '<div class="ic-n"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>' +
-          '<h3>建立新活動</h3><p>看起來這是你的第一場活動</p><span class="btn-n">開始 →</span></div></div>' +
+          '<h3>' + window.L('aeIdxNewCardTitle') + '</h3><p>' + window.L('aeIdxNewCardFirstDesc') + '</p><span class="btn-n">' + window.L('aeIdxNewCardStart') + '</span></div></div>' +
         '</div>';
         document.getElementById('newCardBtn').addEventListener('click', openCreateModal);
       })

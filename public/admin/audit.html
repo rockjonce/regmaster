@@ -68,28 +68,29 @@
     </header>
     <div class="main-c">
       <div style="margin-bottom:18px">
-        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px">操作日誌 / Audit Trail</h1>
-        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)">所有重要操作都會記錄於此 — 誰、何時、做了什麼。</p>
+        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px" data-i18n="adAudTitle">操作日誌 / Audit Trail</h1>
+        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)" data-i18n="adAudSub">所有重要操作都會記錄於此 — 誰、何時、做了什麼。</p>
       </div>
       <div class="filt-row">
-        <div class="search-w"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input id="searchInput" placeholder="搜尋使用者 / 操作 / 目標..."></div>
-        <button class="f-pill on" data-f="all">全部 <span id="cAll">0</span></button>
-        <button class="f-pill" data-f="create">建立</button>
-        <button class="f-pill" data-f="update">修改</button>
-        <button class="f-pill" data-f="delete">刪除</button>
-        <button class="f-pill" data-f="login">登入</button>
+        <div class="search-w"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input id="searchInput" data-i18n-placeholder="adAudSearchPh" placeholder="搜尋使用者 / 操作 / 目標..."></div>
+        <button class="f-pill on" data-f="all"><span data-i18n="adAudFilterAll">全部</span> <span id="cAll">0</span></button>
+        <button class="f-pill" data-f="create" data-i18n="adAudFilterCreate">建立</button>
+        <button class="f-pill" data-f="update" data-i18n="adAudFilterUpdate">修改</button>
+        <button class="f-pill" data-f="delete" data-i18n="adAudFilterDelete">刪除</button>
+        <button class="f-pill" data-f="login" data-i18n="adAudFilterLogin">登入</button>
         <select id="limitSel" style="margin-left:auto; padding:7px 10px; border:1px solid var(--line); border-radius:7px; font:500 12px/1 var(--f-tc)">
-          <option value="100">最近 100 筆</option>
-          <option value="500">最近 500 筆</option>
-          <option value="1000">最近 1000 筆</option>
+          <option value="100" data-i18n="adAudLimit100">最近 100 筆</option>
+          <option value="500" data-i18n="adAudLimit500">最近 500 筆</option>
+          <option value="1000" data-i18n="adAudLimit1000">最近 1000 筆</option>
         </select>
       </div>
-      <div class="log-card" id="logCard"><div class="skel">載入中⋯</div></div>
+      <div class="log-card" id="logCard"><div class="skel" data-i18n="adAudLoading">載入中⋯</div></div>
     </div>
   </main>
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-audit.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -133,7 +134,8 @@
     });
     document.getElementById('cAll').textContent = LOGS.length;
     if (rows.length === 0) {
-      document.getElementById('logCard').innerHTML = '<div class="empty"><h3 style="font:700 18px/1.3 var(--f-display); margin-bottom:6px">沒有符合的紀錄</h3><p>試試調整篩選條件</p></div>';
+      document.getElementById('logCard').innerHTML = '<div class="empty"><h3 style="font:700 18px/1.3 var(--f-display); margin-bottom:6px" data-i18n="adAudEmptyTitle">' + window.L('adAudEmptyTitle') + '</h3><p data-i18n="adAudEmptySub">' + window.L('adAudEmptySub') + '</p></div>';
+      window.applyI18n();
       return;
     }
     document.getElementById('logCard').innerHTML = rows.map(function (l) {
@@ -146,13 +148,15 @@
         '<div class="ts">' + escapeHtml(l.time || '') + '</div>' +
       '</div>';
     }).join('');
+    window.applyI18n();
   }
 
   function load() {
-    document.getElementById('logCard').innerHTML = '<div class="skel">載入中⋯</div>';
+    document.getElementById('logCard').innerHTML = '<div class="skel" data-i18n="adAudLoading">' + window.L('adAudLoading') + '</div>';
+    window.applyI18n();
     google.script.run
       .withSuccessHandler(function (res) { LOGS = res || []; render(); })
-      .withFailureHandler(function () { document.getElementById('logCard').innerHTML = '<div class="empty">無法載入</div>'; })
+      .withFailureHandler(function () { document.getElementById('logCard').innerHTML = '<div class="empty" data-i18n="adAudLoadFail">' + window.L('adAudLoadFail') + '</div>'; window.applyI18n(); })
       .getAuditLogs(parseInt(document.getElementById('limitSel').value));
   }
   document.getElementById('searchInput').addEventListener('input', function (e) { STATE.q = e.target.value; render(); });

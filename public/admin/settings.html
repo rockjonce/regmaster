@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>帳戶設定 · 主辦後台 · RegMaster</title>
+<title data-i18n="adSetDocTitle">帳戶設定 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -88,16 +88,16 @@
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><b>帳戶設定</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="adSetCrumbConsole">主辦後台</a><span class="sep">/</span><b data-i18n="adSetCrumbCurrent">帳戶設定</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
     <div class="settings-shell">
       <aside class="set-nav">
-        <a class="on" data-tab="profile">個人資料</a>
-        <a data-tab="notifications">通知偏好</a>
-        <a data-tab="security">安全與登入</a>
-        <a data-tab="sessions">登入裝置</a>
-        <a data-tab="account">帳戶</a>
+        <a class="on" data-tab="profile" data-i18n="adSetTabProfile">個人資料</a>
+        <a data-tab="notifications" data-i18n="adSetTabNotifications">通知偏好</a>
+        <a data-tab="security" data-i18n="adSetTabSecurity">安全與登入</a>
+        <a data-tab="sessions" data-i18n="adSetTabSessions">登入裝置</a>
+        <a data-tab="account" data-i18n="adSetTabAccount">帳戶</a>
       </aside>
       <div>
         <div id="errorBanner" class="error-banner" style="display:none"></div>
@@ -105,7 +105,7 @@
         <!-- profile -->
         <div class="tab-pane" data-pane="profile">
           <div class="section">
-            <div class="sh"><h3>個人資料</h3><p>顯示於報名頁、發票、Email 通知</p></div>
+            <div class="sh"><h3 data-i18n="adSetProfileH3">個人資料</h3><p data-i18n="adSetProfileSub">顯示於報名頁、發票、Email 通知</p></div>
             <div class="sb">
               <div class="profile-row">
                 <div class="av-l" id="bigAv">—</div>
@@ -113,34 +113,34 @@
               </div>
               <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;margin-bottom:16px">
                 <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0;margin-top:1px;color:var(--acc)"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
-                <div style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-2)">
+                <div style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-2)" data-i18n-html="adSetProfileTip">
                   <b style="color:var(--ink)">建議補齊「機構名稱 / Email / 電話」</b><br>
                   這些資訊會提供給<b>活動 AI 助理</b>：當報名者詢問時，AI 會以您的單位名義回覆，並在被問到聯絡方式時優先提供此處的 Email 與電話。留空將無法正確引導報名者聯繫您。
                 </div>
               </div>
               <div class="row-2">
-                <div class="fld"><div class="lbl">帳號（不可變更）</div><input id="prof-username" disabled></div>
-                <div class="fld"><div class="lbl">角色（不可變更）</div><input id="prof-role" disabled></div>
-                <div class="fld"><div class="lbl">顯示名稱</div><input id="prof-displayName"></div>
-                <div class="fld"><div class="lbl">機構名稱</div><input id="prof-organizationName" placeholder="例：廣天國際有限公司"></div>
-                <div class="fld"><div class="lbl">Email</div><input id="prof-email" type="email"></div>
-                <div class="fld"><div class="lbl">電話</div><input id="prof-phone" type="tel"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblUsername">帳號（不可變更）</div><input id="prof-username" disabled></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblRole">角色（不可變更）</div><input id="prof-role" disabled></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblDisplayName">顯示名稱</div><input id="prof-displayName"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblOrgName">機構名稱</div><input id="prof-organizationName" placeholder="例：廣天國際有限公司" data-i18n-placeholder="adSetPhOrgName"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblEmail">Email</div><input id="prof-email" type="email"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblPhone">電話</div><input id="prof-phone" type="tel"></div>
               </div>
-              <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveProfileBtn">儲存變更</button></div>
+              <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveProfileBtn" data-i18n="adSetBtnSaveProfile">儲存變更</button></div>
             </div>
           </div>
 
           <!-- 收款帳戶 (payout account): where the platform wires PayUNI net to -->
           <div class="section">
-            <div class="sh"><h3>收款帳戶</h3><p>平台代收的線上報名費（扣除手續費後）將由系統管理員匯入此帳戶。請務必填寫正確。</p></div>
+            <div class="sh"><h3 data-i18n="adSetPayoutH3">收款帳戶</h3><p data-i18n="adSetPayoutSub">平台代收的線上報名費（扣除手續費後）將由系統管理員匯入此帳戶。請務必填寫正確。</p></div>
             <div class="sb">
               <div class="row-2">
-                <div class="fld"><div class="lbl">銀行</div><select id="payout-bank"><option value="">載入中⋯</option></select></div>
-                <div class="fld"><div class="lbl">分行</div><select id="payout-branch" disabled><option value="">— 請先選擇銀行 —</option></select></div>
-                <div class="fld"><div class="lbl">帳號</div><input id="payout-account" inputmode="numeric" placeholder="銀行存款帳號"></div>
-                <div class="fld"><div class="lbl">戶名</div><input id="payout-name" placeholder="須與存摺戶名一致"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblBank">銀行</div><select id="payout-bank"><option value="">載入中⋯</option></select></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblBranch">分行</div><select id="payout-branch" disabled><option value="">— 請先選擇銀行 —</option></select></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblAccount">帳號</div><input id="payout-account" inputmode="numeric" placeholder="銀行存款帳號" data-i18n-placeholder="adSetPhAccount"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblAccountName">戶名</div><input id="payout-name" placeholder="須與存摺戶名一致" data-i18n-placeholder="adSetPhAccountName"></div>
               </div>
-              <div class="save-bar save-bar-static"><button class="btn btn-primary" id="savePayoutBtn">儲存收款帳戶</button></div>
+              <div class="save-bar save-bar-static"><button class="btn btn-primary" id="savePayoutBtn" data-i18n="adSetBtnSavePayout">儲存收款帳戶</button></div>
             </div>
           </div>
         </div>
@@ -148,80 +148,80 @@
         <!-- notifications -->
         <div class="tab-pane" data-pane="notifications" style="display:none">
           <div class="section">
-            <div class="sh"><h3>Email 通知</h3></div>
+            <div class="sh"><h3 data-i18n="adSetNotifEmailH3">Email 通知</h3></div>
             <div class="sb">
-              <div class="toggle-row"><div class="body"><h6>新報名通知</h6><p>每筆報名成功立即寄</p></div><div class="tg-sw on" data-pref="email.newRegistration"></div></div>
-              <div class="toggle-row"><div class="body"><h6>付款成功通知</h6><p>每筆付款確認後寄</p></div><div class="tg-sw on" data-pref="email.paymentReceived"></div></div>
-              <div class="toggle-row"><div class="body"><h6>每日摘要</h6><p>每天早上 8:00 寄送昨日數據</p></div><div class="tg-sw" data-pref="email.dailyDigest"></div></div>
-              <div class="toggle-row"><div class="body"><h6>每週報表</h6><p>每週一寄送本週重點</p></div><div class="tg-sw on" data-pref="email.weekly"></div></div>
+              <div class="toggle-row"><div class="body"><h6 data-i18n="adSetNotifNewRegH6">新報名通知</h6><p data-i18n="adSetNotifNewRegP">每筆報名成功立即寄</p></div><div class="tg-sw on" data-pref="email.newRegistration"></div></div>
+              <div class="toggle-row"><div class="body"><h6 data-i18n="adSetNotifPaidH6">付款成功通知</h6><p data-i18n="adSetNotifPaidP">每筆付款確認後寄</p></div><div class="tg-sw on" data-pref="email.paymentReceived"></div></div>
+              <div class="toggle-row"><div class="body"><h6 data-i18n="adSetNotifDailyH6">每日摘要</h6><p data-i18n="adSetNotifDailyP">每天早上 8:00 寄送昨日數據</p></div><div class="tg-sw" data-pref="email.dailyDigest"></div></div>
+              <div class="toggle-row"><div class="body"><h6 data-i18n="adSetNotifWeeklyH6">每週報表</h6><p data-i18n="adSetNotifWeeklyP">每週一寄送本週重點</p></div><div class="tg-sw on" data-pref="email.weekly"></div></div>
             </div>
           </div>
           <div class="section">
-            <div class="sh"><h3>緊急通知</h3></div>
+            <div class="sh"><h3 data-i18n="adSetNotifUrgentH3">緊急通知</h3></div>
             <div class="sb">
-              <div class="toggle-row"><div class="body"><h6>SMS — 重大警示</h6><p>系統異常 / 付款失敗（Phase 9 上線）</p></div><div class="tg-sw" data-pref="sms.critical" style="opacity:.5"></div></div>
-              <div class="toggle-row"><div class="body"><h6>LINE — 所有動態</h6><p>即時推播（Phase 9 上線）</p></div><div class="tg-sw" data-pref="line.allActivity" style="opacity:.5"></div></div>
+              <div class="toggle-row"><div class="body"><h6 data-i18n="adSetNotifSmsH6">SMS — 重大警示</h6><p data-i18n="adSetNotifSmsP">系統異常 / 付款失敗（Phase 9 上線）</p></div><div class="tg-sw" data-pref="sms.critical" style="opacity:.5"></div></div>
+              <div class="toggle-row"><div class="body"><h6 data-i18n="adSetNotifLineH6">LINE — 所有動態</h6><p data-i18n="adSetNotifLineP">即時推播（Phase 9 上線）</p></div><div class="tg-sw" data-pref="line.allActivity" style="opacity:.5"></div></div>
             </div>
           </div>
-          <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveNotifBtn">儲存通知偏好</button></div>
+          <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveNotifBtn" data-i18n="adSetBtnSaveNotif">儲存通知偏好</button></div>
         </div>
 
         <!-- security -->
         <div class="tab-pane" data-pane="security" style="display:none">
           <div class="section">
-            <div class="sh"><h3>變更密碼</h3></div>
+            <div class="sh"><h3 data-i18n="adSetPwdH3">變更密碼</h3></div>
             <div class="sb">
-              <div class="fld"><div class="lbl">目前密碼</div><input id="oldPwd" type="password"></div>
+              <div class="fld"><div class="lbl" data-i18n="adSetLblOldPwd">目前密碼</div><input id="oldPwd" type="password"></div>
               <div class="row-2">
-                <div class="fld"><div class="lbl">新密碼</div><input id="newPwd" type="password"></div>
-                <div class="fld"><div class="lbl">確認新密碼</div><input id="newPwd2" type="password"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblNewPwd">新密碼</div><input id="newPwd" type="password"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetLblNewPwd2">確認新密碼</div><input id="newPwd2" type="password"></div>
               </div>
-              <button class="btn btn-primary" id="changePwdBtn">變更密碼</button>
+              <button class="btn btn-primary" id="changePwdBtn" data-i18n="adSetBtnChangePwd">變更密碼</button>
             </div>
           </div>
           <div class="section">
-            <div class="sh"><h3>連結登入方式</h3><p>綁定 Google / LINE 帳號後，即可用該方式快速登入同一個帳號。</p></div>
+            <div class="sh"><h3 data-i18n="adSetLinkH3">連結登入方式</h3><p data-i18n="adSetLinkSub">綁定 Google / LINE 帳號後，即可用該方式快速登入同一個帳號。</p></div>
             <div class="sb">
               <div class="toggle-row">
                 <div class="body" style="display:flex;align-items:center;gap:10px">
                   <svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.33z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.99 7.28-2.66L15.71 17.6a6.84 6.84 0 01-10.21-3.59H1.83v2.84A11 11 0 0012 23z"/><path fill="#FBBC05" d="M5.5 14a6.59 6.59 0 010-4.21V6.95H1.83a11 11 0 000 10.1l3.67-2.85V14z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.07.56 4.21 1.64l3.15-3.15A11 11 0 0012 1a11 11 0 00-10.17 5.95L5.5 9.79A6.61 6.61 0 0112 5.38z"/></svg>
-                  <div><h6>Google 帳號</h6><p id="googleLinkState">查詢狀態中⋯</p></div>
+                  <div><h6 data-i18n="adSetGoogleH6">Google 帳號</h6><p id="googleLinkState" data-i18n="adSetCheckingState">查詢狀態中⋯</p></div>
                 </div>
-                <button class="btn btn-ghost btn-sm" id="googleLinkBtn" style="display:none">綁定</button>
+                <button class="btn btn-ghost btn-sm" id="googleLinkBtn" style="display:none" data-i18n="adSetBtnLink">綁定</button>
               </div>
               <div class="toggle-row">
                 <div class="body" style="display:flex;align-items:center;gap:10px">
                   <svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0"><path fill="#06C755" d="M24 10.3C24 4.6 18.6 0 12 0S0 4.6 0 10.3c0 5.1 4.3 9.4 10 10.2.4.1.9.3 1.1.6.1.3.1.7.1 1l-.2 1.1c-.1.3-.3 1.3 1.1.7s7.5-4.4 10.2-7.6c1.9-2 2.6-4.1 2.6-6z"/></svg>
-                  <div><h6>LINE 帳號</h6><p id="lineLinkState">查詢狀態中⋯</p></div>
+                  <div><h6 data-i18n="adSetLineH6">LINE 帳號</h6><p id="lineLinkState" data-i18n="adSetCheckingState">查詢狀態中⋯</p></div>
                 </div>
-                <button class="btn btn-ghost btn-sm" id="lineLinkBtn" style="display:none">綁定</button>
+                <button class="btn btn-ghost btn-sm" id="lineLinkBtn" style="display:none" data-i18n="adSetBtnLink">綁定</button>
               </div>
             </div>
           </div>
           <div class="section">
-            <div class="sh"><h3>雙因素驗證 (2FA)</h3><p>使用 Google Authenticator、Authy 等 App 產生一次性驗證碼，登入時多一層保護。</p></div>
+            <div class="sh"><h3 data-i18n="adSet2faH3">雙因素驗證 (2FA)</h3><p data-i18n="adSet2faSub">使用 Google Authenticator、Authy 等 App 產生一次性驗證碼，登入時多一層保護。</p></div>
             <div class="sb">
               <div class="toggle-row">
-                <div class="body"><h6>TOTP 兩步驟驗證</h6><p id="totpStateText">查詢狀態中⋯</p></div>
-                <button class="btn btn-ghost btn-sm" id="totpToggleBtn" style="display:none">啟用</button>
+                <div class="body"><h6 data-i18n="adSetTotpH6">TOTP 兩步驟驗證</h6><p id="totpStateText" data-i18n="adSetCheckingState">查詢狀態中⋯</p></div>
+                <button class="btn btn-ghost btn-sm" id="totpToggleBtn" style="display:none" data-i18n="adSetBtnEnable">啟用</button>
               </div>
 
               <!-- Enrollment panel (hidden until 啟用 clicked) -->
               <div id="totpEnroll" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line-2)">
-                <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:12px">1. 用驗證 App 掃描下方 QR Code（或手動輸入密鑰）：</p>
+                <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:12px" data-i18n="adSetTotpStep1">1. 用驗證 App 掃描下方 QR Code（或手動輸入密鑰）：</p>
                 <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin-bottom:14px">
                   <img id="totpQr" alt="TOTP QR" width="160" height="160" style="border:1px solid var(--line); border-radius:10px; background:#fff">
                   <div>
-                    <div style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-bottom:6px">手動密鑰</div>
+                    <div style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-bottom:6px" data-i18n="adSetTotpManualKey">手動密鑰</div>
                     <code id="totpSecret" style="font:600 13px/1.6 var(--f-mono); word-break:break-all; max-width:220px; display:inline-block"></code>
                   </div>
                 </div>
-                <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:8px">2. 輸入 App 顯示的 6 位數驗證碼以完成啟用：</p>
+                <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:8px" data-i18n="adSetTotpStep2">2. 輸入 App 顯示的 6 位數驗證碼以完成啟用：</p>
                 <div class="row-2" style="align-items:end">
-                  <div class="fld" style="margin:0"><input id="totpEnrollCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位數驗證碼" style="letter-spacing:.2em; text-align:center"></div>
+                  <div class="fld" style="margin:0"><input id="totpEnrollCode" type="text" inputmode="numeric" maxlength="6" placeholder="6 位數驗證碼" data-i18n-placeholder="adSetPhTotpCode" style="letter-spacing:.2em; text-align:center"></div>
                   <div style="display:flex; gap:8px">
-                    <button class="btn btn-primary" id="totpConfirmBtn">確認啟用</button>
-                    <button class="btn btn-ghost" id="totpCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="totpConfirmBtn" data-i18n="adSetBtnConfirmEnable">確認啟用</button>
+                    <button class="btn btn-ghost" id="totpCancelBtn" data-i18n="adSetBtnCancel">取消</button>
                   </div>
                 </div>
               </div>
@@ -232,23 +232,23 @@
         <!-- sessions -->
         <div class="tab-pane" data-pane="sessions" style="display:none">
           <div class="section">
-            <div class="sh"><h3>登入裝置</h3><p>查看與管理目前正在登入的裝置</p></div>
-            <div class="sb" id="sessionsList">載入中⋯</div>
+            <div class="sh"><h3 data-i18n="adSetSessionsH3">登入裝置</h3><p data-i18n="adSetSessionsSub">查看與管理目前正在登入的裝置</p></div>
+            <div class="sb" id="sessionsList" data-i18n="adSetLoading">載入中⋯</div>
           </div>
         </div>
 
         <!-- account -->
         <div class="tab-pane" data-pane="account" style="display:none">
           <div class="section">
-            <div class="sh"><h3>登出</h3></div>
+            <div class="sh"><h3 data-i18n="adSetLogoutH3">登出</h3></div>
             <div class="sb">
-              <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:14px">點擊以登出當前裝置。</p>
-              <button class="btn btn-ghost" id="logoutNowBtn">立即登出</button>
+              <p style="font:400 13px/1.55 var(--f-tc); color:var(--ink-3); margin-bottom:14px" data-i18n="adSetLogoutP">點擊以登出當前裝置。</p>
+              <button class="btn btn-ghost" id="logoutNowBtn" data-i18n="adSetBtnLogoutNow">立即登出</button>
             </div>
           </div>
           <div class="section" style="border-color:rgba(239,68,68,.2); background:rgba(239,68,68,.04)">
-            <div class="sh" style="border-bottom-color:rgba(239,68,68,.15)"><h3 style="color:var(--err-700)">⚠ 刪除帳戶</h3><p>永久刪除帳戶與所有資料，無法復原</p></div>
-            <div class="sb"><button class="btn btn-ghost" id="deleteAcctBtn" style="border-color:var(--err-500); color:var(--err-700)">刪除帳戶</button></div>
+            <div class="sh" style="border-bottom-color:rgba(239,68,68,.15)"><h3 style="color:var(--err-700)" data-i18n="adSetDeleteH3">⚠ 刪除帳戶</h3><p data-i18n="adSetDeleteSub">永久刪除帳戶與所有資料，無法復原</p></div>
+            <div class="sb"><button class="btn btn-ghost" id="deleteAcctBtn" style="border-color:var(--err-500); color:var(--err-700)" data-i18n="adSetBtnDeleteAcct">刪除帳戶</button></div>
           </div>
         </div>
       </div>
@@ -257,6 +257,7 @@
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-settings.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script src="/shared/tw-banks.js"></script>
 <script>
@@ -272,9 +273,9 @@
   document.getElementById('orgName').textContent = me.organizationName || me.displayName || me.username;
   document.getElementById('meName').textContent = me.displayName || me.username;
   document.getElementById('bigName').textContent = me.displayName || me.username;
-  document.getElementById('bigRole').textContent = me.role === 'system' ? '系統管理員' : '主辦方';
+  document.getElementById('bigRole').textContent = me.role === 'system' ? L('adSetRoleSystem') : L('adSetRoleOrg');
   document.getElementById('prof-username').value = me.username;
-  document.getElementById('prof-role').value = me.role === 'system' ? '系統管理員' : '主辦方';
+  document.getElementById('prof-role').value = me.role === 'system' ? L('adSetRoleSystem') : L('adSetRoleOrg');
   document.getElementById('prof-displayName').value = me.displayName || '';
   // ---- 收款帳戶 bank/branch dropdowns ----
   var payoutBankSel = document.getElementById('payout-bank');
@@ -303,15 +304,15 @@
     var branchCode = payoutBranchSel.value;
     var accountNumber = document.getElementById('payout-account').value.trim();
     var accountName = document.getElementById('payout-name').value.trim();
-    if (bankCode && (!accountNumber || !accountName)) { uiAlert('已選擇銀行，請完整填寫帳號與戶名。'); return; }
-    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
+    if (bankCode && (!accountNumber || !accountName)) { uiAlert(L('adSetPayoutIncomplete')); return; }
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetSavingBusy');
     google.script.run
       .withSuccessHandler(function (res) {
         btn.disabled = false; btn.textContent = o;
-        if (res && res.success) { btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = o; }, 1400); }
-        else uiAlert((res && res.message) || '儲存失敗');
+        if (res && res.success) { btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = o; }, 1400); }
+        else uiAlert((res && res.message) || L('adSetSaveFail'));
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; uiAlert('失敗：' + (err && err.message)); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; uiAlert(L('adSetFail') + (err && err.message)); })
       .savePayoutAccount(bankCode, TWBankUI.bankName(bankCode), branchCode, TWBankUI.branchName(bankCode, branchCode), accountNumber, accountName);
   });
 
@@ -344,10 +345,10 @@
   });
 
   document.getElementById('saveNotifBtn').addEventListener('click', function () {
-    var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = L('adSetSavingBusy');
     google.script.run
-      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = '儲存通知偏好'; }, 1200); })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '儲存通知偏好'; alert('失敗：' + (err && err.message)); })
+      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = L('adSetBtnSaveNotif'); }, 1200); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = L('adSetBtnSaveNotif'); alert(L('adSetFail') + (err && err.message)); })
       .saveNotifPrefs(PREFS);
   });
 
@@ -355,15 +356,15 @@
     var oldP = document.getElementById('oldPwd').value;
     var newP = document.getElementById('newPwd').value;
     var newP2 = document.getElementById('newPwd2').value;
-    if (!oldP || !newP) return alert('請填寫兩個密碼欄位');
-    if (newP !== newP2) return alert('兩次新密碼不一致');
-    if (newP.length < 10) return alert('新密碼至少 10 字元');
-    var btn = this; btn.disabled = true; btn.textContent = '變更中⋯';
+    if (!oldP || !newP) return alert(L('adSetPwdBothRequired'));
+    if (newP !== newP2) return alert(L('adSetPwdMismatch'));
+    if (newP.length < 10) return alert(L('adSetPwdTooShort'));
+    var btn = this; btn.disabled = true; btn.textContent = L('adSetPwdChangingBusy');
     google.script.run
       .withSuccessHandler(function (res) {
-        btn.disabled = false; btn.textContent = '變更密碼';
+        btn.disabled = false; btn.textContent = L('adSetBtnChangePwd');
         if (res && res.success) {
-          alert('✓ 密碼已更新');
+          alert(L('adSetPwdUpdated'));
           if (res.sessionToken) {
             me.sessionToken = res.sessionToken;
             AppState.setMe(me);
@@ -371,9 +372,9 @@
           document.getElementById('oldPwd').value = '';
           document.getElementById('newPwd').value = '';
           document.getElementById('newPwd2').value = '';
-        } else { alert((res && res.message) || '失敗'); }
+        } else { alert((res && res.message) || L('adSetGenericFail')); }
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '變更密碼'; alert('失敗：' + (err && err.message)); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = L('adSetBtnChangePwd'); alert(L('adSetFail') + (err && err.message)); })
       .changePassword(me.username, oldP, newP);
   });
 
@@ -383,36 +384,36 @@
     var organizationName = document.getElementById('prof-organizationName').value.trim();
     var email = document.getElementById('prof-email').value.trim();
     var phone = document.getElementById('prof-phone').value.trim();
-    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetSavingBusy');
     google.script.run
       .withSuccessHandler(function (res) {
         btn.disabled = false; btn.textContent = o;
         if (res && res.success) {
-          btn.textContent = '✓ 已儲存'; setTimeout(function () { btn.textContent = o; }, 1400);
+          btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = o; }, 1400);
           // keep the local session display name in sync
           if (displayName) { me.displayName = displayName; AppState.setMe(me); }
           if (organizationName !== undefined) { me.organizationName = organizationName; AppState.setMe(me); }
           document.getElementById('bigName').textContent = displayName || me.username;
           document.getElementById('orgName').textContent = organizationName || displayName || me.username;
-        } else { alert((res && res.message) || '儲存失敗'); }
+        } else { alert((res && res.message) || L('adSetSaveFail')); }
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; alert('失敗：' + (err && err.message)); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; alert(L('adSetFail') + (err && err.message)); })
       .updateProfile(displayName, email, phone, organizationName);
   });
 
   // ---- Delete own account ----
   document.getElementById('deleteAcctBtn').addEventListener('click', function () {
     var btn = this;
-    uiConfirm('確定永久刪除您的帳戶「' + me.username + '」？刪除後將立即登出且無法復原。', { title: '刪除帳戶', okText: '永久刪除', danger: true }).then(function (ok) {
+    uiConfirm(L('adSetDeleteConfirm1') + me.username + L('adSetDeleteConfirm2'), { title: L('adSetDeleteDialogTitle'), okText: L('adSetDeletePermanent'), danger: true }).then(function (ok) {
       if (!ok) return;
-      btn.disabled = true; btn.textContent = '刪除中⋯';
+      btn.disabled = true; btn.textContent = L('adSetDeletingBusy');
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success) {
-            uiAlert('帳戶已刪除。').then(function () { AppState.clearMe(); location.href = '/login.html'; });
-          } else { btn.disabled = false; btn.textContent = '刪除帳戶'; uiAlert((res && res.message) || '刪除失敗'); }
+            uiAlert(L('adSetAcctDeleted')).then(function () { AppState.clearMe(); location.href = '/login.html'; });
+          } else { btn.disabled = false; btn.textContent = L('adSetBtnDeleteAcct'); uiAlert((res && res.message) || L('adSetDeleteFail')); }
         })
-        .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '刪除帳戶'; uiAlert('失敗：' + (err && err.message)); })
+        .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = L('adSetBtnDeleteAcct'); uiAlert(L('adSetFail') + (err && err.message)); })
         .deleteOwnAccount();
     });
   });
@@ -422,9 +423,9 @@
   function loadTotpStatus() {
     google.script.run.withSuccessHandler(function (res) {
       totpEnabled = !!(res && res.enabled);
-      document.getElementById('totpStateText').textContent = totpEnabled ? '✓ 已啟用 — 登入時需輸入驗證碼' : '尚未啟用';
+      document.getElementById('totpStateText').textContent = totpEnabled ? L('adSetTotpEnabledState') : L('adSetTotpNotEnabled');
       var b = document.getElementById('totpToggleBtn');
-      b.style.display = ''; b.textContent = totpEnabled ? '停用' : '啟用';
+      b.style.display = ''; b.textContent = totpEnabled ? L('adSetBtnDisable') : L('adSetBtnEnable');
       b.style.color = totpEnabled ? 'var(--err-700)' : '';
       b.style.borderColor = totpEnabled ? 'var(--err-500)' : '';
       document.getElementById('totpEnroll').style.display = 'none';
@@ -432,12 +433,12 @@
   }
   document.getElementById('totpToggleBtn').addEventListener('click', function () {
     if (totpEnabled) {
-      uiPrompt('停用兩步驟驗證請輸入目前的 6 位數驗證碼：', '', { title: '停用 2FA', inputType: 'text' }).then(function (code) {
+      uiPrompt(L('adSetTotpDisablePrompt'), '', { title: L('adSetTotpDisableTitle'), inputType: 'text' }).then(function (code) {
         if (!code) return;
         google.script.run.withSuccessHandler(function (res) {
-          if (res && res.success) { uiToast('已停用兩步驟驗證'); loadTotpStatus(); }
-          else uiAlert((res && res.message) || '停用失敗');
-        }).withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); }).disableTotp(String(code).replace(/\D/g, ''));
+          if (res && res.success) { uiToast(L('adSetTotpDisabledOk')); loadTotpStatus(); }
+          else uiAlert((res && res.message) || L('adSetTotpDisableFail'));
+        }).withFailureHandler(function (e) { uiAlert(L('adSetFail') + (e && e.message)); }).disableTotp(String(code).replace(/\D/g, ''));
       });
     } else {
       var b = this; b.disabled = true;
@@ -448,20 +449,20 @@
           document.getElementById('totpQr').src = 'https://quickchart.io/qr?size=160&text=' + encodeURIComponent(res.otpauth);
           document.getElementById('totpEnroll').style.display = 'block';
           document.getElementById('totpEnrollCode').value = '';
-        } else alert((res && res.message) || '無法產生密鑰');
-      }).withFailureHandler(function (e) { b.disabled = false; alert('失敗：' + (e && e.message)); }).generateTotpSecret();
+        } else alert((res && res.message) || L('adSetTotpSecretFail'));
+      }).withFailureHandler(function (e) { b.disabled = false; alert(L('adSetFail') + (e && e.message)); }).generateTotpSecret();
     }
   });
   document.getElementById('totpCancelBtn').addEventListener('click', function () { document.getElementById('totpEnroll').style.display = 'none'; });
   document.getElementById('totpConfirmBtn').addEventListener('click', function () {
     var code = document.getElementById('totpEnrollCode').value.replace(/\D/g, '');
-    if (code.length !== 6) return alert('請輸入 6 位數驗證碼');
-    var b = this; b.disabled = true; b.textContent = '驗證中⋯';
+    if (code.length !== 6) return alert(L('adSetTotpCodeRequired'));
+    var b = this; b.disabled = true; b.textContent = L('adSetVerifyingBusy');
     google.script.run.withSuccessHandler(function (res) {
-      b.disabled = false; b.textContent = '確認啟用';
-      if (res && res.success) { alert('✓ 兩步驟驗證已啟用'); loadTotpStatus(); }
-      else alert((res && res.message) || '啟用失敗');
-    }).withFailureHandler(function (e) { b.disabled = false; b.textContent = '確認啟用'; alert('失敗：' + (e && e.message)); }).enableTotp(code);
+      b.disabled = false; b.textContent = L('adSetBtnConfirmEnable');
+      if (res && res.success) { alert(L('adSetTotpEnabledOk')); loadTotpStatus(); }
+      else alert((res && res.message) || L('adSetTotpEnableFail'));
+    }).withFailureHandler(function (e) { b.disabled = false; b.textContent = L('adSetBtnConfirmEnable'); alert(L('adSetFail') + (e && e.message)); }).enableTotp(code);
   });
   loadTotpStatus();
 
@@ -473,74 +474,74 @@
       var gState = document.getElementById('googleLinkState');
       var gBtn = document.getElementById('googleLinkBtn');
       if (g.linked) {
-        gState.textContent = '✓ 已綁定' + (g.email ? '：' + g.email : '');
-        gBtn.style.display = ''; gBtn.textContent = '解除綁定';
+        gState.textContent = L('adSetLinkedPrefix') + (g.email ? L('adSetLinkedSep') + g.email : '');
+        gBtn.style.display = ''; gBtn.textContent = L('adSetBtnUnlink');
         gBtn.style.color = 'var(--err-700)'; gBtn.style.borderColor = 'var(--err-500)';
         gBtn.dataset.act = 'unlink';
       } else {
-        gState.textContent = '尚未綁定 — 綁定後可用 Google 登入此帳號';
-        gBtn.style.display = ''; gBtn.textContent = '綁定';
+        gState.textContent = L('adSetGoogleNotLinked');
+        gBtn.style.display = ''; gBtn.textContent = L('adSetBtnLink');
         gBtn.style.color = ''; gBtn.style.borderColor = '';
         gBtn.dataset.act = 'link';
       }
       var lnState = document.getElementById('lineLinkState');
       var lnBtn = document.getElementById('lineLinkBtn');
       if (ln.linked) {
-        lnState.textContent = '✓ 已綁定' + (ln.name ? '：' + ln.name : '');
-        lnBtn.style.display = ''; lnBtn.textContent = '解除綁定';
+        lnState.textContent = L('adSetLinkedPrefix') + (ln.name ? L('adSetLinkedSep') + ln.name : '');
+        lnBtn.style.display = ''; lnBtn.textContent = L('adSetBtnUnlink');
         lnBtn.style.color = 'var(--err-700)'; lnBtn.style.borderColor = 'var(--err-500)';
         lnBtn.dataset.act = 'unlink';
       } else {
-        lnState.textContent = '尚未綁定 — 綁定後可用 LINE 登入此帳號';
-        lnBtn.style.display = ''; lnBtn.textContent = '綁定';
+        lnState.textContent = L('adSetLineNotLinked');
+        lnBtn.style.display = ''; lnBtn.textContent = L('adSetBtnLink');
         lnBtn.style.color = ''; lnBtn.style.borderColor = '';
         lnBtn.dataset.act = 'link';
       }
     }).withFailureHandler(function () {
-      document.getElementById('googleLinkState').textContent = '無法查詢狀態';
+      document.getElementById('googleLinkState').textContent = L('adSetStateQueryFail');
     }).getLinkedProviders();
   }
   document.getElementById('googleLinkBtn').addEventListener('click', function () {
     var btn = this;
     if (btn.dataset.act === 'unlink') {
-      uiConfirm('確定要解除 Google 綁定嗎？解除後將無法用 Google 登入此帳號。', { title: '解除綁定', okText: '解除', danger: true }).then(function (ok) {
+      uiConfirm(L('adSetUnlinkGoogleConfirm'), { title: L('adSetUnlinkTitle'), okText: L('adSetUnlinkOk'), danger: true }).then(function (ok) {
         if (!ok) return;
         google.script.run.withSuccessHandler(function (res) {
-          if (res && res.success) { uiToast('已解除 Google 綁定'); loadLinkedProviders(); }
-          else uiAlert((res && res.message) || '解除失敗');
-        }).withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); }).unlinkProvider('google');
+          if (res && res.success) { uiToast(L('adSetGoogleUnlinked')); loadLinkedProviders(); }
+          else uiAlert((res && res.message) || L('adSetUnlinkFail'));
+        }).withFailureHandler(function (e) { uiAlert(L('adSetFail') + (e && e.message)); }).unlinkProvider('google');
       });
       return;
     }
     // Link: Google popup → idToken → linkGoogleAccount
-    if (typeof firebase === 'undefined' || !firebase.auth) { uiAlert('Google 登入元件尚未載入，請重新整理'); return; }
+    if (typeof firebase === 'undefined' || !firebase.auth) { uiAlert(L('adSetGoogleNotLoaded')); return; }
     btn.disabled = true;
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     firebase.auth().signInWithPopup(provider).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
       google.script.run.withSuccessHandler(function (res) {
         btn.disabled = false;
-        if (res && res.success) { uiToast('✓ 已綁定 Google 帳號'); loadLinkedProviders(); }
-        else uiAlert((res && res.message) || '綁定失敗');
+        if (res && res.success) { uiToast(L('adSetGoogleLinkedOk')); loadLinkedProviders(); }
+        else uiAlert((res && res.message) || L('adSetLinkFail'));
         try { firebase.auth().signOut(); } catch (e) {}
-      }).withFailureHandler(function (e) { btn.disabled = false; uiAlert('綁定失敗：' + (e && e.message)); }).linkGoogleAccount(idToken);
+      }).withFailureHandler(function (e) { btn.disabled = false; uiAlert(L('adSetGoogleLinkFailPrefix') + (e && e.message)); }).linkGoogleAccount(idToken);
     }).catch(function (e) {
       btn.disabled = false;
       var code = (e && e.code) || '';
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
-      uiAlert((e && e.message) || 'Google 綁定失敗');
+      uiAlert((e && e.message) || L('adSetGoogleLinkFail'));
     });
   });
   // LINE link/unlink (OAuth2 redirect for link)
   document.getElementById('lineLinkBtn').addEventListener('click', function () {
     var btn = this;
     if (btn.dataset.act === 'unlink') {
-      uiConfirm('確定要解除 LINE 綁定嗎？解除後將無法用 LINE 登入此帳號。', { title: '解除綁定', okText: '解除', danger: true }).then(function (ok) {
+      uiConfirm(L('adSetUnlinkLineConfirm'), { title: L('adSetUnlinkTitle'), okText: L('adSetUnlinkOk'), danger: true }).then(function (ok) {
         if (!ok) return;
         google.script.run.withSuccessHandler(function (res) {
-          if (res && res.success) { uiToast('已解除 LINE 綁定'); loadLinkedProviders(); }
-          else uiAlert((res && res.message) || '解除失敗');
-        }).withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); }).unlinkProvider('line');
+          if (res && res.success) { uiToast(L('adSetLineUnlinked')); loadLinkedProviders(); }
+          else uiAlert((res && res.message) || L('adSetUnlinkFail'));
+        }).withFailureHandler(function (e) { uiAlert(L('adSetFail') + (e && e.message)); }).unlinkProvider('line');
       });
       return;
     }
@@ -559,7 +560,7 @@
   });
   // Toast after returning from a successful LINE bind
   if (new URLSearchParams(location.search).get('linked') === 'line') {
-    setTimeout(function () { uiToast('✓ 已綁定 LINE 帳號'); }, 300);
+    setTimeout(function () { uiToast(L('adSetLineLinkedOk')); }, 300);
   }
   loadLinkedProviders();
 
@@ -571,7 +572,7 @@
         list.innerHTML = sessions.map(function (s) {
           return '<div class="session-row">' +
             '<div class="ic-s"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/></svg></div>' +
-            '<div class="body"><h6>' + escapeHtml(s.browser || 'Unknown') + (s.current ? ' <span class="cur">當前裝置</span>' : '') + '</h6>' +
+            '<div class="body"><h6>' + escapeHtml(s.browser || 'Unknown') + (s.current ? ' <span class="cur">' + escapeHtml(L('adSetSessionCurrent')) + '</span>' : '') + '</h6>' +
             '<p>' + escapeHtml(s.device || '') + ' · ' + escapeHtml(s.lastActive || '') + '</p></div>' +
           '</div>';
         }).join('');
@@ -580,7 +581,7 @@
   }
 
   document.getElementById('logoutNowBtn').addEventListener('click', function () {
-    uiConfirm('確認登出？', { title: '登出', okText: '登出' }).then(function (ok) {
+    uiConfirm(L('adSetLogoutConfirm'), { title: L('adSetLogoutDialogTitle'), okText: L('adSetLogoutOk') }).then(function (ok) {
       if (!ok) return;
       AppState.setMe(null);
       location.href = '/login.html';

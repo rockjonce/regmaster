@@ -85,42 +85,42 @@
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><b>方案與授權</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="anBrandSubOrg">主辦後台</a><span class="sep">/</span><b data-i18n="anLicense">方案與授權</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
     <div class="main-c">
       <div id="errorBanner" class="error-banner" style="display:none"></div>
       <div class="cur-plan">
-        <div class="badge-p" id="planBadge">⏳ 載入中</div>
+        <div class="badge-p" id="planBadge" data-i18n="adLicBadgeLoading">⏳ 載入中</div>
         <h2 id="planTitle">—</h2>
-        <p id="planDesc">查詢您的授權狀態與額度⋯</p>
+        <p id="planDesc" data-i18n="adLicPlanDescDefault">查詢您的授權狀態與額度⋯</p>
         <div class="meta-row">
-          <div class="it"><div class="lbl">狀態</div><div class="v" id="planStatus">—</div></div>
-          <div class="it"><div class="lbl">到期日</div><div class="v" id="planExpiry">—</div></div>
-          <div class="it"><div class="lbl">剩餘額度</div><div class="v" id="planQuota">—</div></div>
+          <div class="it"><div class="lbl" data-i18n="adLicLblStatus">狀態</div><div class="v" id="planStatus">—</div></div>
+          <div class="it"><div class="lbl" data-i18n="adLicLblExpiry">到期日</div><div class="v" id="planExpiry">—</div></div>
+          <div class="it"><div class="lbl" data-i18n="adLicLblQuota">剩餘額度</div><div class="v" id="planQuota">—</div></div>
         </div>
       </div>
 
       <div class="activate-card">
-        <h3>輸入授權碼</h3>
-        <p>有 RegMaster 授權碼？輸入下方啟用。每組授權碼僅能啟用一次。</p>
+        <h3 data-i18n="adLicActivateH3">輸入授權碼</h3>
+        <p data-i18n="adLicActivateP">有 RegMaster 授權碼？輸入下方啟用。每組授權碼僅能啟用一次。</p>
         <div class="input-row">
-          <input id="licCodeInput" placeholder="例：RM-XXXX-XXXX-XXXX-XXXX" maxlength="22">
-          <button class="btn btn-primary" id="activateBtn">啟用</button>
+          <input id="licCodeInput" placeholder="例：RM-XXXX-XXXX-XXXX-XXXX" data-i18n-placeholder="adLicCodePlaceholder" maxlength="22">
+          <button class="btn btn-primary" id="activateBtn" data-i18n="adLicActivateBtn">啟用</button>
         </div>
       </div>
 
-      <h2 style="font:700 20px/1.2 var(--f-display); margin-bottom:14px">可升級方案</h2>
-      <p style="font:400 12.5px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:14px">輸入授權碼即可升級，或直接線上刷卡（PayUni）綁定方案。價格以年計。</p>
+      <h2 style="font:700 20px/1.2 var(--f-display); margin-bottom:14px" data-i18n="adLicUpgradeH2">可升級方案</h2>
+      <p style="font:400 12.5px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:14px" data-i18n="adLicUpgradeP">輸入授權碼即可升級，或直接線上刷卡（PayUni）綁定方案。價格以年計。</p>
       <div class="plans-grid" id="plansGrid">
-        <div class="plan"><h4>載入中⋯</h4></div>
+        <div class="plan"><h4 data-i18n="adLicCardLoading">載入中⋯</h4></div>
       </div>
 
       <div class="history-card">
-        <h3>授權碼歷史</h3>
+        <h3 data-i18n="adLicHistH3">授權碼歷史</h3>
         <table class="history-tbl">
-          <thead><tr><th>授權碼</th><th>類型</th><th>額度</th><th>狀態</th><th>到期</th></tr></thead>
-          <tbody id="histBody"><tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">載入中⋯</td></tr></tbody>
+          <thead><tr><th data-i18n="adLicHistCode">授權碼</th><th data-i18n="adLicHistType">類型</th><th data-i18n="adLicHistQuota">額度</th><th data-i18n="adLicHistStatus">狀態</th><th data-i18n="adLicHistExpiry">到期</th></tr></thead>
+          <tbody id="histBody"><tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)" data-i18n="adLicCardLoading">載入中⋯</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -128,6 +128,7 @@
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-license.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -147,9 +148,9 @@
         var tier = res.tier || 'free';
         var label = res.planLabel || tier.toUpperCase();
         document.getElementById('planBadge').textContent = res.hasValid ? ('★ ' + label) : 'FREE';
-        document.getElementById('planTitle').textContent = label + ' 方案';
-        document.getElementById('planDesc').textContent = res.hasValid ? (res.message || '') : '免費方案 — 升級可解鎖更多活動與進階功能';
-        document.getElementById('planStatus').textContent = res.hasValid ? '已啟用' : '免費';
+        document.getElementById('planTitle').textContent = label + window.L('adLicPlanSuffix');
+        document.getElementById('planDesc').textContent = res.hasValid ? (res.message || '') : window.L('adLicFreePlanDesc');
+        document.getElementById('planStatus').textContent = res.hasValid ? window.L('adLicStatusActivated') : window.L('adLicStatusFree');
         document.getElementById('planExpiry').textContent = res.expiresAt || '—';
         document.getElementById('planQuota').textContent = label;
         var hist = res.history || [];
@@ -164,7 +165,7 @@
               '<td>' + escapeHtml(h.expiresAt || '—') + '</td></tr>';
           }).join('');
         } else {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">尚無授權紀錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted)">' + window.L('adLicHistEmpty') + '</td></tr>';
         }
         // Fetch prices + per-tier upgrade quotes, then render the plan cards.
         Promise.all([
@@ -173,21 +174,26 @@
         ]).then(function (arr) { renderPlans(tier, arr[0] || {}, arr[1] || { options: [] }); });
       })
       .withFailureHandler(function (err) {
-        document.getElementById('errorBanner').innerHTML = '無法載入授權狀態：' + escapeHtml((err && err.message) || '');
+        document.getElementById('errorBanner').innerHTML = window.L('adLicErrLoadStatus') + escapeHtml((err && err.message) || '');
         document.getElementById('errorBanner').style.display = 'block';
       })
       .getLicenseStatus();
   }
   load();
+  // Dynamically-rendered content (current-plan card, plan cards, history) is built with
+  // window.L at load time, so re-fetch + re-render when the language switches.
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () { load(); });
+  }
 
   // Name + tagline are presentational; the FEATURE list & limits now come from config.
   var TIER_DEFS = [
-    { id: 'free',    name: 'Free',    tag: '小型活動入門' },
-    { id: 'starter', name: 'Starter', tag: '單一活動主辦' },
-    { id: 'pro',     name: 'Pro',     tag: '完整功能' },
-    { id: 'team',    name: 'Team',    tag: '大型機構' }
+    { id: 'free',    nameKey: 'adLicTierFreeName',    tagKey: 'adLicTierFreeTag' },
+    { id: 'starter', nameKey: 'adLicTierStarterName', tagKey: 'adLicTierStarterTag' },
+    { id: 'pro',     nameKey: 'adLicTierProName',     tagKey: 'adLicTierProTag' },
+    { id: 'team',    nameKey: 'adLicTierTeamName',    tagKey: 'adLicTierTeamTag' }
   ];
-  var FEATURE_LABEL_FE = { payment: '線上金流收款', csvExport: '匯出報表', ai: 'AI 助理（主辦後台）', eventAi: '活動 AI 助理', scoring: '評分', multiJudge: '多評審評分', campaigns: '公告群發', checkin: 'QR 報到', waitlist: '允許候補', certificate: '名牌 / 證書' };
+  var FEATURE_LABEL_KEY = { payment: 'adLicFeatPayment', csvExport: 'adLicFeatCsvExport', ai: 'adLicFeatAi', eventAi: 'adLicFeatEventAi', scoring: 'adLicFeatScoring', multiJudge: 'adLicFeatMultiJudge', campaigns: 'adLicFeatCampaigns', checkin: 'adLicFeatCheckin', waitlist: 'adLicFeatWaitlist', certificate: 'adLicFeatCertificate' };
   var FEATURE_ORDER = ['payment','csvExport','scoring','multiJudge','campaigns','checkin','waitlist','eventAi','ai','certificate'];
   var DEFAULT_PLANS_FE = {
     free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,   features:{ payment:true, csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, waitlist:false, certificate:false } },
@@ -195,9 +201,24 @@
     pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500, features:{ payment:true, csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } },
     team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,    features:{ payment:true, csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } }
   };
-  function _lim(n){ return (n === 0 || n == null) ? '無限' : Number(n).toLocaleString(); }
+  function _lim(n){ return (n === 0 || n == null) ? window.L('adLicUnlimited') : Number(n).toLocaleString(); }
   var TIER_RANK_FE = { free: 0, starter: 1, pro: 2, team: 3 };
   var UPG = {};   // tier → quote { amount, credit, newPrice, remainingDays, canBuy }
+  // Substitute {token} placeholders in an i18n string with provided values.
+  function _fmt(key, vars) {
+    return window.L(key).replace(/\{(\w+)\}/g, function (m, k) { return (vars && vars[k] != null) ? vars[k] : m; });
+  }
+  // Prefer the backend per-tier localized name/tagline; fall back to TIER_DEFS keys.
+  function _tierName(p, t) {
+    var lang = window.LANG || 'zh';
+    if (p && p.name && p.name[lang]) return p.name[lang];
+    return window.L(t.nameKey);
+  }
+  function _tierTag(p, t) {
+    var lang = window.LANG || 'zh';
+    if (p && p.tagline && p.tagline[lang]) return p.tagline[lang];
+    return window.L(t.tagKey);
+  }
   function renderPlans(curTier, cfg, upgRes) {
     var plans = (cfg && cfg.plans) || DEFAULT_PLANS_FE;
     var curRank = TIER_RANK_FE[curTier || 'free'] || 0;
@@ -213,49 +234,50 @@
       var priceStr = price > 0 ? ('$' + price.toLocaleString()) : '$0';
       var q = UPG[t.id];
       var btn, upgNote = '';
-      if (isCur) btn = '<div class="btn-plan">目前方案</div>';
-      else if (rank < curRank) btn = '<div class="btn-plan" style="opacity:.4">較低方案</div>';
-      else if (t.id === 'free') btn = '<div class="btn-plan" style="opacity:.45">免費</div>';
-      else if (price <= 0) btn = '<div class="btn-plan" style="opacity:.45" title="尚未設定價格">未開放</div>';
+      if (isCur) btn = '<div class="btn-plan">' + window.L('adLicCurPlan') + '</div>';
+      else if (rank < curRank) btn = '<div class="btn-plan" style="opacity:.4">' + window.L('adLicLowerPlan') + '</div>';
+      else if (t.id === 'free') btn = '<div class="btn-plan" style="opacity:.45">' + window.L('adLicFree') + '</div>';
+      else if (price <= 0) btn = '<div class="btn-plan" style="opacity:.45" title="' + window.L('adLicNoPriceTitle') + '">' + window.L('adLicNotOpen') + '</div>';
       else if (q && q.canBuy) {
         // Upgrade from a paid tier shows the prorated differential; from Free shows full price.
         if (q.isUpgrade && q.credit > 0) {
-          btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + q.amount + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">升級（加 NT$' + q.amount.toLocaleString() + '）→</button>';
-          upgNote = '<li style="border-top:1px dashed var(--line); margin-top:6px; padding-top:6px; color:var(--acc)"><b>升級僅需 NT$' + q.amount.toLocaleString() + '</b><br><span style="font:400 10.5px/1.4 var(--f-tc); color:var(--muted)">已折抵目前方案剩餘 ' + q.remainingDays + ' 天 NT$' + q.credit.toLocaleString() + '；付款日起重新計 365 天</span></li>';
+          btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + q.amount + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">' + _fmt('adLicUpgradeBtn', { amt: q.amount.toLocaleString() }) + '</button>';
+          upgNote = '<li style="border-top:1px dashed var(--line); margin-top:6px; padding-top:6px; color:var(--acc)"><b>' + _fmt('adLicUpgradeNoteHead', { amt: q.amount.toLocaleString() }) + '</b><br><span style="font:400 10.5px/1.4 var(--f-tc); color:var(--muted)">' + _fmt('adLicUpgradeNoteSub', { days: q.remainingDays, credit: q.credit.toLocaleString() }) + '</span></li>';
         } else {
-          btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + q.amount + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買（NT$' + q.amount.toLocaleString() + '）→</button>';
+          btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + q.amount + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">' + _fmt('adLicBuyNowAmt', { amt: q.amount.toLocaleString() }) + '</button>';
         }
       } else {
-        btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + price + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">立即購買 →</button>';
+        btn = '<button class="btn-plan" data-buy="' + t.id + '" data-amt="' + price + '" style="background:var(--ink); color:#fff; border:0; cursor:pointer">' + window.L('adLicBuyNowArrow') + '</button>';
       }
-      var limRows = '<li>同時活動數：' + _lim(p.maxActiveEvents) + '</li><li>單場名額：' + _lim(p.maxCapacity) + '</li>';
+      var limRows = '<li>' + window.L('adLicLimActiveEvents') + _lim(p.maxActiveEvents) + '</li><li>' + window.L('adLicLimCapacity') + _lim(p.maxCapacity) + '</li>';
       var featRows = FEATURE_ORDER.filter(function (k) { return feats[k] === true; })
-        .map(function (k) { return '<li>' + FEATURE_LABEL_FE[k] + '</li>'; }).join('');
-      var feeRow = '<li style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:6px"><b>PayUNI 金流手續費：' + (Number(p.feePct) || 0).toFixed(1) + '%</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">報名者線上付款扣除；銀行轉帳免收</span></li>';
-      return '<div class="plan' + (isCur ? ' cur' : '') + '"><h4>' + t.name + '</h4><p class="tag">' + t.tag + '</p>' +
-        '<div class="price"><span class="num">' + priceStr + '</span><span class="per">' + (price > 0 ? '/年' : '') + '</span></div>' +
+        .map(function (k) { return '<li>' + window.L(FEATURE_LABEL_KEY[k]) + '</li>'; }).join('');
+      var feeRow = '<li style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:6px"><b>' + window.L('adLicFeePrefix') + (Number(p.feePct) || 0).toFixed(1) + '%</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + window.L('adLicFeeNote') + '</span></li>';
+      return '<div class="plan' + (isCur ? ' cur' : '') + '"><h4>' + escapeHtml(_tierName(p, t)) + '</h4><p class="tag">' + escapeHtml(_tierTag(p, t)) + '</p>' +
+        '<div class="price"><span class="num">' + priceStr + '</span><span class="per">' + (price > 0 ? window.L('adLicPerYear') : '') + '</span></div>' +
         '<ul>' + limRows + featRows + feeRow + upgNote + '</ul>' + btn + '</div>';
     }).join('');
     grid.querySelectorAll('[data-buy]').forEach(function (b) {
       b.addEventListener('click', function () { purchaseTier(b.dataset.buy, parseInt(b.dataset.amt, 10) || 0); });
     });
+    if (typeof window.applyI18n === 'function') window.applyI18n();
   }
   function purchaseTier(tier, amount) {
     var q = UPG[tier];
     var label = (tier || '').toUpperCase();
     var msg = q && q.isUpgrade && q.credit > 0
-      ? '升級至 ' + label + ' 方案：\n\n應付差額 NT$' + (amount || q.amount).toLocaleString() + '\n（已折抵目前方案剩餘 ' + q.remainingDays + ' 天 NT$' + q.credit.toLocaleString() + '）\n付款成功後，' + label + ' 方案自當日起算 365 天。\n\n將以線上信用卡刷卡（PayUni）付款，是否繼續？'
-      : '購買 ' + label + ' 方案（自付款日起 1 年）：\n\n應付 NT$' + (amount || (q && q.amount) || 0).toLocaleString() + '\n\n將以線上信用卡刷卡（PayUni）付款，付款成功後自動啟用，是否繼續？';
-    uiConfirm(msg, { title: '購買 / 升級方案', okText: '前往付款' }).then(function (ok) {
+      ? _fmt('adLicConfirmUpgrade', { label: label, amt: (amount || q.amount).toLocaleString(), days: q.remainingDays, credit: q.credit.toLocaleString() })
+      : _fmt('adLicConfirmBuy', { label: label, amt: (amount || (q && q.amount) || 0).toLocaleString() });
+    uiConfirm(msg, { title: window.L('adLicConfirmTitle'), okText: window.L('adLicConfirmOk') }).then(function (ok) {
       if (!ok) return;
       // Stash so payuni-return.html can route the buyer back to this page.
       try { localStorage.setItem('regmaster_pending_plan', JSON.stringify({ tier: tier, ts: Date.now() })); } catch (e) {}
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success && res.payuni) submitPayuni(res.payuni);
-          else uiAlert((res && res.message) || '建立訂單失敗');
+          else uiAlert((res && res.message) || window.L('adLicOrderFail'));
         })
-        .withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); })
+        .withFailureHandler(function (e) { uiAlert(window.L('adLicErrFail') + (e && e.message)); })
         .createPayuniOrder([{ type: 'tier', tier: tier, years: 1 }], '', me.username);
     });
   }
@@ -270,20 +292,20 @@
 
   document.getElementById('activateBtn').addEventListener('click', function () {
     var code = document.getElementById('licCodeInput').value.trim().toUpperCase();
-    if (!code) return alert('請輸入授權碼');
-    var btn = this; btn.disabled = true; btn.textContent = '啟用中⋯';
+    if (!code) return alert(window.L('adLicAlertNoCode'));
+    var btn = this; btn.disabled = true; btn.textContent = window.L('adLicActivating');
     google.script.run
       .withSuccessHandler(function (res) {
-        btn.disabled = false; btn.textContent = '啟用';
+        btn.disabled = false; btn.textContent = window.L('adLicActivateBtn');
         if (res && res.success) {
-          alert('✓ 啟用成功' + (res.expiresAt ? '（至 ' + res.expiresAt + '）' : ''));
+          alert(window.L('adLicActivateOk') + (res.expiresAt ? _fmt('adLicActivateOkUntil', { date: res.expiresAt }) : ''));
           document.getElementById('licCodeInput').value = '';
           load();
         } else {
-          alert((res && res.message) || '啟用失敗');
+          alert((res && res.message) || window.L('adLicActivateFail'));
         }
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '啟用'; alert('失敗：' + (err && err.message)); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('adLicActivateBtn'); alert(window.L('adLicErrFail') + (err && err.message)); })
       .activateLicense(code, me.username);
   });
 })();

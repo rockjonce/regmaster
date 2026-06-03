@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>儀表板 · 主辦後台 · RegMaster</title>
+<title data-i18n="adIdxDocTitle">儀表板 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -220,19 +220,19 @@
   <main>
     <header class="head">
       <div class="crumbs">
-        <span>主辦後台</span>
+        <span data-i18n="adIdxCrumbRoot">主辦後台</span>
         <span class="sep">/</span>
-        <b>儀表板</b>
+        <b data-i18n="adIdxCrumbHere">儀表板</b>
       </div>
       <div class="quick-search">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
-        <input id="searchInput" placeholder="搜尋活動 / 報名者...">
+        <input id="searchInput" placeholder="搜尋活動 / 報名者..." data-i18n-placeholder="adIdxSearchPh">
         <span class="kbd">⌘K</span>
       </div>
       <div class="actions">
         <a class="btn btn-primary" href="/admin/events/?new=1" style="font:600 13px/1 var(--f-tc)">
           <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" style="width:13px; height:13px; vertical-align:-2px; margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>
-          建立活動
+          <span data-i18n="adIdxCreateEvent">建立活動</span>
         </a>
         <div class="me-h">
           <div class="av-c" id="meAv">—</div>
@@ -244,7 +244,7 @@
     <div class="main-c">
 
       <div id="errorBanner" class="error-banner" style="display:none"></div>
-      <div id="loadingState" class="loading-c">載入儀表板資料⋯</div>
+      <div id="loadingState" class="loading-c" data-i18n="adIdxLoading">載入儀表板資料⋯</div>
 
       <div id="content" style="display:none">
         <!-- Welcome -->
@@ -265,40 +265,40 @@
         <div class="kpis">
           <div class="kpi">
             <div class="head-k">
-              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>總報名</div>
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span data-i18n="adIdxKpiTotalReg">總報名</span></div>
               <span class="delta-k up" id="d1Delta" style="display:none"></span>
             </div>
             <div class="v-k" id="d1Val">—<em>人</em></div>
-            <div class="sub-k" id="d1Sub">跨所有活動累計</div>
+            <div class="sub-k" id="d1Sub" data-i18n="adIdxKpiTotalRegSub">跨所有活動累計</div>
             <div class="spark" id="d1Spark"></div>
           </div>
 
           <div class="kpi">
             <div class="head-k">
-              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>已付款</div>
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg><span data-i18n="adIdxKpiPaid">已付款</span></div>
               <span class="delta-k up" id="d2Delta" style="display:none"></span>
             </div>
             <div class="v-k" id="d2Val">—</div>
-            <div class="sub-k" id="d2Sub">完成繳費的隊伍數</div>
+            <div class="sub-k" id="d2Sub" data-i18n="adIdxKpiPaidSub">完成繳費的隊伍數</div>
             <div class="spark" id="d2Spark"></div>
           </div>
 
           <div class="kpi">
             <div class="head-k">
-              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>待處理</div>
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span data-i18n="adIdxKpiPending">待處理</span></div>
               <span class="delta-k up" id="d3Delta" style="display:none"></span>
             </div>
             <div class="v-k" id="d3Val">—</div>
-            <div class="sub-k" id="d3Sub">含待付款、待審核、即將截止</div>
+            <div class="sub-k" id="d3Sub" data-i18n="adIdxKpiPendingSub">含待付款、待審核、即將截止</div>
             <div class="spark" id="d3Spark"></div>
           </div>
 
           <div class="kpi">
             <div class="head-k">
-              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>活動數</div>
+              <div class="label-k"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg><span data-i18n="adIdxKpiEvents">活動數</span></div>
             </div>
             <div class="v-k" id="d4Val">—<em>場</em></div>
-            <div class="sub-k" id="d4Sub">進行中 + 已截止 + 草稿</div>
+            <div class="sub-k" id="d4Sub" data-i18n="adIdxKpiEventsSub">進行中 + 已截止 + 草稿</div>
             <div class="spark" id="d4Spark"></div>
           </div>
         </div>
@@ -308,13 +308,13 @@
           <div class="chart-card">
             <div class="head-c">
               <div>
-                <h3>報名趨勢</h3>
+                <h3 data-i18n="adIdxTrendTitle">報名趨勢</h3>
                 <div class="sub-c" id="trendSub">最近 30 天 · 跨所有活動</div>
               </div>
               <div class="filters">
-                <button data-r="7">7 天</button>
-                <button class="on" data-r="30">30 天</button>
-                <button data-r="90">90 天</button>
+                <button data-r="7" data-i18n="adIdxRange7">7 天</button>
+                <button class="on" data-r="30" data-i18n="adIdxRange30">30 天</button>
+                <button data-r="90" data-i18n="adIdxRange90">90 天</button>
               </div>
             </div>
             <div class="chart-svg-wrap">
@@ -336,7 +336,7 @@
               </svg>
             </div>
             <div class="chart-leg">
-              <div class="l-i"><span class="dot-l" style="background:var(--acc)"></span>近 <span id="legDays">30</span> 天 <b id="legTotal">—</b></div>
+              <div class="l-i"><span class="dot-l" style="background:var(--acc)"></span><span data-i18n="adIdxLegNear">近 </span><span id="legDays">30</span><span data-i18n="adIdxLegDaysSuffix"> 天</span> <b id="legTotal">—</b></div>
               <div class="l-i" style="margin-left:auto" id="legChange"></div>
             </div>
           </div>
@@ -344,11 +344,11 @@
           <div class="ai-card">
             <div class="head-ai">
               <div class="ic-w"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
-              <h4>AI 洞察</h4>
+              <h4 data-i18n="adIdxAiTitle">AI 洞察</h4>
               <span class="badge-ai" id="aiCountBadge">— NEW</span>
             </div>
             <div id="insightsList">
-              <p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">AI 洞察分析中⋯</p>
+              <p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)" data-i18n="adIdxAiAnalyzing">AI 洞察分析中⋯</p>
             </div>
           </div>
         </div>
@@ -357,52 +357,52 @@
         <div class="sec-grid">
           <div class="events-card">
             <div class="head-e">
-              <h3>進行中的活動</h3>
-              <a href="/admin/events/">查看全部 →</a>
+              <h3 data-i18n="adIdxEventsTitle">進行中的活動</h3>
+              <a href="/admin/events/" data-i18n="adIdxViewAll">查看全部 →</a>
             </div>
             <div id="activeEventsList">
-              <div class="loading-c" style="padding:24px">載入活動清單⋯</div>
+              <div class="loading-c" style="padding:24px" data-i18n="adIdxEventsLoading">載入活動清單⋯</div>
             </div>
           </div>
 
           <div class="todo-card">
             <div class="head-t">
-              <h3>待辦事項</h3>
+              <h3 data-i18n="adIdxTodoTitle">待辦事項</h3>
               <span class="ct-t" id="todoCount">— 項</span>
             </div>
             <div id="todoList">
-              <div class="loading-c" style="padding:24px">分析待辦⋯</div>
+              <div class="loading-c" style="padding:24px" data-i18n="adIdxTodoLoading">分析待辦⋯</div>
             </div>
           </div>
         </div>
 
         <!-- TERTIARY: quick actions -->
         <div class="qa-card">
-          <h3>快速操作</h3>
+          <h3 data-i18n="adIdxQaTitle">快速操作</h3>
           <div class="qa-grid">
             <a class="qa-it" href="/admin/events/?new=1">
               <div class="ic-q b1"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
-              <h6>建立活動</h6><p>從零或模板</p>
+              <h6 data-i18n="adIdxQaCreate">建立活動</h6><p data-i18n="adIdxQaCreateSub">從零或模板</p>
             </a>
             <a class="qa-it" href="/admin/events/">
               <div class="ic-q b2"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg></div>
-              <h6>所有活動</h6><p>列表 / 編輯</p>
+              <h6 data-i18n="adIdxQaAllEvents">所有活動</h6><p data-i18n="adIdxQaAllEventsSub">列表 / 編輯</p>
             </a>
             <a class="qa-it" href="/admin/license.html">
               <div class="ic-q b3"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg></div>
-              <h6>方案與授權</h6><p>試用 / 升級</p>
+              <h6 data-i18n="adIdxQaLicense">方案與授權</h6><p data-i18n="adIdxQaLicenseSub">試用 / 升級</p>
             </a>
             <a class="qa-it" href="/admin/settings.html">
               <div class="ic-q b4"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></div>
-              <h6>帳戶設定</h6><p>個人 / 安全</p>
+              <h6 data-i18n="adIdxQaAccount">帳戶設定</h6><p data-i18n="adIdxQaAccountSub">個人 / 安全</p>
             </a>
             <a class="qa-it" href="/contact.html?topic=support">
               <div class="ic-q b1"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7"/></svg></div>
-              <h6>聯絡客服</h6><p>4 hr 回覆</p>
+              <h6 data-i18n="adIdxQaSupport">聯絡客服</h6><p data-i18n="adIdxQaSupportSub">4 hr 回覆</p>
             </a>
             <a class="qa-it" href="/Manual.html" target="_blank">
               <div class="ic-q b2"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
-              <h6>說明文件</h6><p>使用手冊</p>
+              <h6 data-i18n="adIdxQaManual">說明文件</h6><p data-i18n="adIdxQaManualSub">使用手冊</p>
             </a>
           </div>
         </div>
@@ -413,6 +413,7 @@
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-index.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function () {
@@ -438,9 +439,9 @@
   // ---- Greeting + sidebar fill ----
   var now = new Date();
   var hr = now.getHours();
-  var greetWord = hr < 6 ? '凌晨好' : hr < 12 ? '早安' : hr < 18 ? '午安' : '晚安';
+  var greetWord = hr < 6 ? window.L('adIdxGreetDawn') : hr < 12 ? window.L('adIdxGreetMorning') : hr < 18 ? window.L('adIdxGreetAfternoon') : window.L('adIdxGreetEvening');
   var emoji = hr < 6 ? '🌙' : hr < 12 ? '☀️' : hr < 18 ? '🌤️' : '🌙';
-  document.getElementById('greet').textContent = greetWord + '，' + (me.displayName || me.username) + ' ' + emoji;
+  document.getElementById('greet').textContent = greetWord + window.L('adIdxGreetSep') + (me.displayName || me.username) + ' ' + emoji;
   document.getElementById('todayDate').textContent = now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0');
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('meName').textContent = me.displayName || me.username;
@@ -496,7 +497,7 @@
 
   fetchCompetitions().then(function (comps) {
     COMPS = comps;
-    if (loadErr) { showErr('<b>無法載入活動清單：</b> ' + escapeHtml(loadErr)); }
+    if (loadErr) { showErr(window.L('adIdxLoadCompsFail') + escapeHtml(loadErr)); }
     document.getElementById('navCompCount').textContent = comps.length;
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('content').style.display = 'block';
@@ -522,10 +523,10 @@
       paidCount += (s.accepted || 0) - (s.payWait || 0);
       pendingCount += (s.payWait || 0);
     });
-    document.getElementById('d1Val').innerHTML = totalRegs.toLocaleString() + '<em>人</em>';
+    document.getElementById('d1Val').innerHTML = totalRegs.toLocaleString() + '<em>' + window.L('adIdxUnitPeople') + '</em>';
     document.getElementById('d2Val').textContent = Math.max(0, paidCount).toLocaleString();
     document.getElementById('d3Val').textContent = pendingCount.toLocaleString();
-    document.getElementById('d4Val').innerHTML = comps.length + '<em>場</em>';
+    document.getElementById('d4Val').innerHTML = comps.length + '<em>' + window.L('adIdxUnitEvents') + '</em>';
 
     // Compute next-deadline for welcome blurb
     var now = Date.now();
@@ -539,13 +540,13 @@
     var liveCount = comps.filter(function (c) { return c.isOpen; }).length;
     if (nextEvent) {
       var daysLeft = Math.ceil((parseDate(nextEvent.deadline) - now) / 86400000);
-      document.getElementById('welcomeBlurb').innerHTML = '你的 <em style="color:var(--ink); font-weight:600">「' + escapeHtml(nextEvent.name) + '」</em>還有 <b>' + daysLeft + ' 天</b>截止報名';
+      document.getElementById('welcomeBlurb').innerHTML = window.L('adIdxBlurbDeadlinePre') + '<em style="color:var(--ink); font-weight:600">' + window.L('adIdxQuoteOpen') + escapeHtml(nextEvent.name) + window.L('adIdxQuoteClose') + '</em>' + window.L('adIdxBlurbDeadlineMid') + '<b>' + daysLeft + window.L('adIdxBlurbDeadlineDays') + '</b>' + window.L('adIdxBlurbDeadlineSuffix');
     } else if (comps.length > 0) {
-      document.getElementById('welcomeBlurb').textContent = '所有活動報名已截止或進行中';
+      document.getElementById('welcomeBlurb').textContent = window.L('adIdxBlurbAllClosed');
     } else {
-      document.getElementById('welcomeBlurb').textContent = '尚未建立任何活動，點右上「建立活動」開始吧';
+      document.getElementById('welcomeBlurb').textContent = window.L('adIdxBlurbNone');
     }
-    document.getElementById('liveBadge').textContent = liveCount + ' 場活動進行中';
+    document.getElementById('liveBadge').textContent = liveCount + window.L('adIdxLiveBadgeSuffix');
 
     // Sparklines: fill with random-ish derived bars (real time-series in Phase 7)
     function spark(elId, intensity) {
@@ -569,7 +570,8 @@
     var live = comps.filter(function (c) { return c.isOpen; }).slice(0, 4);
     if (live.length === 0) {
       document.getElementById('activeEventsList').innerHTML =
-        '<div class="empty-c" style="padding:40px 20px"><div class="ic">🎟</div><h3>沒有進行中的活動</h3><p>建立活動並開放報名後即可在這裡看到。</p><a class="btn btn-primary btn-sm" href="/admin/events/?new=1">建立活動</a></div>';
+        '<div class="empty-c" style="padding:40px 20px"><div class="ic">🎟</div><h3>' + window.L('adIdxNoActiveTitle') + '</h3><p>' + window.L('adIdxNoActiveSub') + '</p><a class="btn btn-primary btn-sm" href="/admin/events/?new=1">' + window.L('adIdxCreateEvent') + '</a></div>';
+      window.applyI18n();
       return;
     }
     var html = live.map(function (c, i) {
@@ -582,8 +584,8 @@
         '<div class="av-e c' + ((i % 5) + 1) + '"><span>' + escapeHtml((c.name || '?').charAt(0)) + '</span></div>' +
         '<div class="body-e"><h6>' + escapeHtml(c.name) + '</h6>' +
           '<div class="meta-e">' +
-            (c.deadline ? '<div>📅 截止 ' + escapeHtml(c.deadline) + '</div>' : '') +
-            (daysLeft !== null && daysLeft > 0 ? '<div>還有 <b>' + daysLeft + ' 天</b></div>' : (daysLeft !== null ? '<div style="color:var(--err-700)"><b>已截止</b></div>' : '')) +
+            (c.deadline ? '<div>📅 ' + window.L('adIdxRowDeadline') + ' ' + escapeHtml(c.deadline) + '</div>' : '') +
+            (daysLeft !== null && daysLeft > 0 ? '<div>' + window.L('adIdxRowDaysLeftPre') + ' <b>' + daysLeft + window.L('adIdxLegDaysSuffix') + '</b></div>' : (daysLeft !== null ? '<div style="color:var(--err-700)"><b>' + window.L('adIdxClosedTag') + '</b></div>' : '')) +
           '</div></div>' +
         '<div class="progress-e">' +
           '<div class="p-bar ' + pctClass + '"><div style="width:' + pct + '%"></div></div>' +
@@ -612,14 +614,14 @@
       pts[i] = dayMap[key] || 0;
     }
     var total = pts.reduce(function (a, b) { return a + b; }, 0);
-    var sub = document.getElementById('trendSub'); if (sub) sub.textContent = '最近 ' + days + ' 天 · 跨所有活動';
+    var sub = document.getElementById('trendSub'); if (sub) sub.textContent = window.L('adIdxTrendSubPre') + days + window.L('adIdxTrendSubSuffix');
     var ld = document.getElementById('legDays'); if (ld) ld.textContent = days;
     var maxV = Math.max.apply(null, pts);
     if (maxV === 0) {
       document.getElementById('trendLine').setAttribute('d', 'M0 180 L600 180');
       document.getElementById('trendArea').setAttribute('d', 'M0 180 L600 180 L600 200 L0 200 Z');
-      document.getElementById('legTotal').textContent = '0 筆';
-      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">此期間尚無報名資料</span>';
+      document.getElementById('legTotal').textContent = '0' + window.L('adIdxUnitRecords');
+      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">' + window.L('adIdxTrendNoData') + '</span>';
       return;
     }
     var pathPts = pts.map(function (v, i) {
@@ -629,7 +631,7 @@
     }).join(' ');
     document.getElementById('trendLine').setAttribute('d', pathPts);
     document.getElementById('trendArea').setAttribute('d', pathPts + ' L600 200 L0 200 Z');
-    document.getElementById('legTotal').textContent = total.toLocaleString() + ' 筆';
+    document.getElementById('legTotal').textContent = total.toLocaleString() + window.L('adIdxUnitRecords');
     var half = Math.floor(days / 2);
     var firstHalf = pts.slice(0, half).reduce(function (a, b) { return a + b; }, 0);
     var secondHalf = pts.slice(half).reduce(function (a, b) { return a + b; }, 0);
@@ -637,9 +639,9 @@
       var growth = (secondHalf - firstHalf) / firstHalf * 100;
       var sign = growth >= 0 ? '↑' : '↓';
       var color = growth >= 0 ? 'var(--ok-700)' : 'var(--err-700)';
-      document.getElementById('legChange').innerHTML = '<span style="color:' + color + '"><b>' + sign + ' ' + Math.abs(growth).toFixed(1) + '%</b></span> 後半段 vs 前半段';
+      document.getElementById('legChange').innerHTML = '<span style="color:' + color + '"><b>' + sign + ' ' + Math.abs(growth).toFixed(1) + '%</b></span>' + window.L('adIdxTrendCompare');
     } else {
-      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">' + secondHalf + ' 筆於近期</span>';
+      document.getElementById('legChange').innerHTML = '<span style="color:var(--muted)">' + secondHalf + window.L('adIdxUnitRecords') + window.L('adIdxTrendRecentSuffix') + '</span>';
     }
   }
   // Wire the 7 / 30 / 90 day range toggle.
@@ -656,19 +658,19 @@
     var insights = (data && data.insights) || [];
     if (data && data.locked) {
       document.getElementById('aiCountBadge').textContent = 'PRO';
-      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.7); padding:20px 0; text-align:center; font:400 12.5px/1.6 var(--f-tc)">🔒 AI 洞察為 <b>PRO</b> 以上方案功能<br><a href="/admin/license.html" style="color:#fcd34d; text-decoration:underline">升級方案解鎖 →</a></p>';
+      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.7); padding:20px 0; text-align:center; font:400 12.5px/1.6 var(--f-tc)">' + window.L('adIdxAiLocked') + '</p>';
       return;
     }
-    document.getElementById('aiCountBadge').textContent = insights.length + ' NEW';
+    document.getElementById('aiCountBadge').textContent = insights.length + window.L('adIdxAiNewSuffix');
     if (insights.length === 0) {
-      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">目前沒有需要注意的洞察 👍<br>當報名出現異常（即將額滿 / 報名偏低 / 待付款累積）時，這裡會自動提醒。</p>';
+      document.getElementById('insightsList').innerHTML = '<p style="color:rgba(255,255,255,.6); padding:20px 0; text-align:center; font:400 12.5px/1.5 var(--f-tc)">' + window.L('adIdxAiEmpty') + '</p>';
       return;
     }
     document.getElementById('insightsList').innerHTML = insights.map(function (ins) {
       return '<div class="insight">' +
         '<div class="row1">' +
-          '<span class="p-i ' + escapeHtml(ins.severity || 'tip') + '">' + escapeHtml(ins.severityLabel || (ins.severity === 'urgent' ? '緊急' : ins.severity === 'success' ? '機會' : '建議')) + '</span>' +
-          '<span class="ago">' + escapeHtml(ins.ago || '剛剛') + '</span>' +
+          '<span class="p-i ' + escapeHtml(ins.severity || 'tip') + '">' + escapeHtml(ins.severityLabel || (ins.severity === 'urgent' ? window.L('adIdxInsightUrgent') : ins.severity === 'success' ? window.L('adIdxInsightSuccess') : window.L('adIdxInsightTip'))) + '</span>' +
+          '<span class="ago">' + escapeHtml(ins.ago || window.L('adIdxInsightAgoNow')) + '</span>' +
         '</div>' +
         '<h6>' + escapeHtml(ins.title) + '</h6>' +
         '<p>' + escapeHtml(ins.body) + '</p>' +
@@ -678,15 +680,15 @@
 
   function renderTodos(data) {
     var todos = (data && data.todos) || [];
-    document.getElementById('todoCount').textContent = todos.length + ' 項';
+    document.getElementById('todoCount').textContent = todos.length + window.L('adIdxUnitItems');
     if (todos.length === 0) {
-      document.getElementById('todoList').innerHTML = '<div class="empty-c" style="padding:30px 20px; background:transparent; border:0"><div class="ic" style="width:48px;height:48px;font-size:22px">✓</div><h3 style="font-size:16px">沒有待辦事項</h3><p style="font-size:13px">所有事情都處理完了，好棒！</p></div>';
+      document.getElementById('todoList').innerHTML = '<div class="empty-c" style="padding:30px 20px; background:transparent; border:0"><div class="ic" style="width:48px;height:48px;font-size:22px">✓</div><h3 style="font-size:16px">' + window.L('adIdxNoTodoTitle') + '</h3><p style="font-size:13px">' + window.L('adIdxNoTodoSub') + '</p></div>';
       return;
     }
     document.getElementById('todoList').innerHTML = todos.map(function (t) {
       var pri = t.priority || 'low';
-      var priLabel = pri === 'high' ? '高' : pri === 'med' ? '中' : '低';
-      var linkHtml = t.link ? '<a href="' + escapeHtml(t.link) + '" style="font:500 11px/1 var(--f-mono)">查看 →</a>' : '';
+      var priLabel = pri === 'high' ? window.L('adIdxPriHigh') : pri === 'med' ? window.L('adIdxPriMed') : window.L('adIdxPriLow');
+      var linkHtml = t.link ? '<a href="' + escapeHtml(t.link) + '" style="font:500 11px/1 var(--f-mono)">' + window.L('adIdxTodoView') + '</a>' : '';
       return '<div class="todo-it">' +
         '<div class="ck-t" onclick="this.classList.toggle(\'checked\'); this.closest(\'.todo-it\').classList.toggle(\'done\')"></div>' +
         '<div class="body-t"><h6>' + escapeHtml(t.title) + '</h6><p>' + escapeHtml(t.body || '') + ' ' + linkHtml + '</p></div>' +
