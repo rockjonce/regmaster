@@ -798,18 +798,20 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       var fb = ov.querySelector('#mForgotBox');
       if (fb.dataset.open) { fb.dataset.open = ''; fb.innerHTML = ''; return; }
       fb.dataset.open = '1';
+      var preTeam = (ov.querySelector('#mTeam') && ov.querySelector('#mTeam').value.trim()) || '';
       fb.innerHTML = '<div style="margin-top:8px;padding:12px;border:1px dashed var(--line);border-radius:9px">' +
-        '<p style="font:400 12px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:8px">輸入報名時填寫的 Email，系統會把報名編號與密碼重新寄給您。</p>' +
-        '<input id="fgEmail" type="email" placeholder="報名時的 Email" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
-        '<button id="fgGo" class="btn btn-ghost btn-block" style="margin-top:8px">寄出登入資訊</button>' +
+        '<p style="font:400 12px/1.6 var(--f-tc);color:var(--ink-3);margin-bottom:8px">輸入<b>報名編號</b>，系統會將「密碼重設連結」寄到報名時填寫的 Email；點擊連結即可自行設定新密碼（連結 60 分鐘內有效）。</p>' +
+        '<input id="fgTeam" placeholder="報名編號（例 ' + escapeHtml(compId) + '-T...）" value="' + escapeHtml(preTeam) + '" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:400 13px/1.4 var(--f-tc)">' +
+        '<button id="fgGo" class="btn btn-ghost btn-block" style="margin-top:8px">寄出密碼重設連結</button>' +
         '<div id="fgMsg" style="font:500 12px/1.5 var(--f-tc);margin-top:6px"></div></div>';
       fb.querySelector('#fgGo').addEventListener('click', function () {
-        var em = fb.querySelector('#fgEmail').value.trim(), msg = fb.querySelector('#fgMsg');
-        if (!em) { msg.style.color = 'var(--err-700)'; msg.textContent = '請輸入 Email'; return; }
+        var tid = fb.querySelector('#fgTeam').value.trim().toUpperCase(), msg = fb.querySelector('#fgMsg');
+        if (!tid) { msg.style.color = 'var(--err-700)'; msg.textContent = '請輸入報名編號'; return; }
         this.disabled = true; msg.style.color = 'var(--ink-3)'; msg.textContent = '寄送中⋯';
+        var self = this;
         google.script.run.withSuccessHandler(function (res) {
-          msg.style.color = 'var(--ok-700,#047857)'; msg.textContent = (res && res.message) || '已寄出，請查收信箱。';
-        }).withFailureHandler(function (e) { msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || '寄送失敗'; }).recoverTeamPassword(compId, em);
+          msg.style.color = 'var(--ok-700,#047857)'; msg.textContent = (res && res.message) || '若此報名編號存在，重設連結已寄出，請查收信箱。';
+        }).withFailureHandler(function (e) { self.disabled = false; msg.style.color = 'var(--err-700)'; msg.textContent = (e && e.message) || '寄送失敗'; }).requestTeamPasswordReset(tid);
       });
     });
     var tEl = ov.querySelector('#mTeam'), pEl = ov.querySelector('#mPwd'), err = ov.querySelector('#mErr');

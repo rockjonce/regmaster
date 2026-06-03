@@ -1892,6 +1892,89 @@ exports.recoverTeamPassword = callable(async (data) => {
   return generic;
 });
 
+// ===== 報名者隊伍密碼：以「報名編號」申請一次性重設連結（取代明碼重寄）=====
+// 安全考量：一律回傳通用訊息，不洩漏報名編號是否存在；token 一次性、60 分鐘到期。
+exports.requestTeamPasswordReset = callable(async (data) => {
+  const teamId = String((data && data.teamId) || "").trim().toUpperCase();
+  const generic = { success: true, message: "若此報名編號存在，密碼重設連結已寄至報名時填寫的 Email，請查收（含垃圾郵件匣）。" };
+  if (!teamId) return generic;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists) return generic;
+  const t = tDoc.data();
+  if (t.status === "已取消") return generic;
+  const compId = t.compId;
+  // 收集此報名的 Email（報名時填於成員資料）
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e && String(e).trim()))];
+  if (!emails.length) return generic;
+  // 活動名稱
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
+  // 失效任何此報名先前未使用的 token，避免堆積
+  const oldSnap = await db.collection("teamPwdResets").where("teamId", "==", teamId).where("used", "==", false).get();
+  const batch = db.batch();
+  oldSnap.docs.forEach(d => batch.update(d.ref, { used: true, invalidatedAt: fmtNow() }));
+  if (oldSnap.size) await batch.commit();
+  // 建立新 token（64 hex 字元）
+  const token = generateSessionToken();
+  await db.collection("teamPwdResets").doc(token).set({
+    teamId, compId, used: false,
+    expiresAt: Date.now() + 60 * 60 * 1000,
+    createdAt: fmtNow()
+  });
+  const link = EMAIL_HOST + "/reset-team.html?token=" + token;
+  const html = emailWrap("重設您的報名密碼", `
+    <p>您（或他人）為活動「<b>${escMail(compName)}</b>」中報名編號 <b>${escMail(teamId)}</b> 申請了密碼重設。</p>
+    <p>請點擊以下按鈕設定新密碼，連結將於 <b>60 分鐘</b>後失效：</p>
+    <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:22px auto"><tr>
+      <td style="background-color:#0A437A;padding:13px 28px;border-radius:8px;text-align:center">
+        <a href="${link}" target="_blank" style="color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;font-family:'Segoe UI',Arial,sans-serif">設定新密碼</a>
+      </td>
+    </tr></table>
+    <p style="font-size:12px;color:#94a3b8;word-break:break-all">若按鈕無法點擊，請複製此連結至瀏覽器開啟：<br>${link}</p>
+    <p style="font-size:13px;color:#64748b;margin-top:16px">若您並未提出此申請，可忽略本信，您的密碼不會被變更。</p>`);
+  await queueMail(emails, "[RegMaster] 報名密碼重設連結 — " + compName, html);
+  return generic;
+});
+
+// 驗證重設 token（供 reset-team.html 載入時判斷連結是否有效）
+exports.verifyTeamResetToken = callable(async (data) => {
+  const token = String((data && data.token) || "").trim();
+  if (!token) return { valid: false, message: "連結無效" };
+  const doc = await db.collection("teamPwdResets").doc(token).get();
+  if (!doc.exists) return { valid: false, message: "連結無效或不存在" };
+  const r = doc.data();
+  if (r.used) return { valid: false, message: "此連結已使用過，請重新申請" };
+  if (!r.expiresAt || r.expiresAt < Date.now()) return { valid: false, message: "連結已過期，請重新申請" };
+  return { valid: true, teamId: r.teamId };
+});
+
+// 以 token 設定新密碼（一次性消耗）
+exports.resetTeamPassword = callable(async (data) => {
+  const token = String((data && data.token) || "").trim();
+  const newPassword = String((data && data.newPassword) || "");
+  if (!token) return { success: false, message: "連結無效" };
+  if (newPassword.length < 6 || newPassword.length > 30) return { success: false, message: "密碼長度須為 6–30 字元" };
+  if (/\s/.test(newPassword)) return { success: false, message: "密碼不可包含空白字元" };
+  const ref = db.collection("teamPwdResets").doc(token);
+  const result = await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return { success: false, message: "連結無效或不存在" };
+    const r = doc.data();
+    if (r.used) return { success: false, message: "此連結已使用過，請重新申請" };
+    if (!r.expiresAt || r.expiresAt < Date.now()) return { success: false, message: "連結已過期，請重新申請" };
+    const teamRef = db.collection("teams").doc(r.teamId);
+    const tDoc = await tx.get(teamRef);
+    if (!tDoc.exists) return { success: false, message: "找不到此報名" };
+    tx.update(teamRef, { password: newPassword });
+    tx.update(ref, { used: true, usedAt: fmtNow() });
+    return { success: true, teamId: r.teamId, compId: r.compId };
+  });
+  if (result.success) await auditLog("", "重設隊伍密碼", result.teamId, "via reset-link");
+  if (result.success) return { success: true, message: "密碼已更新，請使用新密碼登入。", teamId: result.teamId, compId: result.compId };
+  return result;
+});
+
 // ===== 退款機制（主辦方全責；平台不經手金流，只做流程/試算/註記/釋名額）=====
 // 法定下限：主辦方設定的退費% 不得低於下列下限（可更優待，不可更苛）。
 const REFUND_TEMPLATES = {
