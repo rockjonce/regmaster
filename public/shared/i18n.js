@@ -69,10 +69,245 @@
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // v3 public-site dictionary (merged into the legacy dict above).
+  // Keys are page-scoped by prefix. Values for inline-markup nodes are stored as
+  // HTML and applied via [data-i18n-html]. Style: natural, fluent marketing EN.
+  // ---------------------------------------------------------------------------
+  var ADD = {
+    zh: {
+      // ----- shared nav -----
+      brandName: 'RegMaster', navExplore: '探索活動', navPricing: '方案', navFeatures: '功能',
+      navAbout: '關於', navContact: '聯絡', navMy: '我的報名', navLogin: '主辦方登入', navTrial: '免費開始',
+      // ----- shared footer -----
+      ftTagline: '為認真辦活動的人，打造的線上報名系統。', ftColProduct: '產品', ftColCompany: '公司', ftColSupport: '支援',
+      ftFeatures: '功能', ftPricing: '方案定價', ftExplore: '探索活動', ftAbout: '關於我們', ftPrivacy: '隱私權政策',
+      ftTerms: '服務條款', ftManual: '說明文件', ftContact: '聯絡我們', ftSupport: '客戶支援',
+      ftCopyright: '© 2026 RegMaster · 廣天國際有限公司', ftCompliance: 'SSL 加密傳輸 · 個資法合規',
+      // ----- hero -----
+      heroBadge: 'v3 · AI 智慧助理已上線',
+      heroTitleFull: '<span class="tc">為認真辦活動的人</span><br>打造的 <em>報名系統</em>。',
+      heroLead: 'RegMaster 是一套讓主辦方在 10 分鐘內就能上線的線上報名平台。從表單設計、報名審核、金流串接，到證書產生、即時統計 —— 一個後台搞定。',
+      ctaFreeStart: '免費開始 →', ctaSeeFeatures: '看產品功能', ctaTrialMeta: '無需信用卡 · <b>Free</b> 終生免費',
+      statEvents: '場次成功舉辦', statRegs: '累積報名人次', statMinUnit: '分鐘', statLaunch: '活動上線時間', statSla: '系統 SLA 可用性',
+      // ----- logos -----
+      logosLabel: '適用於各類主辦單位', lgUni: '大專院校', lgGov: '政府機關', lgAssoc: '公協會',
+      lgResearch: '研究機構', lgCorp: '企業內訓', lgCamp: '補教與營隊',
+      // ----- bento -----
+      bentoH2: '把所有麻煩，<br>都交給 RegMaster。',
+      bentoSub: '無論你辦的是程式競賽、夏令營，還是大型研討會 —— RegMaster 都把報名 → 收款 → 名單 → 證書串成一條暢通的流水線。',
+      bentoAiH3: 'AI 助理為你回答報名者問題',
+      bentoAiP: '內建 GPT-4 級的智慧助理，自動讀懂活動規則並回應報名者。深夜的問題也能秒回，主辦方睡得更安穩。',
+      chatU1: '▸ 我是高三學生可以報名嗎？', chatA1: '本活動年齡限制為 18 歲以上，但有開放「青少年組」歡迎報名！',
+      chatU2: '▸ 比賽當天交通方式？', chatA2: '建議搭乘捷運至忠孝復興站 2 號出口...',
+      bentoFormH3: '拖放式表單設計器', bentoFormP: '16 種欄位類型 · 條件邏輯 · 多階段 · 中英雙語',
+      formName: '姓名', formSchool: '學校 / 機構', formDiet: '飲食習慣',
+      bentoStatH3: '即時統計儀表板', bentoStatP: '報名趨勢、組別分布、來源追蹤 —— 不再等到結束才知道發生什麼事。',
+      bentoPayH3: '金流串接', bentoPayP: '信用卡、ATM、超商代碼、LINE Pay —— 一鍵啟用。',
+      bentoEmailH3: '批次 Email / 證書', bentoEmailP: '變數套版、AI 擬稿，500 封一次寄。',
+      bentoQrH3: 'QR Code 報到', bentoQrP: '手機掃一下，到場狀態自動同步。',
+      // ----- dashboard mock -----
+      dbMenu: '主選單', dbDashboard: '儀表板', dbMyEvents: '我的活動', dbRegList: '報名名單', dbCreate: '建立活動',
+      dbTools: '工具', dbRecon: '金流對帳', dbCert: '證書 / 名牌', dbAI: 'AI 助理',
+      dbEventName: '春季校園程式競賽 2026', dbOpen: '報名中', dbExport: '匯出 CSV',
+      dbKpi1: '總報名數', dbKpi2: '已收費', dbKpi3: '已審核', dbKpi4: '轉換率',
+      dbToday: '↑ 18 今日', dbWeek: '+ $36k 今週', dbReviewed: '90%', dbConv: '↓ 3% 上週',
+      dbTrend: '報名趨勢', db7: '7天', db30: '30天', db90: '90天',
+      // ----- how it works -----
+      howH2: '三步上線。<br>一晚搞定。',
+      step1Num: '01 / 設定', step1H3: '選擇模板，填好基本資料',
+      step1P: '競賽、夏令營、研討會、售票 —— 我們有 9 種預設模板，自動帶入欄位、收費方案、Email 範本。',
+      step2Num: '02 / 公開', step2H3: '分享你的活動連結',
+      step2P: '每場活動都有獨立網址。內建 SEO meta、社群預覽圖，直接分享到 LINE、FB、Email 都漂亮。',
+      step3Num: '03 / 收件', step3H3: '名單 / 收款 / 報到全自動',
+      step3P: '報名一筆進來，立刻收到 LINE 通知。導出 CSV、產證書、QR 報到 —— 全部不用 Excel。',
+      // ----- use cases -----
+      usesH2: '每種活動<br>都有適合的姿勢。',
+      useCodeH4: '校園 / 程式競賽', useCodeP: '多階段賽制、組別管理、即時計分 —— 從黑客松到高中程式賽都能 cover。',
+      useCodeQ: '「過去用表單工具收 200 人累慘，改用系統化流程後幾分鐘就搞定。」<br>— 某科技大學 競賽承辦',
+      useCampH4: '夏令營 / 冬令營', useCampP: '梯次選擇、住宿分房、家長同意書、緊急聯絡人 —— 一次 cover 兒童活動的所有合規。',
+      useCampQ: '「家長同意書、退費條款都自動套好，省了半個行政人力。」<br>— 自然探索營',
+      useEventH4: '企業 / 研討會', useEventP: '多票種、早鳥優惠、發票寄送、出席證明 —— 從研討會到員工旅遊都搞得定。',
+      useEventQ: '「年度春酒 2,800 人報名零失誤，財務對帳順順利利。」<br>— 某 IC 設計公司',
+      useGovH4: '政府 / 協會徵件', useGovP: '身分驗證、檔案上傳、評審分配、公文寄送 —— 公部門級的合規流程。',
+      useGovQ: '「公開賽件 1,400 件投稿，評審排程、結果公告全自動。」<br>— 某縣政府文化局',
+      // ----- pricing teaser -----
+      ptH2: '從免費開始，<br>用得越多越划算。',
+      ptSub: '透明定價、免費版也能收費（每筆 5% 手續費）。價格與功能以實際方案設定為準，<a href="/pricing.html" style="color:inherit;text-decoration:underline">看完整比較</a>。',
+      planFreeName: '免費版 Free', planFreeTag: '適合測試或只辦小型活動',
+      planStarterName: '入門版 Starter', planStarterTag: '適合單次活動、小型主辦方',
+      planProName: '專業版 Pro', planProTag: '學校 / 中型機構 · 完整功能',
+      planTeamName: '團隊版 Team', planTeamTag: '大型機構 · 政府單位',
+      priceForever: '/永久免費', priceYear: '/年', pfNoCard: '無需信用卡', pfNoTax: '未含稅', badgePopular: 'Most Popular',
+      feActive1: '<b>1</b> 個進行中活動', feReg60: '每活動 <b>60</b> 筆報名', feFee5: '金流手續費 <b>5%</b>', feOnlinePay: '線上金流收款',
+      feActive3: '<b>3</b> 個進行中活動', feReg300: '每活動 <b>300</b> 筆報名', feFee3: '金流手續費 <b>3%</b>',
+      feOnlineExport: '線上金流收款 · 匯出報表', feScoreQrAi: '評分 · QR 報到 · 活動 AI 助理',
+      feActive15: '<b>15</b> 個進行中活動', feReg1500: '每活動 <b>1,500</b> 筆報名', feFee2: '金流手續費 <b>2%</b>',
+      feScoreMulti: '評分 · 多評審評分 · 公告群發', feQrAiAdmin: 'QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理',
+      feActiveUnlim: '<b>無限</b> 進行中活動', feRegUnlim: '<b>無限</b> 報名名額', feFee1: '金流手續費 <b>1%</b>',
+      btnUseFree: '開始使用', btnUpStarter: '升級 Starter', btnUpPro: '升級 Pro →', btnChooseTeam: '選擇 Team →',
+      // ----- faq -----
+      faqH2: '常見問題',
+      faqQ1: 'RegMaster 跟 Google Form 有什麼不一樣？',
+      faqA1: 'Google Form 適合內部問卷，但無法收費、無法寄通知、無法做名單管理。RegMaster 是專門為「對外的活動報名」設計：金流串接、自動發信、即時統計、QR 報到、證書產生 —— 你需要的全套功能都在後台一個地方，不用串 5 個工具。',
+      faqQ2: '免費版真的能用來辦活動嗎？',
+      faqA2: '可以。免費版包含完整的表單設計、報名審核、Email 通知，甚至能收費（每筆收 5% 手續費）。如果你一年只辦 1–2 場小型活動，免費版完全夠用。',
+      faqQ3: '金流怎麼結算？多久撥款？',
+      faqA3: '我們串接 PayUni 與綠界，支援信用卡、ATM、超商代碼、LINE Pay。每筆款項在報名者付款後 T+7 天撥款至你綁定的銀行帳戶，所有交易都會開立電子發票寄給報名者。',
+      faqQ4: '可以遷移既有的報名資料嗎？',
+      faqA4: '可以。我們提供 CSV / Excel 匯入工具，並有專人協助大型遷移（500+ 筆）。你既有的 Google Form、Excel 名單、Typeform 都能無縫轉入 RegMaster。',
+      faqQ5: '資料安全嗎？符合個資法嗎？',
+      faqA5: '系統建置於 Google Cloud / Firebase，全程採 HTTPS（TLS）加密傳輸，並設有存取控制與權限管理。我們遵循個人資料保護法之規範處理資料；詳見<a href="/privacy.html">隱私權政策</a>。',
+      faqQ6: '可以開立統編發票嗎？',
+      faqA6: '可以。報名者可在表單上填寫統編，系統自動開立 B2B 三聯式發票，Pro 版以上還支援自動寄送 PDF 發票到報名者信箱。',
+      // ----- closing cta -----
+      ctaH2: '10 分鐘後，<br>你的活動就<em>上線了</em>。',
+      ctaLead: '不需要信用卡 · 不需要工程師 · 不需要客服打擾你。<br>用熱忱去辦活動，剩下的交給 RegMaster。',
+      ctaFree2: '免費開始 →', ctaExplore: '探索活動'
+    },
+    en: {
+      // ----- shared nav -----
+      brandName: 'RegMaster', navExplore: 'Explore', navPricing: 'Pricing', navFeatures: 'Features',
+      navAbout: 'About', navContact: 'Contact', navMy: 'My Registrations', navLogin: 'Organizer Login', navTrial: 'Start Free',
+      // ----- shared footer -----
+      ftTagline: 'The online registration platform built for people who take their events seriously.', ftColProduct: 'Product', ftColCompany: 'Company', ftColSupport: 'Support',
+      ftFeatures: 'Features', ftPricing: 'Pricing', ftExplore: 'Explore Events', ftAbout: 'About Us', ftPrivacy: 'Privacy Policy',
+      ftTerms: 'Terms of Service', ftManual: 'Documentation', ftContact: 'Contact Us', ftSupport: 'Customer Support',
+      ftCopyright: '© 2026 RegMaster · GuangTian International Co., Ltd.', ftCompliance: 'SSL encrypted · PDPA compliant',
+      // ----- hero -----
+      heroBadge: 'v3 · AI Assistant now live',
+      heroTitleFull: '<span class="tc">The registration system</span><br>built for <em>serious organizers</em>.',
+      heroLead: 'RegMaster is an online registration platform that gets your event live in 10 minutes. From form design, application review and payments to certificate generation and real-time analytics — it all runs from one dashboard.',
+      ctaFreeStart: 'Start free →', ctaSeeFeatures: 'See features', ctaTrialMeta: 'No credit card · <b>Free</b> forever',
+      statEvents: 'events run', statRegs: 'total registrations', statMinUnit: 'min', statLaunch: 'to launch an event', statSla: 'system SLA uptime',
+      // ----- logos -----
+      logosLabel: 'Trusted by organizers of every kind', lgUni: 'Universities', lgGov: 'Government', lgAssoc: 'Associations',
+      lgResearch: 'Research Institutes', lgCorp: 'Corporate Training', lgCamp: 'Tutoring & Camps',
+      // ----- bento -----
+      bentoH2: 'Leave all the hassle<br>to RegMaster.',
+      bentoSub: 'Whether you run a coding contest, a summer camp or a large conference, RegMaster turns registration → payment → roster → certificates into one seamless pipeline.',
+      bentoAiH3: 'An AI assistant that answers registrants for you',
+      bentoAiP: 'A built-in GPT-4-class assistant reads your event rules and replies to registrants automatically — even late-night questions get instant answers, so you can rest easy.',
+      chatU1: "▸ I'm a high-school senior — can I register?", chatA1: 'This event is for ages 18 and up, but we have a Youth Division — you\'re welcome to join!',
+      chatU2: '▸ How do I get there on event day?', chatA2: 'We recommend taking the MRT to Zhongxiao Fuxing Station, Exit 2...',
+      bentoFormH3: 'Drag-and-drop form builder', bentoFormP: '16 field types · conditional logic · multi-step · bilingual',
+      formName: 'Name', formSchool: 'School / Org', formDiet: 'Dietary',
+      bentoStatH3: 'Real-time analytics dashboard', bentoStatP: 'Registration trends, group breakdowns, source tracking — no more waiting until it\'s over to see what happened.',
+      bentoPayH3: 'Built-in payments', bentoPayP: 'Credit card, ATM, convenience-store code, LINE Pay — enable in one click.',
+      bentoEmailH3: 'Bulk email & certificates', bentoEmailP: 'Merge fields, AI-drafted copy, 500 sent in one go.',
+      bentoQrH3: 'QR code check-in', bentoQrP: 'One scan on a phone and attendance syncs automatically.',
+      // ----- dashboard mock -----
+      dbMenu: 'Menu', dbDashboard: 'Dashboard', dbMyEvents: 'My Events', dbRegList: 'Registrations', dbCreate: 'Create Event',
+      dbTools: 'Tools', dbRecon: 'Reconciliation', dbCert: 'Certificates', dbAI: 'AI Assistant',
+      dbEventName: 'Spring Campus Coding Contest 2026', dbOpen: 'Open', dbExport: 'Export CSV',
+      dbKpi1: 'Total', dbKpi2: 'Collected', dbKpi3: 'Reviewed', dbKpi4: 'Conversion',
+      dbToday: '↑ 18 today', dbWeek: '+ $36k this wk', dbReviewed: '90%', dbConv: '↓ 3% last wk',
+      dbTrend: 'Registration Trend', db7: '7d', db30: '30d', db90: '90d',
+      // ----- how it works -----
+      howH2: 'Three steps to live.<br>Done in one evening.',
+      step1Num: '01 / Set up', step1H3: 'Pick a template, fill in the basics',
+      step1P: 'Contests, camps, conferences, ticketing — nine ready-made templates auto-fill your fields, pricing plans and email templates.',
+      step2Num: '02 / Publish', step2H3: 'Share your event link',
+      step2P: 'Every event gets its own URL with built-in SEO meta and social preview images — it looks great shared on LINE, Facebook or email.',
+      step3Num: '03 / Collect', step3H3: 'Rosters, payments and check-in — all automatic',
+      step3P: 'The moment a registration comes in, you get a LINE notification. Export CSV, generate certificates, QR check-in — no Excel required.',
+      // ----- use cases -----
+      usesH2: 'Every kind of event,<br>handled the right way.',
+      useCodeH4: 'Campus & coding contests', useCodeP: 'Multi-stage formats, group management, live scoring — from hackathons to high-school coding contests, all covered.',
+      useCodeQ: '“Collecting 200 entries with a form tool used to be exhausting; with a proper workflow it now takes minutes.”<br>— Contest coordinator, a university of technology',
+      useCampH4: 'Summer & winter camps', useCampP: 'Session selection, room assignments, parental consent, emergency contacts — every compliance need for children\'s programs in one place.',
+      useCampQ: '“Consent forms and refund terms are filled in automatically — it saved us half an admin headcount.”<br>— Nature Discovery Camp',
+      useEventH4: 'Corporate & conferences', useEventP: 'Multiple ticket types, early-bird pricing, invoice delivery, attendance certificates — from conferences to company trips.',
+      useEventQ: '“2,800 sign-ups for our annual banquet with zero errors and smooth financial reconciliation.”<br>— An IC design company',
+      useGovH4: 'Government & open calls', useGovP: 'Identity verification, file uploads, reviewer assignment, official correspondence — public-sector-grade compliance.',
+      useGovQ: '“1,400 open-call submissions with fully automated review scheduling and results announcements.”<br>— A county cultural affairs bureau',
+      // ----- pricing teaser -----
+      ptH2: 'Start free,<br>better value the more you use it.',
+      ptSub: 'Transparent pricing — even the Free plan can collect payments (5% per transaction). Actual prices and features follow your plan settings; <a href="/pricing.html" style="color:inherit;text-decoration:underline">see the full comparison</a>.',
+      planFreeName: 'Free', planFreeTag: 'For testing or small one-off events',
+      planStarterName: 'Starter', planStarterTag: 'For single events and small organizers',
+      planProName: 'Pro', planProTag: 'Schools & mid-size orgs · full features',
+      planTeamName: 'Team', planTeamTag: 'Large organizations & government',
+      priceForever: '/forever free', priceYear: '/yr', pfNoCard: 'No credit card', pfNoTax: 'excl. tax', badgePopular: 'Most Popular',
+      feActive1: '<b>1</b> active event', feReg60: '<b>60</b> registrations per event', feFee5: '<b>5%</b> transaction fee', feOnlinePay: 'Online payment collection',
+      feActive3: '<b>3</b> active events', feReg300: '<b>300</b> registrations per event', feFee3: '<b>3%</b> transaction fee',
+      feOnlineExport: 'Online payments · report export', feScoreQrAi: 'Scoring · QR check-in · event AI assistant',
+      feActive15: '<b>15</b> active events', feReg1500: '<b>1,500</b> registrations per event', feFee2: '<b>2%</b> transaction fee',
+      feScoreMulti: 'Scoring · multi-judge scoring · broadcast notices', feQrAiAdmin: 'QR check-in · event AI · organizer-console AI',
+      feActiveUnlim: '<b>Unlimited</b> active events', feRegUnlim: '<b>Unlimited</b> registrations', feFee1: '<b>1%</b> transaction fee',
+      btnUseFree: 'Get started', btnUpStarter: 'Upgrade to Starter', btnUpPro: 'Upgrade to Pro →', btnChooseTeam: 'Choose Team →',
+      // ----- faq -----
+      faqH2: 'Frequently asked questions',
+      faqQ1: 'How is RegMaster different from Google Forms?',
+      faqA1: 'Google Forms is fine for internal surveys, but it can\'t collect payments, send notifications or manage rosters. RegMaster is purpose-built for public event registration: payment integration, automated emails, real-time analytics, QR check-in and certificate generation — everything you need in one console, instead of stitching together five different tools.',
+      faqQ2: 'Can the Free plan really run a real event?',
+      faqA2: 'Yes. The Free plan includes full form design, application review and email notifications — and it can even collect payments (5% per transaction). If you only run one or two small events a year, Free is more than enough.',
+      faqQ3: 'How are payments settled, and how soon are they paid out?',
+      faqA3: 'We integrate PayUni and ECPay, supporting credit card, ATM, convenience-store codes and LINE Pay. Each payment is paid out to your linked bank account T+7 days after the registrant pays, and every transaction issues an e-invoice to the registrant.',
+      faqQ4: 'Can I migrate my existing registration data?',
+      faqA4: 'Yes. We provide CSV / Excel import tools, with hands-on help for large migrations (500+ records). Your existing Google Forms, Excel rosters and Typeform data all transfer seamlessly into RegMaster.',
+      faqQ5: 'Is my data secure? Is it PDPA compliant?',
+      faqA5: 'The system runs on Google Cloud / Firebase with HTTPS (TLS) encryption end to end, plus access control and permission management. We handle data in line with Taiwan\'s Personal Data Protection Act; see our <a href="/privacy.html">Privacy Policy</a> for details.',
+      faqQ6: 'Can you issue invoices with a business tax ID?',
+      faqA6: 'Yes. Registrants can enter a business tax ID on the form and the system issues a B2B triplicate invoice automatically; Pro and above can even auto-send PDF invoices to the registrant\'s inbox.',
+      // ----- closing cta -----
+      ctaH2: 'In 10 minutes,<br>your event is <em>live</em>.',
+      ctaLead: 'No credit card · no engineers · no sales calls to bother you.<br>Bring the passion for your event; leave the rest to RegMaster.',
+      ctaFree2: 'Start free →', ctaExplore: 'Explore events'
+    }
+  };
+  Object.keys(ADD.zh).forEach(function (k) { if (!(k in window.I18N.zh)) window.I18N.zh[k] = ADD.zh[k]; });
+  Object.keys(ADD.en).forEach(function (k) { if (!(k in window.I18N.en)) window.I18N.en[k] = ADD.en[k]; });
+
   // Quick translate helper. Falls back: requested lang → zh → key itself.
   window.L = function (key, lang) {
     var L = lang || window.LANG || 'zh';
     var dict = window.I18N[L] || window.I18N.zh;
     return dict[key] || window.I18N.zh[key] || key;
   };
+
+  // ---------------------------------------------------------------------------
+  // Applier: walk the DOM and translate elements tagged with data-i18n*.
+  //   data-i18n           → textContent
+  //   data-i18n-html      → innerHTML (for nodes containing <br>/<em>/<b>/<a>)
+  //   data-i18n-placeholder → placeholder attribute
+  //   data-i18n-title     → title attribute
+  //   data-i18n-aria      → aria-label attribute
+  // Falls back to the element's existing content when a key is missing, so
+  // partially-tagged pages degrade gracefully.
+  // ---------------------------------------------------------------------------
+  function applyI18n(root) {
+    var lang = window.LANG || 'zh';
+    var scope = root || document;
+    function has(key) {
+      var d = window.I18N[lang] || window.I18N.zh;
+      return (key in d) || (key in window.I18N.zh);
+    }
+    scope.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n'); if (has(k)) el.textContent = window.L(k, lang);
+    });
+    scope.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n-html'); if (has(k)) el.innerHTML = window.L(k, lang);
+    });
+    scope.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n-placeholder'); if (has(k)) el.setAttribute('placeholder', window.L(k, lang));
+    });
+    scope.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n-title'); if (has(k)) el.setAttribute('title', window.L(k, lang));
+    });
+    scope.querySelectorAll('[data-i18n-aria]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n-aria'); if (has(k)) el.setAttribute('aria-label', window.L(k, lang));
+    });
+  }
+  window.applyI18n = applyI18n;
+
+  // Auto-wire: apply once the DOM is ready, and re-apply whenever language changes.
+  function boot() {
+    applyI18n();
+    if (window.AppState && typeof window.AppState.on === 'function') {
+      window.AppState.on('lang-changed', function () { applyI18n(); });
+    }
+  }
+  if (document.readyState !== 'loading') boot();
+  else document.addEventListener('DOMContentLoaded', boot);
 })();

@@ -324,7 +324,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
     <span data-i18n="brandName">RegMaster</span>
   </a>
   <div class="links">
-    <a href="/events/">探索活動</a>
+    <a href="/events/" data-i18n="navExplore">探索活動</a>
     <a href="/pricing.html" data-i18n="navPricing">方案</a>
     <a href="/features.html" data-i18n="navFeatures">功能</a>
     <a href="/about.html" data-i18n="navAbout">關於</a>
@@ -333,7 +333,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
   <div class="actions">
     <button class="theme-toggle" id="themeToggle" aria-label="切換明暗模式">🌗</button>
     <button class="theme-toggle" id="langToggle" aria-label="切換語言">中/EN</button>
-    <a href="/my.html" class="btn btn-quiet btn-sm">我的報名</a>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
     <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
     <a href="/signup.html?plan=free" class="btn btn-primary btn-sm" data-i18n="navTrial">免費開始</a>
   </div>
@@ -348,7 +348,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
       <span class="arrow">→</span>
     </div>
 
-    <h1 class="fade-up fade-up-2"><span class="tc" data-i18n="heroTitle1">為認真辦活動的人</span><br><span data-i18n="heroTitle2">打造的</span> <em data-i18n="heroTitle3">報名系統</em>。</h1>
+    <h1 class="fade-up fade-up-2" data-i18n-html="heroTitleFull"><span class="tc">為認真辦活動的人</span><br>打造的 <em>報名系統</em>。</h1>
 
     <p class="lead fade-up fade-up-3" data-i18n="heroLead">
       RegMaster 是一套讓主辦方在 10 分鐘內就能上線的線上報名平台。從表單設計、報名審核、金流串接，到證書產生、即時統計 —— 一個後台搞定。
@@ -357,7 +357,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
     <div class="cta-row fade-up fade-up-4">
       <a href="/signup.html?plan=free" class="btn btn-accent btn-lg" data-i18n="ctaFreeStart">免費開始 →</a>
       <a href="/features.html" class="btn btn-ghost btn-lg" data-i18n="ctaSeeFeatures">看產品功能</a>
-      <span class="meta" data-i18n="ctaTrialMeta">無需信用卡 · <b>Free</b> 終生免費</span>
+      <span class="meta" data-i18n-html="ctaTrialMeta">無需信用卡 · <b>Free</b> 終生免費</span>
     </div>
 
     <div class="hero-stats fade-up fade-up-5">
@@ -452,12 +452,12 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
   <div class="logos-inner">
     <div class="logos-label" data-i18n="logosLabel">適用於各類主辦單位</div>
     <div class="logos-grid">
-      <div class="lg-item">大專院校</div>
-      <div class="lg-item">政府機關</div>
-      <div class="lg-item">公協會</div>
-      <div class="lg-item">研究機構</div>
-      <div class="lg-item">企業內訓</div>
-      <div class="lg-item">補教與營隊</div>
+      <div class="lg-item" data-i18n="lgUni">大專院校</div>
+      <div class="lg-item" data-i18n="lgGov">政府機關</div>
+      <div class="lg-item" data-i18n="lgAssoc">公協會</div>
+      <div class="lg-item" data-i18n="lgResearch">研究機構</div>
+      <div class="lg-item" data-i18n="lgCorp">企業內訓</div>
+      <div class="lg-item" data-i18n="lgCamp">補教與營隊</div>
     </div>
   </div>
 </section>
@@ -466,7 +466,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <section>
   <div class="section-head">
     <div class="eyebrow">PRODUCT FEATURES</div>
-    <h2 data-i18n="bentoH2">把所有麻煩，<br>都交給 RegMaster。</h2>
+    <h2 data-i18n-html="bentoH2">把所有麻煩，<br>都交給 RegMaster。</h2>
     <p class="sub" data-i18n="bentoSub">無論你辦的是程式競賽、夏令營，還是大型研討會 —— RegMaster 都把報名 → 收款 → 名單 → 證書串成一條暢通的流水線。</p>
   </div>
   <div class="bento">
@@ -474,29 +474,29 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
       <div class="ic-tag" style="background:rgba(255,255,255,.08); color:var(--blue-300)">
         <svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>
       </div>
-      <h3>AI 助理為你回答報名者問題</h3>
-      <p>內建 GPT-4 級的智慧助理，自動讀懂活動規則並回應報名者。深夜的問題也能秒回，主辦方睡得更安穩。</p>
+      <h3 data-i18n="bentoAiH3">AI 助理為你回答報名者問題</h3>
+      <p data-i18n="bentoAiP">內建 GPT-4 級的智慧助理，自動讀懂活動規則並回應報名者。深夜的問題也能秒回，主辦方睡得更安穩。</p>
       <div class="chat">
-        <span class="msg-u">▸ 我是高三學生可以報名嗎？</span>
-        <span class="msg-a">本活動年齡限制為 18 歲以上，但有開放「青少年組」歡迎報名！</span>
-        <span class="msg-u">▸ 比賽當天交通方式？</span>
-        <span class="msg-a">建議搭乘捷運至忠孝復興站 2 號出口...</span>
+        <span class="msg-u" data-i18n="chatU1">▸ 我是高三學生可以報名嗎？</span>
+        <span class="msg-a" data-i18n="chatA1">本活動年齡限制為 18 歲以上，但有開放「青少年組」歡迎報名！</span>
+        <span class="msg-u" data-i18n="chatU2">▸ 比賽當天交通方式？</span>
+        <span class="msg-a" data-i18n="chatA2">建議搭乘捷運至忠孝復興站 2 號出口...</span>
       </div>
     </div>
     <div class="bento-cell size-3">
       <div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-      <h3>拖放式表單設計器</h3>
-      <p>16 種欄位類型 · 條件邏輯 · 多階段 · 中英雙語</p>
+      <h3 data-i18n="bentoFormH3">拖放式表單設計器</h3>
+      <p data-i18n="bentoFormP">16 種欄位類型 · 條件邏輯 · 多階段 · 中英雙語</p>
       <div class="bento-form-stack">
-        <div class="row"><span class="grip">⋮⋮</span><span class="name">姓名</span><span class="type">TEXT</span></div>
-        <div class="row dragging"><span class="grip">⋮⋮</span><span class="name">學校 / 機構</span><span class="type">SELECT</span></div>
-        <div class="row"><span class="grip">⋮⋮</span><span class="name">飲食習慣</span><span class="type">CHIPS</span></div>
+        <div class="row"><span class="grip">⋮⋮</span><span class="name" data-i18n="formName">姓名</span><span class="type">TEXT</span></div>
+        <div class="row dragging"><span class="grip">⋮⋮</span><span class="name" data-i18n="formSchool">學校 / 機構</span><span class="type">SELECT</span></div>
+        <div class="row"><span class="grip">⋮⋮</span><span class="name" data-i18n="formDiet">飲食習慣</span><span class="type">CHIPS</span></div>
       </div>
     </div>
     <div class="bento-cell size-3">
       <div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M3 12l3-3 4 4 7-7M14 6h7v7"/></svg></div>
-      <h3>即時統計儀表板</h3>
-      <p>報名趨勢、組別分布、來源追蹤 —— 不再等到結束才知道發生什麼事。</p>
+      <h3 data-i18n="bentoStatH3">即時統計儀表板</h3>
+      <p data-i18n="bentoStatP">報名趨勢、組別分布、來源追蹤 —— 不再等到結束才知道發生什麼事。</p>
       <svg viewBox="0 0 280 80" style="margin-top:auto; width:100%;">
         <rect x="0" y="50" width="20" height="30" rx="3" fill="var(--blue-100)"/>
         <rect x="28" y="40" width="20" height="40" rx="3" fill="var(--blue-300)"/>
@@ -512,18 +512,18 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
     </div>
     <div class="bento-cell size-2">
       <div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg></div>
-      <h3>金流串接</h3>
-      <p>信用卡、ATM、超商代碼、LINE Pay —— 一鍵啟用。</p>
+      <h3 data-i18n="bentoPayH3">金流串接</h3>
+      <p data-i18n="bentoPayP">信用卡、ATM、超商代碼、LINE Pay —— 一鍵啟用。</p>
     </div>
     <div class="bento-cell size-2">
       <div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-      <h3>批次 Email / 證書</h3>
-      <p>變數套版、AI 擬稿，500 封一次寄。</p>
+      <h3 data-i18n="bentoEmailH3">批次 Email / 證書</h3>
+      <p data-i18n="bentoEmailP">變數套版、AI 擬稿，500 封一次寄。</p>
     </div>
     <div class="bento-cell size-2 dark">
       <div class="ic-tag"><svg data-hero viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></div>
-      <h3>QR Code 報到</h3>
-      <p>手機掃一下，到場狀態自動同步。</p>
+      <h3 data-i18n="bentoQrH3">QR Code 報到</h3>
+      <p data-i18n="bentoQrP">手機掃一下，到場狀態自動同步。</p>
     </div>
   </div>
 </section>
@@ -532,13 +532,13 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <section>
   <div class="section-head">
     <div class="eyebrow">HOW IT WORKS</div>
-    <h2>三步上線。<br>一晚搞定。</h2>
+    <h2 data-i18n-html="howH2">三步上線。<br>一晚搞定。</h2>
   </div>
   <div class="steps">
     <div class="step">
-      <div class="num">01 / 設定</div>
-      <h3>選擇模板，填好基本資料</h3>
-      <p>競賽、夏令營、研討會、售票 —— 我們有 9 種預設模板，自動帶入欄位、收費方案、Email 範本。</p>
+      <div class="num" data-i18n="step1Num">01 / 設定</div>
+      <h3 data-i18n="step1H3">選擇模板，填好基本資料</h3>
+      <p data-i18n="step1P">競賽、夏令營、研討會、售票 —— 我們有 9 種預設模板，自動帶入欄位、收費方案、Email 範本。</p>
       <div class="visual">
         <svg viewBox="0 0 200 100" width="200" height="100">
           <rect x="20" y="20" width="50" height="60" rx="6" fill="var(--blue-100)" stroke="var(--acc)" stroke-width="1.5"/>
@@ -549,15 +549,15 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
       </div>
     </div>
     <div class="step">
-      <div class="num">02 / 公開</div>
-      <h3>分享你的活動連結</h3>
-      <p>每場活動都有獨立網址。內建 SEO meta、社群預覽圖，直接分享到 LINE、FB、Email 都漂亮。</p>
+      <div class="num" data-i18n="step2Num">02 / 公開</div>
+      <h3 data-i18n="step2H3">分享你的活動連結</h3>
+      <p data-i18n="step2P">每場活動都有獨立網址。內建 SEO meta、社群預覽圖，直接分享到 LINE、FB、Email 都漂亮。</p>
       <div class="visual" style="font-family:var(--f-mono); font-size:11px;">regmaster-v3.web.app/events</div>
     </div>
     <div class="step">
-      <div class="num">03 / 收件</div>
-      <h3>名單 / 收款 / 報到全自動</h3>
-      <p>報名一筆進來，立刻收到 LINE 通知。導出 CSV、產證書、QR 報到 —— 全部不用 Excel。</p>
+      <div class="num" data-i18n="step3Num">03 / 收件</div>
+      <h3 data-i18n="step3H3">名單 / 收款 / 報到全自動</h3>
+      <p data-i18n="step3P">報名一筆進來，立刻收到 LINE 通知。導出 CSV、產證書、QR 報到 —— 全部不用 Excel。</p>
       <div class="visual">
         <svg viewBox="0 0 200 100" width="200" height="100">
           <circle cx="100" cy="50" r="20" fill="var(--ok-500)" opacity=".15"/>
@@ -574,40 +574,40 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <section>
   <div class="section-head">
     <div class="eyebrow">USE CASES</div>
-    <h2>每種活動<br>都有適合的姿勢。</h2>
+    <h2 data-i18n-html="usesH2">每種活動<br>都有適合的姿勢。</h2>
   </div>
   <div class="uses">
     <div class="use">
       <div class="pic" style="background:linear-gradient(135deg,#0E1C42,#3D6BFF);">
         <div style="position:absolute;inset:auto 16px 16px;color:rgba(255,255,255,.9);font:700 24px/1 var(--f-display);letter-spacing:-.02em">{ } CODE</div>
       </div>
-      <h4>校園 / 程式競賽</h4>
-      <p>多階段賽制、組別管理、即時計分 —— 從黑客松到高中程式賽都能 cover。</p>
-      <div class="quote">「過去用表單工具收 200 人累慘，改用系統化流程後幾分鐘就搞定。」<br>— 某科技大學 競賽承辦</div>
+      <h4 data-i18n="useCodeH4">校園 / 程式競賽</h4>
+      <p data-i18n="useCodeP">多階段賽制、組別管理、即時計分 —— 從黑客松到高中程式賽都能 cover。</p>
+      <div class="quote" data-i18n-html="useCodeQ">「過去用表單工具收 200 人累慘，改用系統化流程後幾分鐘就搞定。」<br>— 某科技大學 競賽承辦</div>
     </div>
     <div class="use">
       <div class="pic" style="background:linear-gradient(135deg,#EA580C,#FDBA74);">
         <div style="position:absolute;inset:auto 16px 16px;color:rgba(255,255,255,.95);font:700 24px/1 var(--f-display);letter-spacing:-.02em">CAMP</div>
       </div>
-      <h4>夏令營 / 冬令營</h4>
-      <p>梯次選擇、住宿分房、家長同意書、緊急聯絡人 —— 一次 cover 兒童活動的所有合規。</p>
-      <div class="quote">「家長同意書、退費條款都自動套好，省了半個行政人力。」<br>— 自然探索營</div>
+      <h4 data-i18n="useCampH4">夏令營 / 冬令營</h4>
+      <p data-i18n="useCampP">梯次選擇、住宿分房、家長同意書、緊急聯絡人 —— 一次 cover 兒童活動的所有合規。</p>
+      <div class="quote" data-i18n-html="useCampQ">「家長同意書、退費條款都自動套好，省了半個行政人力。」<br>— 自然探索營</div>
     </div>
     <div class="use">
       <div class="pic" style="background:linear-gradient(135deg,#10B981,#6EE7B7);">
         <div style="position:absolute;inset:auto 16px 16px;color:rgba(255,255,255,.95);font:700 24px/1 var(--f-display);letter-spacing:-.02em">EVENT</div>
       </div>
-      <h4>企業 / 研討會</h4>
-      <p>多票種、早鳥優惠、發票寄送、出席證明 —— 從研討會到員工旅遊都搞得定。</p>
-      <div class="quote">「年度春酒 2,800 人報名零失誤，財務對帳順順利利。」<br>— 某 IC 設計公司</div>
+      <h4 data-i18n="useEventH4">企業 / 研討會</h4>
+      <p data-i18n="useEventP">多票種、早鳥優惠、發票寄送、出席證明 —— 從研討會到員工旅遊都搞得定。</p>
+      <div class="quote" data-i18n-html="useEventQ">「年度春酒 2,800 人報名零失誤，財務對帳順順利利。」<br>— 某 IC 設計公司</div>
     </div>
     <div class="use">
       <div class="pic" style="background:linear-gradient(135deg,#7C3AED,#C4B5FD);">
         <div style="position:absolute;inset:auto 16px 16px;color:rgba(255,255,255,.95);font:700 24px/1 var(--f-display);letter-spacing:-.02em">GOV</div>
       </div>
-      <h4>政府 / 協會徵件</h4>
-      <p>身分驗證、檔案上傳、評審分配、公文寄送 —— 公部門級的合規流程。</p>
-      <div class="quote">「公開賽件 1,400 件投稿，評審排程、結果公告全自動。」<br>— 某縣政府文化局</div>
+      <h4 data-i18n="useGovH4">政府 / 協會徵件</h4>
+      <p data-i18n="useGovP">身分驗證、檔案上傳、評審分配、公文寄送 —— 公部門級的合規流程。</p>
+      <div class="quote" data-i18n-html="useGovQ">「公開賽件 1,400 件投稿，評審排程、結果公告全自動。」<br>— 某縣政府文化局</div>
     </div>
   </div>
 </section>
@@ -616,68 +616,68 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <section>
   <div class="section-head">
     <div class="eyebrow">PRICING</div>
-    <h2>從免費開始，<br>用得越多越划算。</h2>
-    <p class="sub">透明定價、免費版也能收費（每筆 5% 手續費）。價格與功能以實際方案設定為準，<a href="/pricing.html" style="color:inherit;text-decoration:underline">看完整比較</a>。</p>
+    <h2 data-i18n-html="ptH2">從免費開始，<br>用得越多越划算。</h2>
+    <p class="sub" data-i18n-html="ptSub">透明定價、免費版也能收費（每筆 5% 手續費）。價格與功能以實際方案設定為準，<a href="/pricing.html" style="color:inherit;text-decoration:underline">看完整比較</a>。</p>
   </div>
   <!-- Hydrated from config/sales.plans via getPublicPlans(); static cards mirror defaults. -->
   <div class="pricing-grid" id="plansRow">
     <div class="plan">
-      <h3>免費版 Free</h3>
-      <p>適合測試或只辦小型活動</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">/永久免費</span></div>
-      <div class="price-foot">無需信用卡</div>
+      <h3 data-i18n="planFreeName">免費版 Free</h3>
+      <p data-i18n="planFreeTag">適合測試或只辦小型活動</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf" data-i18n="priceForever">/永久免費</span></div>
+      <div class="price-foot" data-i18n="pfNoCard">無需信用卡</div>
       <ul>
-        <li><b>1</b> 個進行中活動</li>
-        <li>每活動 <b>60</b> 筆報名</li>
-        <li>金流手續費 <b>5%</b></li>
-        <li>線上金流收款</li>
+        <li data-i18n-html="feActive1"><b>1</b> 個進行中活動</li>
+        <li data-i18n-html="feReg60">每活動 <b>60</b> 筆報名</li>
+        <li data-i18n-html="feFee5">金流手續費 <b>5%</b></li>
+        <li data-i18n="feOnlinePay">線上金流收款</li>
       </ul>
-      <a href="/signup.html?plan=free" class="btn btn-ghost btn-block">開始使用</a>
+      <a href="/signup.html?plan=free" class="btn btn-ghost btn-block" data-i18n="btnUseFree">開始使用</a>
     </div>
     <div class="plan">
-      <h3>入門版 Starter</h3>
-      <p>適合單次活動、小型主辦方</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num">4,990</span><span class="price-suf">/年</span></div>
-      <div class="price-foot">未含稅</div>
+      <h3 data-i18n="planStarterName">入門版 Starter</h3>
+      <p data-i18n="planStarterTag">適合單次活動、小型主辦方</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">4,990</span><span class="price-suf" data-i18n="priceYear">/年</span></div>
+      <div class="price-foot" data-i18n="pfNoTax">未含稅</div>
       <ul>
-        <li><b>3</b> 個進行中活動</li>
-        <li>每活動 <b>300</b> 筆報名</li>
-        <li>金流手續費 <b>3%</b></li>
-        <li>線上金流收款 · 匯出報表</li>
-        <li>評分 · QR 報到 · 活動 AI 助理</li>
+        <li data-i18n-html="feActive3"><b>3</b> 個進行中活動</li>
+        <li data-i18n-html="feReg300">每活動 <b>300</b> 筆報名</li>
+        <li data-i18n-html="feFee3">金流手續費 <b>3%</b></li>
+        <li data-i18n="feOnlineExport">線上金流收款 · 匯出報表</li>
+        <li data-i18n="feScoreQrAi">評分 · QR 報到 · 活動 AI 助理</li>
       </ul>
-      <a href="/signup.html?plan=starter" class="btn btn-ghost btn-block">升級 Starter</a>
+      <a href="/signup.html?plan=starter" class="btn btn-ghost btn-block" data-i18n="btnUpStarter">升級 Starter</a>
     </div>
     <div class="plan featured">
-      <span class="badge-feat">Most Popular</span>
-      <h3>專業版 Pro</h3>
-      <p>學校 / 中型機構 · 完整功能</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num">13,990</span><span class="price-suf">/年</span></div>
-      <div class="price-foot">未含稅</div>
+      <span class="badge-feat" data-i18n="badgePopular">Most Popular</span>
+      <h3 data-i18n="planProName">專業版 Pro</h3>
+      <p data-i18n="planProTag">學校 / 中型機構 · 完整功能</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">13,990</span><span class="price-suf" data-i18n="priceYear">/年</span></div>
+      <div class="price-foot" data-i18n="pfNoTax">未含稅</div>
       <ul>
-        <li><b>15</b> 個進行中活動</li>
-        <li>每活動 <b>1,500</b> 筆報名</li>
-        <li>金流手續費 <b>2%</b></li>
-        <li>線上金流收款 · 匯出報表</li>
-        <li>評分 · 多評審評分 · 公告群發</li>
-        <li>QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理</li>
+        <li data-i18n-html="feActive15"><b>15</b> 個進行中活動</li>
+        <li data-i18n-html="feReg1500">每活動 <b>1,500</b> 筆報名</li>
+        <li data-i18n-html="feFee2">金流手續費 <b>2%</b></li>
+        <li data-i18n="feOnlineExport">線上金流收款 · 匯出報表</li>
+        <li data-i18n="feScoreMulti">評分 · 多評審評分 · 公告群發</li>
+        <li data-i18n="feQrAiAdmin">QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理</li>
       </ul>
-      <a href="/signup.html?plan=pro" class="btn btn-accent btn-block">升級 Pro →</a>
+      <a href="/signup.html?plan=pro" class="btn btn-accent btn-block" data-i18n="btnUpPro">升級 Pro →</a>
     </div>
     <div class="plan">
-      <h3>團隊版 Team</h3>
-      <p>大型機構 · 政府單位</p>
-      <div class="price"><span class="price-cur">NT$</span><span class="price-num">39,900</span><span class="price-suf">/年</span></div>
-      <div class="price-foot">未含稅</div>
+      <h3 data-i18n="planTeamName">團隊版 Team</h3>
+      <p data-i18n="planTeamTag">大型機構 · 政府單位</p>
+      <div class="price"><span class="price-cur">NT$</span><span class="price-num">39,900</span><span class="price-suf" data-i18n="priceYear">/年</span></div>
+      <div class="price-foot" data-i18n="pfNoTax">未含稅</div>
       <ul>
-        <li><b>無限</b> 進行中活動</li>
-        <li><b>無限</b> 報名名額</li>
-        <li>金流手續費 <b>1%</b></li>
-        <li>線上金流收款 · 匯出報表</li>
-        <li>評分 · 多評審評分 · 公告群發</li>
-        <li>QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理</li>
+        <li data-i18n-html="feActiveUnlim"><b>無限</b> 進行中活動</li>
+        <li data-i18n-html="feRegUnlim"><b>無限</b> 報名名額</li>
+        <li data-i18n-html="feFee1">金流手續費 <b>1%</b></li>
+        <li data-i18n="feOnlineExport">線上金流收款 · 匯出報表</li>
+        <li data-i18n="feScoreMulti">評分 · 多評審評分 · 公告群發</li>
+        <li data-i18n="feQrAiAdmin">QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理</li>
       </ul>
-      <a href="/signup.html?plan=team" class="btn btn-ghost btn-block">選擇 Team →</a>
+      <a href="/signup.html?plan=team" class="btn btn-ghost btn-block" data-i18n="btnChooseTeam">選擇 Team →</a>
     </div>
   </div>
 </section>
@@ -686,32 +686,32 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <section>
   <div class="section-head">
     <div class="eyebrow">FAQ</div>
-    <h2>常見問題</h2>
+    <h2 data-i18n="faqH2">常見問題</h2>
   </div>
   <div class="faq-grid">
     <details class="faq-item" open>
-      <summary>RegMaster 跟 Google Form 有什麼不一樣？<span class="plus">+</span></summary>
-      <p>Google Form 適合內部問卷，但無法收費、無法寄通知、無法做名單管理。RegMaster 是專門為「對外的活動報名」設計：金流串接、自動發信、即時統計、QR 報到、證書產生 —— 你需要的全套功能都在後台一個地方，不用串 5 個工具。</p>
+      <summary><span data-i18n="faqQ1">RegMaster 跟 Google Form 有什麼不一樣？</span><span class="plus">+</span></summary>
+      <p data-i18n="faqA1">Google Form 適合內部問卷，但無法收費、無法寄通知、無法做名單管理。RegMaster 是專門為「對外的活動報名」設計：金流串接、自動發信、即時統計、QR 報到、證書產生 —— 你需要的全套功能都在後台一個地方，不用串 5 個工具。</p>
     </details>
     <details class="faq-item">
-      <summary>免費版真的能用來辦活動嗎？<span class="plus">+</span></summary>
-      <p>可以。免費版包含完整的表單設計、報名審核、Email 通知，甚至能收費（每筆收 5% 手續費）。如果你一年只辦 1–2 場小型活動，免費版完全夠用。</p>
+      <summary><span data-i18n="faqQ2">免費版真的能用來辦活動嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n="faqA2">可以。免費版包含完整的表單設計、報名審核、Email 通知，甚至能收費（每筆收 5% 手續費）。如果你一年只辦 1–2 場小型活動，免費版完全夠用。</p>
     </details>
     <details class="faq-item">
-      <summary>金流怎麼結算？多久撥款？<span class="plus">+</span></summary>
-      <p>我們串接 PayUni 與綠界，支援信用卡、ATM、超商代碼、LINE Pay。每筆款項在報名者付款後 T+7 天撥款至你綁定的銀行帳戶，所有交易都會開立電子發票寄給報名者。</p>
+      <summary><span data-i18n="faqQ3">金流怎麼結算？多久撥款？</span><span class="plus">+</span></summary>
+      <p data-i18n="faqA3">我們串接 PayUni 與綠界，支援信用卡、ATM、超商代碼、LINE Pay。每筆款項在報名者付款後 T+7 天撥款至你綁定的銀行帳戶，所有交易都會開立電子發票寄給報名者。</p>
     </details>
     <details class="faq-item">
-      <summary>可以遷移既有的報名資料嗎？<span class="plus">+</span></summary>
-      <p>可以。我們提供 CSV / Excel 匯入工具，並有專人協助大型遷移（500+ 筆）。你既有的 Google Form、Excel 名單、Typeform 都能無縫轉入 RegMaster。</p>
+      <summary><span data-i18n="faqQ4">可以遷移既有的報名資料嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n="faqA4">可以。我們提供 CSV / Excel 匯入工具，並有專人協助大型遷移（500+ 筆）。你既有的 Google Form、Excel 名單、Typeform 都能無縫轉入 RegMaster。</p>
     </details>
     <details class="faq-item">
-      <summary>資料安全嗎？符合個資法嗎？<span class="plus">+</span></summary>
-      <p>系統建置於 Google Cloud / Firebase，全程採 HTTPS（TLS）加密傳輸，並設有存取控制與權限管理。我們遵循個人資料保護法之規範處理資料；詳見<a href="/privacy.html">隱私權政策</a>。</p>
+      <summary><span data-i18n="faqQ5">資料安全嗎？符合個資法嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n-html="faqA5">系統建置於 Google Cloud / Firebase，全程採 HTTPS（TLS）加密傳輸，並設有存取控制與權限管理。我們遵循個人資料保護法之規範處理資料；詳見<a href="/privacy.html">隱私權政策</a>。</p>
     </details>
     <details class="faq-item">
-      <summary>可以開立統編發票嗎？<span class="plus">+</span></summary>
-      <p>可以。報名者可在表單上填寫統編，系統自動開立 B2B 三聯式發票，Pro 版以上還支援自動寄送 PDF 發票到報名者信箱。</p>
+      <summary><span data-i18n="faqQ6">可以開立統編發票嗎？</span><span class="plus">+</span></summary>
+      <p data-i18n="faqA6">可以。報名者可在表單上填寫統編，系統自動開立 B2B 三聯式發票，Pro 版以上還支援自動寄送 PDF 發票到報名者信箱。</p>
     </details>
   </div>
 </section>
@@ -719,11 +719,11 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <!-- ============ CTA ============ -->
 <section class="cta-section" style="border-bottom:0">
   <div class="inner">
-    <h2>10 分鐘後，<br>你的活動就<em>上線了</em>。</h2>
-    <p class="lead">不需要信用卡 · 不需要工程師 · 不需要客服打擾你。<br>用熱忱去辦活動，剩下的交給 RegMaster。</p>
+    <h2 data-i18n-html="ctaH2">10 分鐘後，<br>你的活動就<em>上線了</em>。</h2>
+    <p class="lead" data-i18n-html="ctaLead">不需要信用卡 · 不需要工程師 · 不需要客服打擾你。<br>用熱忱去辦活動，剩下的交給 RegMaster。</p>
     <div class="flex aic gap-3 jcc">
-      <a href="/signup.html?plan=free" class="btn btn-accent btn-lg">免費開始 →</a>
-      <a href="/events/" class="btn btn-ghost btn-lg">探索活動</a>
+      <a href="/signup.html?plan=free" class="btn btn-accent btn-lg" data-i18n="ctaFree2">免費開始 →</a>
+      <a href="/events/" class="btn btn-ghost btn-lg" data-i18n="ctaExplore">探索活動</a>
     </div>
   </div>
 </section>
@@ -737,34 +737,34 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
           <span style="width:28px;height:28px;border-radius:7px;overflow:hidden;display:inline-grid;place-items:center"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;display:block"></span>
           RegMaster
         </div>
-        <p>為認真辦活動的人，打造的線上報名系統。</p>
+        <p data-i18n="ftTagline">為認真辦活動的人，打造的線上報名系統。</p>
         <div style="display:flex;gap:10px;margin-top:20px">
           <span class="chip">繁體中文 / English</span>
           <span class="chip mono">v3.0</span>
         </div>
       </div>
       <div class="f-col">
-        <h5>產品</h5>
-        <a href="/features.html">功能</a>
-        <a href="/pricing.html">方案定價</a>
-        <a href="/events/">探索活動</a>
+        <h5 data-i18n="ftColProduct">產品</h5>
+        <a href="/features.html" data-i18n="ftFeatures">功能</a>
+        <a href="/pricing.html" data-i18n="ftPricing">方案定價</a>
+        <a href="/events/" data-i18n="ftExplore">探索活動</a>
       </div>
       <div class="f-col">
-        <h5>公司</h5>
-        <a href="/about.html">關於我們</a>
-        <a href="/privacy.html">隱私權政策</a>
-        <a href="/terms.html">服務條款</a>
+        <h5 data-i18n="ftColCompany">公司</h5>
+        <a href="/about.html" data-i18n="ftAbout">關於我們</a>
+        <a href="/privacy.html" data-i18n="ftPrivacy">隱私權政策</a>
+        <a href="/terms.html" data-i18n="ftTerms">服務條款</a>
       </div>
       <div class="f-col">
-        <h5>支援</h5>
-        <a href="/Manual.html">說明文件</a>
-        <a href="/contact.html">聯絡我們</a>
-        <a href="mailto:support@calculator.com.tw">客戶支援</a>
+        <h5 data-i18n="ftColSupport">支援</h5>
+        <a href="/Manual.html" data-i18n="ftManual">說明文件</a>
+        <a href="/contact.html" data-i18n="ftContact">聯絡我們</a>
+        <a href="mailto:support@calculator.com.tw" data-i18n="ftSupport">客戶支援</a>
       </div>
     </div>
     <div class="f-foot">
-      <span>© 2026 RegMaster · 廣天國際有限公司</span>
-      <span class="mono">SSL 加密傳輸 · 個資法合規</span>
+      <span data-i18n="ftCopyright">© 2026 RegMaster · 廣天國際有限公司</span>
+      <span class="mono" data-i18n="ftCompliance">SSL 加密傳輸 · 個資法合規</span>
     </div>
   </div>
 </footer>
@@ -808,6 +808,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 })();
 </script>
 <script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
 <script>
 (function () {
   // Initialize shared state (theme + lang + font size, with browser auto-detect)
@@ -827,10 +828,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
   if (langBtn) {
     langBtn.addEventListener('click', function () {
       var cur = AppState.getLang();
-      AppState.setLang(cur === 'en' ? 'zh' : 'en');
-      // Phase 1 doesn't yet implement full i18n on this page; reload to pick up new lang
-      // Once i18n.js is wired here we'll switch to a no-reload swap.
-      location.reload();
+      AppState.setLang(cur === 'en' ? 'zh' : 'en'); // i18n.js applies the swap live (no reload)
     });
   }
 })();
