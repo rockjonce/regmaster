@@ -112,7 +112,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
     <form class="field-stack" id="loginForm" autocomplete="on">
       <div>
         <label class="label" for="username">帳號</label>
-        <input class="input" id="username" name="username" type="text" autocomplete="username" required placeholder="您的帳號名稱">
+        <input class="input" id="username" name="username" type="text" autocomplete="username" required placeholder="您的帳號或 Email">
       </div>
       <div>
         <div class="flex jcb aic mb-2">
@@ -304,6 +304,21 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   var lineBtn = document.getElementById('lineBtn');
   if (lineBtn) lineBtn.addEventListener('click', function () { hideAlerts(); lineAuthRedirect('login'); });
 
+  // Full-screen processing overlay — avoids the "dead 5s" after a social popup succeeds.
+  var _ovl = null;
+  function showLoading(msg) {
+    if (!_ovl) {
+      _ovl = document.createElement('div');
+      _ovl.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(255,255,255,.8);display:grid;place-items:center;backdrop-filter:blur(2px)';
+      _ovl.innerHTML = '<div style="text-align:center"><div style="width:42px;height:42px;border:3px solid var(--line,#e2e8f0);border-top-color:var(--acc,#3d6bff);border-radius:50%;margin:0 auto 14px;animation:rmspin .8s linear infinite"></div><div id="_ovlMsg" style="font:600 14px/1.4 var(--f-tc);color:var(--ink-2,#475569)"></div></div>';
+      var st = document.createElement('style'); st.textContent = '@keyframes rmspin{to{transform:rotate(360deg)}}'; document.head.appendChild(st);
+      document.body.appendChild(_ovl);
+    }
+    _ovl.querySelector('#_ovlMsg').textContent = msg || '處理中⋯';
+    _ovl.style.display = 'grid';
+  }
+  function hideLoading() { if (_ovl) _ovl.style.display = 'none'; }
+
   // ---- Google Sign-In (Firebase Auth → app session) ----
   var googleBtn = document.getElementById('googleBtn');
   if (googleBtn) {
@@ -317,6 +332,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       function reset() { googleBtn.style.pointerEvents = 'auto'; googleBtn.style.opacity = '1'; }
 
       firebase.auth().signInWithPopup(provider).then(function (result) {
+        showLoading('Google 登入中，請稍候⋯');
         return result.user.getIdToken();
       }).then(function (idToken) {
         google.script.run
@@ -327,18 +343,18 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
               var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
               setTimeout(function () { location.href = nextUrl; }, 600);
             } else {
-              reset();
+              hideLoading(); reset();
               showErr(res && res.message ? res.message : 'Google 登入失敗');
               try { firebase.auth().signOut(); } catch (e) {}
             }
           })
           .withFailureHandler(function (err) {
-            reset();
+            hideLoading(); reset();
             showErr((err && err.message) || 'Google 登入失敗，請稍後再試');
           })
           .loginWithGoogle(idToken);
       }).catch(function (e) {
-        reset();
+        hideLoading(); reset();
         var code = (e && e.code) || '';
         if (code === 'auth/operation-not-allowed') {
           showErr('Google 登入尚未在後台啟用，請聯絡管理員');

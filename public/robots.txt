@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /pricing.html
+Allow: /features.html
+Allow: /about.html
+Allow: /contact.html
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /Manual.html
+Allow: /events/
+Disallow: /admin/
+Disallow: /legacy/
+Disallow: /login.html
+Disallow: /signup.html
+Disallow: /forgot.html
+Disallow: /my.html
+Disallow: /events/register.html
+Disallow: /events/payment.html
+
+Sitemap: https://regmaster-v3.web.app/sitemap.xml

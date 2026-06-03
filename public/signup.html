@@ -133,11 +133,11 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 
       <div class="alert-box err" id="errBox" style="display:none"></div>
 
-      <form class="field-stack" id="signupForm" autocomplete="on">
+      <form class="field-stack" id="signupForm" autocomplete="on" novalidate>
         <div class="row-2">
           <div>
             <label class="label" for="suUsername">帳號名稱</label>
-            <input class="input" id="suUsername" name="username" type="text" autocomplete="username" required placeholder="例：cs_chen" pattern="[a-zA-Z0-9_]{3,30}">
+            <input class="input" id="suUsername" name="username" type="text" autocomplete="username" required placeholder="例：cs_chen" pattern="[a-zA-Z0-9_]{3,30}" maxlength="30">
             <div class="help">3–30 字元，可用英數與底線</div>
           </div>
           <div>

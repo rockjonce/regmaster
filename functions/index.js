@@ -224,7 +224,7 @@ exports.loginAccount = callable(async (data) => {
   if (snap.empty) {
     snap = await db.collection("accounts").where("email", "==", key.toLowerCase()).limit(1).get();
   }
-  if (snap.empty) return { success: false, message: "帳號不存在" };
+  if (snap.empty) return { success: false, message: "帳號或密碼錯誤" };
   const doc = snap.docs[0];
   const acct = doc.data();
   // Check lock
@@ -266,7 +266,7 @@ exports.loginAccount = callable(async (data) => {
     });
   }
   if (fails >= 5) return { success: false, message: "連續錯誤" + fails + "次，鎖定15分鐘" };
-  return { success: false, message: "密碼錯誤（剩" + (5 - fails) + "次）" };
+  return { success: false, message: "帳號或密碼錯誤（剩" + (5 - fails) + "次）" };
 });
 
 // V3.1: Google Sign-In — exchange a Firebase ID token (from a Google popup) for
@@ -467,7 +467,7 @@ exports.loginVerifyTotp = callable(async (data) => {
   const key = (username || "").trim();
   let snap = await db.collection("accounts").where("username", "==", key).limit(1).get();
   if (snap.empty) snap = await db.collection("accounts").where("email", "==", key.toLowerCase()).limit(1).get();
-  if (snap.empty) return { success: false, message: "帳號不存在" };
+  if (snap.empty) return { success: false, message: "帳號或密碼錯誤" };
   const doc = snap.docs[0];
   const acct = doc.data();
   if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) return { success: false, message: "帳號鎖定中，請稍後再試" };
