@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>表單設計 · 主辦後台 · RegMaster</title>
+<title data-i18n="aeFormDocTitle">表單設計 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -179,134 +179,134 @@ body { background:var(--bg); overflow:hidden; }
 <div class="shell">
   <aside class="side-mini">
     <a class="logo" href="/admin/"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></a>
-    <a id="hubLink" title="活動總覽"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg></a>
-    <a id="editLink" title="活動設定"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></a>
-    <a class="on" title="表單設計"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></a>
+    <a id="hubLink" title="活動總覽" data-i18n-title="aeFormNavHub"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg></a>
+    <a id="editLink" title="活動設定" data-i18n-title="aeFormNavEdit"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></a>
+    <a class="on" title="表單設計" data-i18n-title="aeFormNavForm"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></a>
   </aside>
 
   <main>
     <div class="top-bar">
       <div class="crumb">
-        <a href="/admin/">主辦後台</a><span class="sep">/</span>
-        <a href="/admin/events/">活動</a><span class="sep">/</span>
+        <a href="/admin/" data-i18n="aeFormCrumbHome">主辦後台</a><span class="sep">/</span>
+        <a href="/admin/events/" data-i18n="aeFormCrumbEvents">活動</a><span class="sep">/</span>
         <a id="crumbHub">—</a><span class="sep">/</span>
-        <b>表單設計</b>
+        <b data-i18n="aeFormCrumbHere">表單設計</b>
       </div>
-      <div class="save-meta" id="saveMeta">尚未變更</div>
-      <button class="btn btn-ghost btn-sm" id="previewBtn">預覽 →</button>
-      <button class="btn btn-primary btn-sm" id="saveBtn" disabled>儲存</button>
+      <div class="save-meta" id="saveMeta" data-i18n="aeFormSaveMetaIdle">尚未變更</div>
+      <button class="btn btn-ghost btn-sm" id="previewBtn" data-i18n="aeFormPreviewBtn">預覽 →</button>
+      <button class="btn btn-primary btn-sm" id="saveBtn" disabled data-i18n="aeFormSaveBtn">儲存</button>
     </div>
 
-    <div id="loadingState" style="text-align:center; padding:80px 20px; color:var(--muted)">載入表單設計⋯</div>
+    <div id="loadingState" style="text-align:center; padding:80px 20px; color:var(--muted)" data-i18n="aeFormLoading">載入表單設計⋯</div>
 
     <div class="builder" id="builder" style="display:none">
       <!-- PALETTE -->
       <aside class="palette">
-        <h5>通用欄位</h5>
-        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 10px">主辦方可自由增加的欄位</p>
+        <h5 data-i18n="aeFormPaletteGeneralH">通用欄位</h5>
+        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 10px" data-i18n="aeFormPaletteGeneralSub">主辦方可自由增加的欄位</p>
         <div class="field-types">
-          <div class="ft-item b1" draggable="true" data-type="text"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg></div><h6>單行文字</h6><p>短文字</p></div>
-          <div class="ft-item b1" draggable="true" data-type="textarea"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h12"/></svg></div><h6>多行文字</h6><p>自我介紹</p></div>
-          <div class="ft-item b3" draggable="true" data-type="select"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg></div><h6>下拉選單</h6><p>多選一</p></div>
-          <div class="ft-item b3" draggable="true" data-type="radio"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><h6>單選</h6><p>視覺化</p></div>
-          <div class="ft-item b3" draggable="true" data-type="checkbox"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div><h6>複選</h6><p>多選</p></div>
-          <div class="ft-item b4" draggable="true" data-type="date"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6>日期</h6><p>生日 / 截止</p></div>
-          <div class="ft-item b4" draggable="true" data-type="number"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16"/></svg></div><h6>數字</h6><p>年齡 / 數量</p></div>
-          <div class="ft-item b2" draggable="true" data-type="file"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h6>上傳檔案</h6><p>附件 / 作品</p></div>
+          <div class="ft-item b1" draggable="true" data-type="text"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg></div><h6 data-i18n="aeFormFtText">單行文字</h6><p data-i18n="aeFormFtTextDesc">短文字</p></div>
+          <div class="ft-item b1" draggable="true" data-type="textarea"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h12"/></svg></div><h6 data-i18n="aeFormFtTextarea">多行文字</h6><p data-i18n="aeFormFtTextareaDesc">自我介紹</p></div>
+          <div class="ft-item b3" draggable="true" data-type="select"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg></div><h6 data-i18n="aeFormFtSelect">下拉選單</h6><p data-i18n="aeFormFtSelectDesc">多選一</p></div>
+          <div class="ft-item b3" draggable="true" data-type="radio"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><h6 data-i18n="aeFormFtRadio">單選</h6><p data-i18n="aeFormFtRadioDesc">視覺化</p></div>
+          <div class="ft-item b3" draggable="true" data-type="checkbox"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div><h6 data-i18n="aeFormFtCheckbox">複選</h6><p data-i18n="aeFormFtCheckboxDesc">多選</p></div>
+          <div class="ft-item b4" draggable="true" data-type="date"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6 data-i18n="aeFormFtDate">日期</h6><p data-i18n="aeFormFtDateDesc">生日 / 截止</p></div>
+          <div class="ft-item b4" draggable="true" data-type="number"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16"/></svg></div><h6 data-i18n="aeFormFtNumber">數字</h6><p data-i18n="aeFormFtNumberDesc">年齡 / 數量</p></div>
+          <div class="ft-item b2" draggable="true" data-type="file"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h6 data-i18n="aeFormFtFile">上傳檔案</h6><p data-i18n="aeFormFtFileDesc">附件 / 作品</p></div>
         </div>
 
-        <h5 style="margin-top:18px">特殊欄位</h5>
-        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 6px">內建驗證與選項的常用欄位 · 點分類標題展開/收合</p>
+        <h5 style="margin-top:18px" data-i18n="aeFormPaletteSpecialH">特殊欄位</h5>
+        <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 6px" data-i18n="aeFormPaletteSpecialSub">內建驗證與選項的常用欄位 · 點分類標題展開/收合</p>
         <div id="spAccordion">
           <div class="sp-group">
-            <div class="sp-head open">基本欄位 <span class="ct">7</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head open"><span data-i18n="aeFormCatBasic">基本欄位</span> <span class="ct">7</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body open">
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="salutation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6>尊稱</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6>中文姓名</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6>英文姓名</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="gender"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="10" cy="13" r="5"/><path d="M19 5l-5 5M15 5h4v4"/></svg></div><h6>性別</h6></div>
-              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="birthday"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6>生日</h6></div>
-              <div class="ft-item b2" draggable="true" data-type="email" data-legacy="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6>Email</h6></div>
-              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="phone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>電話</h6></div>
-              <div class="ft-item b2" draggable="true" data-type="phoneIntl" data-legacy="mobilePhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="18" r="1"/></svg></div><h6>手機號碼(含國碼)</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="salutation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6 data-i18n="aeFormSpSalutation">尊稱</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6 data-i18n="aeFormSpChineseName">中文姓名</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6 data-i18n="aeFormSpEnglishName">英文姓名</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="gender"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="10" cy="13" r="5"/><path d="M19 5l-5 5M15 5h4v4"/></svg></div><h6 data-i18n="aeFormSpGender">性別</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="birthday"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6 data-i18n="aeFormSpBirthday">生日</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="email" data-legacy="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6 data-i18n="aeFormSpEmail">Email</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="phone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6 data-i18n="aeFormSpPhone">電話</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="phoneIntl" data-legacy="mobilePhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="18" r="1"/></svg></div><h6 data-i18n="aeFormSpMobileIntl">手機號碼(含國碼)</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">學籍 / 單位 <span class="ct">8</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatEdu">學籍 / 單位</span> <span class="ct">8</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="eduLevel"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg></div><h6>教育階段</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="studentId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4M7 14h6"/></svg></div><h6>學號</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="school"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>學校</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="department"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6>系所/科系</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="grade"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg></div><h6>年級</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="classroom"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8"/></svg></div><h6>班級</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="organization"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01"/></svg></div><h6>服務單位</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="jobTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div><h6>職稱</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="eduLevel"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg></div><h6 data-i18n="aeFormSpEduLevel">教育階段</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="studentId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4M7 14h6"/></svg></div><h6 data-i18n="aeFormSpStudentId">學號</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="school"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6 data-i18n="aeFormSpSchool">學校</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="department"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/></svg></div><h6 data-i18n="aeFormSpDepartment">系所/科系</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="grade"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5"/></svg></div><h6 data-i18n="aeFormSpGrade">年級</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="classroom"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8"/></svg></div><h6 data-i18n="aeFormSpClassroom">班級</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="organization"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01"/></svg></div><h6 data-i18n="aeFormSpOrganization">服務單位</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="jobTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div><h6 data-i18n="aeFormSpJobTitle">職稱</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">身分 / 國籍 <span class="ct">6</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatIdentity">身分 / 國籍</span> <span class="ct">6</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b4" draggable="true" data-type="idnumber" data-legacy="idNumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6>身分證</h6></div>
-              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="passport"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/></svg></div><h6>護照號碼</h6></div>
-              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="passportIssueDate"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M9 14l2 2 4-4"/></svg></div><h6>護照發照日期</h6></div>
-              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="passportExpiry"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M9 14l6 0M9 18l6 0"/></svg></div><h6>護照截止日期</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="nationality"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><h6>國籍</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="birthplace"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/></svg></div><h6>出生地</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="idnumber" data-legacy="idNumber"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg></div><h6 data-i18n="aeFormSpIdNumber">身分證</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="passport"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/></svg></div><h6 data-i18n="aeFormSpPassport">護照號碼</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="passportIssueDate"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M9 14l2 2 4-4"/></svg></div><h6 data-i18n="aeFormSpPassportIssue">護照發照日期</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="date" data-legacy="passportExpiry"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M9 14l6 0M9 18l6 0"/></svg></div><h6 data-i18n="aeFormSpPassportExpiry">護照截止日期</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="nationality"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div><h6 data-i18n="aeFormSpNationality">國籍</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="birthplace"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/></svg></div><h6 data-i18n="aeFormSpBirthplace">出生地</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">聯絡 / 地址 <span class="ct">4</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatContact">聯絡 / 地址</span> <span class="ct">4</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="city"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h6>居住縣市</h6></div>
-              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="postalCode"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h6>郵遞區號</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="address"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><h6>地址</h6></div>
-              <div class="ft-item b2" draggable="true" data-type="text" data-legacy="lineId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5 9.5 9.5 0 01-3-.5L4 21l1.5-4.5A8.38 8.38 0 0121 11.5z"/></svg></div><h6>LINE ID</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="city"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h6 data-i18n="aeFormSpCity">居住縣市</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="postalCode"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h6 data-i18n="aeFormSpPostalCode">郵遞區號</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="address"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><h6 data-i18n="aeFormSpAddress">地址</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="text" data-legacy="lineId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5 9.5 9.5 0 01-3-.5L4 21l1.5-4.5A8.38 8.38 0 0121 11.5z"/></svg></div><h6 data-i18n="aeFormSpLineId">LINE ID</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">緊急聯絡 <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatEmergency">緊急聯絡</span> <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="emergencyName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6>緊急聯絡人</h6></div>
-              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="emergencyPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>緊急聯絡電話</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="emergencyRelation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1a4 4 0 10-4-4"/></svg></div><h6>緊急聯絡關係</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="emergencyName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6 data-i18n="aeFormSpEmergencyName">緊急聯絡人</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="emergencyPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6 data-i18n="aeFormSpEmergencyPhone">緊急聯絡電話</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="emergencyRelation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1a4 4 0 10-4-4"/></svg></div><h6 data-i18n="aeFormSpEmergencyRelation">緊急聯絡關係</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">餐飲 / 醫療 <span class="ct">6</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatHealth">餐飲 / 醫療</span> <span class="ct">6</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b1" draggable="true" data-type="textarea" data-legacy="accessibility"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="4" r="1.6"/><path d="M5 8h14M12 8v6m0 0l3 7m-3-7l-3 7"/></svg></div><h6>特殊需求/無障礙</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietary"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M5 19h14M5 5h14"/></svg></div><h6>飲食</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietaryRestriction"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18M8 3v6a3 3 0 01-6 0M16 3c-2 0-3 2-3 5s1 5 3 5v8"/></svg></div><h6>飲食限制/過敏</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="tshirt"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l4 3-2 5h-3v9H9V12H6L4 7z"/></svg></div><h6>T-shirt</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="bloodType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2s7 7 7 12a7 7 0 01-14 0c0-5 7-12 7-12z"/></svg></div><h6>血型</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="textarea" data-legacy="healthNote"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><h6>特殊健康狀況</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="textarea" data-legacy="accessibility"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="4" r="1.6"/><path d="M5 8h14M12 8v6m0 0l3 7m-3-7l-3 7"/></svg></div><h6 data-i18n="aeFormSpAccessibility">特殊需求/無障礙</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietary"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M5 19h14M5 5h14"/></svg></div><h6 data-i18n="aeFormSpDietary">飲食</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="dietaryRestriction"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18M8 3v6a3 3 0 01-6 0M16 3c-2 0-3 2-3 5s1 5 3 5v8"/></svg></div><h6 data-i18n="aeFormSpDietaryRestriction">飲食限制/過敏</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="tshirt"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4l4 3-2 5h-3v9H9V12H6L4 7z"/></svg></div><h6 data-i18n="aeFormSpTshirt">T-shirt</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="bloodType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2s7 7 7 12a7 7 0 01-14 0c0-5 7-12 7-12z"/></svg></div><h6 data-i18n="aeFormSpBloodType">血型</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="textarea" data-legacy="healthNote"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><h6 data-i18n="aeFormSpHealthNote">特殊健康狀況</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">發票相關 <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatInvoice">發票相關</span> <span class="ct">3</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="invoiceType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM9 8h6"/></svg></div><h6>發票類型</h6></div>
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="invoiceTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM8 7h8M8 11h8M8 15h5"/></svg></div><h6>發票抬頭</h6></div>
-              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="taxId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h6>統一編號</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="invoiceType"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM9 8h6"/></svg></div><h6 data-i18n="aeFormSpInvoiceType">發票類型</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="invoiceTitle"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2zM8 7h8M8 11h8M8 15h5"/></svg></div><h6 data-i18n="aeFormSpInvoiceTitle">發票抬頭</h6></div>
+              <div class="ft-item b4" draggable="true" data-type="text" data-legacy="taxId"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div><h6 data-i18n="aeFormSpTaxId">統一編號</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">監護人 / 同意 <span class="ct">4</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatGuardian">監護人 / 同意</span> <span class="ct">4</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="guardianName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6>監護人姓名</h6></div>
-              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="guardianPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6>監護人電話</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="radio" data-legacy="guardianConsent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6>家長同意</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="radio" data-legacy="consent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6>條款/肖像權同意</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="guardianName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6 data-i18n="aeFormSpGuardianName">監護人姓名</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="tel" data-legacy="guardianPhone"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h2.5a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.21l-1.7.85a13 13 0 006.5 6.5l.85-1.7a1 1 0 011.21-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1A17 17 0 013 6V5z"/></svg></div><h6 data-i18n="aeFormSpGuardianPhone">監護人電話</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="radio" data-legacy="guardianConsent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6 data-i18n="aeFormSpGuardianConsent">家長同意</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="radio" data-legacy="consent"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h6 data-i18n="aeFormSpConsent">條款/肖像權同意</h6></div>
             </div>
           </div>
           <div class="sp-group">
-            <div class="sp-head">其他 <span class="ct">4</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head"><span data-i18n="aeFormCatOther">其他</span> <span class="ct">4</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body">
-              <div class="ft-item b2" draggable="true" data-type="url" data-legacy="website"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg></div><h6>網站</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="referralSource"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 11l16-6-6 16-2-7-8-3z"/></svg></div><h6>如何得知本活動</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="transportation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="9" rx="2"/><path d="M3 11h18"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg></div><h6>交通方式</h6></div>
-              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="accommodation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7a1 1 0 011-1h3a1 1 0 011 1v3"/></svg></div><h6>住宿需求</h6></div>
+              <div class="ft-item b2" draggable="true" data-type="url" data-legacy="website"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg></div><h6 data-i18n="aeFormSpWebsite">網站</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="referralSource"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 11l16-6-6 16-2-7-8-3z"/></svg></div><h6 data-i18n="aeFormSpReferralSource">如何得知本活動</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="transportation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="9" rx="2"/><path d="M3 11h18"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/></svg></div><h6 data-i18n="aeFormSpTransportation">交通方式</h6></div>
+              <div class="ft-item b3" draggable="true" data-type="select" data-legacy="accommodation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7a1 1 0 011-1h3a1 1 0 011 1v3"/></svg></div><h6 data-i18n="aeFormSpAccommodation">住宿需求</h6></div>
             </div>
           </div>
         </div>
@@ -315,18 +315,18 @@ body { background:var(--bg); overflow:hidden; }
       <!-- CANVAS -->
       <div class="canvas" id="canvas">
         <div class="canvas-h">
-          <h2>報名表預覽</h2>
-          <p>從左側拖曳欄位類型到此處，或點擊區塊內的「＋ 新增欄位」</p>
+          <h2 data-i18n="aeFormCanvasTitle">報名表預覽</h2>
+          <p data-i18n="aeFormCanvasSub">從左側拖曳欄位類型到此處，或點擊區塊內的「＋ 新增欄位」</p>
         </div>
         <div id="sectionsContainer"></div>
-        <div class="add-section" id="addSectionBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>新增區塊</div>
+        <div class="add-section" id="addSectionBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="aeFormAddSection">新增區塊</span></div>
       </div>
 
       <!-- INSPECTOR -->
       <aside class="inspector" id="inspector">
         <div class="empty-inspector" id="emptyInspector">
           <svg fill="none" stroke="currentColor" stroke-width="1.4" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <div>點擊任一欄位查看設定</div>
+          <div data-i18n="aeFormInsEmpty">點擊任一欄位查看設定</div>
         </div>
         <div id="inspectorContent" style="display:none"></div>
       </aside>
@@ -336,6 +336,7 @@ body { background:var(--bg); overflow:hidden; }
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-form-builder.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function () {
@@ -350,7 +351,7 @@ body { background:var(--bg); overflow:hidden; }
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/form-builder/);
   if (m) compId = decodeURIComponent(m[1]);
   if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
-  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  if (!compId) { alert(window.L('aeFormNoCompId')); location.href = '/admin/events/'; return; }
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function uid(prefix) { return prefix + '_' + Math.random().toString(36).slice(2, 9); }
@@ -372,26 +373,29 @@ body { background:var(--bg); overflow:hidden; }
     var b = document.createElement('div');
     b.id = 'lockBanner';
     b.style.cssText = 'background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin-bottom:14px;font:400 12.5px/1.6 var(--f-tc);color:#92400e';
-    b.innerHTML = '🔒 <b>此活動已有 ' + n + ' 筆報名</b>，為維持資料一致性，已鎖定結構性變更：<b>不可刪除既有欄位、變更欄位型別、新增或刪除區塊</b>。仍可：新增欄位（預設為選填）、修改標籤/說明、增加選項、調整順序。';
+    b.innerHTML = window.L('aeFormLockBannerPre') + n + window.L('aeFormLockBannerSuf');
     c.insertBefore(b, c.firstChild);
   }
-  function lockedMsg() { uiAlert('此活動已有報名，為維持資料一致性，無法執行此變更（刪除既有欄位／變更型別／增刪區塊）。您仍可新增選填欄位、修改標籤與選項。'); }
+  function lockedMsg() { uiAlert(window.L('aeFormLockedMsg')); }
 
+  // NOTE: field-TYPE display labels are UI chrome. `labelKey` resolves through i18n at
+  // read time via metaLabel(); the internal type identifiers (text/select/…) are unchanged.
   var FIELD_META = {
-    text: { label: '單行文字', ic: 'b1', icon: '<path d="M4 6h16M4 12h16M4 18h7"/>' },
-    textarea: { label: '多行文字', ic: 'b1', icon: '<path d="M4 6h16M4 10h16M4 14h12"/>' },
-    email: { label: 'Email', ic: 'b2', icon: '<path d="M3 8l9 6 9-6"/>' },
-    tel: { label: '電話', ic: 'b2', icon: '<path d="M3 5a2 2 0 012-2h2.5"/>' },
-    select: { label: '下拉選單', ic: 'b3', icon: '<path d="M19 9l-7 7-7-7"/>' },
-    radio: { label: '單選', ic: 'b3', icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>' },
-    checkbox: { label: '複選', ic: 'b3', icon: '<rect x="4" y="4" width="16" height="16" rx="2"/>' },
-    date: { label: '日期', ic: 'b4', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/>' },
-    idnumber: { label: '身分證', ic: 'b4', icon: '<rect x="3" y="6" width="18" height="12" rx="2"/>' },
-    number: { label: '數字', ic: 'b4', icon: '<path d="M4 9h16M4 15h16"/>' },
-    file: { label: '上傳檔案', ic: 'b2', icon: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>' },
-    phoneIntl: { label: '手機號碼(含國碼)', ic: 'b2', icon: '<rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="18" r="1"/>' },
-    url: { label: '網址', ic: 'b2', icon: '<path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/>' }
+    text: { labelKey: 'aeFormFtText', ic: 'b1', icon: '<path d="M4 6h16M4 12h16M4 18h7"/>' },
+    textarea: { labelKey: 'aeFormFtTextarea', ic: 'b1', icon: '<path d="M4 6h16M4 10h16M4 14h12"/>' },
+    email: { labelKey: 'aeFormSpEmail', ic: 'b2', icon: '<path d="M3 8l9 6 9-6"/>' },
+    tel: { labelKey: 'aeFormSpPhone', ic: 'b2', icon: '<path d="M3 5a2 2 0 012-2h2.5"/>' },
+    select: { labelKey: 'aeFormFtSelect', ic: 'b3', icon: '<path d="M19 9l-7 7-7-7"/>' },
+    radio: { labelKey: 'aeFormFtRadio', ic: 'b3', icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>' },
+    checkbox: { labelKey: 'aeFormFtCheckbox', ic: 'b3', icon: '<rect x="4" y="4" width="16" height="16" rx="2"/>' },
+    date: { labelKey: 'aeFormFtDate', ic: 'b4', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/>' },
+    idnumber: { labelKey: 'aeFormSpIdNumber', ic: 'b4', icon: '<rect x="3" y="6" width="18" height="12" rx="2"/>' },
+    number: { labelKey: 'aeFormFtNumber', ic: 'b4', icon: '<path d="M4 9h16M4 15h16"/>' },
+    file: { labelKey: 'aeFormFtFile', ic: 'b2', icon: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>' },
+    phoneIntl: { labelKey: 'aeFormSpMobileIntl', ic: 'b2', icon: '<rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="18" r="1"/>' },
+    url: { labelKey: 'aeFormFtUrl', ic: 'b2', icon: '<path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/>' }
   };
+  function metaLabel(meta) { return window.L((meta && meta.labelKey) || 'aeFormFtText'); }
 
   // Built-in option lists for special fields (item 6)
   var GENDER_OPTS = ['男生', '女生'];
@@ -432,7 +436,7 @@ body { background:var(--bg); overflow:hidden; }
     google.script.run
       .withSuccessHandler(function (res) {
         if (!res || !res.success) {
-          alert('無法載入：' + ((res && res.message) || '未知錯誤'));
+          alert(window.L('aeFormLoadFailPre') + ((res && res.message) || window.L('aeFormUnknownErr')));
           location.href = '/admin/events/';
           return;
         }
@@ -460,7 +464,7 @@ body { background:var(--bg); overflow:hidden; }
         render();
       })
       .withFailureHandler(function (err) {
-        alert('載入失敗：' + (err && err.message));
+        alert(window.L('aeFormLoadFailedPre') + (err && err.message));
       })
       .getFormSchema(compId);
   }
@@ -469,29 +473,29 @@ body { background:var(--bg); overflow:hidden; }
   function render() {
     var container = document.getElementById('sectionsContainer');
     if (SCHEMA.sections.length === 0) {
-      container.innerHTML = '<div class="canvas-sec" style="text-align:center; padding:48px"><p style="color:var(--muted)">尚無區塊。請點下方「新增區塊」開始。</p></div>';
+      container.innerHTML = '<div class="canvas-sec" style="text-align:center; padding:48px"><p style="color:var(--muted)">' + escapeHtml(window.L('aeFormNoSections')) + '</p></div>';
       markDirty();
       return;
     }
     container.innerHTML = SCHEMA.sections.map(function (sec, sIdx) {
-      var roleLabels = { student: '學員', teacher: '指導者', custom: '附加問題' };
+      var roleLabels = { student: window.L('aeFormRoleStudent'), teacher: window.L('aeFormRoleTeacher'), custom: window.L('aeFormRoleCustom') };
       return '<div class="canvas-sec" data-sec-id="' + sec.id + '">' +
         '<div class="sec-h">' +
           '<span class="nb">' + String(sIdx + 1).padStart(2, '0') + '</span>' +
-          '<span class="role-tag ' + (sec.role || 'custom') + '">' + (roleLabels[sec.role] || '自訂') + '</span>' +
-          '<h3><input value="' + escapeHtml(sec.title || '') + '" data-sec-field="title" placeholder="區塊標題"></h3>' +
+          '<span class="role-tag ' + (sec.role || 'custom') + '">' + (roleLabels[sec.role] || window.L('aeFormRoleFallback')) + '</span>' +
+          '<h3><input value="' + escapeHtml(sec.title || '') + '" data-sec-field="title" placeholder="' + escapeHtml(window.L('aeFormSecTitlePh')) + '"></h3>' +
           '<div class="actions-sec">' +
-            '<button data-act="sec-up" data-id="' + sec.id + '" title="上移"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
-            '<button data-act="sec-down" data-id="' + sec.id + '" title="下移"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></button>' +
-            '<button data-act="sec-dup" data-id="' + sec.id + '" title="複製區塊"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></button>' +
-            '<button data-act="sec-del" data-id="' + sec.id + '" title="刪除"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6v14a2 2 0 002 2h8a2 2 0 002-2V6"/></svg></button>' +
+            '<button data-act="sec-up" data-id="' + sec.id + '" title="' + escapeHtml(window.L('aeFormSecUp')) + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
+            '<button data-act="sec-down" data-id="' + sec.id + '" title="' + escapeHtml(window.L('aeFormSecDown')) + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></button>' +
+            '<button data-act="sec-dup" data-id="' + sec.id + '" title="' + escapeHtml(window.L('aeFormSecDup')) + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></button>' +
+            '<button data-act="sec-del" data-id="' + sec.id + '" title="' + escapeHtml(window.L('aeFormSecDel')) + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M6 6v14a2 2 0 002 2h8a2 2 0 002-2V6"/></svg></button>' +
           '</div>' +
         '</div>' +
         '<div class="fields-list" data-sec-id="' + sec.id + '">' +
           (sec.fields || []).map(function (f, fIdx) { return renderField(sec.id, f, fIdx); }).join('') +
-          ((sec.fields || []).length === 0 ? '<div class="drop-zone-empty">拖曳左側欄位到此區塊</div>' : '') +
+          ((sec.fields || []).length === 0 ? '<div class="drop-zone-empty">' + escapeHtml(window.L('aeFormDropHere')) + '</div>' : '') +
         '</div>' +
-        '<button class="add-field-row" data-act="add-field" data-sec-id="' + sec.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px"><path d="M12 5v14M5 12h14"/></svg> 新增欄位</button>' +
+        '<button class="add-field-row" data-act="add-field" data-sec-id="' + sec.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px"><path d="M12 5v14M5 12h14"/></svg> ' + escapeHtml(window.L('aeFormAddField')) + '</button>' +
       '</div>';
     }).join('');
 
@@ -522,7 +526,7 @@ body { background:var(--bg); overflow:hidden; }
         var id = btn.dataset.id;
         if (act === 'sec-del') {
           if (LOCKED) { lockedMsg(); return; }
-          uiConfirm('刪除整個區塊？', { title: '刪除區塊', okText: '刪除', danger: true }).then(function (ok) {
+          uiConfirm(window.L('aeFormConfirmDelSecMsg'), { title: window.L('aeFormConfirmDelSecTitle'), okText: window.L('aeFormConfirmDelSecOk'), danger: true }).then(function (ok) {
             if (!ok) return;
             SCHEMA.sections = SCHEMA.sections.filter(function (s) { return s.id !== id; });
             render(); markDirty();
@@ -538,7 +542,7 @@ body { background:var(--bg); overflow:hidden; }
           // Item 3: duplicate a section (all fields) with a sequential number suffix.
           var src = SCHEMA.sections.find(function (s) { return s.id === id; });
           if (src) {
-            var base = (src.title || '區塊').replace(/\s*\d+$/, '').trim();
+            var base = (src.title || window.L('aeFormDefaultSectionBase')).replace(/\s*\d+$/, '').trim();
             var used = {};
             SCHEMA.sections.forEach(function (s) {
               var m = (s.title || '').match(/^(.*?)\s*(\d+)$/);
@@ -561,7 +565,7 @@ body { background:var(--bg); overflow:hidden; }
           if (sec) {
             sec.fields = sec.fields || [];
             // 鎖定時新增欄位預設為「選填」，避免既有報名變成缺漏必填
-            sec.fields.push({ id: uid('f'), type: 'text', label: '新欄位', req: !LOCKED, opts: [] });
+            sec.fields.push({ id: uid('f'), type: 'text', label: window.L('aeFormDefaultFieldLabel'), req: !LOCKED, opts: [] });
             render(); markDirty();
           }
         } else if (act === 'field-del') {
@@ -586,6 +590,9 @@ body { background:var(--bg); overflow:hidden; }
     // Drag-drop wiring
     wireDragDrop();
 
+    // Re-apply i18n to any data-i18n* nodes injected into the freshly-rendered canvas.
+    if (window.applyI18n) window.applyI18n(container);
+
     markDirty();
   }
 
@@ -595,7 +602,7 @@ body { background:var(--bg); overflow:hidden; }
       '<div class="row1">' +
         '<span class="grip"><svg fill="currentColor" viewBox="0 0 24 24"><circle cx="8" cy="6" r="1.5"/><circle cx="8" cy="12" r="1.5"/><circle cx="8" cy="18" r="1.5"/><circle cx="16" cy="6" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="16" cy="18" r="1.5"/></svg></span>' +
         '<span class="ic-f ' + meta.ic + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + meta.icon + '</svg></span>' +
-        '<span class="label-f">' + escapeHtml(f.label || '(未命名)') + (f.req ? ' <span class="req">*</span>' : '') +
+        '<span class="label-f">' + escapeHtml(f.label || window.L('aeFormFieldUnnamed')) + (f.req ? ' <span class="req">*</span>' : '') +
         '</span>' +
         '<span class="actions-f">' +
           '<button data-act="field-up" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>' +
@@ -603,7 +610,7 @@ body { background:var(--bg); overflow:hidden; }
           '<button data-act="field-del" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/></svg></button>' +
         '</span>' +
       '</div>' +
-      '<div class="preview-f">' + meta.label + (f.opts && f.opts.length ? ' · ' + f.opts.length + ' 個選項' : '') + '</div>' +
+      '<div class="preview-f">' + metaLabel(meta) + (f.opts && f.opts.length ? ' · ' + f.opts.length + ' ' + window.L('aeFormOptUnit') : '') + '</div>' +
     '</div>';
   }
 
@@ -625,46 +632,48 @@ body { background:var(--bg); overflow:hidden; }
       return '<label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:' + (on ? 'var(--acc-soft)' : 'var(--surface)') + ';font:500 11.5px/1 var(--f-tc);color:' + (on ? 'var(--acc-2)' : 'var(--ink-2)') + ';cursor:pointer">' +
         '<input type="checkbox" data-file-ext="' + c[0] + '"' + (on ? ' checked' : '') + ' style="margin:0">' + c[1] + '</label>';
     }).join('');
-    return '<div class="ins-row"><div class="lbl">檔案大小上限 (MB)</div><input type="number" min="0.1" step="0.1" data-file-cfg="maxFileSize" value="' + maxMB + '"></div>' +
-      '<div class="ins-row"><div class="lbl">允許檔案類型（可複選）</div>' +
+    return '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormFileMax')) + '</div><input type="number" min="0.1" step="0.1" data-file-cfg="maxFileSize" value="' + maxMB + '"></div>' +
+      '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormFileTypes')) + '</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">' + chks + '</div>' +
-        '<input type="text" data-file-cfg="customExts" value="' + escapeHtml(custom) + '" placeholder="自訂副檔名（用逗號分隔，例：.dwg,.psd）">' +
-        '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:4px">留空 = 不限制；報名者上傳時會即時驗證。</div>' +
+        '<input type="text" data-file-cfg="customExts" value="' + escapeHtml(custom) + '" placeholder="' + escapeHtml(window.L('aeFormFileCustomPh')) + '">' +
+        '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:4px">' + escapeHtml(window.L('aeFormFileHint')) + '</div>' +
       '</div>';
   }
 
   // FB5: built-in validation hints — read-only badge in inspector so organiser knows
   // what protection is already in place per special field. Implementations live in register.html.
   // NOTE: this is the disclosure UI; actual validators are added in FB5 follow-up after user approval.
+  // Values are i18n keys (resolved in renderValidationBadge via window.L). The map
+  // keys (idNumber/email/…) are schema legacyKeys / field types and are unchanged.
   var VALIDATION_HINTS = {
-    idNumber: '✓ 自動驗證：中華民國身分證 / 居留證字號（首字英文 + 9 碼，含 checksum）',
-    email: '✓ 自動驗證：Email 格式（user@domain.tld）',
-    phone: '✓ 自動驗證：台灣電話／行動電話格式（0開頭、9~10 碼）',
-    mobilePhone: '✓ 自動驗證：國碼 + 純數字（去除前置 0）',
-    emergencyPhone: '✓ 自動驗證：台灣電話／行動電話格式',
-    taxId: '✓ 自動驗證：統一編號（8 碼，含 checksum）',
-    postalCode: '✓ 自動驗證：台灣郵遞區號（3 或 5 碼）',
-    birthday: '✓ 自動驗證：日期格式 + 不可為未來',
-    passport: '✓ 自動驗證：護照號碼長度（6–9 碼，英數）',
-    passportIssueDate: '✓ 自動驗證：日期格式 + 不可為未來',
-    passportExpiry: '✓ 自動驗證：日期格式 + 須晚於今日',
-    website: '✓ 自動驗證：網址格式（未填 http(s):// 會自動補上 https://）'
+    idNumber: 'aeFormValHintIdNumber',
+    email: 'aeFormValHintEmail',
+    phone: 'aeFormValHintPhone',
+    mobilePhone: 'aeFormValHintMobilePhone',
+    emergencyPhone: 'aeFormValHintEmergencyPhone',
+    taxId: 'aeFormValHintTaxId',
+    postalCode: 'aeFormValHintPostalCode',
+    birthday: 'aeFormValHintBirthday',
+    passport: 'aeFormValHintPassport',
+    passportIssueDate: 'aeFormValHintPassportIssue',
+    passportExpiry: 'aeFormValHintPassportExpiry',
+    website: 'aeFormValHintWebsite'
   };
   // Type-level fallback — shows the badge for any field of this type, even custom
   // ones without a legacyKey (e.g. a 網址 field added from the type dropdown).
   var VALIDATION_HINTS_BY_TYPE = {
-    url: '✓ 自動驗證：網址格式（未填 http(s):// 會自動補上 https://）',
-    email: '✓ 自動驗證：Email 格式（user@domain.tld）',
-    idnumber: '✓ 自動驗證：中華民國身分證 / 居留證字號（首字英文 + 9 碼，含 checksum）'
+    url: 'aeFormValHintWebsite',
+    email: 'aeFormValHintEmail',
+    idnumber: 'aeFormValHintIdNumber'
   };
   function renderValidationBadge(f) {
     var key = f.legacyKey;
     var hint = (key && VALIDATION_HINTS[key]) || VALIDATION_HINTS_BY_TYPE[f.type] || null;
     if (!hint) return '';
-    return '<div class="ins-row" style="margin-top:8px"><div class="lbl">系統內建驗證</div>' +
+    return '<div class="ins-row" style="margin-top:8px"><div class="lbl">' + escapeHtml(window.L('aeFormValTitle')) + '</div>' +
       '<div style="padding:10px 12px; background:var(--ok-soft, rgba(16,185,129,.08)); border:1px solid var(--ok-200, rgba(16,185,129,.25)); border-radius:7px; font:400 12px/1.5 var(--f-tc); color:var(--ok-700, #047857)">' +
-        escapeHtml(hint) +
-        '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:4px">此驗證由系統強制執行，無法關閉。</div>' +
+        escapeHtml(window.L(hint)) +
+        '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:4px">' + escapeHtml(window.L('aeFormValEnforced')) + '</div>' +
       '</div></div>';
   }
 
@@ -690,45 +699,45 @@ body { background:var(--bg); overflow:hidden; }
     // Item 2: operators depend on the controlling field's type.
     var ctlField = on ? otherFields.filter(function (x) { return fieldKeyOf(x) === f.logic.key; })[0] : null;
     var numOps = ctlField && ctlField.type === 'number';
-    var OP_LIST = numOps ? [['gt','大於'],['eq','等於'],['lt','小於'],['neq','不等於']] : [['eq','等於'],['neq','不等於']];
+    var OP_LIST = numOps ? [['gt',window.L('aeFormCondOpGt')],['eq',window.L('aeFormCondOpEq')],['lt',window.L('aeFormCondOpLt')],['neq',window.L('aeFormCondOpNeq')]] : [['eq',window.L('aeFormCondOpEq')],['neq',window.L('aeFormCondOpNeq')]];
     var opSelect = '<select data-cond="op">' + OP_LIST.map(function (o) { return '<option value="' + o[0] + '"' + ((f.logic && f.logic.op === o[0]) || (o[0] === 'eq' && (!f.logic || !f.logic.op)) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
     var condEditorHtml =
-      '<div class="ins-row" style="margin-top:18px"><div class="lbl">顯示條件（進階）</div>' +
-        '<select data-cond="enabled"><option value="">一律顯示</option>' +
-          '<option value="1"' + (on ? ' selected' : '') + '>符合條件才顯示</option></select>' +
+      '<div class="ins-row" style="margin-top:18px"><div class="lbl">' + escapeHtml(window.L('aeFormCondTitle')) + '</div>' +
+        '<select data-cond="enabled"><option value="">' + escapeHtml(window.L('aeFormCondAlways')) + '</option>' +
+          '<option value="1"' + (on ? ' selected' : '') + '>' + escapeHtml(window.L('aeFormCondWhen')) + '</option></select>' +
         (on ? (
           '<div style="margin-top:8px; display:flex; flex-direction:column; gap:6px">' +
-            '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">當此區塊的欄位：</div>' +
+            '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(window.L('aeFormCondFieldLead')) + '</div>' +
             '<select data-cond="key">' + otherFields.map(function (x) { var k = fieldKeyOf(x); return '<option value="' + escapeHtml(k) + '"' + (f.logic.key === k ? ' selected' : '') + '>' + escapeHtml(x.label || k) + '</option>'; }).join('') + '</select>' +
             opSelect +
-            '<input type="' + (numOps ? 'number' : 'text') + '" data-cond="value" value="' + escapeHtml(f.logic.value || '') + '" placeholder="比對的值（例：男 / 18）">' +
+            '<input type="' + (numOps ? 'number' : 'text') + '" data-cond="value" value="' + escapeHtml(f.logic.value || '') + '" placeholder="' + escapeHtml(window.L('aeFormCondValuePh')) + '">' +
           '</div>'
-        ) : (otherFields.length ? '' : '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:6px">此區塊需有其他欄位才能設定條件</div>')) +
+        ) : (otherFields.length ? '' : '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:6px">' + escapeHtml(window.L('aeFormCondNeedOther')) + '</div>')) +
       '</div>';
     ins.innerHTML =
       '<div class="ins-h">' +
         '<div class="ic-f ' + meta.ic + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + meta.icon + '</svg></div>' +
-        '<div><h4>' + meta.label + '</h4></div>' +
+        '<div><h4>' + metaLabel(meta) + '</h4></div>' +
       '</div>' +
-      '<div class="ins-row"><div class="lbl">欄位類型' + ((LOCKED && ORIG_FIELD_IDS[f.id]) ? ' 🔒' : '') + '</div><select data-ins="type"' + ((LOCKED && ORIG_FIELD_IDS[f.id]) ? ' disabled title="已有報名，既有欄位型別已鎖定"' : '') + '>' +
-        Object.keys(FIELD_META).map(function (t) { return '<option value="' + t + '"' + (f.type === t ? ' selected' : '') + '>' + FIELD_META[t].label + '</option>'; }).join('') +
+      '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsType')) + ((LOCKED && ORIG_FIELD_IDS[f.id]) ? ' 🔒' : '') + '</div><select data-ins="type"' + ((LOCKED && ORIG_FIELD_IDS[f.id]) ? ' disabled title="' + escapeHtml(window.L('aeFormInsTypeLocked')) + '"' : '') + '>' +
+        Object.keys(FIELD_META).map(function (t) { return '<option value="' + t + '"' + (f.type === t ? ' selected' : '') + '>' + metaLabel(FIELD_META[t]) + '</option>'; }).join('') +
       '</select></div>' +
-      '<div class="ins-row"><div class="lbl">標籤文字</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
-      '<div class="ins-row"><div class="lbl">說明文字（可選）</div><input type="text" data-ins="help" value="' + escapeHtml(f.help || '') + '" placeholder="顯示在欄位下方（可用 &lt;a&gt; &lt;b&gt; &lt;br&gt; 等簡單標籤）"></div>' +
+      '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsLabel')) + '</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
+      '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsHelp')) + '</div><input type="text" data-ins="help" value="' + escapeHtml(f.help || '') + '" placeholder="' + escapeHtml(window.L('aeFormInsHelpPh')) + '"></div>' +
 
       ((['select','radio','checkbox'].indexOf(f.type) >= 0) ? (
-        '<div class="ins-row"><div class="lbl">選項</div><div class="opts-editor" id="opts-editor">' +
+        '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsOptions')) + '</div><div class="opts-editor" id="opts-editor">' +
           (f.opts || []).map(function (o, i) {
             return '<div class="opt-row"><input type="text" value="' + escapeHtml(o) + '" data-opt-idx="' + i + '"><span class="rm" data-rm-opt="' + i + '">×</span></div>';
           }).join('') +
-          '<button class="add-row" data-add-opt>＋ 新增選項</button>' +
+          '<button class="add-row" data-add-opt>' + escapeHtml(window.L('aeFormInsAddOpt')) + '</button>' +
         '</div></div>'
       ) : '') +
 
       // FB4: file-only constraints (size + allowed types)
       ((f.type === 'file') ? renderFileConstraintsRow(f) : '') +
 
-      '<div class="tg-row"><div class="body"><h6>必填</h6><p>送出表單時必須填寫</p></div><div class="tg-sw-s ' + (f.req ? 'on' : '') + '" data-ins-toggle="req"></div></div>' +
+      '<div class="tg-row"><div class="body"><h6>' + escapeHtml(window.L('aeFormInsReqH')) + '</h6><p>' + escapeHtml(window.L('aeFormInsReqP')) + '</p></div><div class="tg-sw-s ' + (f.req ? 'on' : '') + '" data-ins-toggle="req"></div></div>' +
 
       // FB5 placeholder: built-in validation badge (read-only, organiser-visible)
       renderValidationBadge(f) +
@@ -746,7 +755,7 @@ body { background:var(--bg); overflow:hidden; }
         if (key === 'label') {
           // surgical canvas update: replace just the label span's innerHTML
           var lbl = document.querySelector('.field-c[data-field-id="' + f.id + '"] .label-f');
-          if (lbl) lbl.innerHTML = escapeHtml(f.label || '(未命名)') + (f.req ? ' <span class="req">*</span>' : '');
+          if (lbl) lbl.innerHTML = escapeHtml(f.label || window.L('aeFormFieldUnnamed')) + (f.req ? ' <span class="req">*</span>' : '');
         }
         markDirty();
       });
@@ -835,7 +844,7 @@ body { background:var(--bg); overflow:hidden; }
           markDirty();
           // re-render the field card only
           var fc = document.querySelector('.field-c[data-field-id="' + f.id + '"] .preview-f');
-          if (fc) fc.textContent = (FIELD_META[f.type] || FIELD_META.text).label + ' · ' + f.opts.length + ' 個選項';
+          if (fc) fc.textContent = metaLabel(FIELD_META[f.type] || FIELD_META.text) + ' · ' + f.opts.length + ' ' + window.L('aeFormOptUnit');
         });
       });
       oe.querySelectorAll('[data-rm-opt]').forEach(function (b) {
@@ -918,7 +927,7 @@ body { background:var(--bg); overflow:hidden; }
         var targetSec = SCHEMA.sections.find(function (s) { return s.id === targetSecId; });
         if (!targetSec) return;
         if (DRAG.kind === 'palette') {
-          var label = labelForLegacy(DRAG.legacyKey) || ((FIELD_META[DRAG.type] || FIELD_META.text).label);
+          var label = labelForLegacy(DRAG.legacyKey) || metaLabel(FIELD_META[DRAG.type] || FIELD_META.text);
           var newField = { id: uid('f'), type: DRAG.type, label: label, legacyKey: DRAG.legacyKey || undefined, req: !LOCKED, opts: [] };
           newField.opts = optsForKey(DRAG.legacyKey);
           targetSec.fields = targetSec.fields || [];
@@ -950,8 +959,8 @@ body { background:var(--bg); overflow:hidden; }
     var targetSec = null;
     if (SELECTED && SELECTED.secId) targetSec = SCHEMA.sections.find(function (s) { return s.id === SELECTED.secId; });
     if (!targetSec && SCHEMA.sections.length) targetSec = SCHEMA.sections[SCHEMA.sections.length - 1];
-    if (!targetSec) { uiAlert('請先新增區塊，再加入欄位'); return; }
-    var label = labelForLegacy(legacyKey) || ((FIELD_META[type] || FIELD_META.text).label);
+    if (!targetSec) { uiAlert(window.L('aeFormNeedSectionFirst')); return; }
+    var label = labelForLegacy(legacyKey) || metaLabel(FIELD_META[type] || FIELD_META.text);
     var newField = { id: uid('f'), type: type, label: label, legacyKey: legacyKey || undefined, req: !LOCKED, opts: [] };
     newField.opts = optsForKey(legacyKey);
     targetSec.fields = targetSec.fields || [];
@@ -974,8 +983,8 @@ body { background:var(--bg); overflow:hidden; }
   }
 
   // ---- Add section (item 1: 學員 / 指導者 / 自訂 dropdown) ----
-  var ROLE_LABELS = { student: '學員', teacher: '指導者', custom: '自訂' };
-  function defaultSectionTitle(role) { return role === 'student' ? '學員資料' : role === 'teacher' ? '指導者' : '附加問題'; }
+  var ROLE_LABELS = { student: window.L('aeFormRoleStudent'), teacher: window.L('aeFormRoleTeacher'), custom: window.L('aeFormRoleFallback') };
+  function defaultSectionTitle(role) { return role === 'student' ? window.L('aeFormDefaultTitleStudent') : role === 'teacher' ? window.L('aeFormRoleTeacher') : window.L('aeFormRoleCustom'); }
   document.getElementById('addSectionBtn').addEventListener('click', function () {
     if (LOCKED) { lockedMsg(); return; }
     // 附加問題 (custom) is single-instance — show "(已存在)" on the option when there's
@@ -985,18 +994,18 @@ body { background:var(--bg); overflow:hidden; }
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.45);display:grid;place-items:center;z-index:9999;padding:20px';
     ov.innerHTML =
       '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:380px;padding:22px;box-shadow:var(--sh-lg)">' +
-        '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:16px">新增區塊</h3>' +
-        '<div style="margin-bottom:14px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">區塊類型</div>' +
+        '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:16px">' + escapeHtml(window.L('aeFormAsTitle')) + '</h3>' +
+        '<div style="margin-bottom:14px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">' + escapeHtml(window.L('aeFormAsTypeLbl')) + '</div>' +
           '<select id="asRole" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink);background:var(--surface)">' +
-            '<option value="student">學員（可新增多個 → 每個代表一位學員）</option>' +
-            '<option value="teacher">指導者（可新增多個 → 每個代表一位指導者）</option>' +
-            '<option value="custom"' + (customExists ? ' disabled' : '') + '>附加問題' + (customExists ? '（已存在，僅允許一個）' : '（限一個）') + '</option>' +
+            '<option value="student">' + escapeHtml(window.L('aeFormAsOptStudent')) + '</option>' +
+            '<option value="teacher">' + escapeHtml(window.L('aeFormAsOptTeacher')) + '</option>' +
+            '<option value="custom"' + (customExists ? ' disabled' : '') + '>' + escapeHtml(customExists ? window.L('aeFormAsOptCustomExists') : window.L('aeFormAsOptCustom')) + '</option>' +
           '</select></div>' +
-        '<div style="margin-bottom:18px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">區塊標題</div>' +
-          '<input id="asTitle" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink)" value="學員資料"></div>' +
+        '<div style="margin-bottom:18px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">' + escapeHtml(window.L('aeFormAsTitleLbl')) + '</div>' +
+          '<input id="asTitle" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink)" value="' + escapeHtml(window.L('aeFormDefaultTitleStudent')) + '"></div>' +
         '<div style="display:flex;justify-content:flex-end;gap:8px">' +
-          '<button type="button" class="btn btn-ghost btn-sm" id="asCancel">取消</button>' +
-          '<button type="button" class="btn btn-primary btn-sm" id="asOk">建立</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="asCancel">' + escapeHtml(window.L('aeFormAsCancel')) + '</button>' +
+          '<button type="button" class="btn btn-primary btn-sm" id="asOk">' + escapeHtml(window.L('aeFormAsOk')) + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -1009,7 +1018,7 @@ body { background:var(--bg); overflow:hidden; }
       var role = roleSel.value, title = (titleInp.value || '').trim() || ROLE_LABELS[role];
       // Belt-and-braces: even if someone bypasses the disabled option, block here too.
       if (role === 'custom' && (SCHEMA.sections || []).some(function (s) { return s.role === 'custom'; })) {
-        uiAlert('附加問題區塊只能有一個。請編輯既有的「附加問題」區塊新增題目。');
+        uiAlert(window.L('aeFormCustomOnlyOne'));
         return;
       }
       SCHEMA.sections.push({ id: uid('sec'), title: title, role: role, repeat: 1, fields: [] });
@@ -1024,11 +1033,11 @@ body { background:var(--bg); overflow:hidden; }
     var meta = document.getElementById('saveMeta');
     var btn = document.getElementById('saveBtn');
     if (cur === ORIGINAL_JSON) {
-      meta.textContent = '已儲存';
+      meta.textContent = window.L('aeFormSaved');
       meta.className = 'save-meta saved';
       btn.disabled = true;
     } else {
-      meta.textContent = '有未儲存變更';
+      meta.textContent = window.L('aeFormDirty');
       meta.className = 'save-meta dirty';
       btn.disabled = false;
     }
@@ -1063,7 +1072,7 @@ body { background:var(--bg); overflow:hidden; }
     return tmp.innerHTML;
   }
   document.getElementById('saveBtn').addEventListener('click', function () {
-    var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeFormSaving');
     // Sanitize all help strings in place before save
     (SCHEMA.sections || []).forEach(function (sec) {
       (sec.fields || []).forEach(function (f) { if (f.help) f.help = sanitizeHelpInline(f.help); });
@@ -1072,19 +1081,19 @@ body { background:var(--bg); overflow:hidden; }
       .withSuccessHandler(function (res) {
         if (res && res.success) {
           ORIGINAL_JSON = JSON.stringify(SCHEMA);
-          btn.textContent = '儲存';
+          btn.textContent = window.L('aeFormSaveBtn');
           markDirty();
           var meta = document.getElementById('saveMeta');
-          meta.textContent = '✓ 已儲存（同步舊欄位 ' + res.derived.studentFields.length + ' 學員 + ' + res.derived.customQuestionCount + ' 附加問題）';
+          meta.textContent = window.L('aeFormSavedSyncPre') + res.derived.studentFields.length + window.L('aeFormSavedSyncMid') + res.derived.customQuestionCount + window.L('aeFormSavedSyncSuf');
           meta.className = 'save-meta saved';
         } else {
-          btn.disabled = false; btn.textContent = '儲存';
-          alert('儲存失敗：' + ((res && res.message) || ''));
+          btn.disabled = false; btn.textContent = window.L('aeFormSaveBtn');
+          alert(window.L('aeFormSaveFailPre') + ((res && res.message) || ''));
         }
       })
       .withFailureHandler(function (err) {
-        btn.disabled = false; btn.textContent = '儲存';
-        alert('儲存失敗：' + (err && err.message));
+        btn.disabled = false; btn.textContent = window.L('aeFormSaveBtn');
+        alert(window.L('aeFormSaveFailPre') + (err && err.message));
       })
       .saveFormSchema(compId, SCHEMA);
   });

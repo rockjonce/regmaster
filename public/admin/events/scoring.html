@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>評分 · 主辦後台 · RegMaster</title>
+<title data-i18n="aeScoreDocTitle">評分 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -86,26 +86,27 @@
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>評分</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="aeScoreCrumbHome">主辦後台</a><span class="sep">/</span><a href="/admin/events/" data-i18n="aeScoreCrumbEvents">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b data-i18n="aeScoreCrumbThis">評分</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
-    <div id="loadingState" class="loading-c">載入評分資料⋯</div>
+    <div id="loadingState" class="loading-c" data-i18n="aeScoreLoading">載入評分資料⋯</div>
     <div class="body-3" id="content" style="display:none">
       <aside class="left-c">
         <div class="lc-h">
-          <h3>🏆 即時排行榜<span class="live-pill">LIVE</span></h3>
-          <p style="font:500 11px/1.4 var(--f-mono); color:var(--muted); margin-top:6px">您為評審：<b id="judgeBadge">—</b></p>
+          <h3><span data-i18n="aeScoreLeaderboardTitle">🏆 即時排行榜</span><span class="live-pill">LIVE</span></h3>
+          <p style="font:500 11px/1.4 var(--f-mono); color:var(--muted); margin-top:6px"><span data-i18n="aeScoreJudgePrefix">您為評審：</span><b id="judgeBadge">—</b></p>
         </div>
         <div id="leaderboard"></div>
       </aside>
       <section class="center-c" id="centerC">
-        <div class="empty-cc">👈 從左側選擇隊伍開始評分</div>
+        <div class="empty-cc" data-i18n="aeScoreSelectPrompt">👈 從左側選擇隊伍開始評分</div>
       </section>
     </div>
   </main>
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-scoring.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -115,7 +116,7 @@
   var compId = '';
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/scoring/);
   if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
-  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  if (!compId) { alert(window.L('aeScoreNoCompId')); location.href = '/admin/events/'; return; }
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   ['hubLink','editLink','annLink','paymentsLink','checkinLink'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -157,14 +158,15 @@
   function renderLeaderboard() {
     var lb = document.getElementById('leaderboard');
     if (TEAMS.length === 0) {
-      lb.innerHTML = '<p style="text-align:center; padding:48px 14px; color:var(--muted)">尚無報名隊伍</p>';
+      lb.innerHTML = '<p style="text-align:center; padding:48px 14px; color:var(--muted)" data-i18n="aeScoreLeaderboardEmpty">尚無報名隊伍</p>';
+      window.applyI18n(lb);
       return;
     }
     lb.innerHTML = TEAMS.map(function (t) {
       var topClass = t.rank === 1 ? 'top-1' : t.rank === 2 ? 'top-2' : t.rank === 3 ? 'top-3' : '';
       return '<div class="lb-row ' + topClass + '" data-tid="' + escapeHtml(t.teamId) + '">' +
         '<div class="rank">' + t.rank + '</div>' +
-        '<div><div class="nm">' + escapeHtml(t.teamNameCN || '(無)') + '</div><div class="meta">' + escapeHtml(t.group || '') + ' · ' + t.judgeCount + ' 評審</div></div>' +
+        '<div><div class="nm">' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</div><div class="meta">' + escapeHtml(t.group || '') + ' · ' + t.judgeCount + window.L('aeScoreJudgeUnit') + '</div></div>' +
         '<div class="pts">' + (t.avg ? t.avg.toFixed(1) : '—') + '<small>/100</small></div>' +
       '</div>';
     }).join('');
@@ -184,12 +186,12 @@
     document.getElementById('centerC').innerHTML =
       '<div class="cc-h">' +
         '<div class="av-l">' + escapeHtml((t.teamNameCN || '?').charAt(0)) + '</div>' +
-        '<div><h2>' + escapeHtml(t.teamNameCN || '(無)') + '</h2><p>' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.group || '') + '</p></div>' +
+        '<div><h2>' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</h2><p>' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.group || '') + '</p></div>' +
       '</div>' +
       '<div class="score-grid">' +
         items.map(function (c, i) {
           return '<div class="score-card" data-key="' + escapeHtml(c.key) + '">' +
-            '<h4>' + escapeHtml(c.label) + ' <span class="weight">最高 ' + (c.maxScore || c.max || 25) + '</span></h4>' +
+            '<h4>' + escapeHtml(c.label) + ' <span class="weight">' + window.L('aeScoreCriterionMaxPre') + (c.maxScore || c.max || 25) + '</span></h4>' +
             '<div class="input-row">' +
               '<input type="number" data-score min="0" max="' + (c.maxScore || c.max || 25) + '" value="' + (c.score || 0) + '">' +
               '<span class="max">/' + (c.maxScore || c.max || 25) + '</span>' +
@@ -198,10 +200,12 @@
         }).join('') +
       '</div>' +
       '<div class="total-card">' +
-        '<div><div class="l">總分</div><div class="v"><span id="totalScore">0</span><em>/100</em></div></div>' +
-        '<div class="actions"><button class="btn-primary-w" id="submitScoreBtn">提交評分</button></div>' +
+        '<div><div class="l" data-i18n="aeScoreTotalLabel">總分</div><div class="v"><span id="totalScore">0</span><em>/100</em></div></div>' +
+        '<div class="actions"><button class="btn-primary-w" id="submitScoreBtn" data-i18n="aeScoreSubmitBtn">提交評分</button></div>' +
       '</div>' +
-      '<div class="comment-card"><label>評審評語（選填）</label><textarea id="commentInput" placeholder="可寫給選手的建議⋯">' + escapeHtml((myScore && myScore.comment) || '') + '</textarea></div>';
+      '<div class="comment-card"><label data-i18n="aeScoreCommentLabel">評審評語（選填）</label><textarea id="commentInput" data-i18n-placeholder="aeScoreCommentPlaceholder" placeholder="可寫給選手的建議⋯">' + escapeHtml((myScore && myScore.comment) || '') + '</textarea></div>';
+
+    window.applyI18n(document.getElementById('centerC'));
 
     function calcTotal() {
       var total = 0;
@@ -219,15 +223,15 @@
       });
       var total = calcTotal();
       var comment = document.getElementById('commentInput').value;
-      var btn = this; btn.disabled = true; btn.textContent = '提交中⋯';
+      var btn = this; btn.disabled = true; btn.textContent = window.L('aeScoreSubmittingBtn');
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success) {
-            btn.textContent = '✓ 已提交';
-            setTimeout(function () { btn.disabled = false; btn.textContent = '提交評分'; load(); }, 800);
-          } else { btn.disabled = false; btn.textContent = '提交評分'; alert('失敗：' + ((res && res.message) || '')); }
+            btn.textContent = window.L('aeScoreSubmittedBtn');
+            setTimeout(function () { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); load(); }, 800);
+          } else { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); alert(window.L('aeScoreFailPre') + ((res && res.message) || '')); }
         })
-        .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '提交評分'; alert('失敗：' + (err && err.message)); })
+        .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); alert(window.L('aeScoreFailPre') + (err && err.message)); })
         .submitJudgeScore(compId, t.teamId, items, total, comment);
     });
   }

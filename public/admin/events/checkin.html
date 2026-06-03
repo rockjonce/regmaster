@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>QR 報到 · 主辦後台 · RegMaster</title>
+<title data-i18n="aeChkDocTitle">QR 報到 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -72,44 +72,45 @@
       <a class="nav-it" id="annLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>公告</a>
       <a class="nav-it" id="paymentsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg>付款</a>
       <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
-      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>QR 報到</a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg><span data-i18n="aeChkNavLabel">QR 報到</span></a>
     </div>
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>QR 報到</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="aeChkCrumbHome">主辦後台</a><span class="sep">/</span><a href="/admin/events/" data-i18n="aeChkCrumbEvents">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b data-i18n="aeChkCrumbHere">QR 報到</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
-    <div id="loadingState" class="loading-c">載入報到面板⋯</div>
+    <div id="loadingState" class="loading-c" data-i18n="aeChkLoading">載入報到面板⋯</div>
     <div class="body-3" id="content" style="display:none">
       <aside class="left-c">
-        <h4 style="font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px">即時統計</h4>
-        <div class="kpi-c featured"><div class="l">已報到</div><div class="v" id="checkedInV">0</div><div class="progress"><div id="checkedInBar" style="width:0%"></div></div></div>
-        <div class="kpi-c std"><div class="l">未報到</div><div class="v" id="notCheckedV">0</div></div>
-        <div class="kpi-c std"><div class="l">報到率</div><div class="v" id="rateV">0<em>%</em></div></div>
+        <h4 style="font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px" data-i18n="aeChkStatsTitle">即時統計</h4>
+        <div class="kpi-c featured"><div class="l" data-i18n="aeChkCheckedIn">已報到</div><div class="v" id="checkedInV">0</div><div class="progress"><div id="checkedInBar" style="width:0%"></div></div></div>
+        <div class="kpi-c std"><div class="l" data-i18n="aeChkNotCheckedIn">未報到</div><div class="v" id="notCheckedV">0</div></div>
+        <div class="kpi-c std"><div class="l" data-i18n="aeChkRate">報到率</div><div class="v" id="rateV">0<em>%</em></div></div>
       </aside>
       <section class="scanner-c">
-        <header class="sc-h"><h2>📷 QR / 編號報到</h2></header>
+        <header class="sc-h"><h2 data-i18n="aeChkScannerHead">📷 QR / 編號報到</h2></header>
         <div class="scan-area">
           <div id="qrReader" style="display:none"></div>
           <div class="manual-input-card" id="inputCard">
-            <h3>掃描 QR 或輸入編號</h3>
-            <input id="teamIdInput" placeholder="例：T4F000" maxlength="20" autofocus>
-            <button class="btn-scan" id="checkInBtn">確認報到 →</button>
-            <button class="btn-scan" id="scanToggleBtn" style="background:rgba(255,255,255,.12); color:#fff; margin-top:8px">📷 開啟相機掃描</button>
-            <div class="help">用手機 / 電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</div>
+            <h3 data-i18n="aeChkInputTitle">掃描 QR 或輸入編號</h3>
+            <input id="teamIdInput" placeholder="例：T4F000" data-i18n-placeholder="aeChkInputPh" maxlength="20" autofocus>
+            <button class="btn-scan" id="checkInBtn" data-i18n="aeChkConfirmBtn">確認報到 →</button>
+            <button class="btn-scan" id="scanToggleBtn" style="background:rgba(255,255,255,.12); color:#fff; margin-top:8px" data-i18n="aeChkOpenCamera">📷 開啟相機掃描</button>
+            <div class="help" data-i18n="aeChkHelp">用手機 / 電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</div>
           </div>
         </div>
       </section>
       <aside class="history-c">
-        <h4>最近報到紀錄</h4>
-        <div id="historyList"><p style="text-align:center; color:var(--muted); padding:24px 0">尚無紀錄</p></div>
+        <h4 data-i18n="aeChkHistoryTitle">最近報到紀錄</h4>
+        <div id="historyList"><p style="text-align:center; color:var(--muted); padding:24px 0" data-i18n="aeChkHistoryEmpty">尚無紀錄</p></div>
       </aside>
     </div>
   </main>
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-checkin.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -119,7 +120,7 @@
   var compId = '';
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/checkin/);
   if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
-  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  if (!compId) { alert(window.L('aeChkNoCompId')); location.href = '/admin/events/'; return; }
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   ['hubLink','editLink','annLink','paymentsLink','scoringLink'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -160,9 +161,9 @@
   function renderHistory() {
     var recent = TEAMS.filter(function (t) { return t.checkInTime; }).sort(function (a, b) { return (b.checkInTime || '').localeCompare(a.checkInTime || ''); }).slice(0, 10);
     var list = document.getElementById('historyList');
-    if (recent.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 0">尚無紀錄</p>'; return; }
+    if (recent.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 0">' + escapeHtml(window.L('aeChkHistoryEmpty')) + '</p>'; return; }
     list.innerHTML = recent.map(function (t) {
-      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || '(無)') + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
+      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || window.L('aeChkNoName')) + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
     }).join('');
   }
   function showResult(success, msg) {
@@ -170,10 +171,11 @@
     card.classList.toggle('success', success);
     card.classList.toggle('error', !success);
     var orig = card.innerHTML;
-    card.innerHTML = '<h3 style="text-align:center">' + (success ? '✓ 報到成功' : '✗ 報到失敗') + '</h3>' + '<p style="text-align:center; color:rgba(255,255,255,.7); margin:18px 0">' + escapeHtml(msg) + '</p>' + '<button class="btn-scan" id="contBtn">繼續</button>';
+    card.innerHTML = '<h3 style="text-align:center">' + escapeHtml(success ? window.L('aeChkResultOk') : window.L('aeChkResultFail')) + '</h3>' + '<p style="text-align:center; color:rgba(255,255,255,.7); margin:18px 0">' + escapeHtml(msg) + '</p>' + '<button class="btn-scan" id="contBtn">' + escapeHtml(window.L('aeChkContinue')) + '</button>';
     document.getElementById('contBtn').addEventListener('click', function () {
       card.innerHTML = orig;
       card.classList.remove('success', 'error');
+      if (window.applyI18n) window.applyI18n(card);
       // Re-wire
       wireCheckin();
     });
@@ -190,10 +192,10 @@
   var html5Qr = null, scanning = false;
   function updateScanBtn() {
     var b = document.getElementById('scanToggleBtn');
-    if (b) b.textContent = scanning ? '■ 停止掃描' : '📷 開啟相機掃描';
+    if (b) b.textContent = scanning ? window.L('aeChkStopScan') : window.L('aeChkOpenCamera');
   }
   function startScan() {
-    if (typeof Html5Qrcode === 'undefined') { alert('掃描元件載入失敗，請改用手動輸入'); return; }
+    if (typeof Html5Qrcode === 'undefined') { alert(window.L('aeChkScanLoadFail')); return; }
     var reader = document.getElementById('qrReader');
     reader.style.display = 'block';
     if (!html5Qr) html5Qr = new Html5Qrcode('qrReader');
@@ -212,7 +214,7 @@
     ).then(function () { scanning = true; updateScanBtn(); })
      .catch(function (e) {
        reader.style.display = 'none';
-       alert('無法開啟相機：' + ((e && e.message) || e) + '\n請確認已允許相機權限，或改用手動輸入。');
+       alert(window.L('aeChkCameraFail').replace('{err}', (e && e.message) || e));
      });
   }
   function stopScan() {
@@ -225,20 +227,20 @@
     var tid = document.getElementById('teamIdInput').value.trim().toUpperCase();
     if (!tid) return;
     var btn = document.getElementById('checkInBtn');
-    btn.disabled = true; btn.textContent = '處理中⋯';
+    btn.disabled = true; btn.textContent = window.L('aeChkProcessing');
     google.script.run
       .withSuccessHandler(function (res) {
-        btn.disabled = false; btn.textContent = '確認報到 →';
+        btn.disabled = false; btn.textContent = window.L('aeChkConfirmBtn');
         if (res && res.success) {
-          showResult(true, '隊伍 ' + tid + ' (' + (res.teamNameCN || '') + ') 報到成功');
+          showResult(true, window.L('aeChkSuccessMsg').replace('{tid}', tid).replace('{name}', res.teamNameCN || ''));
           load();
         } else {
-          showResult(false, (res && res.message) || '未知錯誤');
+          showResult(false, (res && res.message) || window.L('aeChkUnknownErr'));
         }
       })
       .withFailureHandler(function (err) {
-        btn.disabled = false; btn.textContent = '確認報到 →';
-        showResult(false, (err && err.message) || '網路錯誤');
+        btn.disabled = false; btn.textContent = window.L('aeChkConfirmBtn');
+        showResult(false, (err && err.message) || window.L('aeChkNetworkErr'));
       })
       .checkInTeamV2(tid, { meal: true });  // For Phase 6 we default meal=true; full picker in Phase 9
   }

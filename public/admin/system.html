@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>系統設定 · 主辦後台 · RegMaster</title>
+<title data-i18n="adSysDocTitle">系統設定 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -184,50 +184,50 @@ body { background:var(--bg); }
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><b>系統設定</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="adSysCrumbHome">主辦後台</a><span class="sep">/</span><b data-i18n="adSysCrumbHere">系統設定</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
 
     <div id="noAccess" class="no-access" style="display:none">
       <div class="ic">🛡</div>
-      <h2>需要 SYSTEM 權限</h2>
-      <p>系統設定僅供平台管理員使用。<br>您目前的角色：<b id="curRole">—</b></p>
-      <a href="/admin/" class="btn btn-primary">回到主辦後台</a>
+      <h2 data-i18n="adSysNaTitle">需要 SYSTEM 權限</h2>
+      <p data-i18n-html="adSysNaBody">系統設定僅供平台管理員使用。<br>您目前的角色：<b id="curRole">—</b></p>
+      <a href="/admin/" class="btn btn-primary" data-i18n="adSysNaBack">回到主辦後台</a>
     </div>
 
     <div class="main-c" id="content" style="display:none">
       <div style="margin-bottom:18px">
-        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px">系統設定</h1>
-        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)">參數、帳號、報名帳號、授權碼、分析與回饋的集中管理</p>
+        <h1 style="font:700 24px/1.2 var(--f-display); margin-bottom:4px" data-i18n="adSysPageTitle">系統設定</h1>
+        <p style="font:400 13.5px/1.5 var(--f-tc); color:var(--ink-3)" data-i18n="adSysPageSub">參數、帳號、報名帳號、授權碼、分析與回饋的集中管理</p>
       </div>
 
       <div class="tabbar">
-        <a data-tab="overview" class="on"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>平台總覽</a>
-        <a data-tab="params"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg>參數設定</a>
-        <a data-tab="plans"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18M7 3v18"/></svg>方案設定</a>
-        <a data-tab="accounts"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 11l2 2 4-4"/></svg>帳號管理 <span class="ct" id="ctAccts"></span></a>
-        <a data-tab="registrants"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>報名帳號 <span class="ct" id="ctRegs"></span></a>
-        <a data-tab="licenses"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>授權碼 <span class="ct" id="ctLics"></span></a>
-        <a data-tab="billing"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>帳務管理 <span class="ct" id="ctBilling"></span></a>
-        <a data-tab="analytics"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>使用者分析</a>
-        <a data-tab="feedback"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>意見回饋 <span class="ct" id="ctFb"></span></a>
+        <a data-tab="overview" class="on"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg><span data-i18n="adSysTabOverview">平台總覽</span></a>
+        <a data-tab="params"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 12h3M18 12h3M12 3v3M12 18v3"/></svg><span data-i18n="adSysTabParams">參數設定</span></a>
+        <a data-tab="plans"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18M7 3v18"/></svg><span data-i18n="adSysTabPlans">方案設定</span></a>
+        <a data-tab="accounts"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 11l2 2 4-4"/></svg><span data-i18n="adSysTabAccounts">帳號管理</span> <span class="ct" id="ctAccts"></span></a>
+        <a data-tab="registrants"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><span data-i18n="adSysTabRegistrants">報名帳號</span> <span class="ct" id="ctRegs"></span></a>
+        <a data-tab="licenses"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg><span data-i18n="adSysTabLicenses">授權碼</span> <span class="ct" id="ctLics"></span></a>
+        <a data-tab="billing"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span data-i18n="adSysTabBilling">帳務管理</span> <span class="ct" id="ctBilling"></span></a>
+        <a data-tab="analytics"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span data-i18n="adSysTabAnalytics">使用者分析</span></a>
+        <a data-tab="feedback"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span data-i18n="adSysTabFeedback">意見回饋</span> <span class="ct" id="ctFb"></span></a>
       </div>
 
       <!-- ============ 平台總覽 (was Super Admin) ============ -->
       <div class="pane on" data-pane="overview">
-        <h3 style="font:600 13px/1.2 var(--f-display); margin-bottom:12px; color:var(--ink-3)">服務狀態</h3>
-        <div class="health-strip" id="healthStrip"><div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:18px">載入中⋯</div></div>
+        <h3 style="font:600 13px/1.2 var(--f-display); margin-bottom:12px; color:var(--ink-3)" data-i18n="adSysOvServiceStatus">服務狀態</h3>
+        <div class="health-strip" id="healthStrip"><div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:18px" data-i18n="adSysLoading">載入中⋯</div></div>
         <div class="kpis">
-          <div class="kpi"><div class="l">活動總數</div><div class="v" id="o-comps">—</div></div>
-          <div class="kpi"><div class="l">隊伍總數</div><div class="v" id="o-teams">—</div></div>
-          <div class="kpi"><div class="l">帳號總數</div><div class="v" id="o-accts">—</div></div>
-          <div class="kpi"><div class="l">有效授權</div><div class="v" id="o-lics">—</div></div>
+          <div class="kpi"><div class="l" data-i18n="adSysOvKpiComps">活動總數</div><div class="v" id="o-comps">—</div></div>
+          <div class="kpi"><div class="l" data-i18n="adSysOvKpiTeams">隊伍總數</div><div class="v" id="o-teams">—</div></div>
+          <div class="kpi"><div class="l" data-i18n="adSysOvKpiAccts">帳號總數</div><div class="v" id="o-accts">—</div></div>
+          <div class="kpi"><div class="l" data-i18n="adSysOvKpiLics">有效授權</div><div class="v" id="o-lics">—</div></div>
         </div>
         <div class="card">
-          <div class="ch"><div><h3>所有組織</h3><p>平台上的全部帳號與其使用情況</p></div><button class="icon-btn" id="reloadOvBtn">重新整理</button></div>
+          <div class="ch"><div><h3 data-i18n="adSysOvAllOrgs">所有組織</h3><p data-i18n="adSysOvAllOrgsSub">平台上的全部帳號與其使用情況</p></div><button class="icon-btn" id="reloadOvBtn" data-i18n="adSysReload">重新整理</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>組織</th><th>角色</th><th>方案</th><th>活動 / 報名</th><th>狀態</th><th>建立</th></tr></thead>
-            <tbody id="orgsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
+            <table class="tbl"><thead><tr><th data-i18n="adSysThOrg">組織</th><th data-i18n="adSysThRole">角色</th><th data-i18n="adSysThPlan">方案</th><th data-i18n="adSysThEventReg">活動 / 報名</th><th data-i18n="adSysThStatus">狀態</th><th data-i18n="adSysThCreated">建立</th></tr></thead>
+            <tbody id="orgsBody"><tr><td colspan="6" class="empty" data-i18n="adSysLoading">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -235,28 +235,28 @@ body { background:var(--bg); }
       <!-- ============ 參數設定 ============ -->
       <div class="pane" data-pane="params">
         <div class="card">
-          <div class="ch"><div><h3>PayUni 金流</h3><p>線上刷卡所需的商店參數（敏感資訊，請勿外洩）。方案年費與手續費已移至「方案設定」分頁。</p></div></div>
+          <div class="ch"><div><h3 data-i18n="adSysPayuniTitle">PayUni 金流</h3><p data-i18n="adSysPayuniSub">線上刷卡所需的商店參數（敏感資訊，請勿外洩）。方案年費與手續費已移至「方案設定」分頁。</p></div></div>
           <div class="cb">
             <div class="row-2">
-              <div class="fld"><label class="lbl">商店代號 MerID</label><input id="p-merid"></div>
-              <div class="fld"><label class="lbl">模式</label><select id="p-mode"><option value="">正式 (Production)</option><option value="t">測試 (Sandbox)</option></select></div>
+              <div class="fld"><label class="lbl" data-i18n="adSysPayuniMerId">商店代號 MerID</label><input id="p-merid"></div>
+              <div class="fld"><label class="lbl" data-i18n="adSysPayuniMode">模式</label><select id="p-mode"><option value="" data-i18n="adSysPayuniModeProd">正式 (Production)</option><option value="t" data-i18n="adSysPayuniModeSandbox">測試 (Sandbox)</option></select></div>
             </div>
             <div class="row-2">
               <div class="fld"><label class="lbl">HashKey</label><input id="p-hashkey" type="password" autocomplete="off"></div>
               <div class="fld"><label class="lbl">HashIV</label><input id="p-hashiv" type="password" autocomplete="off"></div>
             </div>
-            <label style="font:400 12px/1.4 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; gap:7px"><input type="checkbox" id="p-reveal" style="width:15px;height:15px"> 顯示金鑰</label>
-            <div class="fld" style="max-width:200px; margin-top:14px"><label class="lbl">稅率 (%)</label><input id="p-tax" type="number" min="0" max="100"></div>
+            <label style="font:400 12px/1.4 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; gap:7px"><input type="checkbox" id="p-reveal" style="width:15px;height:15px"> <span data-i18n="adSysPayuniReveal">顯示金鑰</span></label>
+            <div class="fld" style="max-width:200px; margin-top:14px"><label class="lbl" data-i18n="adSysPayuniTax">稅率 (%)</label><input id="p-tax" type="number" min="0" max="100"></div>
 
             <!-- 平台代收轉付週期：平台把 PayUNI 實領匯款給主辦方的頻率 -->
             <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--line-2)">
-              <h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:4px">平台轉帳週期</h4>
-              <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-bottom:14px">平台代收的 PayUNI 報名費（扣手續費後）匯款給主辦方的頻率。每週＝每週四；每月＝每月 5 日（遇假日順延至下個工作日）。此為全平台統一設定，主辦方於帳務頁可見下次匯款日。</p>
+              <h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:4px" data-i18n="adSysPayoutTitle">平台轉帳週期</h4>
+              <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-bottom:14px" data-i18n="adSysPayoutDesc">平台代收的 PayUNI 報名費（扣手續費後）匯款給主辦方的頻率。每週＝每週四；每月＝每月 5 日（遇假日順延至下個工作日）。此為全平台統一設定，主辦方於帳務頁可見下次匯款日。</p>
               <div class="row-2" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; max-width:420px">
-                <div class="fld"><label class="lbl">週期</label>
+                <div class="fld"><label class="lbl" data-i18n="adSysPayoutCycle">週期</label>
                   <select id="p-payoutCycle" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)">
-                    <option value="weekly">每週（每週四）</option>
-                    <option value="monthly">每月（每月 5 日）</option>
+                    <option value="weekly" data-i18n="adSysPayoutWeekly">每週（每週四）</option>
+                    <option value="monthly" data-i18n="adSysPayoutMonthly">每月（每月 5 日）</option>
                   </select>
                 </div>
               </div>
@@ -264,28 +264,28 @@ body { background:var(--bg); }
           </div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; max-width:none">
-          <button class="btn btn-ghost" id="paramsReload">重新載入</button>
-          <button class="btn btn-primary" id="paramsSave">儲存參數</button>
+          <button class="btn btn-ghost" id="paramsReload" data-i18n="adSysParamsReload">重新載入</button>
+          <button class="btn btn-primary" id="paramsSave" data-i18n="adSysParamsSave">儲存參數</button>
         </div>
 
         <!-- AI 金鑰 + 知識庫（原「AI 金鑰」分頁整併至參數設定） -->
         <div class="card" style="margin-top:18px">
-          <div class="ch"><div><h3>Gemini API 金鑰 <span class="ct" id="ctKeys"></span></h3><p>AI 助理使用；系統會在多把金鑰間自動輪替以分散額度</p></div></div>
+          <div class="ch"><div><h3><span data-i18n="adSysKeysTitle">Gemini API 金鑰</span> <span class="ct" id="ctKeys"></span></h3><p data-i18n="adSysKeysSub">AI 助理使用；系統會在多把金鑰間自動輪替以分散額度</p></div></div>
           <div class="cb">
-            <div id="keysList"><div class="empty">載入中⋯</div></div>
+            <div id="keysList"><div class="empty" data-i18n="adSysLoading">載入中⋯</div></div>
             <div class="row-2" style="margin-top:14px; align-items:end">
-              <div class="fld" style="margin:0"><label class="lbl">新增金鑰</label><input id="newKey" placeholder="AIza..." autocomplete="off"></div>
-              <div><button class="btn btn-ghost btn-block" id="addKeyBtn">＋ 加入清單</button></div>
+              <div class="fld" style="margin:0"><label class="lbl" data-i18n="adSysKeysNew">新增金鑰</label><input id="newKey" placeholder="AIza..." autocomplete="off"></div>
+              <div><button class="btn btn-ghost btn-block" id="addKeyBtn" data-i18n="adSysKeysAdd">＋ 加入清單</button></div>
             </div>
           </div>
         </div>
-        <div style="display:flex; gap:10px; justify-content:flex-end"><button class="btn btn-primary" id="saveKeysBtn">儲存金鑰</button></div>
+        <div style="display:flex; gap:10px; justify-content:flex-end"><button class="btn btn-primary" id="saveKeysBtn" data-i18n="adSysKeysSave">儲存金鑰</button></div>
         <div class="card" style="margin-top:18px">
-          <div class="ch"><div><h3>AI 知識庫（向量檢索）</h3><p>把操作手冊轉成向量索引，AI 助理回答時會做語意比對檢索，找出最相關的內容。新增/修改手冊後請重建一次。</p></div></div>
+          <div class="ch"><div><h3 data-i18n="adSysKbTitle">AI 知識庫（向量檢索）</h3><p data-i18n="adSysKbSub">把操作手冊轉成向量索引，AI 助理回答時會做語意比對檢索，找出最相關的內容。新增/修改手冊後請重建一次。</p></div></div>
           <div class="cb">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
-              <div id="kbStatus" style="font:500 13px/1.5 var(--f-tc); color:var(--ink-2)">查詢中⋯</div>
-              <button class="btn btn-primary" id="rebuildKbBtn">重建知識庫</button>
+              <div id="kbStatus" style="font:500 13px/1.5 var(--f-tc); color:var(--ink-2)" data-i18n="adSysKbQuerying">查詢中⋯</div>
+              <button class="btn btn-primary" id="rebuildKbBtn" data-i18n="adSysKbRebuild">重建知識庫</button>
             </div>
           </div>
         </div>
@@ -303,22 +303,22 @@ body { background:var(--bg); }
           #plansCards .lbl{font:600 10.5px/1.3 var(--f-mono);color:var(--muted);text-transform:none}
         </style>
         <div class="card">
-          <div class="ch"><div><h3>方案設定</h3><p>逐方案調整年費、PayUNI 手續費、限制與功能。此為價格 / 費率 / 限制 / 功能的<strong>唯一真實來源</strong>；儲存後會同步反映到 landing 頁與主辦方「方案與授權」頁。<code>0 = 無限</code>。</p></div></div>
-          <div class="cb"><div id="plansCards" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(238px,1fr)); gap:14px">載入中⋯</div></div>
+          <div class="ch"><div><h3 data-i18n="adSysPlansTitle">方案設定</h3><p data-i18n-html="adSysPlansSub">逐方案調整年費、PayUNI 手續費、限制與功能。此為價格 / 費率 / 限制 / 功能的<strong>唯一真實來源</strong>；儲存後會同步反映到 landing 頁與主辦方「方案與授權」頁。<code>0 = 無限</code>。</p></div></div>
+          <div class="cb"><div id="plansCards" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(238px,1fr)); gap:14px" data-i18n="adSysLoading">載入中⋯</div></div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; max-width:none">
-          <button class="btn btn-ghost" id="plansReload">重新載入</button>
-          <button class="btn btn-primary" id="plansSave">儲存方案設定</button>
+          <button class="btn btn-ghost" id="plansReload" data-i18n="adSysPlansReload">重新載入</button>
+          <button class="btn btn-primary" id="plansSave" data-i18n="adSysPlansSave">儲存方案設定</button>
         </div>
       </div>
 
       <!-- ============ 帳號管理 ============ -->
       <div class="pane" data-pane="accounts">
         <div class="card">
-          <div class="ch"><div><h3>系統帳號</h3><p>主辦方與系統管理員帳號</p></div><button class="btn btn-primary btn-sm" id="addAcctBtn">＋ 新增帳號</button></div>
+          <div class="ch"><div><h3 data-i18n="adSysAcctTitle">系統帳號</h3><p data-i18n="adSysAcctSub">主辦方與系統管理員帳號</p></div><button class="btn btn-primary btn-sm" id="addAcctBtn" data-i18n="adSysAcctAdd">＋ 新增帳號</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>帳號</th><th>名稱</th><th>角色</th><th>Email</th><th>登入方式</th><th>狀態</th><th></th></tr></thead>
-            <tbody id="acctsBody"><tr><td colspan="7" class="empty">載入中⋯</td></tr></tbody></table>
+            <table class="tbl"><thead><tr><th data-i18n="adSysAcctThAccount">帳號</th><th data-i18n="adSysAcctThName">名稱</th><th data-i18n="adSysAcctThRole">角色</th><th data-i18n="adSysAcctThEmail">Email</th><th data-i18n="adSysAcctThLogin">登入方式</th><th data-i18n="adSysAcctThStatus">狀態</th><th></th></tr></thead>
+            <tbody id="acctsBody"><tr><td colspan="7" class="empty" data-i18n="adSysLoading">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -326,20 +326,20 @@ body { background:var(--bg); }
       <!-- ============ 授權碼 ============ -->
       <div class="pane" data-pane="licenses">
         <div class="card">
-          <div class="ch"><div><h3>產生授權碼</h3><p>建立可供主辦方啟用的授權碼</p></div></div>
+          <div class="ch"><div><h3 data-i18n="adSysLicGenTitle">產生授權碼</h3><p data-i18n="adSysLicGenSub">建立可供主辦方啟用的授權碼</p></div></div>
           <div class="cb">
             <div class="row-2">
-              <div class="fld"><label class="lbl">方案層級</label><select id="l-tier"><option value="starter">Starter</option><option value="pro">Pro</option><option value="team">Team</option></select></div>
-              <div class="fld"><label class="lbl">年數</label><input id="l-years" type="number" min="1" value="1"></div>
+              <div class="fld"><label class="lbl" data-i18n="adSysLicTier">方案層級</label><select id="l-tier"><option value="starter">Starter</option><option value="pro">Pro</option><option value="team">Team</option></select></div>
+              <div class="fld"><label class="lbl" data-i18n="adSysLicYears">年數</label><input id="l-years" type="number" min="1" value="1"></div>
             </div>
-            <div style="display:flex; justify-content:flex-end"><button class="btn btn-primary" id="genLicBtn">產生授權碼</button></div>
+            <div style="display:flex; justify-content:flex-end"><button class="btn btn-primary" id="genLicBtn" data-i18n="adSysLicGenBtn">產生授權碼</button></div>
           </div>
         </div>
         <div class="card">
-          <div class="ch"><div><h3>授權碼清單</h3><p>所有已產生的授權碼</p></div><button class="icon-btn" id="reloadLicBtn">重新整理</button></div>
+          <div class="ch"><div><h3 data-i18n="adSysLicListTitle">授權碼清單</h3><p data-i18n="adSysLicListSub">所有已產生的授權碼</p></div><button class="icon-btn" id="reloadLicBtn" data-i18n="adSysReload">重新整理</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>授權碼</th><th>層級</th><th>年限</th><th>狀態</th><th>啟用者</th><th></th></tr></thead>
-            <tbody id="licsBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
+            <table class="tbl"><thead><tr><th data-i18n="adSysLicThCode">授權碼</th><th data-i18n="adSysLicThTier">層級</th><th data-i18n="adSysLicThQuota">年限</th><th data-i18n="adSysLicThStatus">狀態</th><th data-i18n="adSysLicThActivatedBy">啟用者</th><th></th></tr></thead>
+            <tbody id="licsBody"><tr><td colspan="6" class="empty" data-i18n="adSysLoading">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -349,24 +349,24 @@ body { background:var(--bg); }
         <div class="card">
           <div class="ch">
             <div>
-              <h3>平台代收轉付 — 結算匯款</h3>
-              <p>選擇主辦方，檢視其所有活動的 PayUNI 線上付款訂單。點「結算並匯款」會把目前<b>所有未結訂單</b>一次匯出（每筆只會被匯一次，整批扣 NT$15 匯費）。銀行轉帳由報名者直接匯入主辦方帳戶，不在此列。</p>
+              <h3 data-i18n="adSysBillTitle">平台代收轉付 — 結算匯款</h3>
+              <p data-i18n-html="adSysBillSub">選擇主辦方，檢視其所有活動的 PayUNI 線上付款訂單。點「結算並匯款」會把目前<b>所有未結訂單</b>一次匯出（每筆只會被匯一次，整批扣 NT$15 匯費）。銀行轉帳由報名者直接匯入主辦方帳戶，不在此列。</p>
             </div>
           </div>
           <div class="cb">
             <div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:14px; align-items:end">
               <div class="fld">
-                <label class="lbl">主辦方</label>
+                <label class="lbl" data-i18n="adSysBillCreator">主辦方</label>
                 <select id="b-creator" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)"></select>
               </div>
-              <button class="btn btn-ghost btn-sm" id="b-reload">↻ 重新整理</button>
+              <button class="btn btn-ghost btn-sm" id="b-reload" data-i18n="adSysBillReload">↻ 重新整理</button>
             </div>
             <div id="b-bars" style="display:none; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px"></div>
             <div id="b-summary" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:14px"></div>
             <div id="b-detail"></div>
             <div style="display:flex; gap:8px; margin-top:14px; justify-content:flex-end">
-              <button class="btn btn-ghost" id="b-export">⬇️ 匯出 CSV</button>
-              <button class="btn btn-primary" id="b-settle">💸 結算並匯款</button>
+              <button class="btn btn-ghost" id="b-export" data-i18n="adSysBillExport">⬇️ 匯出 CSV</button>
+              <button class="btn btn-primary" id="b-settle" data-i18n="adSysBillSettle">💸 結算並匯款</button>
             </div>
             <div id="b-history" style="margin-top:24px; padding-top:18px; border-top:1px solid var(--line-2)"></div>
           </div>
@@ -377,22 +377,22 @@ body { background:var(--bg); }
       <div class="pane" data-pane="analytics">
         <div class="card">
           <div class="ch">
-            <div><h3>使用者分析</h3><p>追蹤平台流量、帳號、收入、內容、安全等指標</p></div>
+            <div><h3 data-i18n="adSysAnaTitle">使用者分析</h3><p data-i18n="adSysAnaSub">追蹤平台流量、帳號、收入、內容、安全等指標</p></div>
             <div class="ana-range-bar">
               <select id="ana-preset">
-                <option value="today">今天</option>
-                <option value="last3">近 3 日</option>
-                <option value="last7" selected>近 7 日</option>
-                <option value="last14">近 14 日</option>
-                <option value="last30">近 30 日</option>
-                <option value="last90">近 90 日</option>
-                <option value="lastYear">近一年</option>
-                <option value="all">全部期間</option>
-                <option value="custom">自訂期間</option>
+                <option value="today" data-i18n="adSysAnaToday">今天</option>
+                <option value="last3" data-i18n="adSysAnaLast3">近 3 日</option>
+                <option value="last7" selected data-i18n="adSysAnaLast7">近 7 日</option>
+                <option value="last14" data-i18n="adSysAnaLast14">近 14 日</option>
+                <option value="last30" data-i18n="adSysAnaLast30">近 30 日</option>
+                <option value="last90" data-i18n="adSysAnaLast90">近 90 日</option>
+                <option value="lastYear" data-i18n="adSysAnaLastYear">近一年</option>
+                <option value="all" data-i18n="adSysAnaAll">全部期間</option>
+                <option value="custom" data-i18n="adSysAnaCustom">自訂期間</option>
               </select>
               <input type="date" id="ana-from" style="display:none">
               <input type="date" id="ana-to"   style="display:none">
-              <button class="btn btn-ghost btn-sm" id="ana-reload">↻ 重新整理</button>
+              <button class="btn btn-ghost btn-sm" id="ana-reload" data-i18n="adSysAnaReload">↻ 重新整理</button>
             </div>
           </div>
           <div class="cb">
@@ -401,29 +401,29 @@ body { background:var(--bg); }
 
             <!-- Sub-tabs bar -->
             <div class="ana-subtabs">
-              <a data-sub="traffic" class="on">📊 流量</a>
-              <a data-sub="accounts">👥 帳號</a>
-              <a data-sub="revenue">💰 收入</a>
-              <a data-sub="content">🔥 內容</a>
-              <a data-sub="security">🔐 安全</a>
+              <a data-sub="traffic" class="on" data-i18n="adSysAnaSubTraffic">📊 流量</a>
+              <a data-sub="accounts" data-i18n="adSysAnaSubAccounts">👥 帳號</a>
+              <a data-sub="revenue" data-i18n="adSysAnaSubRevenue">💰 收入</a>
+              <a data-sub="content" data-i18n="adSysAnaSubContent">🔥 內容</a>
+              <a data-sub="security" data-i18n="adSysAnaSubSecurity">🔐 安全</a>
             </div>
 
             <!-- Tab: 流量 -->
             <div class="ana-sub on" data-subpane="traffic">
               <div class="ana-grid">
                 <div class="ana-card full">
-                  <h4>每日流量</h4>
-                  <p class="ana-sub-desc">總瀏覽數 + 不重複裝置數，兩條折線並列</p>
+                  <h4 data-i18n="adSysAnaDailyTitle">每日流量</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaDailyDesc">總瀏覽數 + 不重複裝置數，兩條折線並列</p>
                   <div class="ana-canvas-box"><canvas id="ana-daily"></canvas></div>
                 </div>
                 <div class="ana-card full">
-                  <h4>時段熱力圖</h4>
-                  <p class="ana-sub-desc">星期 × 24 小時，找出網站流量高峰時段</p>
+                  <h4 data-i18n="adSysAnaHeatTitle">時段熱力圖</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaHeatDesc">星期 × 24 小時，找出網站流量高峰時段</p>
                   <div class="ana-heatmap" id="ana-heatmap"></div>
                 </div>
                 <div class="ana-card">
-                  <h4>裝置 / 瀏覽器分布</h4>
-                  <p class="ana-sub-desc">桌機 / 行動 / 平板 比例</p>
+                  <h4 data-i18n="adSysAnaDeviceTitle">裝置 / 瀏覽器分布</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaDeviceDesc">桌機 / 行動 / 平板 比例</p>
                   <div class="ana-canvas-box"><canvas id="ana-device"></canvas></div>
                 </div>
               </div>
@@ -433,18 +433,18 @@ body { background:var(--bg); }
             <div class="ana-sub" data-subpane="accounts">
               <div class="ana-grid">
                 <div class="ana-card full">
-                  <h4>新註冊主辦方數量</h4>
-                  <p class="ana-sub-desc">每日新建立的主辦方帳號</p>
+                  <h4 data-i18n="adSysAnaNewRegTitle">新註冊主辦方數量</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaNewRegDesc">每日新建立的主辦方帳號</p>
                   <div class="ana-canvas-box"><canvas id="ana-newreg"></canvas></div>
                 </div>
                 <div class="ana-card">
-                  <h4>方案分布</h4>
-                  <p class="ana-sub-desc">Free / Starter / Pro / Team 各帳號數量</p>
+                  <h4 data-i18n="adSysAnaTierTitle">方案分布</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaTierDesc">Free / Starter / Pro / Team 各帳號數量</p>
                   <div class="ana-canvas-box"><canvas id="ana-tier"></canvas></div>
                 </div>
                 <div class="ana-card">
-                  <h4>流失分析（未登入天數）</h4>
-                  <p class="ana-sub-desc">超過 30/60/90 天未登入的帳號</p>
+                  <h4 data-i18n="adSysAnaInactiveTitle">流失分析（未登入天數）</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaInactiveDesc">超過 30/60/90 天未登入的帳號</p>
                   <div class="ana-canvas-box"><canvas id="ana-inactive"></canvas></div>
                 </div>
               </div>
@@ -454,13 +454,13 @@ body { background:var(--bg); }
             <div class="ana-sub" data-subpane="revenue">
               <div class="ana-grid">
                 <div class="ana-card">
-                  <h4>付費轉換漏斗</h4>
-                  <p class="ana-sub-desc">訪客 → 註冊 → 付費，看升級率</p>
+                  <h4 data-i18n="adSysAnaFunnelTitle">付費轉換漏斗</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaFunnelDesc">訪客 → 註冊 → 付費，看升級率</p>
                   <div class="ana-canvas-box"><canvas id="ana-funnel"></canvas></div>
                 </div>
                 <div class="ana-card full">
-                  <h4>月度收入 (ARPU/MRR)</h4>
-                  <p class="ana-sub-desc">每月平台收入（含報名手續費 + 授權碼購買）</p>
+                  <h4 data-i18n="adSysAnaMrrTitle">月度收入 (ARPU/MRR)</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaMrrDesc">每月平台收入（含報名手續費 + 授權碼購買）</p>
                   <div class="ana-canvas-box"><canvas id="ana-mrr"></canvas></div>
                 </div>
               </div>
@@ -470,8 +470,8 @@ body { background:var(--bg); }
             <div class="ana-sub" data-subpane="content">
               <div class="ana-grid">
                 <div class="ana-card full">
-                  <h4>熱門活動 Top 10</h4>
-                  <p class="ana-sub-desc">依瀏覽數 + 報名數排名（並列雙條長條）</p>
+                  <h4 data-i18n="adSysAnaTopTitle">熱門活動 Top 10</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaTopDesc">依瀏覽數 + 報名數排名（並列雙條長條）</p>
                   <div class="ana-canvas-box tall"><canvas id="ana-topevents"></canvas></div>
                 </div>
               </div>
@@ -481,13 +481,13 @@ body { background:var(--bg); }
             <div class="ana-sub" data-subpane="security">
               <div class="ana-grid">
                 <div class="ana-card">
-                  <h4>2FA 啟用率</h4>
-                  <p class="ana-sub-desc">啟用兩步驟驗證的帳號比例</p>
+                  <h4 data-i18n="adSysAnaTotpTitle">2FA 啟用率</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaTotpDesc">啟用兩步驟驗證的帳號比例</p>
                   <div class="ana-canvas-box"><canvas id="ana-totp"></canvas></div>
                 </div>
                 <div class="ana-card full">
-                  <h4>登入失敗熱力圖</h4>
-                  <p class="ana-sub-desc">星期 × 24 小時，潛在攻擊／撞庫熱點</p>
+                  <h4 data-i18n="adSysAnaFailHeatTitle">登入失敗熱力圖</h4>
+                  <p class="ana-sub-desc" data-i18n="adSysAnaFailHeatDesc">星期 × 24 小時，潛在攻擊／撞庫熱點</p>
                   <div class="ana-heatmap" id="ana-fail-heatmap"></div>
                 </div>
               </div>
@@ -499,10 +499,10 @@ body { background:var(--bg); }
       <!-- ============ 意見回饋 ============ -->
       <div class="pane" data-pane="feedback">
         <div class="card">
-          <div class="ch"><div><h3>使用者回饋</h3><p>來自報名者與主辦方的意見、錯誤回報</p></div><button class="icon-btn" id="reloadFbBtn">重新整理</button></div>
+          <div class="ch"><div><h3 data-i18n="adSysFbTitle">使用者回饋</h3><p data-i18n="adSysFbSub">來自報名者與主辦方的意見、錯誤回報</p></div><button class="icon-btn" id="reloadFbBtn" data-i18n="adSysReload">重新整理</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>時間</th><th>類別</th><th>主旨</th><th>來自</th><th>狀態</th><th></th></tr></thead>
-            <tbody id="fbBody"><tr><td colspan="6" class="empty">載入中⋯</td></tr></tbody></table>
+            <table class="tbl"><thead><tr><th data-i18n="adSysFbThTime">時間</th><th data-i18n="adSysFbThCategory">類別</th><th data-i18n="adSysFbThSubject">主旨</th><th data-i18n="adSysFbThFrom">來自</th><th data-i18n="adSysFbThStatus">狀態</th><th></th></tr></thead>
+            <tbody id="fbBody"><tr><td colspan="6" class="empty" data-i18n="adSysLoading">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -510,10 +510,10 @@ body { background:var(--bg); }
       <!-- ============ 報名帳號 ============ -->
       <div class="pane" data-pane="registrants">
         <div class="card">
-          <div class="ch"><div><h3>報名帳號</h3><p>平台上所有報名者的 Email 與其社群綁定狀態。刪除僅解除該 Email 的社群綁定，不影響其報名資料。</p></div><button class="icon-btn" id="reloadRegsBtn">重新整理</button></div>
+          <div class="ch"><div><h3 data-i18n="adSysRegTitle">報名帳號</h3><p data-i18n="adSysRegSub">平台上所有報名者的 Email 與其社群綁定狀態。刪除僅解除該 Email 的社群綁定，不影響其報名資料。</p></div><button class="icon-btn" id="reloadRegsBtn" data-i18n="adSysReload">重新整理</button></div>
           <div class="tbl-wrap">
-            <table class="tbl"><thead><tr><th>Email</th><th>姓名</th><th>報名數</th><th>涉及活動</th><th>最近報名</th><th>付款</th><th>Google</th><th>LINE</th><th></th></tr></thead>
-            <tbody id="regsBody"><tr><td colspan="9" class="empty">載入中⋯</td></tr></tbody></table>
+            <table class="tbl"><thead><tr><th data-i18n="adSysRegThEmail">Email</th><th data-i18n="adSysRegThName">姓名</th><th data-i18n="adSysRegThRegCount">報名數</th><th data-i18n="adSysRegThActivities">涉及活動</th><th data-i18n="adSysRegThLastReg">最近報名</th><th data-i18n="adSysRegThPay">付款</th><th data-i18n="adSysRegThGoogle">Google</th><th data-i18n="adSysRegThLine">LINE</th><th></th></tr></thead>
+            <tbody id="regsBody"><tr><td colspan="9" class="empty" data-i18n="adSysLoading">載入中⋯</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -525,37 +525,38 @@ body { background:var(--bg); }
 <!-- New account modal -->
 <div class="modal-bg" id="acctModal">
   <div class="modal">
-    <div class="mh"><h3>新增帳號</h3><button class="x" data-close>&times;</button></div>
+    <div class="mh"><h3 data-i18n="adSysModalAddAcct">新增帳號</h3><button class="x" data-close>&times;</button></div>
     <div class="mb">
-      <div class="fld"><label class="lbl">帳號（登入用，可用 Email）</label><input id="na-username"></div>
-      <div class="fld"><label class="lbl">顯示名稱</label><input id="na-display"></div>
-      <div class="fld"><label class="lbl">Email</label><input id="na-email" type="email"></div>
+      <div class="fld"><label class="lbl" data-i18n="adSysModalUsername">帳號（登入用，可用 Email）</label><input id="na-username"></div>
+      <div class="fld"><label class="lbl" data-i18n="adSysModalDisplay">顯示名稱</label><input id="na-display"></div>
+      <div class="fld"><label class="lbl" data-i18n="adSysModalEmail">Email</label><input id="na-email" type="email"></div>
       <div class="row-2">
-        <div class="fld"><label class="lbl">角色</label><select id="na-role"><option value="competition">主辦方 (competition)</option><option value="system">系統管理員 (system)</option></select></div>
-        <div class="fld"><label class="lbl">密碼</label><input id="na-password" type="text" placeholder="至少 6 碼"></div>
+        <div class="fld"><label class="lbl" data-i18n="adSysModalRole">角色</label><select id="na-role"><option value="competition" data-i18n="adSysModalRoleOrg">主辦方 (competition)</option><option value="system" data-i18n="adSysModalRoleSystem">系統管理員 (system)</option></select></div>
+        <div class="fld"><label class="lbl" data-i18n="adSysModalPassword">密碼</label><input id="na-password" type="text" placeholder="至少 6 碼" data-i18n-placeholder="adSysModalPwdPlaceholder"></div>
       </div>
     </div>
-    <div class="mf"><button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="na-create">建立帳號</button></div>
+    <div class="mf"><button class="btn btn-ghost" data-close data-i18n="adSysModalCancel">取消</button><button class="btn btn-primary" id="na-create" data-i18n="adSysModalCreate">建立帳號</button></div>
   </div>
 </div>
 
 <!-- Feedback detail modal -->
 <div class="modal-bg" id="fbModal">
   <div class="modal">
-    <div class="mh"><h3>回饋詳情</h3><button class="x" data-close>&times;</button></div>
+    <div class="mh"><h3 data-i18n="adSysFbModalTitle">回饋詳情</h3><button class="x" data-close>&times;</button></div>
     <div class="mb" id="fbDetail"></div>
     <div class="mf">
       <select id="fb-status" style="padding:8px 10px; border:1px solid var(--line); border-radius:7px; font:400 13px/1 var(--f-tc); margin-right:auto">
-        <option value="新建">新建</option><option value="處理中">處理中</option><option value="已解決">已解決</option><option value="已關閉">已關閉</option>
+        <option value="新建" data-i18n="adSysFbStatusNew">新建</option><option value="處理中" data-i18n="adSysFbStatusProcessing">處理中</option><option value="已解決" data-i18n="adSysFbStatusResolved">已解決</option><option value="已關閉" data-i18n="adSysFbStatusClosed">已關閉</option>
       </select>
-      <button class="btn btn-ghost" data-close>關閉</button>
-      <button class="btn btn-primary" id="fb-save-status">更新狀態</button>
+      <button class="btn btn-ghost" data-close data-i18n="adSysFbModalClose">關閉</button>
+      <button class="btn btn-primary" id="fb-save-status" data-i18n="adSysFbModalUpdate">更新狀態</button>
     </div>
   </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-system.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function () {
@@ -603,33 +604,33 @@ body { background:var(--bg); }
       var keys = Object.keys(health);
       hs.innerHTML = keys.length ? keys.map(function (k) {
         var h = health[k];
-        var val = h.latencyMs ? (h.latencyMs + '<em>ms</em>') : (h.queueDepth !== undefined ? (h.queueDepth + '<em>queued</em>') : '正常');
+        var val = h.latencyMs ? (h.latencyMs + '<em>ms</em>') : (h.queueDepth !== undefined ? (h.queueDepth + '<em>queued</em>') : window.L('adSysHealthNormal'));
         return '<div><div class="lbl-h"><span class="dot-h ' + esc(h.status || 'ok') + '"></span>' + esc(h.label || k) + '</div><div class="v-h">' + val + '</div></div>';
-      }).join('') : '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:18px">無服務狀態資料</div>';
+      }).join('') : '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:18px">' + window.L('adSysNoHealth') + '</div>';
       var m = res.metrics || {};
       document.getElementById('o-comps').textContent = (m.totalCompetitions || 0).toLocaleString();
       document.getElementById('o-teams').textContent = (m.totalTeams || 0).toLocaleString();
       document.getElementById('o-accts').textContent = (m.totalAccounts || 0).toLocaleString();
       document.getElementById('o-lics').textContent = (m.activeLicenses || 0).toLocaleString();
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getPlatformHealth();
+    }).withFailureHandler(function (e) { toast(e.message || window.L('adSysLoadFail'), 'err'); }).getPlatformHealth();
 
     google.script.run.withSuccessHandler(function (res) {
       var orgs = (res && res.orgs) || [];
       var b = document.getElementById('orgsBody');
-      if (!orgs.length) { b.innerHTML = '<tr><td colspan="6" class="empty">尚無組織</td></tr>'; return; }
+      if (!orgs.length) { b.innerHTML = '<tr><td colspan="6" class="empty">' + window.L('adSysNoOrgs') + '</td></tr>'; return; }
       b.innerHTML = orgs.map(function (o) {
         var stat = o.locked ? 'err' : o.emailVerified ? 'ok' : 'warn';
-        var statLabel = o.locked ? '已鎖定' : o.emailVerified ? '正常' : '未驗證';
+        var statLabel = o.locked ? window.L('adSysStatLocked') : o.emailVerified ? window.L('adSysStatNormal') : window.L('adSysStatUnverified');
         var planCell = o.role === 'system' ? '<span class="muted">—</span>' : '<span class="pill neutral">' + esc((o.tier || 'free').toUpperCase()) + '</span>';
         return '<tr>' +
           '<td><div class="org-cell"><div class="av-o">' + esc((o.displayName || o.username || '?').charAt(0).toUpperCase()) + '</div><div><h6>' + esc(o.displayName || o.username) + '</h6><p>' + esc(o.email || '') + '</p></div></div></td>' +
-          '<td>' + (o.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">主辦方</span>') + '</td>' +
+          '<td>' + (o.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">' + window.L('adSysRoleOrg') + '</span>') + '</td>' +
           '<td>' + planCell + '</td>' +
           '<td>' + (o.compCount || 0) + ' / ' + (o.totalTeams || 0) + '</td>' +
           '<td><span class="pill ' + stat + '">' + statLabel + '</span></td>' +
           '<td class="muted">' + esc(o.createdAt || '') + '</td></tr>';
       }).join('');
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).listAllOrgs();
+    }).withFailureHandler(function (e) { toast(e.message || window.L('adSysLoadFail'), 'err'); }).listAllOrgs();
   }
   document.getElementById('reloadOvBtn').addEventListener('click', loadOverview);
 
@@ -643,7 +644,7 @@ body { background:var(--bg); }
       document.getElementById('p-hashiv').value = cfg.payuniHashIV || '';
       document.getElementById('p-mode').value = cfg.payuniMode || '';
       document.getElementById('p-payoutCycle').value = cfg.payoutCycle === 'monthly' ? 'monthly' : 'weekly';
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).getSalesConfig();
+    }).withFailureHandler(function (e) { toast(e.message || window.L('adSysLoadFail'), 'err'); }).getSalesConfig();
   }
   document.getElementById('p-reveal').addEventListener('change', function () {
     var t = this.checked ? 'text' : 'password';
@@ -660,17 +661,19 @@ body { background:var(--bg); }
       payuniMode: document.getElementById('p-mode').value,
       payoutCycle: document.getElementById('p-payoutCycle').value === 'monthly' ? 'monthly' : 'weekly'
     };
-    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('adSysParamsSaving');
     google.script.run.withSuccessHandler(function (r) {
       btn.disabled = false; btn.textContent = o;
-      if (r && r.success) toast('參數已儲存'); else toast((r && r.message) || '儲存失敗', 'err');
-    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast(e.message || '儲存失敗', 'err'); })
+      if (r && r.success) toast(window.L('adSysParamsSaved')); else toast((r && r.message) || window.L('adSysSaveFail'), 'err');
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast(e.message || window.L('adSysSaveFail'), 'err'); })
       .saveSalesConfig(config);
   });
 
   // ================= 方案設定（逐方案矩陣） =================
   var PLAN_TIERS = [['free','Free'],['starter','Starter'],['pro','Pro'],['team','Team']];
-  var PLAN_FEATS = [['payment','線上金流收款'],['csvExport','匯出報表'],['ai','AI 助理（主辦後台）'],['eventAi','活動 AI 助理（報名者端）'],['scoring','評分'],['multiJudge','多評審評分'],['campaigns','公告群發'],['checkin','QR 報到'],['waitlist','允許候補'],['certificate','名牌 / 證書']];
+  // NOTE: first element of each pair is the immutable feature KEY (sent to backend);
+  // second element is a display-label i18n key resolved at render time.
+  var PLAN_FEATS = [['payment','adSysFeatPayment'],['csvExport','adSysFeatCsvExport'],['ai','adSysFeatAi'],['eventAi','adSysFeatEventAi'],['scoring','adSysFeatScoring'],['multiJudge','adSysFeatMultiJudge'],['campaigns','adSysFeatCampaigns'],['checkin','adSysFeatCheckin'],['waitlist','adSysFeatWaitlist'],['certificate','adSysFeatCertificate']];
   // Front-end fallback mirrors functions/index.js DEFAULT_PLANS.
   var DEFAULT_PLANS_FE = {
     free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,   features:{ payment:true, csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, waitlist:false, certificate:false } },
@@ -685,16 +688,16 @@ body { background:var(--bg); }
       var t = tt[0], label = tt[1], p = (plans && plans[t]) || {}, feats = p.features || {};
       var num = function (k, lbl, extra) { return '<div class="fld"><label class="lbl">' + lbl + '</label><input type="number" min="0" ' + (extra||'') + ' data-pl="' + t + '.' + k + '" value="' + _escAttr(p[k] != null ? p[k] : 0) + '"></div>'; };
       var togs = PLAN_FEATS.map(function (ff) {
-        var k = ff[0], on = feats[k] === true, note = (k === 'certificate') ? '<em>（功能尚未製作，預設關閉）</em>' : '';
-        return '<label class="plan-tog"><input type="checkbox" data-pl="' + t + '.features.' + k + '"' + (on ? ' checked' : '') + '><span>' + ff[1] + '</span>' + note + '</label>';
+        var k = ff[0], on = feats[k] === true, note = (k === 'certificate') ? '<em>' + window.L('adSysFeatCertNote') + '</em>' : '';
+        return '<label class="plan-tog"><input type="checkbox" data-pl="' + t + '.features.' + k + '"' + (on ? ' checked' : '') + '><span>' + window.L(ff[1]) + '</span>' + note + '</label>';
       }).join('');
       wrap.insertAdjacentHTML('beforeend',
         '<div class="card" style="margin:0"><div class="cb">' +
         '<h4 style="font:800 15px/1 var(--f-display); margin-bottom:12px">' + label + '</h4>' +
-        num('price','年訂閱費 (NT$/年)') +
-        num('feePct','PayUNI 手續費 (%)','step="0.1" max="100"') +
-        num('maxActiveEvents','同時進行中活動數（0=無限）') +
-        num('maxCapacity','單場名額上限（0=無限）') +
+        num('price',window.L('adSysPlanPrice')) +
+        num('feePct',window.L('adSysPlanFeePct'),'step="0.1" max="100"') +
+        num('maxActiveEvents',window.L('adSysPlanMaxEvents')) +
+        num('maxCapacity',window.L('adSysPlanMaxCapacity')) +
         '<div style="margin-top:10px; border-top:1px solid var(--line-2); padding-top:8px">' + togs + '</div>' +
         '</div></div>');
     });
@@ -713,10 +716,10 @@ body { background:var(--bg); }
       if (path[1] === 'features') plans[t].features[path[2]] = el.checked;
       else plans[t][path[1]] = (el.value === '' ? 0 : Number(el.value));
     });
-    var btn = document.getElementById('plansSave'); btn.disabled = true; var o = btn.textContent; btn.textContent = '儲存中⋯';
+    var btn = document.getElementById('plansSave'); btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('adSysPlansSaving');
     google.script.run
-      .withSuccessHandler(function (r) { btn.disabled = false; btn.textContent = o; if (r && r.success) toast('方案設定已儲存'); else toast((r && r.message) || '儲存失敗', 'err'); })
-      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || '儲存失敗', 'err'); })
+      .withSuccessHandler(function (r) { btn.disabled = false; btn.textContent = o; if (r && r.success) toast(window.L('adSysPlansSaved')); else toast((r && r.message) || window.L('adSysSaveFail'), 'err'); })
+      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || window.L('adSysSaveFail'), 'err'); })
       .saveSalesConfig({ plans: plans });
   }
   document.getElementById('plansReload').addEventListener('click', loadPlans);
@@ -729,33 +732,33 @@ body { background:var(--bg); }
       list = list || [];
       document.getElementById('ctAccts').textContent = list.length;
       var b = document.getElementById('acctsBody');
-      if (!list.length) { b.innerHTML = '<tr><td colspan="7" class="empty">尚無帳號</td></tr>'; return; }
+      if (!list.length) { b.innerHTML = '<tr><td colspan="7" class="empty">' + window.L('adSysAcctNone') + '</td></tr>'; return; }
       function provBadges(a) {
         var p = [];
-        if (a.hasPassword) p.push('<span class="pill" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)">密碼</span>');
+        if (a.hasPassword) p.push('<span class="pill" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)">' + window.L('adSysAcctProvPassword') + '</span>');
         if (a.hasGoogle) p.push('<span class="pill" title="' + esc(a.googleEmail || '') + '" style="background:rgba(66,133,244,.1);color:#1a73e8;border:1px solid rgba(66,133,244,.25)">Google</span>');
         if (a.hasLine) p.push('<span class="pill" title="' + esc(a.lineDisplayName || '') + '" style="background:rgba(6,199,85,.12);color:#06994a;border:1px solid rgba(6,199,85,.3)">LINE</span>');
         return p.length ? '<span style="display:inline-flex;gap:4px;flex-wrap:wrap">' + p.join('') + '</span>' : '<span class="muted">—</span>';
       }
       b.innerHTML = list.map(function (a) {
         var locked = a.lockedUntil && new Date() < new Date(a.lockedUntil);
-        var stat = locked ? '<span class="pill err">已鎖定</span>' : a.emailVerified ? '<span class="pill ok">正常</span>' : '<span class="pill warn">未驗證</span>';
-        var roleTag = a.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">主辦方</span>';
-        var del = a.username === 'admin' ? '' : '<button class="icon-btn danger" data-del="' + esc(a.username) + '">刪除</button>';
+        var stat = locked ? '<span class="pill err">' + window.L('adSysAcctLocked') + '</span>' : a.emailVerified ? '<span class="pill ok">' + window.L('adSysAcctNormal') + '</span>' : '<span class="pill warn">' + window.L('adSysAcctUnverified') + '</span>';
+        var roleTag = a.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">' + window.L('adSysRoleOrg') + '</span>';
+        var del = a.username === 'admin' ? '' : '<button class="icon-btn danger" data-del="' + esc(a.username) + '">' + window.L('adSysAcctDelete') + '</button>';
         return '<tr><td><b>' + esc(a.username) + '</b></td><td>' + esc(a.displayName || '') + '</td><td>' + roleTag + '</td><td class="muted">' + esc(a.email || '') + '</td><td>' + provBadges(a) + '</td><td>' + stat + '</td><td style="text-align:right">' + del + '</td></tr>';
       }).join('');
       b.querySelectorAll('[data-del]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var u = btn.dataset.del;
-          uiConfirm('確定刪除帳號「' + u + '」？此動作無法復原。', { title: '刪除帳號', okText: '刪除', danger: true }).then(function (ok) {
+          uiConfirm(window.L('adSysAcctConfirmDelPre') + u + window.L('adSysAcctConfirmDelPost'), { title: window.L('adSysAcctConfirmDelTitle'), okText: window.L('adSysAcctDelete'), danger: true }).then(function (ok) {
             if (!ok) return;
             google.script.run.withSuccessHandler(function (r) {
-              if (r && r.success) { toast('已刪除 ' + u); loadAccounts(); } else toast((r && r.message) || '刪除失敗', 'err');
-            }).withFailureHandler(function (e) { toast(e.message || '刪除失敗', 'err'); }).deleteAccount(u);
+              if (r && r.success) { toast(window.L('adSysAcctDeleted') + ' ' + u); loadAccounts(); } else toast((r && r.message) || window.L('adSysAcctDelFail'), 'err');
+            }).withFailureHandler(function (e) { toast(e.message || window.L('adSysAcctDelFail'), 'err'); }).deleteAccount(u);
           });
         });
       });
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).listAccounts();
+    }).withFailureHandler(function (e) { toast(e.message || window.L('adSysLoadFail'), 'err'); }).listAccounts();
   }
   document.getElementById('addAcctBtn').addEventListener('click', function () { openModal('acctModal'); });
   document.getElementById('na-create').addEventListener('click', function () {
@@ -764,18 +767,18 @@ body { background:var(--bg); }
     var role = document.getElementById('na-role').value;
     var display = document.getElementById('na-display').value.trim();
     var email = document.getElementById('na-email').value.trim();
-    if (!username || !password) { toast('帳號與密碼為必填', 'err'); return; }
-    if (password.length < 6) { toast('密碼至少 6 碼', 'err'); return; }
+    if (!username || !password) { toast(window.L('adSysAcctReqUserPwd'), 'err'); return; }
+    if (password.length < 6) { toast(window.L('adSysAcctPwdMin'), 'err'); return; }
     var btn = this; btn.disabled = true;
     google.script.run.withSuccessHandler(function (r) {
       btn.disabled = false;
       if (r && r.success) {
-        toast('帳號已建立');
+        toast(window.L('adSysAcctCreated'));
         closeModal('acctModal');
         ['na-username','na-display','na-email','na-password'].forEach(function (id) { document.getElementById(id).value = ''; });
         loadAccounts();
-      } else toast((r && r.message) || '建立失敗', 'err');
-    }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || '建立失敗', 'err'); })
+      } else toast((r && r.message) || window.L('adSysAcctCreateFail'), 'err');
+    }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || window.L('adSysAcctCreateFail'), 'err'); })
       .createAccount(username, password, role, display || username, email);
   });
 
@@ -785,24 +788,28 @@ body { background:var(--bg); }
       list = list || [];
       document.getElementById('ctLics').textContent = list.length;
       var b = document.getElementById('licsBody');
-      if (!list.length) { b.innerHTML = '<tr><td colspan="6" class="empty">尚無授權碼</td></tr>'; return; }
+      if (!list.length) { b.innerHTML = '<tr><td colspan="6" class="empty">' + window.L('adSysLicNone') + '</td></tr>'; return; }
       list.sort(function (a, c) { return (c.createdAt || '').localeCompare(a.createdAt || ''); });
       b.innerHTML = list.map(function (l) {
-        var tierName = (l.tier || '').toUpperCase() || (l.type === 'count' ? '次數(舊)' : '訂閱(舊)');
-        var quota = (l.years || 1) + ' 年';
+        // tier code stays as-is; legacy fallbacks are display-only
+        var tierName = (l.tier || '').toUpperCase() || (l.type === 'count' ? window.L('adSysLicTierCountOld') : window.L('adSysLicTierSubOld'));
+        var quota = (l.years || 1) + window.L('adSysLicYearUnit');
+        // s is the RAW backend status (used for class + display). Compare against
+        // the original Chinese values; map only the human-visible label.
         var s = l.computedStatus || l.status || '未啟用';
         var cls = s === '已啟用' ? 'ok' : s === '未啟用' ? 'neutral' : 'err';
-        return '<tr><td><b style="font:600 12.5px/1.4 var(--f-mono)">' + esc(l.code) + '</b></td><td><span class="pill role">' + esc(tierName) + '</span></td><td>' + quota + '</td><td><span class="pill ' + cls + '">' + esc(s) + '</span></td><td class="muted">' + esc(l.activatedBy || '—') + '</td><td style="text-align:right"><button class="icon-btn danger" data-del="' + esc(l.code) + '">刪除</button></td></tr>';
+        var sLabel = s === '已啟用' ? window.L('adSysLicStatusActivated') : s === '未啟用' ? window.L('adSysLicStatusUnactivated') : s;
+        return '<tr><td><b style="font:600 12.5px/1.4 var(--f-mono)">' + esc(l.code) + '</b></td><td><span class="pill role">' + esc(tierName) + '</span></td><td>' + quota + '</td><td><span class="pill ' + cls + '">' + esc(sLabel) + '</span></td><td class="muted">' + esc(l.activatedBy || '—') + '</td><td style="text-align:right"><button class="icon-btn danger" data-del="' + esc(l.code) + '">' + window.L('adSysLicDelete') + '</button></td></tr>';
       }).join('');
       b.querySelectorAll('[data-del]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          uiConfirm('刪除授權碼 ' + btn.dataset.del + '？', { title: '刪除授權碼', okText: '刪除', danger: true }).then(function (ok) {
+          uiConfirm(window.L('adSysLicConfirmDelTitle') + ' ' + btn.dataset.del + '？', { title: window.L('adSysLicConfirmDelTitle'), okText: window.L('adSysLicDelete'), danger: true }).then(function (ok) {
             if (!ok) return;
-            google.script.run.withSuccessHandler(function (r) { if (r && r.success) { toast('已刪除'); loadLicenses(); } }).deleteLicense(btn.dataset.del);
+            google.script.run.withSuccessHandler(function (r) { if (r && r.success) { toast(window.L('adSysLicDeleted')); loadLicenses(); } }).deleteLicense(btn.dataset.del);
           });
         });
       });
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).listLicenses();
+    }).withFailureHandler(function (e) { toast(e.message || window.L('adSysLoadFail'), 'err'); }).listLicenses();
   }
   document.getElementById('reloadLicBtn').addEventListener('click', loadLicenses);
   document.getElementById('genLicBtn').addEventListener('click', function () {
@@ -811,8 +818,8 @@ body { background:var(--bg); }
     var btn = this; btn.disabled = true;
     google.script.run.withSuccessHandler(function (r) {
       btn.disabled = false;
-      if (r && r.success) { toast('已產生 ' + tier.toUpperCase() + ' 授權碼：' + r.code); loadLicenses(); } else toast((r && r.message) || '產生失敗', 'err');
-    }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || '產生失敗', 'err'); })
+      if (r && r.success) { toast(window.L('adSysLicGenOkPre') + tier.toUpperCase() + window.L('adSysLicGenOkPost') + r.code); loadLicenses(); } else toast((r && r.message) || window.L('adSysLicGenFail'), 'err');
+    }).withFailureHandler(function (e) { btn.disabled = false; toast(e.message || window.L('adSysLicGenFail'), 'err'); })
       .createLicense(tier, years);
   });
 
@@ -826,28 +833,28 @@ body { background:var(--bg); }
     google.script.run.withSuccessHandler(function (list) {
       list = list || [];
       var sel = document.getElementById('b-creator');
-      sel.innerHTML = '<option value="">— 請選擇主辦方 —</option>' + list.map(function (a) {
+      sel.innerHTML = '<option value="">' + window.L('adSysBillSelectCreator') + '</option>' + list.map(function (a) {
         var lbl = a.organizationName || a.displayName || a.username;
         return '<option value="' + a.username + '">' + lbl + '（' + a.username + ' · ' + a.tier + '）</option>';
       }).join('');
       document.getElementById('ctBilling').textContent = list.length;
-    }).withFailureHandler(function () { toast('載入主辦方列表失敗', 'err'); }).listOrganizerAccounts();
+    }).withFailureHandler(function () { toast(window.L('adSysBillOrgListFail'), 'err'); }).listOrganizerAccounts();
   }
   function loadBilling() {
     var creator = document.getElementById('b-creator').value;
     document.getElementById('b-bars').style.display = 'none';
-    if (!creator) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">請先選擇主辦方</p>'; document.getElementById('b-detail').innerHTML = ''; document.getElementById('b-history').innerHTML = ''; BILL_DATA = null; return; }
-    document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">載入中⋯</p>';
+    if (!creator) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">' + window.L('adSysBillPickFirst') + '</p>'; document.getElementById('b-detail').innerHTML = ''; document.getElementById('b-history').innerHTML = ''; BILL_DATA = null; return; }
+    document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">' + window.L('adSysLoading') + '</p>';
     document.getElementById('b-detail').innerHTML = '';
     google.script.run
       .withSuccessHandler(function (res) { BILL_DATA = res || null; renderBilling(); })
-      .withFailureHandler(function (e) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--err-700); padding:16px">載入失敗：' + (e && e.message) + '</p>'; })
+      .withFailureHandler(function (e) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--err-700); padding:16px">' + window.L('adSysBillLoadFailPrefix') + (e && e.message) + '</p>'; })
       .getSettlementData(creator, '');
   }
   function renderBilling() {
     var d = BILL_DATA;
     _ensureBillingCss();
-    if (!d || d.error) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">查無資料</p>'; document.getElementById('b-detail').innerHTML = ''; document.getElementById('b-history').innerHTML = ''; return; }
+    if (!d || d.error) { document.getElementById('b-summary').innerHTML = '<p style="color:var(--muted); padding:16px">' + window.L('adSysBillNoData') + '</p>'; document.getElementById('b-detail').innerHTML = ''; document.getElementById('b-history').innerHTML = ''; return; }
     var s = d.summary || {};
     var tierLabel = { free: 'Free', starter: 'Starter', pro: 'Pro', team: 'Team' }[d.tier] || d.tier;
     var po = d.payout || {};
@@ -856,28 +863,28 @@ body { background:var(--bg); }
     var bars = document.getElementById('b-bars');
     bars.style.display = 'grid';
     var acctHtml = po.accountNumber
-      ? '<div class="big">' + _esc((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '　' + _esc((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div><div>帳號 ' + _esc(po.accountNumber) + '　戶名 ' + _esc(po.accountName || '') + '</div>'
-      : '<div class="big" style="color:var(--warn-700)">⚠ 主辦方尚未設定收款帳戶</div><div style="color:var(--muted)">無法匯款，請通知主辦方至「設定 → 收款帳戶」填寫。</div>';
+      ? '<div class="big">' + _esc((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '　' + _esc((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div><div>' + window.L('adSysBillAcctNo') + _esc(po.accountNumber) + window.L('adSysBillAcctName') + _esc(po.accountName || '') + '</div>'
+      : '<div class="big" style="color:var(--warn-700)">' + window.L('adSysBillNoAcct') + '</div><div style="color:var(--muted)">' + window.L('adSysBillNoAcctHint') + '</div>';
     bars.innerHTML =
-      '<div class="po-bar-sys' + (po.accountNumber ? '' : ' warn') + '"><h6>收款帳戶</h6>' + acctHtml + '</div>' +
-      '<div class="po-bar-sys"><h6>轉帳週期</h6><div class="big">' + (d.payoutCycle === 'monthly' ? '每月匯款（每月 5 日）' : '每週匯款（每週四）') + '</div><div style="color:var(--muted)">手續費率 ' + Number(d.feePct || 0).toFixed(1) + '%（方案 ' + _esc(tierLabel) + '）　每次匯款扣 NT$15</div></div>';
+      '<div class="po-bar-sys' + (po.accountNumber ? '' : ' warn') + '"><h6>' + window.L('adSysBillAcct') + '</h6>' + acctHtml + '</div>' +
+      '<div class="po-bar-sys"><h6>' + window.L('adSysBillCycle') + '</h6><div class="big">' + (d.payoutCycle === 'monthly' ? window.L('adSysBillCycleMonthly') : window.L('adSysBillCycleWeekly')) + '</div><div style="color:var(--muted)">' + window.L('adSysBillFeeRatePre') + Number(d.feePct || 0).toFixed(1) + '%' + window.L('adSysBillFeeRatePlan') + _esc(tierLabel) + window.L('adSysBillFeeRatePost') + '</div></div>';
 
     document.getElementById('b-summary').innerHTML =
-      '<div class="b-c-sys"><div class="l">PayUNI 收款</div><div class="v">' + _money(s.gross) + '</div><div class="sub">' + (s.orderCount || 0) + ' 筆訂單</div></div>' +
-      '<div class="b-c-sys"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− ' + _money(s.feeTotal) + '</div></div>' +
-      '<div class="b-c-sys featured"><div class="l">實領合計</div><div class="v">' + _money(s.net) + '</div></div>' +
-      '<div class="b-c-sys"><div class="l">已轉付</div><div class="v" style="color:var(--ok-700)">' + _money(s.settledNet) + '</div><div class="sub">' + (s.settledCount || 0) + ' 筆</div></div>' +
-      '<div class="b-c-sys"><div class="l">尚未轉付</div><div class="v" style="color:var(--warn-700)">' + _money(s.unsettledNet) + '</div><div class="sub">' + (s.unsettledCount || 0) + ' 筆</div></div>';
+      '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumGross') + '</div><div class="v">' + _money(s.gross) + '</div><div class="sub">' + (s.orderCount || 0) + window.L('adSysBillSumOrders') + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumFee') + '</div><div class="v" style="color:var(--err-700)">− ' + _money(s.feeTotal) + '</div></div>' +
+      '<div class="b-c-sys featured"><div class="l">' + window.L('adSysBillSumNet') + '</div><div class="v">' + _money(s.net) + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumSettled') + '</div><div class="v" style="color:var(--ok-700)">' + _money(s.settledNet) + '</div><div class="sub">' + (s.settledCount || 0) + window.L('adSysBillSumCount') + '</div></div>' +
+      '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumUnsettled') + '</div><div class="v" style="color:var(--warn-700)">' + _money(s.unsettledNet) + '</div><div class="sub">' + (s.unsettledCount || 0) + window.L('adSysBillSumCount') + '</div></div>';
 
     var orders = d.orders || [];
     document.getElementById('b-detail').innerHTML = orders.length === 0
-      ? '<p style="color:var(--muted); text-align:center; padding:18px">無 PayUNI 訂單</p>'
+      ? '<p style="color:var(--muted); text-align:center; padding:18px">' + window.L('adSysBillNoOrders') + '</p>'
       : '<div style="overflow-x:auto; border:1px solid var(--line); border-radius:9px"><table class="b-tbl-sys" style="width:100%; min-width:820px; border-collapse:collapse; font:400 12.5px/1.5 var(--f-tc)">' +
-        '<thead><tr><th>活動</th><th>隊伍</th><th>付款時間</th><th style="text-align:right">報名費</th><th style="text-align:right">手續費</th><th style="text-align:right">實領</th><th>轉付狀態</th></tr></thead>' +
+        '<thead><tr><th>' + window.L('adSysBillThComp') + '</th><th>' + window.L('adSysBillThTeam') + '</th><th>' + window.L('adSysBillThPaidAt') + '</th><th style="text-align:right">' + window.L('adSysBillThAmount') + '</th><th style="text-align:right">' + window.L('adSysBillThFee') + '</th><th style="text-align:right">' + window.L('adSysBillThNet') + '</th><th>' + window.L('adSysBillThSettleStatus') + '</th></tr></thead>' +
         '<tbody>' + orders.map(function (o) {
           var pill = o.settled
-            ? '<span style="font:600 10px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700)">✓ 已轉 ' + _esc(String(o.settledAt).slice(0, 10)) + '</span>'
-            : '<span style="font:600 10px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--warn-700)">待轉付</span>';
+            ? '<span style="font:600 10px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700)">' + window.L('adSysBillSettledPrefix') + _esc(String(o.settledAt).slice(0, 10)) + '</span>'
+            : '<span style="font:600 10px/1.4 var(--f-mono); padding:2px 7px; border-radius:4px; background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--warn-700)">' + window.L('adSysBillPending') + '</span>';
           return '<tr>' +
             '<td>' + _esc(o.compName) + '</td>' +
             '<td><b>' + _esc(o.teamNameCN || o.teamNameEN || '—') + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + _esc(o.teamId) + '</span></td>' +
@@ -894,22 +901,22 @@ body { background:var(--bg); }
     var unNet = s.unsettledNet || 0, unCnt = s.unsettledCount || 0;
     if (unCnt > 0) {
       settleBtn.disabled = false;
-      settleBtn.textContent = '💸 結算並匯款（' + unCnt + ' 筆，實匯 ' + _money(Math.max(0, unNet - 15)) + '）';
+      settleBtn.textContent = window.L('adSysBillSettleBtnPre') + unCnt + window.L('adSysBillSettleBtnMid') + _money(Math.max(0, unNet - 15)) + window.L('adSysBillSettleBtnPost');
     } else {
       settleBtn.disabled = true;
-      settleBtn.textContent = '💸 無未結訂單';
+      settleBtn.textContent = window.L('adSysBillNoUnsettled');
     }
 
     renderSettlements(d.settlements || []);
   }
   function renderSettlements(list) {
     var h = document.getElementById('b-history');
-    h.innerHTML = '<h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">結算匯款紀錄（' + list.length + '）</h4>' +
+    h.innerHTML = '<h4 style="font:700 13.5px/1.3 var(--f-display); margin-bottom:10px">' + window.L('adSysBillHistTitlePre') + list.length + window.L('adSysBillHistTitlePost') + '</h4>' +
       (list.length === 0
-        ? '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">尚未有任何結算匯款紀錄</p>'
+        ? '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">' + window.L('adSysBillNoHist') + '</p>'
         : '<div style="display:grid; gap:8px">' + list.map(function (r) {
             return '<div style="padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; font:400 12.5px/1.4 var(--f-tc)">' +
-              '<div><b style="font:500 11.5px/1.3 var(--f-mono)">' + _esc(r.settlementId) + '</b>　<span style="color:var(--muted)">' + _esc(String(r.createdAt).slice(0, 16)) + '</span><br><span style="color:var(--muted); font-size:11px">' + (r.orderCount || 0) + ' 筆 · 收款 ' + _money(r.grossTotal) + ' · 手續費 − ' + _money(r.feeTotal) + ' · 匯費 − NT$' + (r.wireFee || 15) + '</span></div>' +
+              '<div><b style="font:500 11.5px/1.3 var(--f-mono)">' + _esc(r.settlementId) + '</b>　<span style="color:var(--muted)">' + _esc(String(r.createdAt).slice(0, 16)) + '</span><br><span style="color:var(--muted); font-size:11px">' + (r.orderCount || 0) + window.L('adSysBillHistOrders') + _money(r.grossTotal) + window.L('adSysBillHistFee') + _money(r.feeTotal) + window.L('adSysBillHistWire') + (r.wireFee || 15) + '</span></div>' +
               '<div style="font-family:var(--f-mono); font-weight:700; color:var(--ok-700); white-space:nowrap">' + _money(r.actualWire) + '</div>' +
             '</div>';
           }).join('') + '</div>');
@@ -936,45 +943,45 @@ body { background:var(--bg); }
     document.head.appendChild(css);
   }
   function exportBillingSys() {
-    if (!BILL_DATA || !(BILL_DATA.orders || []).length) { toast('沒有資料可匯出', 'err'); return; }
+    if (!BILL_DATA || !(BILL_DATA.orders || []).length) { toast(window.L('adSysBillNoExport'), 'err'); return; }
     var s = BILL_DATA.summary;
-    var headers = ['活動', '訂單編號', '報名編號', '中文隊名', '英文隊名', 'PayUNI 交易序號', '付款時間', '報名費', '手續費%', '手續費', '實領金額', '轉付狀態', '結算編號'];
+    var headers = [window.L('adSysCsvComp'), window.L('adSysCsvOrderId'), window.L('adSysCsvRegId'), window.L('adSysCsvTeamCn'), window.L('adSysCsvTeamEn'), window.L('adSysCsvTradeNo'), window.L('adSysCsvPaidAt'), window.L('adSysCsvAmount'), window.L('adSysCsvFeePct'), window.L('adSysCsvFee'), window.L('adSysCsvNet'), window.L('adSysCsvSettleStatus'), window.L('adSysCsvSettleId')];
     var rows = BILL_DATA.orders.map(function (o) {
-      return [o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net, o.settled ? '已轉付' : '待轉付', o.settlementId || ''];
+      return [o.compName, o.orderId, o.teamId, o.teamNameCN, o.teamNameEN, o.payuniTradeNo, o.paidAt, o.amount, Number(o.feePct).toFixed(1) + '%', o.fee, o.net, o.settled ? window.L('adSysCsvSettled') : window.L('adSysCsvPending'), o.settlementId || ''];
     });
     rows.push([]);
-    rows.push(['', '', '', '', '', '', 'PayUNI 收款小計', s.gross, '', '', '', '', '']);
-    rows.push(['', '', '', '', '', '', '手續費小計', '', '', s.feeTotal, '', '', '']);
-    rows.push(['', '', '', '', '', '', '實領合計', '', '', '', s.net, '', '']);
-    rows.push(['', '', '', '', '', '', '已轉付', '', '', '', s.settledNet, '', '']);
-    rows.push(['', '', '', '', '', '', '尚未轉付', '', '', '', s.unsettledNet, '', '']);
+    rows.push(['', '', '', '', '', '', window.L('adSysCsvGrossSubtotal'), s.gross, '', '', '', '', '']);
+    rows.push(['', '', '', '', '', '', window.L('adSysCsvFeeSubtotal'), '', '', s.feeTotal, '', '', '']);
+    rows.push(['', '', '', '', '', '', window.L('adSysCsvNetTotal'), '', '', '', s.net, '', '']);
+    rows.push(['', '', '', '', '', '', window.L('adSysCsvSettledTotal'), '', '', '', s.settledNet, '', '']);
+    rows.push(['', '', '', '', '', '', window.L('adSysCsvUnsettledTotal'), '', '', '', s.unsettledNet, '', '']);
     var esc = function (v) { v = (v == null ? '' : String(v)); if (v.indexOf(',') !== -1 || v.indexOf('"') !== -1 || v.indexOf('\n') !== -1) v = '"' + v.replace(/"/g, '""') + '"'; return v; };
     var csv = [headers].concat(rows).map(function (r) { return r.map(esc).join(','); }).join('\n');
     var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '代收轉付_' + BILL_DATA.creator + '.csv'; a.click();
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = window.L('adSysCsvFilePrefix') + BILL_DATA.creator + '.csv'; a.click();
   }
   function settleNow() {
-    if (!BILL_DATA) { toast('請先選擇主辦方', 'err'); return; }
+    if (!BILL_DATA) { toast(window.L('adSysBillPickFirst'), 'err'); return; }
     var s = BILL_DATA.summary;
-    if (!s || (s.unsettledCount || 0) === 0) { toast('沒有未結算的訂單', 'err'); return; }
+    if (!s || (s.unsettledCount || 0) === 0) { toast(window.L('adSysBillNoUnsettledOrders'), 'err'); return; }
     var po = BILL_DATA.payout || {};
-    if (!po.accountNumber) { toast('主辦方尚未設定收款帳戶，無法匯款', 'err'); return; }
+    if (!po.accountNumber) { toast(window.L('adSysBillNoAcctSettle'), 'err'); return; }
     var actualWire = Math.max(0, (s.unsettledNet || 0) - 15);
-    if (!confirm('確認結算並匯款？\n\n' +
-      '主辦方：' + BILL_DATA.creator + '\n' +
-      '收款帳戶：' + (po.bankName || '') + ' ' + (po.branchName || '') + ' / ' + po.accountNumber + '（' + (po.accountName || '') + '）\n\n' +
-      '未結訂單：' + s.unsettledCount + ' 筆\n' +
-      '實領小計：NT$ ' + (s.unsettledNet || 0).toLocaleString() + '\n' +
-      '匯費：− NT$ 15\n' +
-      '實際匯款金額：NT$ ' + actualWire.toLocaleString() + '\n\n' +
-      '此操作會把這些訂單標記為「已轉付」（不可重複匯款），並寫入結算紀錄。請確認金額無誤。')) return;
-    var btn = document.getElementById('b-settle'); btn.disabled = true; var o = btn.textContent; btn.textContent = '結算中⋯';
+    if (!confirm(window.L('adSysBillSettleConfirm') +
+      window.L('adSysBillSettleCreator') + BILL_DATA.creator + '\n' +
+      window.L('adSysBillSettleAcct') + (po.bankName || '') + ' ' + (po.branchName || '') + ' / ' + po.accountNumber + '（' + (po.accountName || '') + '）\n\n' +
+      window.L('adSysBillSettleUnsettled') + s.unsettledCount + window.L('adSysBillSettleUnit') +
+      window.L('adSysBillSettleNet') + (s.unsettledNet || 0).toLocaleString() + '\n' +
+      window.L('adSysBillSettleWire') +
+      window.L('adSysBillSettleActual') + actualWire.toLocaleString() + '\n\n' +
+      window.L('adSysBillSettleNote'))) return;
+    var btn = document.getElementById('b-settle'); btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('adSysBillSettling');
     google.script.run
       .withSuccessHandler(function (r) {
-        if (r && r.success) { toast('已結算匯款：' + r.settlementId + '（實匯 NT$' + (r.actualWire || 0).toLocaleString() + '）'); loadBilling(); }
-        else { btn.disabled = false; btn.textContent = o; toast((r && r.message) || '結算失敗', 'err'); }
+        if (r && r.success) { toast(window.L('adSysBillSettleOkPre') + r.settlementId + window.L('adSysBillSettleOkMid') + (r.actualWire || 0).toLocaleString() + window.L('adSysBillSettleOkPost')); loadBilling(); }
+        else { btn.disabled = false; btn.textContent = o; toast((r && r.message) || window.L('adSysBillSettleFail'), 'err'); }
       })
-      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || '失敗', 'err'); })
+      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || window.L('adSysBillFail'), 'err'); })
       .createSettlement(BILL_DATA.creator, '');
   }
   document.getElementById('b-creator').addEventListener('change', loadBilling);

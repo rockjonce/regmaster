@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>通知 / EDM · 主辦後台 · RegMaster</title>
+<title data-i18n="aeAnnDocTitle">通知 / EDM · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -84,92 +84,93 @@
 <body>
 <div class="admin">
   <aside class="side">
-    <a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div><div class="nm">RegMaster<small>主辦後台</small></div></a>
-    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p>主辦方</p></div></div>
+    <a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div><div class="nm">RegMaster<small data-i18n="aeAnnCrumbHome">主辦後台</small></div></a>
+    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p data-i18n="aeAnnSideSub">主辦方</p></div></div>
     <div class="nav-grp">
-      <div class="l-grp">概覽</div>
-      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg>儀表板</a>
-      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>所有活動</a>
+      <div class="l-grp" data-i18n="aeAnnNavGrpOverview">概覽</div>
+      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg><span data-i18n="aeAnnNavDashboard">儀表板</span></a>
+      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg><span data-i18n="aeAnnNavAllEvents">所有活動</span></a>
     </div>
     <div class="nav-grp">
-      <div class="l-grp">本活動</div>
-      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg>總覽</a>
-      <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
-      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>通知 / EDM</a>
-      <a class="nav-it" id="paymentsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg>付款</a>
-      <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
-      <a class="nav-it" id="checkinLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>報到</a>
+      <div class="l-grp" data-i18n="aeAnnNavGrpThisEvent">本活動</div>
+      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg><span data-i18n="aeAnnNavHub">總覽</span></a>
+      <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg><span data-i18n="aeAnnNavSettings">設定</span></a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg><span data-i18n="aeAnnNavAnn">通知 / EDM</span></a>
+      <a class="nav-it" id="paymentsLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg><span data-i18n="aeAnnNavPayments">付款</span></a>
+      <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg><span data-i18n="aeAnnNavScoring">評分</span></a>
+      <a class="nav-it" id="checkinLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg><span data-i18n="aeAnnNavCheckin">報到</span></a>
     </div>
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>通知 / EDM</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="aeAnnCrumbHome">主辦後台</a><span class="sep">/</span><a href="/admin/events/" data-i18n="aeAnnCrumbEvents">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b data-i18n="aeAnnCrumbHere">通知 / EDM</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
-    <div id="loadingState" class="loading-c">載入通知⋯</div>
+    <div id="loadingState" class="loading-c" data-i18n="aeAnnLoading">載入通知⋯</div>
     <div class="main-3" id="content" style="display:none">
       <aside class="left-c">
         <div class="steps-hint">
-          <b>📋 使用步驟</b>
-          <div><span>1</span> 點下方「＋ 新增範本」建立公告</div>
-          <div><span>2</span> 編輯主旨／內容、選擇收件對象</div>
-          <div><span>3</span> 點「🔍 預覽」確認排版</div>
-          <div><span>4</span> 點「立即發送」寄給報名者</div>
+          <b data-i18n="aeAnnStepsTitle">📋 使用步驟</b>
+          <div><span>1</span> <span data-i18n="aeAnnStep1">點下方「＋ 新增範本」建立公告</span></div>
+          <div><span>2</span> <span data-i18n="aeAnnStep2">編輯主旨／內容、選擇收件對象</span></div>
+          <div><span>3</span> <span data-i18n="aeAnnStep3">點「🔍 預覽」確認排版</span></div>
+          <div><span>4</span> <span data-i18n="aeAnnStep4">點「立即發送」寄給報名者</span></div>
         </div>
-        <h3>所有範本</h3>
-        <button class="new-camp-btn" id="newCampBtn">＋ 新增範本</button>
+        <h3 data-i18n="aeAnnAllTemplates">所有範本</h3>
+        <button class="new-camp-btn" id="newCampBtn" data-i18n="aeAnnNewTemplate">＋ 新增範本</button>
         <div class="camp-list" id="campList"></div>
       </aside>
       <section class="center-c">
         <header class="editor-h">
-          <h2><input id="campTitle" placeholder="範本標題"></h2>
+          <h2><input id="campTitle" placeholder="範本標題" data-i18n-placeholder="aeAnnTitlePlaceholder"></h2>
           <div class="actions">
-            <button class="btn btn-ghost btn-sm" id="previewBtn">🔍 預覽</button>
-            <button class="btn btn-ghost btn-sm" id="saveCampBtn">儲存草稿</button>
-            <button class="btn btn-primary btn-sm" id="sendNowBtn">立即發送 →</button>
+            <button class="btn btn-ghost btn-sm" id="previewBtn" data-i18n="aeAnnPreviewBtn">🔍 預覽</button>
+            <button class="btn btn-ghost btn-sm" id="saveCampBtn" data-i18n="aeAnnSaveBtn">儲存草稿</button>
+            <button class="btn btn-primary btn-sm" id="sendNowBtn" data-i18n="aeAnnSendBtn">立即發送 →</button>
           </div>
         </header>
         <div class="compose">
           <div class="cmp-meta">
-            <div class="r"><div class="lbl">通道</div><div class="val">
+            <div class="r"><div class="lbl" data-i18n="aeAnnLblChannel">通道</div><div class="val">
               <div class="channel-pills">
                 <span class="channel-pill on" data-ch="email">📧 Email</span>
-                <span class="channel-pill disabled" data-ch="sms">📱 SMS<span class="soon">即將</span></span>
-                <span class="channel-pill disabled" data-ch="line">💬 LINE<span class="soon">即將</span></span>
+                <span class="channel-pill disabled" data-ch="sms">📱 SMS<span class="soon" data-i18n="aeAnnChSoon">即將</span></span>
+                <span class="channel-pill disabled" data-ch="line">💬 LINE<span class="soon" data-i18n="aeAnnChSoon">即將</span></span>
               </div>
             </div></div>
-            <div class="r"><div class="lbl">收件對象</div><div class="val">
+            <div class="r"><div class="lbl" data-i18n="aeAnnLblRecipients">收件對象</div><div class="val">
               <select id="recipFilter">
-                <option value="all">所有報名者</option>
-                <option value="paid">已付款</option>
-                <option value="unpaid">未付款</option>
-                <option value="waitlist">候補</option>
+                <option value="all" data-i18n="aeAnnRecipAll">所有報名者</option>
+                <option value="paid" data-i18n="aeAnnRecipPaid">已付款</option>
+                <option value="unpaid" data-i18n="aeAnnRecipUnpaid">未付款</option>
+                <option value="waitlist" data-i18n="aeAnnRecipWaitlist">候補</option>
               </select>
             </div></div>
-            <div class="r"><div class="lbl">主旨</div><div class="val"><input id="subjectInput" placeholder="例：場地調整通知"></div></div>
+            <div class="r"><div class="lbl" data-i18n="aeAnnLblSubject">主旨</div><div class="val"><input id="subjectInput" placeholder="例：場地調整通知" data-i18n-placeholder="aeAnnSubjectPlaceholder"></div></div>
           </div>
           <div class="email-canvas">
-            <h1><input id="bodyTitleInput" placeholder="信件標題（讀者第一眼看到）"></h1>
-            <div class="body-edit"><textarea id="bodyContent" placeholder="開始寫信⋯&#10;&#10;可用純文字（換行會保留），或基本內聯 HTML（如 <b> <a> <table> 等）。&#10;系統會自動套上 RegMaster 模板（含 logo、頁尾），並於儲存／發送前檢查 Outlook 相容性。"></textarea></div>
+            <h1><input id="bodyTitleInput" placeholder="信件標題（讀者第一眼看到）" data-i18n-placeholder="aeAnnBodyTitlePlaceholder"></h1>
+            <div class="body-edit"><textarea id="bodyContent" placeholder="開始寫信⋯&#10;&#10;可用純文字（換行會保留），或基本內聯 HTML（如 <b> <a> <table> 等）。&#10;系統會自動套上 RegMaster 模板（含 logo、頁尾），並於儲存／發送前檢查 Outlook 相容性。" data-i18n-placeholder="aeAnnBodyPlaceholder"></textarea></div>
           </div>
         </div>
       </section>
       <aside class="right-c">
-        <h4>預計收件人</h4>
+        <h4 data-i18n="aeAnnRightRecipients">預計收件人</h4>
         <div class="recipient-card">
           <div class="v" id="recipCount">—</div>
-          <div class="l">符合條件的 Email 數</div>
+          <div class="l" data-i18n="aeAnnRecipCountLabel">符合條件的 Email 數</div>
         </div>
         <div id="recipList" style="margin-bottom:14px; max-height:320px; overflow-y:auto"></div>
-        <h4 style="margin-top:18px">傳送統計</h4>
-        <div class="stats-row" id="statsBox">尚未發送</div>
-        <div class="help-tip">💡 Email 範本含 RegMaster 標題列、頁尾與 footer。<br><br>SMS / LINE 通道將於後續整合上線。</div>
+        <h4 style="margin-top:18px" data-i18n="aeAnnRightStats">傳送統計</h4>
+        <div class="stats-row" id="statsBox" data-i18n="aeAnnStatsNone">尚未發送</div>
+        <div class="help-tip" data-i18n-html="aeAnnHelpTip">💡 Email 範本含 RegMaster 標題列、頁尾與 footer。<br><br>SMS / LINE 通道將於後續整合上線。</div>
       </aside>
     </div>
   </main>
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-announcements.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -179,7 +180,7 @@
   var compId = '';
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/announcements/);
   if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
-  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  if (!compId) { alert(window.L('aeAnnErrNoId')); location.href = '/admin/events/'; return; }
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   ['hubLink','editLink','paymentsLink','scoringLink','checkinLink'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -201,15 +202,15 @@
     if (!looksLikeHtml(body)) return { ok: true, issues: issues };  // plain text is always fine
     var b = String(body || '');
     var add = function (level, msg, fix) { issues.push({ level: level, msg: msg, fix: fix }); };
-    if (/<script\b/i.test(b)) add('error', '含有 <script> 程式碼', 'Email 不支援 JavaScript，請移除所有 <script>。');
-    if (/<style\b/i.test(b)) add('error', '含有 <style> 區塊', 'Outlook 對 <style> 支援不完整，請改用「行內樣式」style="..." 寫在各標籤上。');
-    if (/<link\b/i.test(b)) add('error', '含有外部 <link> 樣式表', 'Email 無法載入外部 CSS，請改用行內樣式。');
-    if (/<(iframe|video|audio|form|object|embed|svg|canvas)\b/i.test(b)) add('error', '含有不支援的元素（iframe / video / form / svg 等）', '請移除這些元素，Email 用戶端（尤其 Outlook）不會顯示。');
-    if (/display\s*:\s*(inline-)?(flex|grid)/i.test(b)) add('error', '使用了 flex / grid 版面', 'Outlook 不支援 flex/grid，請改用 <table> 排版。');
-    if (/position\s*:\s*(absolute|fixed|sticky|relative)/i.test(b)) add('error', '使用了 position 定位', 'Outlook 會忽略 position，請改用 <table> 與內距（padding）排版。');
-    if (/\bfloat\s*:/i.test(b)) add('warn', '使用了 float', '部分 Outlook 版本對 float 支援不佳，建議改用 <table>。');
-    if (/background-image|\burl\s*\(/i.test(b)) add('warn', '使用了背景圖 background-image', 'Outlook 對背景圖支援有限，建議改用實心背景色或 <img>。');
-    if (/\b\d+(\.\d+)?(rem|vw|vh|vmin|vmax)\b/i.test(b)) add('warn', '使用了 rem / vw 等相對單位', 'Email 建議使用 px 固定單位或百分比 (%)。');
+    if (/<script\b/i.test(b)) add('error', window.L('aeAnnHtmlScriptMsg'), window.L('aeAnnHtmlScriptFix'));
+    if (/<style\b/i.test(b)) add('error', window.L('aeAnnHtmlStyleMsg'), window.L('aeAnnHtmlStyleFix'));
+    if (/<link\b/i.test(b)) add('error', window.L('aeAnnHtmlLinkMsg'), window.L('aeAnnHtmlLinkFix'));
+    if (/<(iframe|video|audio|form|object|embed|svg|canvas)\b/i.test(b)) add('error', window.L('aeAnnHtmlBadElMsg'), window.L('aeAnnHtmlBadElFix'));
+    if (/display\s*:\s*(inline-)?(flex|grid)/i.test(b)) add('error', window.L('aeAnnHtmlFlexMsg'), window.L('aeAnnHtmlFlexFix'));
+    if (/position\s*:\s*(absolute|fixed|sticky|relative)/i.test(b)) add('error', window.L('aeAnnHtmlPosMsg'), window.L('aeAnnHtmlPosFix'));
+    if (/\bfloat\s*:/i.test(b)) add('warn', window.L('aeAnnHtmlFloatMsg'), window.L('aeAnnHtmlFloatFix'));
+    if (/background-image|\burl\s*\(/i.test(b)) add('warn', window.L('aeAnnHtmlBgMsg'), window.L('aeAnnHtmlBgFix'));
+    if (/\b\d+(\.\d+)?(rem|vw|vh|vmin|vmax)\b/i.test(b)) add('warn', window.L('aeAnnHtmlUnitMsg'), window.L('aeAnnHtmlUnitFix'));
     return { ok: !issues.some(function (x) { return x.level === 'error'; }), issues: issues };
   }
   // Returns true if it's OK to proceed (no blocking errors). Shows a guidance dialog otherwise.
@@ -217,13 +218,13 @@
     var r = validateEmailHtml(body);
     var errors = r.issues.filter(function (x) { return x.level === 'error'; });
     if (errors.length) {
-      uiAlert('信件內容的 HTML 不符合 Email（含 Outlook）顯示規格，請修正後再儲存／發送：\n\n' +
-        errors.map(function (e, i) { return (i + 1) + '. ' + e.msg + '\n　建議：' + e.fix; }).join('\n\n'),
-        { title: 'HTML 需要修正' });
+      uiAlert(window.L('aeAnnHtmlErrLead') + '\n\n' +
+        errors.map(function (e, i) { return (i + 1) + '. ' + e.msg + '\n' + window.L('aeAnnHtmlErrSuggest') + e.fix; }).join('\n\n'),
+        { title: window.L('aeAnnHtmlErrTitle') });
       return false;
     }
     var warns = r.issues.filter(function (x) { return x.level === 'warn'; });
-    if (warns.length) uiToast('提醒：' + warns.map(function (w) { return w.msg; }).join('、') + '（仍可寄送，建議優化）', 'warn');
+    if (warns.length) uiToast(window.L('aeAnnHtmlWarnLead') + warns.map(function (w) { return w.msg; }).join(window.L('aeAnnHtmlWarnSep')) + window.L('aeAnnHtmlWarnSuffix'), 'warn');
     return true;
   }
   var CAN_SEND = true;   // resolved from the caller's plan (公告群發 = PRO+)
@@ -235,7 +236,7 @@
     var btn = document.getElementById('sendNowBtn');
     if (!btn) return;
     if (!CAN_SEND) {
-      btn.title = '公告群發為 Pro 以上方案功能';
+      btn.title = window.L('aeAnnGateBtnTitle');
       btn.style.opacity = '.55';
     } else { btn.title = ''; btn.style.opacity = ''; }
   }
@@ -286,7 +287,7 @@
   function showEmptyEditor() {
     SELECTED = null;
     document.getElementById('campTitle').value = '';
-    document.getElementById('campTitle').placeholder = '尚未選擇範本 — 請點左側「＋ 新增範本」';
+    document.getElementById('campTitle').placeholder = window.L('aeAnnEmptyTitlePlaceholder');
     document.getElementById('subjectInput').value = '';
     document.getElementById('subjectInput').disabled = true;
     document.getElementById('bodyTitleInput').value = '';
@@ -295,18 +296,18 @@
     document.getElementById('saveCampBtn').disabled = true;
     document.getElementById('sendNowBtn').disabled = true;
     document.getElementById('previewBtn').disabled = true;
-    document.getElementById('statsBox').textContent = '請先建立或選擇範本';
+    document.getElementById('statsBox').textContent = window.L('aeAnnEmptyStats');
   }
 
   function renderList() {
     var list = document.getElementById('campList');
-    if (CAMPS.length === 0) { list.innerHTML = '<p style="color:var(--muted); padding:14px 0; text-align:center; font:500 12px/1.5 var(--f-tc)">尚無範本</p>'; return; }
+    if (CAMPS.length === 0) { list.innerHTML = '<p style="color:var(--muted); padding:14px 0; text-align:center; font:500 12px/1.5 var(--f-tc)">' + escapeHtml(window.L('aeAnnListEmpty')) + '</p>'; return; }
     list.innerHTML = CAMPS.map(function (c) {
       var chIcons = c.channels.map(function (x) { return x === 'email' ? '📧' : x === 'sms' ? '📱' : '💬'; }).join('');
       return '<div class="camp" data-id="' + c.id + '">' +
-        '<div class="top"><span class="st ' + (c.status || 'draft') + '">' + (c.status === 'sent' ? '已發送' : c.status === 'scheduled' ? '已排程' : '草稿') + '</span><span class="ch-icons">' + chIcons + '</span><span class="camp-del" data-del="' + c.id + '" title="刪除範本">✕</span></div>' +
-        '<h4>' + escapeHtml(c.subject || '(無標題)') + '</h4>' +
-        '<div class="meta">' + escapeHtml(c.createdAt || '') + ' · 收件 ' + ((c.stats && c.stats.sent) || 0) + '</div>' +
+        '<div class="top"><span class="st ' + (c.status || 'draft') + '">' + (c.status === 'sent' ? escapeHtml(window.L('aeAnnStatusSent')) : c.status === 'scheduled' ? escapeHtml(window.L('aeAnnStatusScheduled')) : escapeHtml(window.L('aeAnnStatusDraft'))) + '</span><span class="ch-icons">' + chIcons + '</span><span class="camp-del" data-del="' + c.id + '" title="' + escapeHtml(window.L('aeAnnDelTitle')) + '">✕</span></div>' +
+        '<h4>' + escapeHtml(c.subject || window.L('aeAnnNoSubject')) + '</h4>' +
+        '<div class="meta">' + escapeHtml(c.createdAt || '') + escapeHtml(window.L('aeAnnMetaRecipPre')) + ((c.stats && c.stats.sent) || 0) + '</div>' +
       '</div>';
     }).join('');
     list.querySelectorAll('.camp').forEach(function (el) {
@@ -320,14 +321,14 @@
         e.stopPropagation();
         var id = b.dataset.del;
         var c = CAMPS.find(function (x) { return x.id === id; });
-        uiConfirm('確定刪除範本「' + ((c && c.subject) || '') + '」？此操作無法復原。', { title: '刪除範本', okText: '刪除', danger: true }).then(function (ok) {
+        uiConfirm(window.L('aeAnnDelConfirmPre') + ((c && c.subject) || '') + window.L('aeAnnDelConfirmSuf'), { title: window.L('aeAnnDelTitle'), okText: window.L('aeAnnDelOk'), danger: true }).then(function (ok) {
           if (!ok) return;
           google.script.run
             .withSuccessHandler(function (res) {
               if (res && res.success) { if (SELECTED && SELECTED.id === id) SELECTED = null; refreshCampaigns(); }
-              else uiAlert((res && res.message) || '刪除失敗');
+              else uiAlert((res && res.message) || window.L('aeAnnDelFail'));
             })
-            .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+            .withFailureHandler(function (err) { uiAlert(window.L('aeAnnFailPre') + (err && err.message)); })
             .deleteCampaign(id);
         });
       });
@@ -338,7 +339,7 @@
     SELECTED = c;
     document.querySelectorAll('.camp').forEach(function (x) { x.classList.toggle('on', x.dataset.id === c.id); });
     document.getElementById('campTitle').value = c.subject || '';
-    document.getElementById('campTitle').placeholder = '範本標題';
+    document.getElementById('campTitle').placeholder = window.L('aeAnnTitlePlaceholder');
     document.getElementById('subjectInput').value = c.subject || '';
     document.getElementById('subjectInput').disabled = false;
     document.getElementById('bodyTitleInput').value = c.subject || '';
@@ -354,30 +355,30 @@
     updateRecipCount();
     var stats = c.stats || {};
     document.getElementById('statsBox').innerHTML = c.status === 'sent'
-      ? '✓ 已發送於 <b>' + escapeHtml(c.sentAt || '') + '</b><br>收件數：<b>' + (stats.sent || 0) + '</b>'
-      : '尚未發送';
+      ? window.L('aeAnnStatsSentPre') + escapeHtml(c.sentAt || '') + window.L('aeAnnStatsSentMid') + (stats.sent || 0) + window.L('aeAnnStatsSentSuf')
+      : window.L('aeAnnStatsNone');
     document.getElementById('sendNowBtn').disabled = (c.status === 'sent');
   }
 
   function createDraft() {
     var b = document.getElementById('newCampBtn');
     if (b.disabled) return;
-    b.disabled = true; var o = b.textContent; b.textContent = '建立中⋯';
+    b.disabled = true; var o = b.textContent; b.textContent = window.L('aeAnnCreating');
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
           refreshCampaigns(res.id).then(function () { b.disabled = false; b.textContent = o; });
-        } else { b.disabled = false; b.textContent = o; uiAlert((res && res.message) || '建立失敗'); }
+        } else { b.disabled = false; b.textContent = o; uiAlert((res && res.message) || window.L('aeAnnCreateFail')); }
       })
-      .withFailureHandler(function (err) { b.disabled = false; b.textContent = o; uiAlert('失敗：' + (err && err.message)); })
-      .createCampaign(compId, { subject: '新公告 ' + new Date().toLocaleString(), body: '', channels: ['email'], recipientFilter: 'all' });
+      .withFailureHandler(function (err) { b.disabled = false; b.textContent = o; uiAlert(window.L('aeAnnFailPre') + (err && err.message)); })
+      .createCampaign(compId, { subject: window.L('aeAnnNewDraftSubjectPre') + new Date().toLocaleString(), body: '', channels: ['email'], recipientFilter: 'all' });
   }
   document.getElementById('newCampBtn').addEventListener('click', createDraft);
 
   function updateRecipCount() {
     var filter = document.getElementById('recipFilter').value;
     document.getElementById('recipCount').textContent = '⋯';
-    document.getElementById('recipList').innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">計算收件人中⋯</p>';
+    document.getElementById('recipList').innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">' + escapeHtml(window.L('aeAnnRecipCalc')) + '</p>';
     google.script.run
       .withSuccessHandler(function (res) {
         res = res || {};
@@ -386,10 +387,10 @@
         document.getElementById('recipList').innerHTML = teams.length
           ? teams.map(function (t) {
               return '<div class="recip-team"><div class="tn">' + escapeHtml(t.teamName) +
-                '<span style="color:var(--muted); font-weight:400"> · ' + t.emails.length + ' 封</span></div>' +
-                '<div class="em">' + t.emails.map(escapeHtml).join('、') + '</div></div>';
+                '<span style="color:var(--muted); font-weight:400"> · ' + t.emails.length + escapeHtml(window.L('aeAnnRecipUnit')) + '</span></div>' +
+                '<div class="em">' + t.emails.map(escapeHtml).join(window.L('aeAnnEmailSep')) + '</div></div>';
             }).join('')
-          : '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">此條件下沒有可寄送的 Email。</p>';
+          : '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">' + escapeHtml(window.L('aeAnnRecipNone')) + '</p>';
       })
       .withFailureHandler(function () { document.getElementById('recipCount').textContent = '?'; document.getElementById('recipList').innerHTML = ''; })
       .getCampaignRecipients(compId, filter);
@@ -419,7 +420,7 @@
   });
 
   document.getElementById('saveCampBtn').addEventListener('click', function () {
-    if (!SELECTED) return alert('請先選一個範本');
+    if (!SELECTED) return alert(window.L('aeAnnSelectFirst'));
     if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;   // Outlook HTML gate
     var payload = {
       subject: document.getElementById('subjectInput').value.trim(),
@@ -427,10 +428,10 @@
       channels: CHANNELS,
       recipientFilter: document.getElementById('recipFilter').value
     };
-    var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeAnnSaving');
     google.script.run
-      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = '✓ 已儲存'; var sid = SELECTED && SELECTED.id; refreshCampaigns(sid).then(function(){ setTimeout(function(){ var sb=document.getElementById('saveCampBtn'); if(sb) sb.textContent='儲存草稿'; }, 1000); }); })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '儲存草稿'; alert('失敗：' + (err && err.message)); })
+      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = window.L('aeAnnSaved'); var sid = SELECTED && SELECTED.id; refreshCampaigns(sid).then(function(){ setTimeout(function(){ var sb=document.getElementById('saveCampBtn'); if(sb) sb.textContent=window.L('aeAnnSaveBtn'); }, 1000); }); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSaveBtn'); alert(window.L('aeAnnFailPre') + (err && err.message)); })
       .updateCampaign(SELECTED.id, payload);
   });
 
@@ -438,11 +439,11 @@
     if (!SELECTED) return;
     var btn = this;
     if (!CAN_SEND) {
-      uiAlert('公告群發（EDM）為 Pro 以上方案功能。\n升級至 Pro 後，即可一次將公告 Email 寄送給符合條件的所有報名者（可依已付款 / 未付款 / 候補篩選）。\n\n請至「方案與授權」頁升級方案，或聯繫客服洽詢。', { title: '需要升級方案', okText: '前往升級' }).then(function () { location.href = '/admin/license.html'; });
+      uiAlert(window.L('aeAnnGateMsg'), { title: window.L('aeAnnGateTitle'), okText: window.L('aeAnnGateOk') }).then(function () { location.href = '/admin/license.html'; });
       return;
     }
     if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;   // Outlook HTML gate
-    uiConfirm('立即發送給 ' + document.getElementById('recipCount').textContent + ' 位收件人？', { title: '發送公告', okText: '立即發送' }).then(function (ok) {
+    uiConfirm(window.L('aeAnnSendConfirmPre') + document.getElementById('recipCount').textContent + window.L('aeAnnSendConfirmSuf'), { title: window.L('aeAnnSendTitle'), okText: window.L('aeAnnSendOk') }).then(function (ok) {
     if (!ok) return;
     var payload = {
       subject: document.getElementById('subjectInput').value.trim(),
@@ -450,22 +451,22 @@
       channels: CHANNELS,
       recipientFilter: document.getElementById('recipFilter').value
     };
-    btn.disabled = true; btn.textContent = '發送中⋯';
+    btn.disabled = true; btn.textContent = window.L('aeAnnSending');
     // Save first then send
     google.script.run
       .withSuccessHandler(function () {
         google.script.run
           .withSuccessHandler(function (res) {
             if (res && res.success) {
-              alert('✓ 已發送 ' + res.sent + ' 封 Email' + (res.channels.length > 1 ? '（SMS/LINE 已記錄為排程，待後續整合）' : ''));
+              alert(window.L('aeAnnSentOkPre') + res.sent + window.L('aeAnnSentOkMid') + (res.channels.length > 1 ? window.L('aeAnnSentOkMulti') : ''));
               refreshCampaigns(SELECTED && SELECTED.id);
-            } else { alert('發送失敗：' + ((res && res.message) || '')); }
-            btn.disabled = false; btn.textContent = '立即發送 →';
+            } else { alert(window.L('aeAnnSendFailPre') + ((res && res.message) || '')); }
+            btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn');
           })
-          .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '立即發送 →'; alert('失敗：' + (err && err.message)); })
+          .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn'); alert(window.L('aeAnnFailPre') + (err && err.message)); })
           .sendCampaignNow(SELECTED.id);
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '立即發送 →'; alert('儲存失敗：' + (err && err.message)); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn'); alert(window.L('aeAnnSaveFailPre') + (err && err.message)); })
       .updateCampaign(SELECTED.id, payload);
     });
   });
@@ -477,7 +478,7 @@
     var body = String(bodyText || '').replace(/\n/g, '<br>');
     var LOGO = 'https://regmaster-v3.web.app/favicon.png';
     var nameBand = COMP_NAME
-      ? '<tr><td style="background:#eef3fb;border-bottom:1px solid #dbe6f5;padding:9px 24px;text-align:center;font-size:13px;color:#0A437A;font-weight:600">活動：' + escapeHtml(COMP_NAME) + '</td></tr>'
+      ? '<tr><td style="background:#eef3fb;border-bottom:1px solid #dbe6f5;padding:9px 24px;text-align:center;font-size:13px;color:#0A437A;font-weight:600">' + escapeHtml(window.L('aeAnnPvBandPre')) + escapeHtml(COMP_NAME) + '</td></tr>'
       : '';
     return '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="margin:0;padding:0;background:#f0f4f8;font-family:Segoe UI,Roboto,Arial,sans-serif">' +
@@ -485,24 +486,34 @@
       '<table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#fff;border:1px solid #d1d9e0">' +
       '<tr><td style="background:#0A437A;padding:16px 24px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
         '<td style="vertical-align:middle;width:44px"><div style="width:40px;height:40px;background:#fff;border-radius:9px;text-align:center;line-height:40px"><img src="' + LOGO + '" alt="RegMaster" width="30" height="30" style="display:inline-block;border:0;vertical-align:middle"></div></td>' +
-        '<td style="vertical-align:middle;padding-left:12px"><span style="font-size:19px;font-weight:800;color:#fff;letter-spacing:.4px">RegMaster</span><span style="display:block;font-size:11px;color:rgba(255,255,255,.65);margin-top:1px">線上活動報名平台</span></td>' +
+        '<td style="vertical-align:middle;padding-left:12px"><span style="font-size:19px;font-weight:800;color:#fff;letter-spacing:.4px">RegMaster</span><span style="display:block;font-size:11px;color:rgba(255,255,255,.65);margin-top:1px">' + escapeHtml(window.L('aeAnnPvHeaderTagline')) + '</span></td>' +
       '</tr></table></td></tr>' +
-      '<tr><td style="background:#0D5BA8;padding:18px 24px;text-align:center"><h2 style="margin:0;font-size:20px;font-weight:800;color:#fff">' + escapeHtml(subject || '活動公告') + '</h2></td></tr>' +
+      '<tr><td style="background:#0D5BA8;padding:18px 24px;text-align:center"><h2 style="margin:0;font-size:20px;font-weight:800;color:#fff">' + escapeHtml(subject || window.L('aeAnnPvFallbackSubject')) + '</h2></td></tr>' +
       nameBand +
       '<tr><td style="padding:28px 24px;background:#fff;color:#333;font-size:15px;line-height:1.7">' + body + '</td></tr>' +
-      '<tr><td style="background:#f1f5f9;padding:16px 24px;text-align:center;font-size:12px;color:#64748b"><div>Copyright © RegMaster Pro</div><div style="margin-top:4px;color:#94a3b8">此為系統自動發送之信件，請勿直接回覆。</div></td></tr>' +
+      '<tr><td style="background:#f1f5f9;padding:16px 24px;text-align:center;font-size:12px;color:#64748b"><div>' + escapeHtml(window.L('aeAnnPvFooterCopyright')) + '</div><div style="margin-top:4px;color:#94a3b8">' + escapeHtml(window.L('aeAnnPvFooterNote')) + '</div></td></tr>' +
       '</table></td></tr></table></body></html>';
   }
   document.getElementById('previewBtn').addEventListener('click', function () {
-    var subject = document.getElementById('subjectInput').value.trim() || '活動公告';
+    var subject = document.getElementById('subjectInput').value.trim() || window.L('aeAnnPvDefaultSubject');
     var html = buildPreviewHtml(subject, document.getElementById('bodyContent').value);
     var bg = document.createElement('div'); bg.className = 'pv-bg';
-    bg.innerHTML = '<div class="pv-card"><div class="pv-h"><h3>📧 信件預覽（套用 RegMaster 範本）</h3><button class="btn btn-ghost btn-sm" id="pvClose">關閉</button></div><div class="pv-body"><iframe id="pvFrame" title="email preview"></iframe></div></div>';
+    bg.innerHTML = '<div class="pv-card"><div class="pv-h"><h3>' + escapeHtml(window.L('aeAnnPvTitle')) + '</h3><button class="btn btn-ghost btn-sm" id="pvClose">' + escapeHtml(window.L('aeAnnPvClose')) + '</button></div><div class="pv-body"><iframe id="pvFrame" title="email preview"></iframe></div></div>';
     document.body.appendChild(bg);
     bg.querySelector('#pvFrame').srcdoc = html;
     function close() { if (bg.parentNode) bg.parentNode.removeChild(bg); }
     bg.addEventListener('click', function (e) { if (e.target === bg) close(); });
     bg.querySelector('#pvClose').addEventListener('click', close);
+  });
+
+  // Re-render dynamic (JS-built) sections when the language switches, so list
+  // items / recipient list / stats picked the active language. Static [data-i18n]
+  // nodes are handled automatically by the engine's own 'lang-changed' hook.
+  window.addEventListener('lang-changed', function () {
+    if (document.getElementById('content').style.display === 'none') return;
+    renderList();
+    if (SELECTED) { var s = SELECTED; selectCamp(s); } else { showEmptyEditor(); }
+    updateRecipCount();
   });
 
   load();

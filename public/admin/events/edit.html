@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>活動設定 · 主辦後台 · RegMaster</title>
+<title data-i18n="aeEditDocTitle">活動設定 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -132,50 +132,50 @@
 
   <aside class="side">
     <a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div><div class="nm">RegMaster<small>主辦後台</small></div></a>
-    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p>主辦方</p></div></div>
+    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p data-i18n="aeEditSideOrgRole">主辦方</p></div></div>
     <div class="nav-grp">
-      <div class="l-grp">概覽</div>
-      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg>儀表板</a>
-      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>所有活動</a>
+      <div class="l-grp" data-i18n="aeEditSideGrpOverview">概覽</div>
+      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg><span data-i18n="aeEditSideDashboard">儀表板</span></a>
+      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg><span data-i18n="aeEditSideAllEvents">所有活動</span></a>
     </div>
     <div class="nav-grp">
-      <div class="l-grp">本活動</div>
-      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg>總覽</a>
-      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
-      <a class="nav-it" id="formBuilderLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>表單設計</a>
+      <div class="l-grp" data-i18n="aeEditSideGrpThisEvent">本活動</div>
+      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg><span data-i18n="aeEditSideHub">總覽</span></a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg><span data-i18n="aeEditSideSettings">設定</span></a>
+      <a class="nav-it" id="formBuilderLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg><span data-i18n="aeEditSideForm">表單設計</span></a>
     </div>
     <div class="side-foot">
-      <a class="nav-it" href="/login.html?logout=1" id="logoutBtn"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 3h-4a2 2 0 00-2 2v14a2 2 0 002 2h4M16 17l5-5-5-5M21 12H9"/></svg>登出</a>
+      <a class="nav-it" href="/login.html?logout=1" id="logoutBtn"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 3h-4a2 2 0 00-2 2v14a2 2 0 002 2h4M16 17l5-5-5-5M21 12H9"/></svg><span data-i18n="aeEditSideLogout">登出</span></a>
     </div>
   </aside>
 
   <main>
     <header class="head">
       <div class="crumbs">
-        <a href="/admin/">主辦後台</a><span class="sep">/</span>
-        <a href="/admin/events/">所有活動</a><span class="sep">/</span>
+        <a href="/admin/" data-i18n="aeEditCrumbHome">主辦後台</a><span class="sep">/</span>
+        <a href="/admin/events/" data-i18n="aeEditCrumbEvents">所有活動</a><span class="sep">/</span>
         <a id="crumbHub">—</a><span class="sep">/</span>
-        <b>設定</b>
+        <b data-i18n="aeEditCrumbSettings">設定</b>
       </div>
       <div class="actions">
-        <a class="btn-ic-h" id="previewBtn" title="預覽公開頁"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7"/></svg></a>
+        <a class="btn-ic-h" id="previewBtn" title="預覽公開頁" data-i18n-title="aeEditPreviewTitle"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7"/></svg></a>
         <div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div>
       </div>
     </header>
 
     <div class="cfg-tabs">
-      <a class="on" data-tab="basic">基本</a>
-      <a data-tab="groups">組別</a>
-      <a data-tab="form">報名表單</a>
-      <a data-tab="payment">收費</a>
-      <a data-tab="notification">通知</a>
-      <a data-tab="advanced">進階</a>
+      <a class="on" data-tab="basic" data-i18n="aeEditTabBasic">基本</a>
+      <a data-tab="groups" data-i18n="aeEditTabGroups">組別</a>
+      <a data-tab="form" data-i18n="aeEditTabForm">報名表單</a>
+      <a data-tab="payment" data-i18n="aeEditTabPayment">收費</a>
+      <a data-tab="notification" data-i18n="aeEditTabNotification">通知</a>
+      <a data-tab="advanced" data-i18n="aeEditTabAdvanced">進階</a>
     </div>
 
     <div class="main-c">
 
-      <div id="loadingState" class="loading-c">載入活動設定⋯</div>
-      <div id="errorState" class="empty-c" style="display:none; max-width:680px; margin:60px auto"><h3>無法載入</h3><p id="errorMsg">—</p><a href="/admin/events/" class="btn btn-primary">回到活動列表</a></div>
+      <div id="loadingState" class="loading-c" data-i18n="aeEditLoading">載入活動設定⋯</div>
+      <div id="errorState" class="empty-c" style="display:none; max-width:680px; margin:60px auto"><h3 data-i18n="aeEditErrTitle">無法載入</h3><p id="errorMsg">—</p><a href="/admin/events/" class="btn btn-primary" data-i18n="aeEditBackToEvents">回到活動列表</a></div>
 
       <div id="content" style="display:none">
         <div id="errorBanner" class="error-banner" style="display:none"></div>
@@ -185,88 +185,88 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg></div>
-              <div><h3>基本資訊</h3><p>活動名稱、類別、簡介 — 會顯示在公開頁與 Email</p></div>
+              <div><h3 data-i18n="aeEditSecBasicH">基本資訊</h3><p data-i18n="aeEditSecBasicP">活動名稱、類別、簡介 — 會顯示在公開頁與 Email</p></div>
             </div>
-            <div class="fld"><div class="lbl">活動名稱 <span class="req">*</span></div><input id="basic-name" data-dirty></div>
+            <div class="fld"><div class="lbl"><span data-i18n="aeEditFldName">活動名稱</span> <span class="req">*</span></div><input id="basic-name" data-dirty></div>
             <div class="row2">
-              <div class="fld"><div class="lbl">類別</div><select id="basic-category" data-dirty>
-                <option value="研討會">研討會</option><option value="競賽">競賽</option><option value="工作坊">工作坊</option><option value="夏令營">夏令營</option><option value="學術論壇">學術論壇</option><option value="校友活動">校友活動</option><option value="其他">其他</option>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldCategory">類別</div><select id="basic-category" data-dirty>
+                <option value="研討會" data-i18n="aeEditCatSeminar">研討會</option><option value="競賽" data-i18n="aeEditCatCompetition">競賽</option><option value="工作坊" data-i18n="aeEditCatWorkshop">工作坊</option><option value="夏令營" data-i18n="aeEditCatCamp">夏令營</option><option value="學術論壇" data-i18n="aeEditCatForum">學術論壇</option><option value="校友活動" data-i18n="aeEditCatAlumni">校友活動</option><option value="其他" data-i18n="aeEditCatOther">其他</option>
               </select></div>
-              <div class="fld"><div class="lbl">活動形式</div><select id="basic-eventType" data-dirty>
-                <option value="single_no_coach">個人報名</option>
-                <option value="single_coach">個人報名（含指導者）</option>
-                <option value="team_no_coach">團體報名</option>
-                <option value="team_coach">團體報名（含指導者）</option>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldEventType">活動形式</div><select id="basic-eventType" data-dirty>
+                <option value="single_no_coach" data-i18n="aeEditEvtSingleNoCoach">個人報名</option>
+                <option value="single_coach" data-i18n="aeEditEvtSingleCoach">個人報名（含指導者）</option>
+                <option value="team_no_coach" data-i18n="aeEditEvtTeamNoCoach">團體報名</option>
+                <option value="team_coach" data-i18n="aeEditEvtTeamCoach">團體報名（含指導者）</option>
               </select></div>
             </div>
-            <div class="fld"><div class="lbl">活動描述</div><textarea id="basic-description" rows="5" data-dirty></textarea>
+            <div class="fld"><div class="lbl" data-i18n="aeEditFldDescription">活動描述</div><textarea id="basic-description" rows="5" data-dirty></textarea>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px">
-                <div class="help" style="margin-top:0">支援基本 HTML，會顯示在公開頁的「關於這場活動」區塊</div>
-                <button type="button" class="btn btn-ghost btn-sm" id="convertHtmlBtn" style="flex-shrink:0">🔄 一鍵轉內聯 HTML</button>
+                <div class="help" style="margin-top:0" data-i18n="aeEditDescHelp">支援基本 HTML，會顯示在公開頁的「關於這場活動」區塊</div>
+                <button type="button" class="btn btn-ghost btn-sm" id="convertHtmlBtn" style="flex-shrink:0" data-i18n="aeEditConvertHtmlBtn">🔄 一鍵轉內聯 HTML</button>
               </div>
             </div>
             <div class="row2">
               <div class="fld">
-                <div class="lbl">開放報名時間</div>
+                <div class="lbl" data-i18n="aeEditFldOpenDate">開放報名時間</div>
                 <input type="datetime-local" id="basic-openDate" data-dirty>
                 <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); cursor:pointer">
-                  <input type="checkbox" id="basic-openImmediate" data-dirty style="width:14px; height:14px"> 即日起（立即開放）
+                  <input type="checkbox" id="basic-openImmediate" data-dirty style="width:14px; height:14px"> <span data-i18n="aeEditOpenImmediate">即日起（立即開放）</span>
                 </label>
-                <div class="help">到此時間才開放填表報名；勾選「即日起」即不需輸入</div>
+                <div class="help" data-i18n="aeEditOpenDateHelp">到此時間才開放填表報名；勾選「即日起」即不需輸入</div>
               </div>
-              <div class="fld"><div class="lbl">報名截止時間 <span class="req">*</span></div><input type="datetime-local" id="basic-deadline" data-dirty><div class="help">此時間後停止接受報名</div></div>
+              <div class="fld"><div class="lbl"><span data-i18n="aeEditFldDeadline">報名截止時間</span> <span class="req">*</span></div><input type="datetime-local" id="basic-deadline" data-dirty><div class="help" data-i18n="aeEditDeadlineHelp">此時間後停止接受報名</div></div>
             </div>
             <div class="fld" style="margin-top:4px">
-              <div class="lbl">活動日期模式</div>
+              <div class="lbl" data-i18n="aeEditFldDateMode">活動日期模式</div>
               <div class="datemode-grp">
                 <label class="datemode-opt">
                   <input type="radio" name="dateMode" value="single" data-dirty>
-                  <span class="dm-body"><b>單次 / 單日活動</b><small>單一日期、固定時段</small></span>
+                  <span class="dm-body"><b data-i18n="aeEditDateModeSingleB">單次 / 單日活動</b><small data-i18n="aeEditDateModeSingleS">單一日期、固定時段</small></span>
                 </label>
                 <label class="datemode-opt">
                   <input type="radio" name="dateMode" value="multi" data-dirty>
-                  <span class="dm-body"><b>多梯次 / 多日</b><small>於下方場次區塊設定各梯次</small></span>
+                  <span class="dm-body"><b data-i18n="aeEditDateModeMultiB">多梯次 / 多日</b><small data-i18n="aeEditDateModeMultiS">於下方場次區塊設定各梯次</small></span>
                 </label>
               </div>
             </div>
             <div id="singleDateField">
               <div class="row3">
-                <div class="fld"><div class="lbl">活動日 <span class="req">*</span></div><input type="date" id="basic-competitionDate" data-dirty></div>
-                <div class="fld"><div class="lbl">開始時間</div><input type="time" id="basic-competitionStartTime" data-dirty></div>
-                <div class="fld"><div class="lbl">結束時間</div><input type="time" id="basic-competitionEndTime" data-dirty></div>
+                <div class="fld"><div class="lbl"><span data-i18n="aeEditFldCompDate">活動日</span> <span class="req">*</span></div><input type="date" id="basic-competitionDate" data-dirty></div>
+                <div class="fld"><div class="lbl" data-i18n="aeEditFldStartTime">開始時間</div><input type="time" id="basic-competitionStartTime" data-dirty></div>
+                <div class="fld"><div class="lbl" data-i18n="aeEditFldEndTime">結束時間</div><input type="time" id="basic-competitionEndTime" data-dirty></div>
               </div>
             </div>
-            <div class="alert-box info" id="multiDateHint" style="display:none">此活動為多梯次模式 — 請於下方「場次 / 梯次」區塊設定各梯次的開始與結束時間；單一「活動日」欄位已停用。</div>
+            <div class="alert-box info" id="multiDateHint" style="display:none" data-i18n="aeEditMultiDateHint">此活動為多梯次模式 — 請於下方「場次 / 梯次」區塊設定各梯次的開始與結束時間；單一「活動日」欄位已停用。</div>
           </div>
 
           <!-- 場次 / 梯次（item 2: moved here, shown only in 多梯次 mode） -->
-          <div class="alert-box info" id="sessionSingleHint" style="display:none">此活動為「單日活動」模式 — 場次設定已停用。若需多梯次，請於「基本資訊」的「活動日期模式」改為「多梯次 / 多日」。</div>
+          <div class="alert-box info" id="sessionSingleHint" style="display:none" data-i18n="aeEditSessionSingleHint">此活動為「單日活動」模式 — 場次設定已停用。若需多梯次，請於「基本資訊」的「活動日期模式」改為「多梯次 / 多日」。</div>
           <div class="sec" id="sessionSec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-              <div><h3>場次 / 梯次</h3><p>多日 / 多時段活動可拆成獨立場次（每個梯次最後一欄設定該梯次的人數上限）</p></div>
+              <div><h3 data-i18n="aeEditSecSessionH">場次 / 梯次</h3><p data-i18n="aeEditSecSessionP">多日 / 多時段活動可拆成獨立場次（每個梯次最後一欄設定該梯次的人數上限）</p></div>
             </div>
-            <div class="alert-box info" style="margin-bottom:14px">場次模式：
-              <label style="margin-left:8px"><input type="radio" name="sessionMode" value="single" data-dirty> 單選（每位報名者只能選一個場次）</label>
-              <label style="margin-left:16px"><input type="radio" name="sessionMode" value="multiple" data-dirty> 多選（可同時報名多個場次）</label>
+            <div class="alert-box info" style="margin-bottom:14px"><span data-i18n="aeEditSessionModeLabel">場次模式：</span>
+              <label style="margin-left:8px"><input type="radio" name="sessionMode" value="single" data-dirty> <span data-i18n="aeEditSessionModeSingle">單選（每位報名者只能選一個場次）</span></label>
+              <label style="margin-left:16px"><input type="radio" name="sessionMode" value="multiple" data-dirty> <span data-i18n="aeEditSessionModeMultiple">多選（可同時報名多個場次）</span></label>
             </div>
             <div class="list-grp" id="sessionsList"></div>
-            <button class="add-row" id="addSessionBtn">＋ 新增場次</button>
+            <button class="add-row" id="addSessionBtn" data-i18n="aeEditAddSessionBtn">＋ 新增場次</button>
           </div>
 
           <!-- 活動海報 + AI 配色 -->
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
-              <div><h3>活動海報</h3><p>上傳海報圖片，並可用 AI 自動擷取主視覺配色，套用到公開頁的主題色</p></div>
+              <div><h3 data-i18n="aeEditSecPosterH">活動海報</h3><p data-i18n="aeEditSecPosterP">上傳海報圖片，並可用 AI 自動擷取主視覺配色，套用到公開頁的主題色</p></div>
             </div>
             <div id="posterPreview" style="display:none; margin-bottom:14px"><img id="posterImg" alt="海報" style="max-width:240px; max-height:320px; border-radius:10px; border:1px solid var(--line); display:block"></div>
             <input type="file" id="posterFile" accept="image/*" style="display:none">
             <div style="display:flex; gap:8px; flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" id="posterPickBtn">選擇圖片…</button>
-              <button type="button" class="btn btn-primary btn-sm" id="posterUploadBtn" disabled>上傳海報</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="posterPreviewBtn" disabled>🔍 預覽海報</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="analyzeColorsBtn" disabled>🎨 AI 配色</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="posterPickBtn" data-i18n="aeEditPosterPickBtn">選擇圖片…</button>
+              <button type="button" class="btn btn-primary btn-sm" id="posterUploadBtn" disabled data-i18n="aeEditPosterUploadBtn">上傳海報</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="posterPreviewBtn" disabled data-i18n="aeEditPosterPreviewBtn">🔍 預覽海報</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="analyzeColorsBtn" disabled data-i18n="aeEditAnalyzeColorsBtn">🎨 AI 配色</button>
             </div>
             <div id="posterMsg" class="help" style="margin-top:8px"></div>
             <div id="colorSwatches" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap"></div>
@@ -276,14 +276,14 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
-              <div><h3>活動簡章 (PDF)</h3><p>上傳簡章 PDF，系統會擷取內容作為 AI 知識庫，供報名者於活動頁詢問活動相關問題</p></div>
+              <div><h3 data-i18n="aeEditSecPdfH">活動簡章 (PDF)</h3><p data-i18n="aeEditSecPdfP">上傳簡章 PDF，系統會擷取內容作為 AI 知識庫，供報名者於活動頁詢問活動相關問題</p></div>
             </div>
             <div id="pdfStatus" class="help" style="margin-bottom:10px"></div>
             <input type="file" id="pdfFile" accept="application/pdf" style="display:none">
             <div style="display:flex; gap:8px; flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" id="pdfPickBtn">選擇 PDF…</button>
-              <button type="button" class="btn btn-primary btn-sm" id="pdfUploadBtn" disabled>上傳簡章</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="aiFillBtn" style="display:none">🤖 用簡章 AI 自動填寫設定</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="pdfPickBtn" data-i18n="aeEditPdfPickBtn">選擇 PDF…</button>
+              <button type="button" class="btn btn-primary btn-sm" id="pdfUploadBtn" disabled data-i18n="aeEditPdfUploadBtn">上傳簡章</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="aiFillBtn" style="display:none" data-i18n="aeEditAiFillBtn">🤖 用簡章 AI 自動填寫設定</button>
             </div>
             <div id="pdfMsg" class="help" style="margin-top:8px"></div>
           </div>
@@ -294,35 +294,35 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg></div>
-              <div><h3>組別</h3><p>區隔不同年齡層、能力等級或主題的選手分組</p></div>
+              <div><h3 data-i18n="aeEditSecGroupsH">組別</h3><p data-i18n="aeEditSecGroupsP">區隔不同年齡層、能力等級或主題的選手分組</p></div>
             </div>
             <div class="list-grp" id="groupsList"></div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px">
               <select id="groupPreset" style="padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13.5px/1.4 var(--f-tc); min-width:160px">
-                <option value="">— 選擇預設組別 —</option>
-                <option value="國小組">國小組（7–12 歲）</option>
-                <option value="國中組">國中組（13–15 歲）</option>
-                <option value="高中組">高中組（16–18 歲）</option>
-                <option value="普高組">普高組（16–18 歲）</option>
-                <option value="技高組">技高組（16–18 歲）</option>
-                <option value="大專組">大專組</option>
-                <option value="社會組">社會組</option>
-                <option value="教師組">教師組</option>
-                <option value="公開組">公開組</option>
-                <option value="__custom__">自訂組別⋯</option>
+                <option value="" data-i18n="aeEditGroupPresetPlaceholder">— 選擇預設組別 —</option>
+                <option value="國小組" data-i18n="aeEditGroupPresetES">國小組（7–12 歲）</option>
+                <option value="國中組" data-i18n="aeEditGroupPresetJH">國中組（13–15 歲）</option>
+                <option value="高中組" data-i18n="aeEditGroupPresetSH">高中組（16–18 歲）</option>
+                <option value="普高組" data-i18n="aeEditGroupPresetGH">普高組（16–18 歲）</option>
+                <option value="技高組" data-i18n="aeEditGroupPresetVH">技高組（16–18 歲）</option>
+                <option value="大專組" data-i18n="aeEditGroupPresetCollege">大專組</option>
+                <option value="社會組" data-i18n="aeEditGroupPresetSociety">社會組</option>
+                <option value="教師組" data-i18n="aeEditGroupPresetTeacher">教師組</option>
+                <option value="公開組" data-i18n="aeEditGroupPresetOpen">公開組</option>
+                <option value="__custom__" data-i18n="aeEditGroupPresetCustom">自訂組別⋯</option>
               </select>
-              <button class="btn btn-primary btn-sm" type="button" id="addGroupBtn">＋ 新增組別</button>
+              <button class="btn btn-primary btn-sm" type="button" id="addGroupBtn" data-i18n="aeEditAddGroupBtn">＋ 新增組別</button>
             </div>
-            <p class="help" style="margin-top:6px">每個組別可設定年齡限制（年齡區間 或 出生日期區間），系統會在報名時自動驗證選手生日。</p>
+            <p class="help" style="margin-top:6px" data-i18n="aeEditGroupsHelp">每個組別可設定年齡限制（年齡區間 或 出生日期區間），系統會在報名時自動驗證選手生日。</p>
           </div>
 
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg></div>
-              <div><h3>隊伍命名</h3><p>是否要求填寫隊伍名稱</p></div>
+              <div><h3 data-i18n="aeEditSecTeamNameH">隊伍命名</h3><p data-i18n="aeEditSecTeamNameP">是否要求填寫隊伍名稱</p></div>
             </div>
-            <div class="toggle-row"><div class="body"><h6>要求中文隊名</h6><p>顯示為公開頁的隊伍識別</p></div><div class="tg-sw" id="requireTeamNameCN" data-dirty></div></div>
-            <div class="toggle-row"><div class="body"><h6>要求英文隊名</h6><p>適合國際性活動或要在證書印英文名</p></div><div class="tg-sw" id="requireTeamNameEN" data-dirty></div></div>
+            <div class="toggle-row"><div class="body"><h6 data-i18n="aeEditTeamNameCNH">要求中文隊名</h6><p data-i18n="aeEditTeamNameCNP">顯示為公開頁的隊伍識別</p></div><div class="tg-sw" id="requireTeamNameCN" data-dirty></div></div>
+            <div class="toggle-row"><div class="body"><h6 data-i18n="aeEditTeamNameENH">要求英文隊名</h6><p data-i18n="aeEditTeamNameENP">適合國際性活動或要在證書印英文名</p></div><div class="tg-sw" id="requireTeamNameEN" data-dirty></div></div>
           </div>
         </div>
 
@@ -331,16 +331,16 @@
           <div class="cta-fb">
             <div class="ic-fb"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg></div>
             <div class="body">
-              <h4>使用表單設計器</h4>
-              <p>拖放欄位、加入條件邏輯、即時預覽 — 完整重設計報名表單。</p>
+              <h4 data-i18n="aeEditFbCtaH">使用表單設計器</h4>
+              <p data-i18n="aeEditFbCtaP">拖放欄位、加入條件邏輯、即時預覽 — 完整重設計報名表單。</p>
             </div>
-            <a id="openFormBuilder">開啟設計器 →</a>
+            <a id="openFormBuilder" data-i18n="aeEditFbCtaLink">開啟設計器 →</a>
           </div>
 
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/></svg></div>
-              <div><h3>表單摘要</h3><p>當前報名表收集的欄位</p></div>
+              <div><h3 data-i18n="aeEditSecFormSummaryH">表單摘要</h3><p data-i18n="aeEditSecFormSummaryP">當前報名表收集的欄位</p></div>
             </div>
             <div id="formSummary" style="font:400 13.5px/1.7 var(--f-tc); color:var(--ink-2)">—</div>
           </div>
@@ -351,45 +351,45 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg></div>
-              <div><h3>收費項目</h3><p>可新增多個收費項目，報名者需支付所有項目加總；沒有任何項目即為免費活動</p></div>
+              <div><h3 data-i18n="aeEditSecFeeH">收費項目</h3><p data-i18n="aeEditSecFeeP">可新增多個收費項目，報名者需支付所有項目加總；沒有任何項目即為免費活動</p></div>
             </div>
             <div class="list-grp" id="feeItemsList"></div>
             <div class="fee-add">
               <select id="feePreset">
-                <option value="">＋ 從範例加入…</option>
-                <option value="報名費">報名費</option>
-                <option value="材料費">材料費</option>
-                <option value="保證金">保證金</option>
-                <option value="餐費">餐費</option>
-                <option value="住宿費">住宿費</option>
-                <option value="服裝費">服裝費</option>
+                <option value="" data-i18n="aeEditFeePresetPlaceholder">＋ 從範例加入…</option>
+                <option value="報名費" data-i18n="aeEditFeePresetReg">報名費</option>
+                <option value="材料費" data-i18n="aeEditFeePresetMaterial">材料費</option>
+                <option value="保證金" data-i18n="aeEditFeePresetDeposit">保證金</option>
+                <option value="餐費" data-i18n="aeEditFeePresetMeal">餐費</option>
+                <option value="住宿費" data-i18n="aeEditFeePresetLodging">住宿費</option>
+                <option value="服裝費" data-i18n="aeEditFeePresetCostume">服裝費</option>
               </select>
-              <button type="button" class="add-row" id="addFeeCustomBtn">＋ 自訂項目</button>
+              <button type="button" class="add-row" id="addFeeCustomBtn" data-i18n="aeEditAddFeeCustomBtn">＋ 自訂項目</button>
             </div>
             <div class="fee-total">
-              <span class="l">收費總額（自動加總）</span>
+              <span class="l" data-i18n="aeEditFeeTotalLabel">收費總額（自動加總）</span>
               <span class="v" id="feeTotal">NT$ 0</span>
             </div>
             <div class="toggle-row" style="margin-top:14px">
-              <div class="body"><h6>啟用線上付款 (PayUni 信用卡)</h6><p>開啟後報名者可直接線上刷卡，付款成功自動對帳</p></div>
+              <div class="body"><h6 data-i18n="aeEditPayuniH">啟用線上付款 (PayUni 信用卡)</h6><p data-i18n="aeEditPayuniP">開啟後報名者可直接線上刷卡，付款成功自動對帳</p></div>
               <div class="tg-sw" id="payuniEnabled" data-dirty></div>
             </div>
           </div>
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M2 9V7a2 2 0 012-2h16a2 2 0 012 2v2m0 6v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2"/></svg></div>
-              <div><h3>銀行 / ATM 轉帳</h3><p>主辦方人工核對方式（適合免線上金流的場景）</p></div>
+              <div><h3 data-i18n="aeEditSecBankH">銀行 / ATM 轉帳</h3><p data-i18n="aeEditSecBankP">主辦方人工核對方式（適合免線上金流的場景）</p></div>
             </div>
             <div class="toggle-row" style="border-top:0; padding-top:0">
-              <div class="body"><h6>啟用銀行轉帳收款與對帳</h6><p>開啟後須填寫下方銀行帳號；「付款對帳」頁的快速銀行對帳功能才會啟用</p></div>
+              <div class="body"><h6 data-i18n="aeEditBankEnableH">啟用銀行轉帳收款與對帳</h6><p data-i18n="aeEditBankEnableP">開啟後須填寫下方銀行帳號；「付款對帳」頁的快速銀行對帳功能才會啟用</p></div>
               <div class="tg-sw" id="bankEnabled" data-dirty></div>
             </div>
             <div id="bankFields" style="display:none; margin-top:14px">
               <div class="row2">
-                <div class="fld"><div class="lbl">銀行 <span class="req">*</span></div><select id="pay-bank" data-dirty><option value="">— 請選擇銀行 —</option></select></div>
-                <div class="fld"><div class="lbl">分行代號 <span class="req">*</span></div><select id="pay-branch" data-dirty disabled><option value="">— 請先選擇銀行 —</option></select></div>
-                <div class="fld"><div class="lbl">帳號 <span class="req">*</span></div><input id="pay-accountNumber" data-dirty></div>
-                <div class="fld"><div class="lbl">戶名 <span class="req">*</span></div><input id="pay-accountName" data-dirty></div>
+                <div class="fld"><div class="lbl"><span data-i18n="aeEditFldBank">銀行</span> <span class="req">*</span></div><select id="pay-bank" data-dirty><option value="" data-i18n="aeEditBankSelectPlaceholder">— 請選擇銀行 —</option></select></div>
+                <div class="fld"><div class="lbl"><span data-i18n="aeEditFldBranch">分行代號</span> <span class="req">*</span></div><select id="pay-branch" data-dirty disabled><option value="" data-i18n="aeEditBranchSelectPlaceholder">— 請先選擇銀行 —</option></select></div>
+                <div class="fld"><div class="lbl"><span data-i18n="aeEditFldAccountNumber">帳號</span> <span class="req">*</span></div><input id="pay-accountNumber" data-dirty></div>
+                <div class="fld"><div class="lbl"><span data-i18n="aeEditFldAccountName">戶名</span> <span class="req">*</span></div><input id="pay-accountName" data-dirty></div>
               </div>
             </div>
           </div>
@@ -398,30 +398,30 @@
           <div class="sec" id="groupDiscSec" style="display:none">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4"/></svg></div>
-              <div><h3>團報優惠</h3><p>依「單筆報名人數」自動折扣，系統取符合條件的最高級距（報名者免輸入折扣碼）</p></div>
+              <div><h3 data-i18n="aeEditSecGroupDiscH">團報優惠</h3><p data-i18n="aeEditSecGroupDiscP">依「單筆報名人數」自動折扣，系統取符合條件的最高級距（報名者免輸入折扣碼）</p></div>
             </div>
             <div class="list-grp" id="groupDiscList"></div>
-            <button type="button" class="add-row" id="addGroupDiscBtn">＋ 新增級距</button>
+            <button type="button" class="add-row" id="addGroupDiscBtn" data-i18n="aeEditAddGroupDiscBtn">＋ 新增級距</button>
           </div>
 
           <!-- Item 10b: discount codes -->
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01"/></svg></div>
-              <div><h3>折扣碼</h3><p>產生折扣代碼供報名者結帳時輸入；可設折抵金額或百分比、使用上限與有效期限（也可作團報或推薦獎勵碼）</p></div>
+              <div><h3 data-i18n="aeEditSecDiscCodeH">折扣碼</h3><p data-i18n="aeEditSecDiscCodeP">產生折扣代碼供報名者結帳時輸入；可設折抵金額或百分比、使用上限與有效期限（也可作團報或推薦獎勵碼）</p></div>
             </div>
-            <div class="list-grp" id="discCodeList"><div class="dc-empty">載入中⋯</div></div>
+            <div class="list-grp" id="discCodeList"><div class="dc-empty" data-i18n="aeEditDcLoading">載入中⋯</div></div>
             <div class="dc-form">
               <div class="row3">
-                <div class="fld"><div class="lbl">折扣碼</div><input id="dc-code" placeholder="如 EARLYBIRD"></div>
-                <div class="fld"><div class="lbl">類型</div><select id="dc-type"><option value="amount">折抵金額 (NT$)</option><option value="percent">百分比 (%)</option></select></div>
-                <div class="fld"><div class="lbl">折扣值</div><input type="number" id="dc-value" min="1"></div>
+                <div class="fld"><div class="lbl" data-i18n="aeEditFldDcCode">折扣碼</div><input id="dc-code" placeholder="如 EARLYBIRD" data-i18n-placeholder="aeEditDcCodePlaceholder"></div>
+                <div class="fld"><div class="lbl" data-i18n="aeEditFldDcType">類型</div><select id="dc-type"><option value="amount" data-i18n="aeEditDcTypeAmount">折抵金額 (NT$)</option><option value="percent" data-i18n="aeEditDcTypePercent">百分比 (%)</option></select></div>
+                <div class="fld"><div class="lbl" data-i18n="aeEditFldDcValue">折扣值</div><input type="number" id="dc-value" min="1"></div>
               </div>
               <div class="row2">
-                <div class="fld"><div class="lbl">使用上限</div><input type="number" id="dc-max" min="0" placeholder="0 = 不限"></div>
-                <div class="fld" style="margin-bottom:0"><div class="lbl">有效期限</div><input type="date" id="dc-exp"></div>
+                <div class="fld"><div class="lbl" data-i18n="aeEditFldDcMax">使用上限</div><input type="number" id="dc-max" min="0" placeholder="0 = 不限" data-i18n-placeholder="aeEditDcMaxPlaceholder"></div>
+                <div class="fld" style="margin-bottom:0"><div class="lbl" data-i18n="aeEditFldDcExp">有效期限</div><input type="date" id="dc-exp"></div>
               </div>
-              <div class="actions-r"><button type="button" class="btn btn-primary" id="dc-create">建立折扣碼</button></div>
+              <div class="actions-r"><button type="button" class="btn btn-primary" id="dc-create" data-i18n="aeEditDcCreateBtn">建立折扣碼</button></div>
             </div>
           </div>
 
@@ -429,17 +429,17 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h11a4 4 0 010 8h-3M3 10l4-4M3 10l4 4"/></svg></div>
-              <div><h3>退費政策</h3><p>設定「距活動開始天數 → 退費比例」。報名者線上申請退費後由您審核並退款；平台不經手金流。比例不得低於所選法規範本的法定下限（可更優待）。</p></div>
+              <div><h3 data-i18n="aeEditSecRefundH">退費政策</h3><p data-i18n="aeEditSecRefundP">設定「距活動開始天數 → 退費比例」。報名者線上申請退費後由您審核並退款；平台不經手金流。比例不得低於所選法規範本的法定下限（可更優待）。</p></div>
             </div>
             <div class="fld">
-              <div class="lbl">適用法規範本</div>
-              <select id="rp-template" data-dirty><option value="">載入中⋯</option></select>
+              <div class="lbl" data-i18n="aeEditFldRpTemplate">適用法規範本</div>
+              <select id="rp-template" data-dirty><option value="" data-i18n="aeEditRpTemplateLoading">載入中⋯</option></select>
               <p id="rp-floorHint" style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:6px"></p>
             </div>
             <div class="list-grp" id="rp-tiers"></div>
-            <button type="button" class="add-row" id="rp-addTier">＋ 新增級距</button>
-            <div class="fld" style="margin-top:12px"><div class="lbl">退費說明（顯示給報名者，可選）</div><textarea id="rp-note" rows="2" data-dirty placeholder="例：報名費不含金流手續費；退款將於審核後 7 個工作天內處理。"></textarea></div>
-            <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin-top:6px">活動當天及之後不開放線上退費，報名者須直接聯繫主辦方。退費基準金額＝報名收費總額。</p>
+            <button type="button" class="add-row" id="rp-addTier" data-i18n="aeEditRpAddTier">＋ 新增級距</button>
+            <div class="fld" style="margin-top:12px"><div class="lbl" data-i18n="aeEditFldRpNote">退費說明（顯示給報名者，可選）</div><textarea id="rp-note" rows="2" data-dirty placeholder="例：報名費不含金流手續費；退款將於審核後 7 個工作天內處理。" data-i18n-placeholder="aeEditRpNotePlaceholder"></textarea></div>
+            <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin-top:6px" data-i18n="aeEditRpFootnote">活動當天及之後不開放線上退費，報名者須直接聯繫主辦方。退費基準金額＝報名收費總額。</p>
           </div>
         </div>
 
@@ -448,10 +448,10 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-              <div><h3>Email 通知</h3><p>報名成功 / 付款確認時自動寄送</p></div>
+              <div><h3 data-i18n="aeEditSecEmailH">Email 通知</h3><p data-i18n="aeEditSecEmailP">報名成功 / 付款確認時自動寄送</p></div>
             </div>
-            <div class="toggle-row"><div class="body"><h6>啟用自動 Email 通知</h6><p>關閉後，新報名者不會收到確認信</p></div><div class="tg-sw on" id="autoEmail" data-dirty></div></div>
-            <div class="fld" style="margin-top:14px"><div class="lbl">進階：通知 / EDM 群發</div><a href="javascript:void(0)" id="openAnnLink" style="color:var(--acc); font:500 13px/1.5 var(--f-tc); text-decoration:none">前往「通知 / EDM」設計範本與群發 →</a></div>
+            <div class="toggle-row"><div class="body"><h6 data-i18n="aeEditAutoEmailH">啟用自動 Email 通知</h6><p data-i18n="aeEditAutoEmailP">關閉後，新報名者不會收到確認信</p></div><div class="tg-sw on" id="autoEmail" data-dirty></div></div>
+            <div class="fld" style="margin-top:14px"><div class="lbl" data-i18n="aeEditAnnAdvLabel">進階：通知 / EDM 群發</div><a href="javascript:void(0)" id="openAnnLink" style="color:var(--acc); font:500 13px/1.5 var(--f-tc); text-decoration:none" data-i18n="aeEditAnnAdvLink">前往「通知 / EDM」設計範本與群發 →</a></div>
           </div>
 
           <!-- BB1: inline announcements composer — same shape as legacy regmaster-pro's
@@ -460,15 +460,15 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg></div>
-              <div><h3>活動公告</h3><p>輸入後會即時顯示在活動公開頁的「公告」區，依日期由新到舊排序</p></div>
+              <div><h3 data-i18n="aeEditSecAnnH">活動公告</h3><p data-i18n="aeEditSecAnnP">輸入後會即時顯示在活動公開頁的「公告」區，依日期由新到舊排序</p></div>
             </div>
             <div class="row2" style="grid-template-columns: 160px 1fr">
-              <div class="fld"><div class="lbl">日期</div><input type="date" id="ann-date"></div>
-              <div class="fld"><div class="lbl">標題</div><input type="text" id="ann-title" placeholder="例：報到位置變更通知"></div>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldAnnDate">日期</div><input type="date" id="ann-date"></div>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldAnnTitle">標題</div><input type="text" id="ann-title" placeholder="例：報到位置變更通知" data-i18n-placeholder="aeEditAnnTitlePlaceholder"></div>
             </div>
-            <div class="fld"><div class="lbl">內容（純文字，換行會保留）</div><textarea id="ann-content" rows="4" placeholder="輸入公告內容⋯"></textarea></div>
+            <div class="fld"><div class="lbl" data-i18n="aeEditFldAnnContent">內容（純文字，換行會保留）</div><textarea id="ann-content" rows="4" placeholder="輸入公告內容⋯" data-i18n-placeholder="aeEditAnnContentPlaceholder"></textarea></div>
             <div style="display:flex; justify-content:flex-end; margin-top:10px">
-              <button class="btn btn-primary btn-sm" id="ann-add">＋ 新增公告</button>
+              <button class="btn btn-primary btn-sm" id="ann-add" data-i18n="aeEditAnnAddBtn">＋ 新增公告</button>
             </div>
             <div id="ann-list" style="margin-top:18px"></div>
           </div>
@@ -479,40 +479,40 @@
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></div>
-              <div><h3>名額與候補</h3></div>
+              <div><h3 data-i18n="aeEditSecCapacityH">名額與候補</h3></div>
             </div>
             <div class="row2">
-              <div class="fld"><div class="lbl">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="0"><div class="help" id="maxTeamsHelp">0 = 無上限。超過此數將進入候補</div><div id="maxTeamsErr" style="display:none; margin-top:5px; color:var(--err-700); font:600 11.5px/1.45 var(--f-tc)"></div></div>
-              <div class="fld"><div class="lbl">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="true">是（額滿後可候補）</option><option value="false">否（額滿即停止接受報名）</option></select><div id="waitlistHint" style="display:none; margin-top:5px; color:var(--warn-700); font:500 11.5px/1.45 var(--f-tc)"></div></div>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldMaxTeams">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="0"><div class="help" id="maxTeamsHelp" data-i18n="aeEditMaxTeamsHelp">0 = 無上限。超過此數將進入候補</div><div id="maxTeamsErr" style="display:none; margin-top:5px; color:var(--err-700); font:600 11.5px/1.45 var(--f-tc)"></div></div>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldAllowWaitlist">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="true" data-i18n="aeEditWaitlistYes">是（額滿後可候補）</option><option value="false" data-i18n="aeEditWaitlistNo">否（額滿即停止接受報名）</option></select><div id="waitlistHint" style="display:none; margin-top:5px; color:var(--warn-700); font:500 11.5px/1.45 var(--f-tc)"></div></div>
             </div>
           </div>
           <div class="sec">
             <div class="sec-hd">
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7"/></svg></div>
-              <div><h3>可見性</h3></div>
+              <div><h3 data-i18n="aeEditSecVisibilityH">可見性</h3></div>
             </div>
-            <div class="toggle-row"><div class="body"><h6>於公開瀏覽頁顯示</h6><p>未開啟時，只有持連結的人才能找到此活動</p></div><div class="tg-sw" id="isVisible" data-dirty></div></div>
-            <div class="toggle-row"><div class="body"><h6>開放報名</h6><p>關閉時公開頁的「立即報名」鈕變灰</p></div><div class="tg-sw" id="isOpen" data-dirty></div></div>
-            <div class="toggle-row"><div class="body"><h6>活動 AI 助理</h6><p id="eventAiHint">開啟後，報名者可在活動公開頁向 AI 詢問本活動的時間、組別、費用、規章等問題</p></div><div class="tg-sw" id="eventAiOn" data-dirty></div></div>
+            <div class="toggle-row"><div class="body"><h6 data-i18n="aeEditVisibleH">於公開瀏覽頁顯示</h6><p data-i18n="aeEditVisibleP">未開啟時，只有持連結的人才能找到此活動</p></div><div class="tg-sw" id="isVisible" data-dirty></div></div>
+            <div class="toggle-row"><div class="body"><h6 data-i18n="aeEditIsOpenH">開放報名</h6><p data-i18n="aeEditIsOpenP">關閉時公開頁的「立即報名」鈕變灰</p></div><div class="tg-sw" id="isOpen" data-dirty></div></div>
+            <div class="toggle-row"><div class="body"><h6 data-i18n="aeEditEventAiH">活動 AI 助理</h6><p id="eventAiHint" data-i18n="aeEditEventAiP">開啟後，報名者可在活動公開頁向 AI 詢問本活動的時間、組別、費用、規章等問題</p></div><div class="tg-sw" id="eventAiOn" data-dirty></div></div>
           </div>
 
           <div class="danger-zone">
-            <h3>⚠ 危險區域</h3>
+            <h3 data-i18n="aeEditDangerH">⚠ 危險區域</h3>
             <div class="danger-row">
-              <div class="body"><h6>複製活動</h6><p>建立此活動的完整複本（含設定但不含報名）</p></div>
-              <button class="btn btn-sm" id="dupBtn">複製</button>
+              <div class="body"><h6 data-i18n="aeEditDupH">複製活動</h6><p data-i18n="aeEditDupP">建立此活動的完整複本（含設定但不含報名）</p></div>
+              <button class="btn btn-sm" id="dupBtn" data-i18n="aeEditDupBtn">複製</button>
             </div>
             <div class="danger-row">
-              <div class="body"><h6>刪除活動</h6><p>此操作會永久刪除活動與所有報名資料，無法復原</p></div>
-              <button class="btn btn-sm" id="deleteBtn">刪除</button>
+              <div class="body"><h6 data-i18n="aeEditDeleteH">刪除活動</h6><p data-i18n="aeEditDeleteP">此操作會永久刪除活動與所有報名資料，無法復原</p></div>
+              <button class="btn btn-sm" id="deleteBtn" data-i18n="aeEditDeleteBtn">刪除</button>
             </div>
           </div>
         </div>
 
         <div class="save-bar">
-          <span class="meta" id="saveMeta">尚未變更</span>
-          <button class="btn btn-ghost" id="revertBtn" disabled>還原</button>
-          <button class="btn btn-primary" id="saveBtn" disabled>儲存變更</button>
+          <span class="meta" id="saveMeta" data-i18n="aeEditSaveMetaInitial">尚未變更</span>
+          <button class="btn btn-ghost" id="revertBtn" disabled data-i18n="aeEditRevertBtn">還原</button>
+          <button class="btn btn-primary" id="saveBtn" disabled data-i18n="aeEditSaveBtn">儲存變更</button>
         </div>
       </div>
     </div>
@@ -521,6 +521,7 @@
 
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-edit.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script src="/shared/tw-banks.js"></script>
 <script>
@@ -540,7 +541,7 @@
   if (!compId) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMsg').textContent = '網址未指定活動編號。';
+    document.getElementById('errorMsg').textContent = window.L('aeEditErrNoId');
     return;
   }
 
@@ -572,17 +573,17 @@
   function _annRender(list) {
     var el = document.getElementById('ann-list');
     if (!list || !list.length) {
-      el.innerHTML = '<p style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:14px; background:var(--surface-2); border:1px dashed var(--line); border-radius:9px; text-align:center">目前還沒有任何公告，新增第一則吧。</p>';
+      el.innerHTML = '<p style="color:var(--muted); font:400 12.5px/1.5 var(--f-tc); padding:14px; background:var(--surface-2); border:1px dashed var(--line); border-radius:9px; text-align:center">' + escapeHtml(window.L('aeEditAnnEmpty')) + '</p>';
       return;
     }
     el.innerHTML = list.map(function (a) {
-      var date = escapeHtml(a.date || ''); var title = escapeHtml(a.title || '(無標題)');
+      var date = escapeHtml(a.date || ''); var title = escapeHtml(a.title || window.L('aeEditAnnNoTitle'));
       var body = escapeHtml(a.content || '').replace(/\n/g, '<br>');
       return '<div class="ann-row" style="padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); margin-bottom:10px">' +
         '<div style="display:flex; justify-content:space-between; align-items:start; gap:10px; margin-bottom:6px">' +
           '<div><b style="font:600 13.5px/1.3 var(--f-display); color:var(--ink)">' + title + '</b>' +
             '<div style="font:500 11.5px/1.4 var(--f-mono); color:var(--muted); margin-top:3px">' + date + '</div></div>' +
-          '<button type="button" class="btn btn-ghost btn-sm" data-ann-del="' + escapeHtml(a.docId) + '" style="color:var(--err-700)">刪除</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-ann-del="' + escapeHtml(a.docId) + '" style="color:var(--err-700)">' + escapeHtml(window.L('aeEditAnnDelBtn')) + '</button>' +
         '</div>' +
         '<div style="font:400 13px/1.65 var(--f-tc); color:var(--ink-2)">' + body + '</div>' +
       '</div>';
@@ -590,11 +591,11 @@
     el.querySelectorAll('[data-ann-del]').forEach(function (b) {
       b.addEventListener('click', function () {
         var docId = b.dataset.annDel;
-        uiConfirm('確定刪除此公告？此操作無法復原。', { title: '刪除公告', okText: '永久刪除', danger: true }).then(function (ok) {
+        uiConfirm(window.L('aeEditAnnDelConfirm'), { title: window.L('aeEditAnnDelTitle'), okText: window.L('aeEditAnnDelOk'), danger: true }).then(function (ok) {
           if (!ok) return;
           google.script.run
             .withSuccessHandler(function () { _annLoad(); })
-            .withFailureHandler(function (e) { uiAlert('刪除失敗：' + (e && e.message)); })
+            .withFailureHandler(function (e) { uiAlert(window.L('aeEditAnnDelFailPre') + (e && e.message)); })
             .deleteAnnouncement(compId, docId);
         });
       });
@@ -611,8 +612,8 @@
     var date = document.getElementById('ann-date').value;
     var title = document.getElementById('ann-title').value.trim();
     var content = document.getElementById('ann-content').value.trim();
-    if (!date || !title || !content) { uiAlert('請填寫日期、標題與內容'); return; }
-    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = '送出中⋯';
+    if (!date || !title || !content) { uiAlert(window.L('aeEditAnnFormIncomplete')); return; }
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('aeEditAnnSubmitBusy');
     google.script.run
       .withSuccessHandler(function () {
         btn.disabled = false; btn.textContent = o;
@@ -621,7 +622,7 @@
         document.getElementById('ann-date').value = _todayIso();
         _annLoad();
       })
-      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; uiAlert('新增失敗：' + (e && e.message)); })
+      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; uiAlert(window.L('aeEditAnnAddFailPre') + (e && e.message)); })
       .addAnnouncement(compId, date, title, content);
   });
   _annLoad();
@@ -663,10 +664,10 @@
       if (!PLAN.features.eventAi) {
         aiSw.classList.remove('on'); aiSw.dataset.locked = '1';
         aiSw.style.opacity = '.4'; aiSw.style.pointerEvents = 'none';
-        if (aiHint) aiHint.innerHTML = '此功能需 <b>Starter</b> 以上方案 — <a href="/admin/license.html" style="color:var(--acc)">升級方案</a> 後即可開啟。';
+        if (aiHint) aiHint.innerHTML = window.L('aeEditAiUpgradeHint');
       } else {
         delete aiSw.dataset.locked; aiSw.style.opacity = ''; aiSw.style.pointerEvents = '';
-        if (aiHint) aiHint.textContent = '開啟後，報名者可在活動公開頁向 AI 詢問本活動的時間、組別、費用、規章等問題。';
+        if (aiHint) aiHint.textContent = window.L('aeEditEventAiPDot');
       }
     }
     // 允許候補
@@ -675,7 +676,7 @@
     if (wl) {
       if (!PLAN.features.waitlist) {
         wl.value = 'false'; wl.disabled = true;
-        if (wlHint) { wlHint.style.display = ''; wlHint.innerHTML = '允許候補為 <b>Starter</b> 以上方案功能 — <a href="/admin/license.html" style="color:var(--acc)">升級方案</a> 後可開啟。'; }
+        if (wlHint) { wlHint.style.display = ''; wlHint.innerHTML = window.L('aeEditWaitlistUpgradeHint'); }
       } else {
         wl.disabled = false;
         if (wlHint) wlHint.style.display = 'none';
@@ -696,12 +697,12 @@
       if (sess.length) {
         var sum = sess.reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
         var overEach = sess.some(function (s) { return (parseInt(s.maxTeams, 10) || 0) > cap; });
-        if (sum > cap) msg = '各梯次報名總數 (' + sum + ') 超過您方案（' + tierLabelFE(PLAN.tier) + '）單一活動名額上限 ' + cap + '，請調低各梯次名額或升級方案。';
-        else if (overEach) msg = '有梯次名額超過您方案（' + tierLabelFE(PLAN.tier) + '）上限 ' + cap + '，請調低或升級方案。';
+        if (sum > cap) msg = window.L('aeEditCapMultiSumPre') + sum + window.L('aeEditCapMultiSumMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapMultiSumSuf') + cap + window.L('aeEditCapMultiSumEnd');
+        else if (overEach) msg = window.L('aeEditCapMultiEachPre') + tierLabelFE(PLAN.tier) + window.L('aeEditCapMultiEachSuf') + cap + window.L('aeEditCapMultiEachEnd');
       }
     } else {
       var val = parseInt(document.getElementById('adv-maxTeams').value, 10) || 0;
-      if (val > cap) msg = '報名上限 ' + val + ' 超過您方案（' + tierLabelFE(PLAN.tier) + '）單場名額上限 ' + cap + '，請調低（≤ ' + cap + '）或升級方案。';
+      if (val > cap) msg = window.L('aeEditCapSinglePre') + val + window.L('aeEditCapSingleMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapSingleSuf') + cap + window.L('aeEditCapSingleEnd') + cap + window.L('aeEditCapSingleEnd2');
     }
     if (msg) { err.style.display = ''; err.textContent = msg; return false; }
     err.style.display = 'none'; return true;
@@ -712,14 +713,14 @@
       if (!res || res.error) {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('errorState').style.display = 'block';
-        document.getElementById('errorMsg').textContent = (res && res.error) || '找不到活動';
+        document.getElementById('errorMsg').textContent = (res && res.error) || window.L('aeEditErrNotFound');
         return;
       }
       CFG = res.config || {};
       COMP = res;
       document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
       document.getElementById('crumbHub').textContent = CFG.competitionName || compId;
-      document.title = (CFG.competitionName || '活動') + ' · 設定';
+      document.title = (CFG.competitionName || window.L('aeEditDefaultEventName')) + window.L('aeEditDocTitleSuffix');
       populate();
       ORIGINAL_JSON = serialize();
       document.getElementById('loadingState').style.display = 'none';
@@ -728,7 +729,7 @@
     .withFailureHandler(function (err) {
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('errorState').style.display = 'block';
-      document.getElementById('errorMsg').textContent = (err && err.message) || '網路錯誤';
+      document.getElementById('errorMsg').textContent = (err && err.message) || window.L('aeEditErrNetwork');
     })
     .getRegistrationBundle(compId);
 
@@ -862,25 +863,25 @@
     return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
       '<div style="display:flex; gap:8px; align-items:center">' +
         '<span class="grip" style="cursor:grab">⋮⋮</span>' +
-        '<input data-gf="name" value="' + escapeHtml(name) + '" placeholder="組別名稱" style="flex:1">' +
+        '<input data-gf="name" value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditGroupNamePlaceholder')) + '" style="flex:1">' +
         '<select data-gf="type" style="padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13px/1.4 var(--f-tc)">' +
-          '<option value="none"' + (t==='none' ?' selected':'') + '>不限年齡</option>' +
-          '<option value="age"'  + (t==='age'  ?' selected':'') + '>年齡區間</option>' +
-          '<option value="birth"'+ (t==='birth'?' selected':'') + '>出生日期區間</option>' +
+          '<option value="none"' + (t==='none' ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeNone')) + '</option>' +
+          '<option value="age"'  + (t==='age'  ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeAge')) + '</option>' +
+          '<option value="birth"'+ (t==='birth'?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeBirth')) + '</option>' +
         '</select>' +
         '<span class="rm" data-rm-group="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
       '</div>' +
       '<div data-gf="ageRow" style="display:' + (t==='age'?'flex':'none') + '; gap:8px; align-items:center; margin-top:8px; padding-left:28px">' +
-        '<span class="help" style="margin:0">最小</span>' +
+        '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditGroupAgeMin')) + '</span>' +
         '<input type="number" min="0" max="120" data-gf="minAge" value="' + escapeHtml(String(minAge)) + '" style="width:90px">' +
-        '<span class="help" style="margin:0">歲 ～ 最大</span>' +
+        '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditGroupAgeMid')) + '</span>' +
         '<input type="number" min="0" max="120" data-gf="maxAge" value="' + escapeHtml(String(maxAge)) + '" style="width:90px">' +
-        '<span class="help" style="margin:0">歲</span>' +
+        '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditGroupAgeSuf')) + '</span>' +
       '</div>' +
       '<div data-gf="birthRow" style="display:' + (t==='birth'?'flex':'none') + '; gap:8px; align-items:center; margin-top:8px; padding-left:28px">' +
-        '<span class="help" style="margin:0">出生日期從</span>' +
+        '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditGroupBirthFrom')) + '</span>' +
         '<input type="date" data-gf="birthFrom" value="' + escapeHtml(bFrom) + '">' +
-        '<span class="help" style="margin:0">至</span>' +
+        '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditGroupBirthTo')) + '</span>' +
         '<input type="date" data-gf="birthTo" value="' + escapeHtml(bTo) + '">' +
       '</div>' +
     '</div>';
@@ -941,13 +942,13 @@
     var arr = readGroups();
     var rs = readGroupAgeRules();
     var name;
-    if (!preset) { uiAlert('請先選擇預設組別或「自訂組別」'); return; }
+    if (!preset) { uiAlert(window.L('aeEditGroupPickFirst')); return; }
     if (preset === '__custom__') {
       name = '';
     } else {
       // dedupe: if already exists, focus its name input
       if (arr.indexOf(preset) !== -1) {
-        uiAlert('組別「' + preset + '」已存在');
+        uiAlert(window.L('aeEditGroupExistsPre') + preset + window.L('aeEditGroupExistsSuf'));
         return;
       }
       name = preset;
@@ -976,17 +977,17 @@
       return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:10px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
         '<div style="display:grid; grid-template-columns:auto 1fr 90px auto; gap:8px; align-items:center">' +
           '<span class="grip" style="cursor:grab">⋮⋮</span>' +
-          '<input value="' + escapeHtml(name) + '" placeholder="場次名稱（例：第一梯次）" data-sf="name">' +
-          '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="名額" data-sf="maxTeams" style="text-align:right" title="該場次名額上限">' +
+          '<input value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditSessionNamePlaceholder')) + '" data-sf="name">' +
+          '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="' + escapeHtml(window.L('aeEditSessionMaxPlaceholder')) + '" data-sf="maxTeams" style="text-align:right" title="' + escapeHtml(window.L('aeEditSessionMaxTitle')) + '">' +
           '<span class="rm" data-rm-session="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
         '</div>' +
         '<div style="display:grid; grid-template-columns:auto 130px 95px auto 130px 95px; gap:6px; align-items:center; margin-top:8px; padding-left:28px">' +
-          '<span class="help" style="margin:0">開始</span>' +
-          '<input type="date" value="' + escapeHtml(startDate) + '" data-sf="startDate" title="開始日期">' +
-          '<input type="time" value="' + escapeHtml(startTime) + '" data-sf="startTime" title="開始時間">' +
-          '<span class="help" style="margin:0">～ 結束</span>' +
-          '<input type="date" value="' + escapeHtml(endDate) + '" data-sf="endDate" title="結束日期（多日活動）">' +
-          '<input type="time" value="' + escapeHtml(endTime) + '" data-sf="endTime" title="結束時間">' +
+          '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditSessionStart')) + '</span>' +
+          '<input type="date" value="' + escapeHtml(startDate) + '" data-sf="startDate" title="' + escapeHtml(window.L('aeEditSessionStartDateTitle')) + '">' +
+          '<input type="time" value="' + escapeHtml(startTime) + '" data-sf="startTime" title="' + escapeHtml(window.L('aeEditSessionStartTimeTitle')) + '">' +
+          '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditSessionToEnd')) + '</span>' +
+          '<input type="date" value="' + escapeHtml(endDate) + '" data-sf="endDate" title="' + escapeHtml(window.L('aeEditSessionEndDateTitle')) + '">' +
+          '<input type="time" value="' + escapeHtml(endTime) + '" data-sf="endTime" title="' + escapeHtml(window.L('aeEditSessionEndTimeTitle')) + '">' +
         '</div>' +
       '</div>';
     }).join('');
@@ -1023,12 +1024,12 @@
       inp.readOnly = true;
       inp.style.background = 'var(--surface-2)';
       inp.style.color = 'var(--muted)';
-      if (help) help.textContent = '多梯次模式：此為各梯次人數上限的加總（' + sum + '），不可直接修改 — 請至「基本」分頁的「場次 / 梯次」修改各梯次人數上限。';
+      if (help) help.textContent = window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf');
     } else {
       inp.readOnly = false;
       inp.style.background = '';
       inp.style.color = '';
-      if (help) help.textContent = '0 = 無上限。超過此數將進入候補';
+      if (help) help.textContent = window.L('aeEditMaxTeamsHelp');
     }
     validateCapacity();
   }
@@ -1084,21 +1085,21 @@
   function rpFloorHintText(tmplKey) {
     var t = RP_TEMPLATES[tmplKey]; if (!t) return '';
     var parts = (t.floors || []).slice().sort(function (a, b) { return b.minDays - a.minDays; })
-      .map(function (f) { return '距活動 ≥' + f.minDays + ' 天 ⇒ 至少退 ' + f.pct + '%'; });
-    return '法定下限（不得低於）：' + parts.join('；') + '；活動當天及之後不開放線上退費。';
+      .map(function (f) { return window.L('aeEditRpFloorPre') + f.minDays + window.L('aeEditRpFloorMid') + f.pct + window.L('aeEditRpFloorSuf'); });
+    return window.L('aeEditRpFloorHintPre') + parts.join(window.L('aeEditRpFloorJoin')) + window.L('aeEditRpFloorHintSuf');
   }
   function renderRpTiers(tiers) {
     var el = document.getElementById('rp-tiers');
-    if (!tiers || !tiers.length) { el.innerHTML = '<div class="dc-empty" style="padding:8px;color:var(--muted);font:400 12px/1.5 var(--f-tc)">尚無級距，點下方新增。</div>'; return; }
+    if (!tiers || !tiers.length) { el.innerHTML = '<div class="dc-empty" style="padding:8px;color:var(--muted);font:400 12px/1.5 var(--f-tc)">' + escapeHtml(window.L('aeEditRpTiersEmpty')) + '</div>'; return; }
     el.innerHTML = tiers.map(function (t, i) {
       return '<div class="list-row" data-rp-row="' + i + '" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
-        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">距活動 ≥</span>' +
+        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">' + escapeHtml(window.L('aeEditRpRowDaysPre')) + '</span>' +
         '<input type="number" min="0" data-rp="days" value="' + (t.daysBefore || 0) + '" style="width:80px" data-dirty>' +
-        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">天 ⇒ 退</span>' +
+        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">' + escapeHtml(window.L('aeEditRpRowDaysMid')) + '</span>' +
         '<input type="number" min="0" max="100" data-rp="pct" value="' + (t.pct || 0) + '" style="width:80px" data-dirty>' +
-        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">%</span>' +
+        '<span style="font:400 12.5px/1 var(--f-tc);color:var(--ink-2)">' + escapeHtml(window.L('aeEditRpRowPct')) + '</span>' +
         '<span data-rp-warn style="font:500 11.5px/1.4 var(--f-tc);color:var(--err-700);margin-left:6px"></span>' +
-        '<button type="button" class="icon-btn danger" data-rp-rm="' + i + '" title="刪除此級距" style="margin-left:auto;width:30px;height:30px;padding:0;border-radius:8px;font:600 15px/1 var(--f-tc)">✕</button>' +
+        '<button type="button" class="icon-btn danger" data-rp-rm="' + i + '" title="' + escapeHtml(window.L('aeEditRpRowRmTitle')) + '" style="margin-left:auto;width:30px;height:30px;padding:0;border-radius:8px;font:600 15px/1 var(--f-tc)">✕</button>' +
       '</div>';
     }).join('');
     el.querySelectorAll('[data-rp-rm]').forEach(function (b) { b.addEventListener('click', function () { var arr = readRpTiers(); arr.splice(parseInt(b.dataset.rpRm, 10), 1); renderRpTiers(arr); markDirty(); }); });
@@ -1117,7 +1118,7 @@
       var pct = Number(row.querySelector('[data-rp="pct"]').value) || 0;
       var floor = rpFloorPct(tmpl, days);
       var warn = row.querySelector('[data-rp-warn]');
-      warn.textContent = (pct < floor) ? ('低於法定下限 ' + floor + '%') : '';
+      warn.textContent = (pct < floor) ? (window.L('aeEditRpBelowFloorPre') + floor + '%') : '';
     });
   }
   function initRefundPolicy() {
@@ -1125,7 +1126,7 @@
       var sel = document.getElementById('rp-template');
       (res && res.templates || []).forEach(function (t) { RP_TEMPLATES[t.key] = t; });
       var cur = (CFG.refundPolicy && CFG.refundPolicy.template) || '';
-      sel.innerHTML = '<option value="">— 不啟用退費政策 —</option>' +
+      sel.innerHTML = '<option value="">' + escapeHtml(window.L('aeEditRpTemplateDisabled')) + '</option>' +
         (res && res.templates || []).map(function (t) { return '<option value="' + t.key + '"' + (t.key === cur ? ' selected' : '') + '>' + t.label + '</option>'; }).join('');
       document.getElementById('rp-floorHint').textContent = cur ? rpFloorHintText(cur) : '';
       renderRpTiers((CFG.refundPolicy && CFG.refundPolicy.tiers) || []);
@@ -1160,8 +1161,8 @@
     el.innerHTML = (items || []).map(function (it, i) {
       return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 1fr 130px auto; gap:10px">' +
         '<span class="grip">⋮⋮</span>' +
-        '<input value="' + escapeHtml(it.name || '') + '" placeholder="項目名稱（如：報名費）" data-ff="name">' +
-        '<input type="number" min="0" value="' + (parseInt(it.amount, 10) || 0) + '" placeholder="金額 NT$" data-ff="amount" style="text-align:right">' +
+        '<input value="' + escapeHtml(it.name || '') + '" placeholder="' + escapeHtml(window.L('aeEditFeeNamePlaceholder')) + '" data-ff="name">' +
+        '<input type="number" min="0" value="' + (parseInt(it.amount, 10) || 0) + '" placeholder="' + escapeHtml(window.L('aeEditFeeAmountPlaceholder')) + '" data-ff="amount" style="text-align:right">' +
         '<span class="rm" data-rm-fee="' + i + '">×</span>' +
       '</div>';
     }).join('');
@@ -1187,10 +1188,10 @@
     var el = document.getElementById('groupDiscList');
     el.innerHTML = (tiers || []).map(function (t, i) {
       return '<div class="list-row" data-idx="' + i + '" style="display:grid; grid-template-columns:auto 86px 1fr 110px auto; gap:10px; align-items:center">' +
-        '<span style="color:var(--muted); font:500 12px/1 var(--f-tc)">滿</span>' +
-        '<input type="number" min="1" value="' + (parseInt(t.minPeople, 10) || 0) + '" placeholder="人數" data-gd="minPeople" style="text-align:right">' +
-        '<select data-gd="type"><option value="amount"' + (t.type === 'amount' ? ' selected' : '') + '>折抵 NT$</option><option value="percent"' + (t.type === 'percent' ? ' selected' : '') + '>折 %</option></select>' +
-        '<input type="number" min="1" value="' + (Number(t.value) || 0) + '" placeholder="折扣值" data-gd="value" style="text-align:right">' +
+        '<span style="color:var(--muted); font:500 12px/1 var(--f-tc)">' + escapeHtml(window.L('aeEditGdMinPre')) + '</span>' +
+        '<input type="number" min="1" value="' + (parseInt(t.minPeople, 10) || 0) + '" placeholder="' + escapeHtml(window.L('aeEditGdMinPlaceholder')) + '" data-gd="minPeople" style="text-align:right">' +
+        '<select data-gd="type"><option value="amount"' + (t.type === 'amount' ? ' selected' : '') + '>' + escapeHtml(window.L('aeEditGdTypeAmount')) + '</option><option value="percent"' + (t.type === 'percent' ? ' selected' : '') + '>' + escapeHtml(window.L('aeEditGdTypePercent')) + '</option></select>' +
+        '<input type="number" min="1" value="' + (Number(t.value) || 0) + '" placeholder="' + escapeHtml(window.L('aeEditGdValuePlaceholder')) + '" data-gd="value" style="text-align:right">' +
         '<span class="rm" data-rm-gd="' + i + '">×</span>' +
       '</div>';
     }).join('');
@@ -1208,28 +1209,28 @@
   function loadDiscCodes() {
     google.script.run.withSuccessHandler(function (codes) {
       var el = document.getElementById('discCodeList');
-      if (!codes || !codes.length) { el.innerHTML = '<div class="dc-empty">尚無折扣碼</div>'; return; }
+      if (!codes || !codes.length) { el.innerHTML = '<div class="dc-empty">' + escapeHtml(window.L('aeEditDcEmpty')) + '</div>'; return; }
       el.innerHTML = codes.map(function (c) {
-        var disc = c.type === 'percent' ? ('折 ' + c.value + '%') : ('折抵 NT$ ' + c.value);
-        var uses = (c.maxUses > 0) ? ((c.usedCount || 0) + ' / ' + c.maxUses) : ((c.usedCount || 0) + ' / ∞');
-        var exp = c.expiresAt ? ('至 ' + c.expiresAt) : '無期限';
+        var disc = c.type === 'percent' ? (window.L('aeEditDcDiscPercentPre') + c.value + window.L('aeEditDcDiscPercentSuf')) : (window.L('aeEditDcDiscAmountPre') + c.value);
+        var uses = (c.maxUses > 0) ? ((c.usedCount || 0) + ' / ' + c.maxUses) : ((c.usedCount || 0) + window.L('aeEditDcUsageInfinity'));
+        var exp = c.expiresAt ? (window.L('aeEditDcExpPre') + c.expiresAt) : window.L('aeEditDcExpNone');
         return '<div class="dc-row">' +
           '<span class="code">' + escapeHtml(c.code) + '</span>' +
-          '<span class="disc">' + disc + '</span>' +
-          '<span class="meta">用量 ' + uses + ' · ' + exp + '</span>' +
+          '<span class="disc">' + escapeHtml(disc) + '</span>' +
+          '<span class="meta">' + escapeHtml(window.L('aeEditDcUsagePre') + uses + ' · ' + exp) + '</span>' +
           '<span class="rm" data-rm-dc="' + escapeHtml(c.code) + '">×</span>' +
         '</div>';
       }).join('');
       el.querySelectorAll('[data-rm-dc]').forEach(function (b) {
         b.addEventListener('click', function () {
-          uiConfirm('刪除折扣碼「' + b.dataset.rmDc + '」？', { title: '刪除折扣碼', danger: true }).then(function (ok) {
+          uiConfirm(window.L('aeEditDcDelConfirmPre') + b.dataset.rmDc + window.L('aeEditDcDelConfirmSuf'), { title: window.L('aeEditDcDelTitle'), danger: true }).then(function (ok) {
             if (!ok) return;
-            google.script.run.withSuccessHandler(loadDiscCodes).withFailureHandler(function (e) { uiAlert('失敗：' + (e && e.message)); }).deleteDiscountCode(compId, b.dataset.rmDc);
+            google.script.run.withSuccessHandler(loadDiscCodes).withFailureHandler(function (e) { uiAlert(window.L('aeEditDcFailPre') + (e && e.message)); }).deleteDiscountCode(compId, b.dataset.rmDc);
           });
         });
       });
     }).withFailureHandler(function () {
-      document.getElementById('discCodeList').innerHTML = '<div style="color:var(--muted)">載入折扣碼失敗</div>';
+      document.getElementById('discCodeList').innerHTML = '<div style="color:var(--muted)">' + escapeHtml(window.L('aeEditDcLoadFail')) + '</div>';
     }).listDiscountCodes(compId);
   }
   document.getElementById('dc-create').addEventListener('click', function () {
@@ -1238,13 +1239,13 @@
     var value = parseInt(document.getElementById('dc-value').value, 10) || 0;
     var max = parseInt(document.getElementById('dc-max').value, 10) || 0;
     var exp = document.getElementById('dc-exp').value;
-    if (!code || value < 1) { uiAlert('請填寫折扣碼與折扣值'); return; }
-    var btn = this; btn.disabled = true; btn.textContent = '建立中⋯';
+    if (!code || value < 1) { uiAlert(window.L('aeEditDcFormIncomplete')); return; }
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditDcCreateBusy');
     google.script.run.withSuccessHandler(function (res) {
-      btn.disabled = false; btn.textContent = '建立折扣碼';
+      btn.disabled = false; btn.textContent = window.L('aeEditDcCreateBtn');
       if (res && res.success) { document.getElementById('dc-code').value = ''; document.getElementById('dc-value').value = ''; document.getElementById('dc-max').value = ''; document.getElementById('dc-exp').value = ''; loadDiscCodes(); }
-      else uiAlert((res && res.message) || '建立失敗');
-    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '建立折扣碼'; uiAlert('失敗：' + (e && e.message)); })
+      else uiAlert((res && res.message) || window.L('aeEditDcCreateFail'));
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = window.L('aeEditDcCreateBtn'); uiAlert(window.L('aeEditDcFailPre') + (e && e.message)); })
       .createDiscountCode(compId, code, type, value, max, exp, '');
   });
 
@@ -1276,9 +1277,9 @@
   }
   document.getElementById('convertHtmlBtn').addEventListener('click', function () {
     var ta = document.getElementById('basic-description'), v = ta.value.trim();
-    if (!v) { uiAlert('請先在活動描述貼上文字'); return; }
+    if (!v) { uiAlert(window.L('aeEditConvertNeedText')); return; }
     if (/<[a-z][\s\S]*>/i.test(v)) {
-      uiConfirm('內容看起來已包含 HTML，仍要以純文字重新轉換嗎？（會移除既有標籤）', { title: '一鍵轉 HTML' }).then(function (ok) { if (ok) { ta.value = convertDescToHtml(v.replace(/<[^>]+>/g, '')); markDirty(); } });
+      uiConfirm(window.L('aeEditConvertHasHtmlConfirm'), { title: window.L('aeEditConvertHtmlTitle') }).then(function (ok) { if (ok) { ta.value = convertDescToHtml(v.replace(/<[^>]+>/g, '')); markDirty(); } });
       return;
     }
     ta.value = convertDescToHtml(v); markDirty();
@@ -1291,8 +1292,8 @@
     ov.innerHTML =
       '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:880px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--sh-lg)">' +
         '<div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)">' +
-          '<h3 style="font:700 14px/1.2 var(--f-display);flex:1">' + (title || '預覽') + '</h3>' +
-          '<button type="button" id="mmClose" class="btn btn-ghost btn-sm">關閉</button>' +
+          '<h3 style="font:700 14px/1.2 var(--f-display);flex:1">' + escapeHtml(title || window.L('aeEditModalDefaultTitle')) + '</h3>' +
+          '<button type="button" id="mmClose" class="btn btn-ghost btn-sm">' + escapeHtml(window.L('aeEditModalCloseBtn')) + '</button>' +
         '</div>' +
         '<div style="padding:18px;overflow:auto">' + innerHtml + '</div>' +
       '</div>';
@@ -1307,8 +1308,8 @@
   var LAST_POSTER_SRC = '';
   function showPosterImg(src) { document.getElementById('posterImg').src = src; document.getElementById('posterPreview').style.display = 'block'; LAST_POSTER_SRC = src; }
   document.getElementById('posterPreviewBtn').addEventListener('click', function () {
-    if (!LAST_POSTER_SRC) { uiAlert('海報尚未載入，請稍候。'); return; }
-    openMediaModal('<img src="' + LAST_POSTER_SRC + '" alt="海報" style="display:block;max-width:100%;height:auto;border-radius:10px">', '活動海報預覽');
+    if (!LAST_POSTER_SRC) { uiAlert(window.L('aeEditPosterNotLoaded')); return; }
+    openMediaModal('<img src="' + LAST_POSTER_SRC + '" alt="' + escapeHtml(window.L('aeEditPosterImgAltModal')) + '" style="display:block;max-width:100%;height:auto;border-radius:10px">', window.L('aeEditModalPosterTitle'));
   });
   function compressImage(file, maxKB, cb) {
     var r = new FileReader();
@@ -1332,7 +1333,7 @@
     var file = this.files[0]; if (!file) return;
     posterChosen = file;
     document.getElementById('posterUploadBtn').disabled = false;
-    document.getElementById('posterMsg').textContent = '已選擇：' + file.name + '（按「上傳海報」送出）';
+    document.getElementById('posterMsg').textContent = window.L('aeEditPosterChosenPre') + file.name + window.L('aeEditPosterChosenSuf');
     var r = new FileReader(); r.onload = function (e) { showPosterImg(e.target.result); }; r.readAsDataURL(file);
   });
   document.getElementById('posterUploadBtn').addEventListener('click', function () {

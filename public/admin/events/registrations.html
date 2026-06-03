@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>報名管理 · 主辦後台 · RegMaster</title>
+<title data-i18n="aeRegDocTitle">報名管理 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -107,16 +107,16 @@
   <aside class="side"></aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>報名管理</b></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="aeRegCrumbHome">主辦後台</a><span class="sep">/</span><a href="/admin/events/" data-i18n="aeRegCrumbEvents">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b data-i18n="aeRegCrumbHere">報名管理</b></div>
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
-    <div id="loadingState" class="loading-c">載入報名資料⋯</div>
+    <div id="loadingState" class="loading-c" data-i18n="aeRegLoading">載入報名資料⋯</div>
 
     <div class="main-c" id="content" style="display:none">
       <!-- TABS -->
       <div class="tabs-bar">
-        <a data-tab="stats" class="on">📊 報名統計</a>
-        <a data-tab="list">📋 報名列表</a>
+        <a data-tab="stats" class="on" data-i18n="aeRegTabStats">📊 報名統計</a>
+        <a data-tab="list" data-i18n="aeRegTabList">📋 報名列表</a>
       </div>
 
       <!-- TAB 1: STATISTICS -->
@@ -126,31 +126,31 @@
         <!-- Row A: small categorical breakdowns (auto-fit) -->
         <div class="chart-grid">
           <div class="chart-card" id="groupCardWrap" style="display:none">
-            <div class="chart-head"><h4>各組別報名數量</h4><span class="help">隊伍 / 組別</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChGroupH">各組別報名數量</h4><span class="help" data-i18n="aeRegChGroupHelp">隊伍 / 組別</span></div>
             <div class="chart-box"><canvas id="chartGroup"></canvas></div>
           </div>
           <div class="chart-card" id="genderCardWrap" style="display:none">
-            <div class="chart-head"><h4>性別比例</h4><span class="help">學員 + 指導者</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChGenderH">性別比例</h4><span class="help" data-i18n="aeRegChGenderHelp">學員 + 指導者</span></div>
             <div class="chart-box"><canvas id="chartGender"></canvas></div>
           </div>
           <div class="chart-card" id="statusCardWrap" style="display:none">
-            <div class="chart-head"><h4>狀態（正取／備取）</h4><span class="help">候補狀況</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChStatusH">狀態（正取／備取）</h4><span class="help" data-i18n="aeRegChStatusHelp">候補狀況</span></div>
             <div class="chart-box"><canvas id="chartStatus"></canvas></div>
           </div>
           <div class="chart-card" id="paymentCardWrap" style="display:none">
-            <div class="chart-head"><h4>付款狀態</h4><span class="help">已付款 vs 待付款</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChPaymentH">付款狀態</h4><span class="help" data-i18n="aeRegChPaymentHelp">已付款 vs 待付款</span></div>
             <div class="chart-box"><canvas id="chartPayment"></canvas></div>
           </div>
           <div class="chart-card" id="sessionCardWrap" style="display:none">
-            <div class="chart-head"><h4>各梯次報名分布</h4><span class="help">熱門場次</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChSessionH">各梯次報名分布</h4><span class="help" data-i18n="aeRegChSessionHelp">熱門場次</span></div>
             <div class="chart-box"><canvas id="chartSession"></canvas></div>
           </div>
           <div class="chart-card" id="ageCardWrap" style="display:none">
-            <div class="chart-head"><h4>學員年齡分布</h4><span class="help" id="ageHelp">—</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChAgeH">學員年齡分布</h4><span class="help" id="ageHelp">—</span></div>
             <div class="chart-box"><canvas id="chartAge"></canvas></div>
           </div>
           <div class="chart-card" id="methodCardWrap" style="display:none">
-            <div class="chart-head"><h4>付款方式偏好</h4><span class="help">已選付款方式</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChMethodH">付款方式偏好</h4><span class="help" data-i18n="aeRegChMethodHelp">已選付款方式</span></div>
             <div class="chart-box"><canvas id="chartMethod"></canvas></div>
           </div>
         </div>
@@ -158,25 +158,25 @@
         <!-- Row B: time-series (full width) -->
         <div class="chart-grid" style="margin-top:16px">
           <div class="chart-card full">
-            <div class="chart-head"><h4>每日新增報名數</h4><span class="help">每日完成報名的隊伍數量</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChDailyH">每日新增報名數</h4><span class="help" data-i18n="aeRegChDailyHelp">每日完成報名的隊伍數量</span></div>
             <div class="chart-box tall"><canvas id="chartDaily"></canvas></div>
           </div>
           <div class="chart-card full" id="dailyRevenueCardWrap" style="display:none">
-            <div class="chart-head"><h4>每日入帳金額 (NT$)</h4><span class="help">當日完成付款的隊伍 × 報名費</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChDailyRevenueH">每日入帳金額 (NT$)</h4><span class="help" data-i18n="aeRegChDailyRevenueHelp">當日完成付款的隊伍 × 報名費</span></div>
             <div class="chart-box tall"><canvas id="chartDailyRevenue"></canvas></div>
           </div>
           <div class="chart-card full">
             <div class="chart-head">
-              <h4>報名累計趨勢</h4>
+              <h4 data-i18n="aeRegChTrendH">報名累計趨勢</h4>
               <div class="chart-toggle">
-                <button data-trend-x="date" class="on">日期</button>
-                <button data-trend-x="countdown">距截止天數 (D-N)</button>
+                <button data-trend-x="date" class="on" data-i18n="aeRegTrendByDate">日期</button>
+                <button data-trend-x="countdown" data-i18n="aeRegTrendByCountdown">距截止天數 (D-N)</button>
               </div>
             </div>
             <div class="chart-box tall"><canvas id="chartTrend"></canvas></div>
           </div>
           <div class="chart-card full" id="revenueTrendCardWrap" style="display:none">
-            <div class="chart-head"><h4>累積收費金額 (NT$)</h4><span class="help">隨時間累積的入帳曲線</span></div>
+            <div class="chart-head"><h4 data-i18n="aeRegChRevenueTrendH">累積收費金額 (NT$)</h4><span class="help" data-i18n="aeRegChRevenueTrendHelp">隨時間累積的入帳曲線</span></div>
             <div class="chart-box tall"><canvas id="chartRevenueTrend"></canvas></div>
           </div>
         </div>
@@ -185,8 +185,8 @@
         <div class="chart-grid" style="margin-top:16px">
           <div class="chart-card full">
             <div class="chart-head">
-              <h4>報名時段熱點（星期 × 小時）</h4>
-              <span class="help">顏色深淺對應該時段報名筆數，可推測下次公告時機</span>
+              <h4 data-i18n="aeRegChHeatmapH">報名時段熱點（星期 × 小時）</h4>
+              <span class="help" data-i18n="aeRegChHeatmapHelp">顏色深淺對應該時段報名筆數，可推測下次公告時機</span>
             </div>
             <div id="heatmap" class="heatmap"></div>
           </div>
@@ -196,14 +196,14 @@
       <!-- TAB 2: LIST -->
       <div class="tab-pane" data-pane="list">
         <div class="search-row">
-          <input id="searchInp" placeholder="搜尋編號 / 隊名 / 狀態⋯">
-          <span class="help" id="listCount">共 — 筆</span>
-          <button class="btn btn-ghost btn-sm" id="refundReqBtn" style="margin-left:auto">💸 退費申請 <span id="refundReqCt" style="display:none;background:var(--err-500);color:#fff;border-radius:999px;padding:1px 7px;font:600 11px/1.4 var(--f-mono);margin-left:4px"></span></button>
-          <button class="btn btn-primary btn-sm" id="exportListBtn">⬇️ 匯出所有報名資料</button>
+          <input id="searchInp" placeholder="搜尋編號 / 隊名 / 狀態⋯" data-i18n-placeholder="aeRegSearchPh">
+          <span class="help" id="listCount" data-i18n="aeRegCountPlaceholder">共 — 筆</span>
+          <button class="btn btn-ghost btn-sm" id="refundReqBtn" style="margin-left:auto"><span data-i18n="aeRegRefundBtn">💸 退費申請</span> <span id="refundReqCt" style="display:none;background:var(--err-500);color:#fff;border-radius:999px;padding:1px 7px;font:600 11px/1.4 var(--f-mono);margin-left:4px"></span></button>
+          <button class="btn btn-primary btn-sm" id="exportListBtn" data-i18n="aeRegExportBtn">⬇️ 匯出所有報名資料</button>
         </div>
         <div class="tbl-wrap">
           <table class="tbl">
-            <thead><tr><th>編號</th><th>中文隊名</th><th>英文隊名</th><th>狀態</th><th>付款狀態</th><th>動作</th></tr></thead>
+            <thead><tr><th data-i18n="aeRegColId">編號</th><th data-i18n="aeRegColNameCN">中文隊名</th><th data-i18n="aeRegColNameEN">英文隊名</th><th data-i18n="aeRegColStatus">狀態</th><th data-i18n="aeRegColPayStatus">付款狀態</th><th data-i18n="aeRegColActions">動作</th></tr></thead>
             <tbody id="listBody"></tbody>
           </table>
         </div>
@@ -216,6 +216,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-registrations.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function () {
@@ -226,7 +227,7 @@
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/registrations/);
   if (m) compId = decodeURIComponent(m[1]);
   if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
-  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  if (!compId) { alert(window.L('aeRegNoEventId')); location.href = '/admin/events/'; return; }
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
@@ -281,10 +282,10 @@
     var students = STATS.studentTotal || 0;
     var teachers = STATS.teacherTotal || 0;
     document.getElementById('kpiRow').innerHTML =
-      '<div class="sum-card featured"><div class="l">總報名隊伍</div><div class="v">' + team + '<em>隊</em></div><div class="sub">學員 ' + students + ' 位 · 指導者 ' + teachers + ' 位</div></div>' +
-      '<div class="sum-card"><div class="l">已付款</div><div class="v" style="color:var(--ok-700)">' + paid + '<em>隊</em></div><div class="sub">' + (team > 0 ? Math.round(paid / team * 100) : 0) + '% 完成付款</div></div>' +
-      '<div class="sum-card"><div class="l">待付款</div><div class="v" style="color:var(--warn-700)">' + pending + '<em>隊</em></div><div class="sub">尚未確認付款</div></div>' +
-      '<div class="sum-card"><div class="l">組別數量</div><div class="v">' + Object.keys(STATS.groupCounts || {}).length + '<em>組</em></div><div class="sub">' + (CFG.dateMode === 'multi' ? '多梯次活動' : '單次活動') + '</div></div>';
+      '<div class="sum-card featured"><div class="l">' + window.L('aeRegKpiTeamTotal') + '</div><div class="v">' + team + '<em>' + window.L('aeRegKpiUnitTeam') + '</em></div><div class="sub">' + window.L('aeRegKpiStudents') + ' ' + students + ' ' + window.L('aeRegKpiUnitPerson') + ' · ' + window.L('aeRegKpiTeachers') + ' ' + teachers + ' ' + window.L('aeRegKpiUnitPerson') + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aeRegKpiPaid') + '</div><div class="v" style="color:var(--ok-700)">' + paid + '<em>' + window.L('aeRegKpiUnitTeam') + '</em></div><div class="sub">' + (team > 0 ? Math.round(paid / team * 100) : 0) + window.L('aeRegKpiPaidDone') + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aeRegKpiPending') + '</div><div class="v" style="color:var(--warn-700)">' + pending + '<em>' + window.L('aeRegKpiUnitTeam') + '</em></div><div class="sub">' + window.L('aeRegKpiPendingSub') + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aeRegKpiGroups') + '</div><div class="v">' + Object.keys(STATS.groupCounts || {}).length + '<em>' + window.L('aeRegKpiUnitGroup') + '</em></div><div class="sub">' + (CFG.dateMode === 'multi' ? window.L('aeRegKpiMulti') : window.L('aeRegKpiSingle')) + '</div></div>';
   }
 
   // Common Chart.js options — grid lines + hover tooltips + clean axis ticks.
@@ -351,7 +352,7 @@
       destroyChart('group');
       charts.group = new Chart(document.getElementById('chartGroup').getContext('2d'), {
         type: 'bar',
-        data: { labels: groupKeys, datasets: [{ label: '報名隊伍數', data: groupKeys.map(function (k) { return groupCounts[k]; }), backgroundColor: groupKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }), borderRadius: 5 }] },
+        data: { labels: groupKeys, datasets: [{ label: window.L('aeRegDsTeamCount'), data: groupKeys.map(function (k) { return groupCounts[k]; }), backgroundColor: groupKeys.map(function (_, i) { return PIE_COLORS[i % PIE_COLORS.length]; }), borderRadius: 5 }] },
         options: noLegend(BASE_OPTS)
       });
     }
@@ -379,19 +380,19 @@
     if (vis.payment) {
       var pc = STATS.paymentCounts || { paid: 0, pending: 0 };
       destroyChart('payment');
-      charts.payment = donut('chartPayment', ['已付款', '待付款'], [pc.paid || 0, pc.pending || 0], ['#10b981', '#f59e0b']);
+      charts.payment = donut('chartPayment', [window.L('aeRegDsPaid'), window.L('aeRegDsUnpaid')], [pc.paid || 0, pc.pending || 0], ['#10b981', '#f59e0b']);
     }
 
     // ----- (b) Session bar -----
     document.getElementById('sessionCardWrap').style.display = vis.session ? '' : 'none';
     if (vis.session) {
       var sessions = CFG.sessions || [];
-      var labels = sessions.map(function (s, i) { return s.name || ('場次 ' + (i + 1)); });
+      var labels = sessions.map(function (s, i) { return s.name || (window.L('aeRegDsSessionPrefix') + (i + 1)); });
       var data = sessions.map(function (_, i) { return (STATS.sessionCounts || {})[String(i)] || 0; });
       destroyChart('session');
       charts.session = new Chart(document.getElementById('chartSession').getContext('2d'), {
         type: 'bar',
-        data: { labels: labels, datasets: [{ label: '隊伍數', data: data, backgroundColor: '#9b6bff', borderRadius: 4 }] },
+        data: { labels: labels, datasets: [{ label: window.L('aeRegDsTeams'), data: data, backgroundColor: '#9b6bff', borderRadius: 4 }] },
         options: noLegend(BASE_OPTS)
       });
     }
@@ -401,11 +402,11 @@
     if (vis.age) {
       var ab = STATS.ageBuckets || {};
       var abKeys = ['<13', '13-15', '16-18', '19-22', '23-30', '31-50', '51+'];
-      document.getElementById('ageHelp').textContent = '已採集 ' + (STATS.ageKnown || 0) + ' 人 / 共 ' + (STATS.memberTotal || 0) + ' 人';
+      document.getElementById('ageHelp').textContent = window.L('aeRegAgeHelp').replace('{known}', (STATS.ageKnown || 0)).replace('{total}', (STATS.memberTotal || 0));
       destroyChart('age');
       charts.age = new Chart(document.getElementById('chartAge').getContext('2d'), {
         type: 'bar',
-        data: { labels: abKeys, datasets: [{ label: '人數', data: abKeys.map(function (k) { return ab[k] || 0; }), backgroundColor: '#06b6d4', borderRadius: 4 }] },
+        data: { labels: abKeys, datasets: [{ label: window.L('aeRegDsPeople'), data: abKeys.map(function (k) { return ab[k] || 0; }), backgroundColor: '#06b6d4', borderRadius: 4 }] },
         options: noLegend(BASE_OPTS)
       });
     }
@@ -419,10 +420,10 @@
       // AA2: backend writes "onlinePayment" once PayUNI auto-confirms a paid order;
       // we surface it as 銀行轉帳付款 (most PayUNI flow paths are virtual ATM).
       var labelMap = {
-        payuni: 'PayUNI 線上付款',
-        onlinePayment: '銀行轉帳付款',
-        atm: '銀行 / ATM 轉帳',
-        discount: '折扣全免'
+        payuni: window.L('aeRegMethodPayuni'),
+        onlinePayment: window.L('aeRegMethodOnline'),
+        atm: window.L('aeRegMethodAtm'),
+        discount: window.L('aeRegMethodDiscount')
       };
       destroyChart('method');
       charts.method = donut('chartMethod', pmcKeys.map(function (k) { return labelMap[k] || k; }), pmcKeys.map(function (k) { return pmc[k]; }));
@@ -434,7 +435,7 @@
     destroyChart('daily');
     charts.daily = new Chart(document.getElementById('chartDaily').getContext('2d'), {
       type: 'bar',
-      data: { labels: sortedDays, datasets: [{ label: '新增報名', data: sortedDays.map(function (d) { return daily[d]; }), backgroundColor: '#3d6bff', borderRadius: 4 }] },
+      data: { labels: sortedDays, datasets: [{ label: window.L('aeRegDsNewReg'), data: sortedDays.map(function (d) { return daily[d]; }), backgroundColor: '#3d6bff', borderRadius: 4 }] },
       options: noLegend(BASE_OPTS)
     });
 
@@ -446,7 +447,7 @@
       destroyChart('dailyRevenue');
       charts.dailyRevenue = new Chart(document.getElementById('chartDailyRevenue').getContext('2d'), {
         type: 'bar',
-        data: { labels: dpDays, datasets: [{ label: '當日入帳', data: dpDays.map(function (d) { return (dpc[d] || 0) * fee; }), backgroundColor: '#10b981', borderRadius: 4 }] },
+        data: { labels: dpDays, datasets: [{ label: window.L('aeRegDsDailyIncome'), data: dpDays.map(function (d) { return (dpc[d] || 0) * fee; }), backgroundColor: '#10b981', borderRadius: 4 }] },
         options: revenueOpts()
       });
     }
@@ -464,7 +465,7 @@
       destroyChart('revenueTrend');
       charts.revenueTrend = new Chart(document.getElementById('chartRevenueTrend').getContext('2d'), {
         type: 'line',
-        data: { labels: rDays, datasets: [{ label: '累積入帳', data: cumVals, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.10)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: '#10b981' }] },
+        data: { labels: rDays, datasets: [{ label: window.L('aeRegDsCumIncome'), data: cumVals, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.10)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: '#10b981' }] },
         options: revenueOpts()
       });
     }
@@ -505,7 +506,7 @@
     // Find max for shading scale
     var max = 1;
     Object.keys(byHour).forEach(function (k) { if (byHour[k] > max) max = byHour[k]; });
-    var DOW = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+    var DOW = [window.L('aeRegDowSun'), window.L('aeRegDowMon'), window.L('aeRegDowTue'), window.L('aeRegDowWed'), window.L('aeRegDowThu'), window.L('aeRegDowFri'), window.L('aeRegDowSat')];
     var html = '';
     // header row (hours)
     html += '<div class="hm-corner"></div>';
@@ -519,17 +520,17 @@
         var pct = c / max;
         // color: light → dark accent (RegMaster blue)
         var bg = c === 0 ? 'var(--surface-2)' : 'rgba(61,107,255,' + Math.max(0.12, pct).toFixed(2) + ')';
-        html += '<div class="hm-cell" style="background:' + bg + '" title="' + DOW[dow] + ' ' + hr + ':00 — ' + c + ' 筆"></div>';
+        html += '<div class="hm-cell" style="background:' + bg + '" title="' + window.L('aeRegHmCellTitle').replace('{dow}', DOW[dow]).replace('{hour}', hr).replace('{count}', c) + '"></div>';
       }
     }
     // legend
-    html += '<div class="hm-legend">少 <div class="swatch">' +
+    html += '<div class="hm-legend">' + window.L('aeRegHmLess') + ' <div class="swatch">' +
       '<span style="background:rgba(61,107,255,.12)"></span>' +
       '<span style="background:rgba(61,107,255,.30)"></span>' +
       '<span style="background:rgba(61,107,255,.55)"></span>' +
       '<span style="background:rgba(61,107,255,.85)"></span>' +
       '<span style="background:rgba(61,107,255,1.00)"></span>' +
-    '</div> 多　·　最高 ' + max + ' 筆</div>';
+    '</div> ' + window.L('aeRegHmMore').replace('{max}', max) + '</div>';
     document.getElementById('heatmap').innerHTML = html;
   }
 
@@ -562,7 +563,7 @@
       data: {
         labels: labels,
         datasets: [{
-          label: '累計報名',
+          label: window.L('aeRegDsCumReg'),
           data: points.map(function (p) { return p.cum; }),
           borderColor: '#3d6bff',
           backgroundColor: 'rgba(61,107,255,.08)',
@@ -589,29 +590,30 @@
   // ---------- LIST TAB ----------
   function renderList(rows) {
     rows = (rows || []).filter(function (t) { return t.status !== '已取消'; });
-    document.getElementById('listCount').textContent = '共 ' + rows.length + ' 筆';
+    document.getElementById('listCount').textContent = window.L('aeRegCount').replace('{n}', rows.length);
     if (rows.length === 0) {
-      document.getElementById('listBody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px">尚無報名資料</td></tr>';
+      document.getElementById('listBody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px">' + window.L('aeRegEmpty') + '</td></tr>';
       return;
     }
     document.getElementById('listBody').innerHTML = rows.map(function (t) {
       var paid = (t.paymentStatus || '').includes('已確認');
       return '<tr>' +
         '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
-        '<td><b>' + escapeHtml(t.teamNameCN || '—') + '</b></td>' +
-        '<td>' + escapeHtml(t.teamNameEN || '—') + '</td>' +
+        '<td><b>' + escapeHtml(t.teamNameCN || window.L('aeRegDash')) + '</b></td>' +
+        '<td>' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
         '<td>' + escapeHtml(t.status || '正取') + '</td>' +
         '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus || '待確認') + '</span></td>' +
         '<td>' +
-          '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">檢視詳情</button>' +
-          '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">寄送信件</button>' +
-          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">刪除</button>' +
+          '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnView') + '</button>' +
+          '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' +
+          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnDelete') + '</button>' +
         '</td>' +
       '</tr>';
     }).join('');
     document.querySelectorAll('[data-act]').forEach(function (b) {
       b.addEventListener('click', function () { handleAct(b.dataset.act, b.dataset.tid); });
     });
+    if (window.applyI18n) window.applyI18n();
   }
 
   function handleAct(act, tid) {
@@ -638,42 +640,42 @@
   // depending on the chosen format.
   document.getElementById('exportListBtn').addEventListener('click', function () {
     var inner =
-      '<p style="margin-bottom:14px; color:var(--ink-2)">請選擇要匯出的檔案格式：</p>' +
+      '<p style="margin-bottom:14px; color:var(--ink-2)">' + window.L('aeRegExportIntro') + '</p>' +
       '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">' +
         '<button class="fmt-btn" data-fmt="csv" style="padding:18px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left">' +
-          '<div style="font:700 14px/1.3 var(--f-display); margin-bottom:4px">📄 CSV 檔</div>' +
-          '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">通用格式 (UTF-8)，可在 Google Sheets / Numbers 直接開啟。</div>' +
+          '<div style="font:700 14px/1.3 var(--f-display); margin-bottom:4px">' + window.L('aeRegExportCsvH') + '</div>' +
+          '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">' + window.L('aeRegExportCsvDesc') + '</div>' +
         '</button>' +
         '<button class="fmt-btn" data-fmt="xls" style="padding:18px; border:1px solid var(--line); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left">' +
-          '<div style="font:700 14px/1.3 var(--f-display); margin-bottom:4px">📊 Excel 檔</div>' +
-          '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">.xls 副檔名，雙擊可直接以 Microsoft Excel 開啟。</div>' +
+          '<div style="font:700 14px/1.3 var(--f-display); margin-bottom:4px">' + window.L('aeRegExportXlsH') + '</div>' +
+          '<div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">' + window.L('aeRegExportXlsDesc') + '</div>' +
         '</button>' +
       '</div>' +
       '<div id="exportStatus" style="font:400 12px/1.4 var(--f-tc); color:var(--muted); margin-top:14px; min-height:18px"></div>';
-    openModal('匯出所有報名資料', inner, function (ov, close) {
+    openModal(window.L('aeRegExportTitle'), inner, function (ov, close) {
       ov.querySelectorAll('.fmt-btn').forEach(function (b) {
         b.addEventListener('click', function () {
           var fmt = b.dataset.fmt;
           ov.querySelectorAll('.fmt-btn').forEach(function (x) { x.disabled = true; x.style.opacity = '0.55'; });
-          ov.querySelector('#exportStatus').textContent = '正在匯出⋯（資料量大時可能需要 5–10 秒）';
+          ov.querySelector('#exportStatus').textContent = window.L('aeRegExporting');
           google.script.run
             .withSuccessHandler(function (csv) {
-              if (!csv) { ov.querySelector('#exportStatus').textContent = '匯出失敗或無資料'; return; }
+              if (!csv) { ov.querySelector('#exportStatus').textContent = window.L('aeRegExportFail'); return; }
               // BOM so Excel reads UTF-8 instead of guessing Big5
               var blob = new Blob(['﻿' + csv], { type: fmt === 'xls' ? 'application/vnd.ms-excel' : 'text/csv;charset=utf-8' });
               var url = URL.createObjectURL(blob);
               var a = document.createElement('a');
               var stamp = new Date().toISOString().slice(0, 10);
-              var safeName = (CFG.competitionName || 'export').replace(/[\\\/:*?"<>|]/g, '_').slice(0, 40);
+              var safeName = (CFG.competitionName || window.L('aeRegExportFallbackName')).replace(/[\\\/:*?"<>|]/g, '_').slice(0, 40);
               a.href = url;
-              a.download = safeName + '_報名資料_' + stamp + '.' + (fmt === 'xls' ? 'xls' : 'csv');
+              a.download = safeName + window.L('aeRegExportFileSuffix') + stamp + '.' + (fmt === 'xls' ? 'xls' : 'csv');
               document.body.appendChild(a); a.click(); a.remove();
               URL.revokeObjectURL(url);
-              ov.querySelector('#exportStatus').textContent = '✓ 已下載 ' + a.download;
+              ov.querySelector('#exportStatus').textContent = window.L('aeRegExportDownloaded') + a.download;
               setTimeout(close, 1200);
             })
             .withFailureHandler(function (e) {
-              ov.querySelector('#exportStatus').textContent = '匯出失敗：' + ((e && e.message) || '網路錯誤');
+              ov.querySelector('#exportStatus').textContent = window.L('aeRegExportFailPrefix') + ((e && e.message) || window.L('aeRegNetworkErr'));
               ov.querySelectorAll('.fmt-btn').forEach(function (x) { x.disabled = false; x.style.opacity = ''; });
             })
             .exportTeamsCSV(compId);
@@ -689,7 +691,7 @@
     ov.innerHTML =
       '<div class="modal-card">' +
         '<div class="modal-h"><h3>' + escapeHtml(title) + '</h3>' +
-          '<button class="btn btn-ghost btn-sm" id="modalClose">關閉</button>' +
+          '<button class="btn btn-ghost btn-sm" id="modalClose">' + window.L('aeRegModalClose') + '</button>' +
         '</div>' +
         '<div class="modal-body">' + innerHtml + '</div>' +
       '</div>';
@@ -701,7 +703,8 @@
   }
 
   // ===== 退費申請管理 =====
-  var REFUND_LABEL = { requested: '待審核', approved: '已核准·待退款', refunded: '已退款', rejected: '已駁回', withdrawn: '已撤回' };
+  var REFUND_LABEL_KEY = { requested: 'aeRegRefundStRequested', approved: 'aeRegRefundStApproved', refunded: 'aeRegRefundStRefunded', rejected: 'aeRegRefundStRejected', withdrawn: 'aeRegRefundStWithdrawn' };
+  function refundLabel(status) { return REFUND_LABEL_KEY[status] ? window.L(REFUND_LABEL_KEY[status]) : status; }
   function refreshRefundCount() {
     google.script.run.withSuccessHandler(function (res) {
       var reqs = (res && res.requests) || [];
@@ -711,32 +714,32 @@
     }).withFailureHandler(function () {}).listRefundRequests(compId);
   }
   function openRefundManager() {
-    openModal('退費申請', '<p style="color:var(--muted)">載入中⋯</p>', function (ov, close) {
+    openModal(window.L('aeRegRefundTitle'), '<p style="color:var(--muted)">' + window.L('aeRegLoadingShort') + '</p>', function (ov, close) {
       var body = ov.querySelector('.modal-body');
       function render(reqs) {
-        if (!reqs.length) { body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">目前沒有退費申請。</p>'; return; }
+        if (!reqs.length) { body.innerHTML = '<p style="color:var(--muted);padding:20px;text-align:center">' + window.L('aeRegRefundEmpty') + '</p>'; return; }
         body.innerHTML = reqs.map(function (r) {
-          var st = REFUND_LABEL[r.status] || r.status;
+          var st = refundLabel(r.status);
           var stColor = r.status === 'requested' ? 'var(--acc)' : r.status === 'approved' ? '#d97706' : r.status === 'refunded' ? 'var(--ok-700)' : 'var(--muted)';
           var acts = '';
           if (r.status === 'requested') {
-            acts = '<button class="btn btn-primary btn-sm" data-act="approve" data-id="' + r.reqId + '">核准</button>' +
-                   '<button class="btn btn-ghost btn-sm" data-act="reject" data-id="' + r.reqId + '">駁回</button>' +
-                   '<button class="btn btn-ghost btn-sm" data-act="mark" data-id="' + r.reqId + '" data-calc="' + (r.calcRefund || 0) + '">直接註記已退款</button>';
+            acts = '<button class="btn btn-primary btn-sm" data-act="approve" data-id="' + r.reqId + '">' + window.L('aeRegRefundApprove') + '</button>' +
+                   '<button class="btn btn-ghost btn-sm" data-act="reject" data-id="' + r.reqId + '">' + window.L('aeRegRefundReject') + '</button>' +
+                   '<button class="btn btn-ghost btn-sm" data-act="mark" data-id="' + r.reqId + '" data-calc="' + (r.calcRefund || 0) + '">' + window.L('aeRegRefundMarkDirect') + '</button>';
           } else if (r.status === 'approved') {
-            acts = '<button class="btn btn-primary btn-sm" data-act="mark" data-id="' + r.reqId + '" data-calc="' + (r.calcRefund || 0) + '">註記已退款</button>';
+            acts = '<button class="btn btn-primary btn-sm" data-act="mark" data-id="' + r.reqId + '" data-calc="' + (r.calcRefund || 0) + '">' + window.L('aeRegRefundMark') + '</button>';
           }
           return '<div style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
               '<b style="font:600 14px/1.3 var(--f-display)">' + escapeHtml(r.teamNameCN || r.teamId) + '</b>' +
               '<span style="font:600 12px/1 var(--f-mono);color:' + stColor + '">' + st + '</span></div>' +
             '<div style="font:400 12.5px/1.7 var(--f-tc);color:var(--ink-2)">' +
-              '編號 ' + escapeHtml(r.teamId) + '｜實付 NT$' + (r.paidAmount || 0) + '｜距活動 ' + (r.daysBefore != null ? r.daysBefore + ' 天' : '—') +
-              '｜政策應退 <b>' + (r.policyPct != null ? r.policyPct + '%' : '—') + ' = NT$' + (r.calcRefund || 0) + '</b>' +
-              (r.actualRefund ? '｜實退 NT$' + r.actualRefund : '') + '<br>' +
-              (r.reason ? '原因：' + escapeHtml(r.reason) + '<br>' : '') +
-              (r.refundAccount ? '退款帳戶：' + escapeHtml(r.refundAccount) + '<br>' : '') +
-              '申請：' + escapeHtml(r.createdAt || '') +
+              window.L('aeRegRefundIdLabel') + escapeHtml(r.teamId) + window.L('aeRegRefundPaid') + (r.paidAmount || 0) + window.L('aeRegRefundDaysBefore') + (r.daysBefore != null ? r.daysBefore + window.L('aeRegRefundDaysUnit') : window.L('aeRegDash')) +
+              window.L('aeRegRefundPolicy') + '<b>' + (r.policyPct != null ? r.policyPct + '%' : window.L('aeRegDash')) + ' = NT$' + (r.calcRefund || 0) + '</b>' +
+              (r.actualRefund ? window.L('aeRegRefundActual') + r.actualRefund : '') + '<br>' +
+              (r.reason ? window.L('aeRegRefundReason') + escapeHtml(r.reason) + '<br>' : '') +
+              (r.refundAccount ? window.L('aeRegRefundAccount') + escapeHtml(r.refundAccount) + '<br>' : '') +
+              window.L('aeRegRefundCreatedAt') + escapeHtml(r.createdAt || '') +
             '</div>' +
             (acts ? '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' + acts + '</div>' : '') +
           '</div>';
@@ -747,7 +750,7 @@
       }
       function reload() {
         google.script.run.withSuccessHandler(function (res) { render((res && res.requests) || []); refreshRefundCount(); })
-          .withFailureHandler(function (e) { body.innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml(e && e.message || '') + '</p>'; })
+          .withFailureHandler(function (e) { body.innerHTML = '<p style="color:var(--err-700)">' + window.L('aeRegRefundLoadFail') + escapeHtml(e && e.message || '') + '</p>'; })
           .listRefundRequests(compId);
       }
       reload();
@@ -755,39 +758,39 @@
   }
   function doRefundAction(act, reqId, calc, reload) {
     if (act === 'approve') {
-      google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast('已核准'); reload(); } else uiAlert((r && r.message) || '失敗'); })
-        .withFailureHandler(function (e) { uiAlert(e && e.message || '失敗'); }).decideRefund(reqId, 'approve', '');
+      google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast(window.L('aeRegRefundApproved')); reload(); } else uiAlert((r && r.message) || window.L('aeRegRefundFail')); })
+        .withFailureHandler(function (e) { uiAlert(e && e.message || window.L('aeRegRefundFail')); }).decideRefund(reqId, 'approve', '');
     } else if (act === 'reject') {
-      uiPrompt('駁回原因（會記錄）：', '', { title: '駁回退費申請', inputType: 'text' }).then(function (note) {
+      uiPrompt(window.L('aeRegRefundRejectPrompt'), '', { title: window.L('aeRegRefundRejectTitle'), inputType: 'text' }).then(function (note) {
         if (note === null) return;
-        google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast('已駁回'); reload(); } else uiAlert((r && r.message) || '失敗'); })
-          .withFailureHandler(function (e) { uiAlert(e && e.message || '失敗'); }).decideRefund(reqId, 'reject', note);
+        google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast(window.L('aeRegRefundRejected')); reload(); } else uiAlert((r && r.message) || window.L('aeRegRefundFail')); })
+          .withFailureHandler(function (e) { uiAlert(e && e.message || window.L('aeRegRefundFail')); }).decideRefund(reqId, 'reject', note);
       });
     } else if (act === 'mark') {
-      uiPrompt('請輸入實際退款金額（不得低於政策應退 NT$' + calc + '）：', String(calc), { title: '註記已退款', inputType: 'number' }).then(function (amt) {
+      uiPrompt(window.L('aeRegRefundMarkAmtPrompt').replace('{n}', calc), String(calc), { title: window.L('aeRegRefundMarkTitle'), inputType: 'number' }).then(function (amt) {
         if (amt === null) return;
         var actual = Number(amt);
-        if (!(actual >= calc)) { uiAlert('實退金額不得低於 NT$' + calc); return; }
-        uiPrompt('退款方式 / 備註（可選，如：銀行轉帳 末五碼 12345）：', '銀行轉帳', { title: '註記已退款', inputType: 'text' }).then(function (method) {
+        if (!(actual >= calc)) { uiAlert(window.L('aeRegRefundAmtTooLow') + calc); return; }
+        uiPrompt(window.L('aeRegRefundMethodPrompt'), window.L('aeRegRefundMethodDefault'), { title: window.L('aeRegRefundMarkTitle'), inputType: 'text' }).then(function (method) {
           if (method === null) return;
-          google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast('已註記退款，名額已釋出'); reload(); loadAll && loadAll(); } else uiAlert((r && r.message) || '失敗'); })
-            .withFailureHandler(function (e) { uiAlert(e && e.message || '失敗'); }).markRefunded(reqId, actual, method, '');
+          google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast(window.L('aeRegRefundMarked')); reload(); loadAll && loadAll(); } else uiAlert((r && r.message) || window.L('aeRegRefundFail')); })
+            .withFailureHandler(function (e) { uiAlert(e && e.message || window.L('aeRegRefundFail')); }).markRefunded(reqId, actual, method, '');
         });
       });
     }
   }
 
   function openTeamDetail(tid) {
-    var loadingHtml = '<p style="color:var(--muted)">載入中⋯</p>';
-    openModal('報名詳情 · ' + tid, loadingHtml, function (ov, close) {
+    var loadingHtml = '<p style="color:var(--muted)">' + window.L('aeRegLoadingShort') + '</p>';
+    openModal(window.L('aeRegDetailTitle') + tid, loadingHtml, function (ov, close) {
       google.script.run
         .withSuccessHandler(function (t) {
-          if (!t) { ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">查無此筆報名</p>'; return; }
+          if (!t) { ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aeRegDetailNotFound') + '</p>'; return; }
           ov.querySelector('.modal-body').innerHTML = renderTeamDetailHtml(t);
           wireRegFileLinks(ov.querySelector('.modal-body'));
         })
         .withFailureHandler(function (e) {
-          ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml((e && e.message) || '') + '</p>';
+          ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aeRegDetailLoadFail') + escapeHtml((e && e.message) || '') + '</p>';
         })
         .getTeamDetail(tid);
     });
@@ -796,31 +799,31 @@
   function renderTeamDetailHtml(t) {
     var html = '';
     // 隊伍基本
-    html += '<div class="group"><h5>隊伍資訊</h5><div class="kv">' +
-      kv('編號', t.teamId) +
-      kv('中文隊名', t.teamNameCN) +
-      kv('英文隊名', t.teamNameEN) +
-      kv('組別', t.group) +
-      kv('狀態', t.status) +
-      kv('付款狀態', t.paymentStatus) +
-      kv('付款方式', t.paymentMethod) +
-      kv('匯款銀行', t.remitterBank) +
-      kv('匯款帳號末 5 碼', t.remitterAccount) +
-      kv('報名時間', t.registrationTime) +
-      (t.fileUrl ? '<div class="k">檔案</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">檢視 / 下載</a></div>' : '') +
+    html += '<div class="group"><h5>' + window.L('aeRegGrpTeam') + '</h5><div class="kv">' +
+      kv(window.L('aeRegFieldId'), t.teamId) +
+      kv(window.L('aeRegFieldNameCN'), t.teamNameCN) +
+      kv(window.L('aeRegFieldNameEN'), t.teamNameEN) +
+      kv(window.L('aeRegFieldGroup'), t.group) +
+      kv(window.L('aeRegFieldStatus'), t.status) +
+      kv(window.L('aeRegFieldPayStatus'), t.paymentStatus) +
+      kv(window.L('aeRegFieldPayMethod'), t.paymentMethod) +
+      kv(window.L('aeRegFieldRemitBank'), t.remitterBank) +
+      kv(window.L('aeRegFieldRemitAccount'), t.remitterAccount) +
+      kv(window.L('aeRegFieldRegTime'), t.registrationTime) +
+      (t.fileUrl ? '<div class="k">' + window.L('aeRegFieldFile') + '</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">' + window.L('aeRegFileView') + '</a></div>' : '') +
     '</div></div>';
     // 學員們
     (t.students || []).forEach(function (s, i) {
-      html += '<div class="group"><h5>學員 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
+      html += '<div class="group"><h5>' + window.L('aeRegGrpStudent') + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
     });
     (t.teachers || []).forEach(function (s, i) {
-      html += '<div class="group"><h5>指導者 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
+      html += '<div class="group"><h5>' + window.L('aeRegGrpTeacher') + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
     });
     // V1: team-level 附加問題 (separate from member-level customAnswers)
     var teamAns = t.customAnswers || {};
     var teamAnsKeys = Object.keys(teamAns).filter(function (k) { return teamAns[k] !== '' && teamAns[k] != null; });
     if (teamAnsKeys.length > 0) {
-      html += '<div class="group"><h5>附加問題</h5><div class="kv">' +
+      html += '<div class="group"><h5>' + window.L('aeRegGrpCustom') + '</h5><div class="kv">' +
         teamAnsKeys.map(function (k) { return kv(k, teamAns[k]); }).join('') +
       '</div></div>';
     }
@@ -835,7 +838,7 @@
     var m = s.match(/^regfile:([^|]+)\|(.+)$/);
     if (m) {
       var fileId = m[1], fileName = m[2];
-      return '<a class="file-link" href="javascript:void(0)" data-regfile="' + escapeHtml(fileId) + '" data-name="' + escapeHtml(fileName) + '">📎 ' + escapeHtml(fileName) + ' <span style="color:var(--muted); font-size:11px">（點擊預覽 / 下載）</span></a>';
+      return '<a class="file-link" href="javascript:void(0)" data-regfile="' + escapeHtml(fileId) + '" data-name="' + escapeHtml(fileName) + '">📎 ' + escapeHtml(fileName) + ' <span style="color:var(--muted); font-size:11px">' + window.L('aeRegFileClickHint') + '</span></a>';
     }
     return escapeHtml(s);
   }
@@ -845,15 +848,15 @@
   }
   function memberKVs(m) {
     var fields = [
-      ['尊稱','salutation'],['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
-      ['身分證','idNumber'],['護照','passport'],['國籍','nationality'],
-      ['學校','school'],['教育階段','eduLevel'],['系所','department'],['年級','grade'],['班級','classroom'],['學號','studentId'],['職稱','jobTitle'],['服務單位','organization'],
-      ['Email','email'],['電話','phone'],['居住縣市','city'],['郵遞區號','postalCode'],['地址','address'],['LINE ID','lineId'],
-      ['緊急聯絡人','emergencyName'],['緊急聯絡電話','emergencyPhone'],['緊急聯絡關係','emergencyRelation'],
-      ['監護人姓名','guardianName'],['監護人電話','guardianPhone'],['家長同意','guardianConsent'],
-      ['飲食','dietary'],['飲食限制','dietaryRestriction'],['特殊需求/無障礙','accessibility'],['血型','bloodType'],['T-shirt','tshirt'],['交通方式','transportation'],['住宿','accommodation'],
-      ['如何得知本活動','referralSource'],['網站','website'],['條款/肖像權同意','consent'],
-      ['發票類型','invoiceType'],['發票抬頭','invoiceTitle'],['統一編號','taxId']
+      [window.L('aeRegMSalutation'),'salutation'],[window.L('aeRegMChineseName'),'chineseName'],[window.L('aeRegMEnglishName'),'englishName'],[window.L('aeRegMGender'),'gender'],[window.L('aeRegMBirthday'),'birthday'],
+      [window.L('aeRegMIdNumber'),'idNumber'],[window.L('aeRegMPassport'),'passport'],[window.L('aeRegMNationality'),'nationality'],
+      [window.L('aeRegMSchool'),'school'],[window.L('aeRegMEduLevel'),'eduLevel'],[window.L('aeRegMDepartment'),'department'],[window.L('aeRegMGrade'),'grade'],[window.L('aeRegMClassroom'),'classroom'],[window.L('aeRegMStudentId'),'studentId'],[window.L('aeRegMJobTitle'),'jobTitle'],[window.L('aeRegMOrganization'),'organization'],
+      [window.L('aeRegMEmail'),'email'],[window.L('aeRegMPhone'),'phone'],[window.L('aeRegMCity'),'city'],[window.L('aeRegMPostalCode'),'postalCode'],[window.L('aeRegMAddress'),'address'],[window.L('aeRegMLineId'),'lineId'],
+      [window.L('aeRegMEmergencyName'),'emergencyName'],[window.L('aeRegMEmergencyPhone'),'emergencyPhone'],[window.L('aeRegMEmergencyRelation'),'emergencyRelation'],
+      [window.L('aeRegMGuardianName'),'guardianName'],[window.L('aeRegMGuardianPhone'),'guardianPhone'],[window.L('aeRegMGuardianConsent'),'guardianConsent'],
+      [window.L('aeRegMDietary'),'dietary'],[window.L('aeRegMDietaryRestriction'),'dietaryRestriction'],[window.L('aeRegMAccessibility'),'accessibility'],[window.L('aeRegMBloodType'),'bloodType'],[window.L('aeRegMTshirt'),'tshirt'],[window.L('aeRegMTransportation'),'transportation'],[window.L('aeRegMAccommodation'),'accommodation'],
+      [window.L('aeRegMReferralSource'),'referralSource'],[window.L('aeRegMWebsite'),'website'],[window.L('aeRegMConsent'),'consent'],
+      [window.L('aeRegMInvoiceType'),'invoiceType'],[window.L('aeRegMInvoiceTitle'),'invoiceTitle'],[window.L('aeRegMTaxId'),'taxId']
     ];
     var rows = fields.map(function (f) { return kv(f[0], m[f[1]]); }).join('');
     if (m.customAnswers && typeof m.customAnswers === 'object') {
@@ -868,19 +871,19 @@
         var fileId = a.dataset.regfile;
         var fileName = a.dataset.name || 'file';
         var origText = a.innerHTML;
-        a.innerHTML = '⏳ 載入中⋯';
+        a.innerHTML = window.L('aeRegFileLoading');
         google.script.run
           .withSuccessHandler(function (res) {
             a.innerHTML = origText;
-            if (!res || !res.success) { uiAlert('無法載入檔案：' + ((res && res.message) || '')); return; }
+            if (!res || !res.success) { uiAlert(window.L('aeRegFileLoadFailMsg') + ((res && res.message) || '')); return; }
             // AA1: backend returns `dataUrl` (not dataUri). Accept either, plus a raw
             // base64 + mimeType pair as a final fallback.
             var dataUri = res.dataUrl || res.dataUri ||
               (res.base64 ? ('data:' + (res.mimeType || 'application/octet-stream') + ';base64,' + res.base64) : '');
-            if (!dataUri) { uiAlert('檔案內容遺失（後端未回傳檔案資料）'); return; }
+            if (!dataUri) { uiAlert(window.L('aeRegFileMissing')); return; }
             openFilePreview(fileName, dataUri, res.mimeType || '');
           })
-          .withFailureHandler(function (e) { a.innerHTML = origText; uiAlert('載入失敗：' + (e && e.message)); })
+          .withFailureHandler(function (e) { a.innerHTML = origText; uiAlert(window.L('aeRegFileLoadFail') + (e && e.message)); })
           .getRegFileData(fileId);
       });
     });
@@ -895,38 +898,38 @@
     } else if (isPdf) {
       preview = '<iframe src="' + dataUri + '" style="width:100%; height:70vh; border:0; border-radius:8px"></iframe>';
     } else {
-      preview = '<p style="color:var(--muted); margin-bottom:12px">這個檔案類型無法預覽，請使用下方按鈕下載查看。</p>';
+      preview = '<p style="color:var(--muted); margin-bottom:12px">' + window.L('aeRegFileNoPreview') + '</p>';
     }
-    var dl = '<div style="margin-top:14px; display:flex; justify-content:flex-end"><a class="btn btn-primary btn-sm" download="' + escapeHtml(fileName) + '" href="' + dataUri + '">⬇️ 下載 ' + escapeHtml(fileName) + '</a></div>';
-    openModal(fileName || '檔案預覽', preview + dl);
+    var dl = '<div style="margin-top:14px; display:flex; justify-content:flex-end"><a class="btn btn-primary btn-sm" download="' + escapeHtml(fileName) + '" href="' + dataUri + '">' + window.L('aeRegFileDownload') + escapeHtml(fileName) + '</a></div>';
+    openModal(fileName || window.L('aeRegFilePreviewTitle'), preview + dl);
   }
 
   function openEmailComposer(tid) {
     var t = TEAMS.filter(function (x) { return x.teamId === tid; })[0] || {};
     var teamLbl = t.teamNameCN || t.teamNameEN || tid;
-    var defaultBody = '您好，\n\n關於本活動「' + (CFG.competitionName || '') + '」，主辦方有重要訊息通知。\n\n[請於此處輸入訊息內容]\n\n— 主辦方 敬上';
-    openModal('寄送信件 · ' + teamLbl, '', function (ov, close) {
+    var defaultBody = window.L('aeRegEmailBodyDefault').replace('{event}', (CFG.competitionName || ''));
+    openModal(window.L('aeRegEmailTitle') + teamLbl, '', function (ov, close) {
       ov.querySelector('.modal-body').innerHTML =
-        '<div class="fld"><div class="lbl">主旨</div><input id="emSub" placeholder="信件主旨" value="關於「' + escapeHtml(CFG.competitionName || '活動') + '」的通知"></div>' +
-        '<div class="fld"><div class="lbl">內容（純文字，換行會保留）</div><textarea id="emBody">' + escapeHtml(defaultBody) + '</textarea></div>' +
+        '<div class="fld"><div class="lbl">' + window.L('aeRegEmailLblSubject') + '</div><input id="emSub" placeholder="' + escapeHtml(window.L('aeRegEmailSubjectPh')) + '" value="' + escapeHtml(window.L('aeRegEmailSubjectDefault').replace('{event}', (CFG.competitionName || window.L('aeRegEmailEventFallback')))) + '"></div>' +
+        '<div class="fld"><div class="lbl">' + window.L('aeRegEmailLblBody') + '</div><textarea id="emBody">' + escapeHtml(defaultBody) + '</textarea></div>' +
         '<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px">' +
-          '<button class="btn btn-ghost btn-sm" id="emCancel">取消</button>' +
-          '<button class="btn btn-primary btn-sm" id="emSend">寄送</button>' +
+          '<button class="btn btn-ghost btn-sm" id="emCancel">' + window.L('aeRegEmailCancel') + '</button>' +
+          '<button class="btn btn-primary btn-sm" id="emSend">' + window.L('aeRegEmailSend') + '</button>' +
         '</div>';
       ov.querySelector('#emCancel').addEventListener('click', close);
       ov.querySelector('#emSend').addEventListener('click', function () {
         var subject = ov.querySelector('#emSub').value.trim();
         var body = ov.querySelector('#emBody').value.trim();
-        if (!subject || !body) { uiAlert('請填寫主旨與內容'); return; }
-        var btn = this; btn.disabled = true; btn.textContent = '寄送中⋯';
+        if (!subject || !body) { uiAlert(window.L('aeRegEmailNeedFields')); return; }
+        var btn = this; btn.disabled = true; btn.textContent = window.L('aeRegEmailSending');
         google.script.run
           .withSuccessHandler(function (res) {
-            btn.disabled = false; btn.textContent = '寄送';
+            btn.disabled = false; btn.textContent = window.L('aeRegEmailSend');
             if (res && res.success) {
-              uiAlert('信件已排入寄送佇列（' + res.recipientCount + ' 位收件人）').then(close);
-            } else { uiAlert((res && res.message) || '寄送失敗'); }
+              uiAlert(window.L('aeRegEmailQueuedPre') + res.recipientCount + window.L('aeRegEmailQueuedPost')).then(close);
+            } else { uiAlert((res && res.message) || window.L('aeRegEmailFail')); }
           })
-          .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '寄送'; uiAlert('寄送失敗：' + (e && e.message)); })
+          .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = window.L('aeRegEmailSend'); uiAlert(window.L('aeRegEmailFailPrefix') + (e && e.message)); })
           .sendTeamEmail(compId, tid, subject, body);
       });
     });
@@ -935,15 +938,15 @@
   function confirmDelete(tid) {
     var t = TEAMS.filter(function (x) { return x.teamId === tid; })[0] || {};
     var teamLbl = t.teamNameCN || t.teamNameEN || tid;
-    uiConfirm('確定刪除隊伍「' + teamLbl + '」（' + tid + '）？此操作無法復原，隊伍的所有成員資料與上傳檔案也會一併刪除。', { title: '刪除報名', okText: '永久刪除', danger: true }).then(function (ok) {
+    uiConfirm(window.L('aeRegDeleteConfirm').replace('{team}', teamLbl).replace('{id}', tid), { title: window.L('aeRegDeleteTitle'), okText: window.L('aeRegDeleteOk'), danger: true }).then(function (ok) {
       if (!ok) return;
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success) {
-            uiAlert('已刪除「' + teamLbl + '」').then(function () { location.reload(); });
-          } else { uiAlert((res && res.message) || '刪除失敗'); }
+            uiAlert(window.L('aeRegDeletedPre') + teamLbl + window.L('aeRegDeletedPost')).then(function () { location.reload(); });
+          } else { uiAlert((res && res.message) || window.L('aeRegDeleteFail')); }
         })
-        .withFailureHandler(function (e) { uiAlert('刪除失敗：' + (e && e.message)); })
+        .withFailureHandler(function (e) { uiAlert(window.L('aeRegDeleteFailPrefix') + (e && e.message)); })
         .deleteTeam(tid);
     });
   }

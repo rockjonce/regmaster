@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>帳務 · 主辦後台 · RegMaster</title>
+<title data-i18n="aePayDocTitle">帳務 · 主辦後台 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
 <link rel="stylesheet" href="/shared/admin-layout.css">
@@ -129,33 +129,33 @@
 <body>
 <div class="admin">
   <aside class="side">
-    <a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div><div class="nm">RegMaster<small>主辦後台</small></div></a>
-    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p>主辦方</p></div></div>
+    <a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div><div class="nm">RegMaster<small data-i18n="aePayBrandSub">主辦後台</small></div></a>
+    <div class="org-switcher"><div class="av" id="orgAv">—</div><div class="body"><h6 id="orgName">—</h6><p data-i18n="aePayOrgRole">主辦方</p></div></div>
     <div class="nav-grp">
-      <div class="l-grp">概覽</div>
-      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg>儀表板</a>
-      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>所有活動</a>
+      <div class="l-grp" data-i18n="aePayNavGrpOverview">概覽</div>
+      <a class="nav-it" href="/admin/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9"/></svg><span data-i18n="aePayNavDashboard">儀表板</span></a>
+      <a class="nav-it" href="/admin/events/"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg><span data-i18n="aePayNavAllEvents">所有活動</span></a>
     </div>
     <div class="nav-grp">
-      <div class="l-grp">本活動</div>
-      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg>總覽</a>
-      <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>設定</a>
-      <a class="nav-it" id="annLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg>公告</a>
-      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg>帳務</a>
-      <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg>評分</a>
-      <a class="nav-it" id="checkinLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg>報到</a>
+      <div class="l-grp" data-i18n="aePayNavGrpThisEvent">本活動</div>
+      <a class="nav-it" id="hubLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/></svg><span data-i18n="aePayNavOverview">總覽</span></a>
+      <a class="nav-it" id="editLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg><span data-i18n="aePayNavSettings">設定</span></a>
+      <a class="nav-it" id="annLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5"/></svg><span data-i18n="aePayNavAnnouncements">公告</span></a>
+      <a class="nav-it on"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 10h18"/></svg><span data-i18n="aePayNavBilling">帳務</span></a>
+      <a class="nav-it" id="scoringLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/></svg><span data-i18n="aePayNavScoring">評分</span></a>
+      <a class="nav-it" id="checkinLink"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 11h8V3H3v8z"/></svg><span data-i18n="aePayNavCheckin">報到</span></a>
     </div>
   </aside>
   <main>
     <header class="head">
-      <div class="crumbs"><a href="/admin/">主辦後台</a><span class="sep">/</span><a href="/admin/events/">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b>帳務</b></div>
-      <div class="actions"><button class="btn-ic-h" id="exportBtn" title="匯出"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+      <div class="crumbs"><a href="/admin/" data-i18n="aePayCrumbHome">主辦後台</a><span class="sep">/</span><a href="/admin/events/" data-i18n="aePayCrumbEvents">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b data-i18n="aePayCrumbHere">帳務</b></div>
+      <div class="actions"><button class="btn-ic-h" id="exportBtn" title="匯出" data-i18n-title="aePayExportTitle"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
-    <div id="loadingState" class="loading-c">載入付款資料⋯</div>
+    <div id="loadingState" class="loading-c" data-i18n="aePayLoading">載入付款資料⋯</div>
     <div class="main-c" id="content" style="display:none">
       <div class="ptab-bar">
-        <button class="ptab on" data-ptab="fees">報名費</button>
-        <button class="ptab" data-ptab="payout">平台代收轉付</button>
+        <button class="ptab on" data-ptab="fees" data-i18n="aePayTabFees">報名費</button>
+        <button class="ptab" data-ptab="payout" data-i18n="aePayTabPayout">平台代收轉付</button>
       </div>
 
       <!-- ===== Tab 1: 報名費 (collection + reconcile) ===== -->
@@ -165,24 +165,24 @@
       <div class="reconcile-bar" id="reconcileBar" style="display:none">
         <div class="ic-r"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/></svg></div>
         <div class="body">
-          <h5>快速銀行對帳</h5>
-          <p>輸入銀行帳號末 5 碼，系統會自動標記匹配的隊伍為「已確認」（PayUni 線上付款會自動對帳，無需手動）</p>
+          <h5 data-i18n="aePayReconcileTitle">快速銀行對帳</h5>
+          <p data-i18n="aePayReconcileDesc">輸入銀行帳號末 5 碼，系統會自動標記匹配的隊伍為「已確認」（PayUni 線上付款會自動對帳，無需手動）</p>
         </div>
         <div class="input-bar">
-          <input id="reconcileSuffix" placeholder="例：18923" maxlength="5">
-          <button class="btn btn-primary btn-sm" id="reconcileBtn">執行對帳</button>
+          <input id="reconcileSuffix" placeholder="例：18923" data-i18n-placeholder="aePayReconcilePh" maxlength="5">
+          <button class="btn btn-primary btn-sm" id="reconcileBtn" data-i18n="aePayReconcileBtn">執行對帳</button>
         </div>
       </div>
       <div class="reconcile-bar" id="reconcileDisabledNote" style="display:none; background:var(--surface-2)">
         <div class="ic-r" style="background:var(--muted)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 11V7a5 5 0 0110 0v4M5 11h14v9H5z"/></svg></div>
         <div class="body">
-          <h5>快速銀行對帳未啟用</h5>
-          <p>請至「設定 → 收費 → 銀行 / ATM 轉帳」開啟「啟用銀行轉帳收款與對帳」並填寫銀行帳號後，此功能才會開放。</p>
+          <h5 data-i18n="aePayReconcileOffTitle">快速銀行對帳未啟用</h5>
+          <p data-i18n="aePayReconcileOffDesc">請至「設定 → 收費 → 銀行 / ATM 轉帳」開啟「啟用銀行轉帳收款與對帳」並填寫銀行帳號後，此功能才會開放。</p>
         </div>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>編號</th><th>隊名</th><th>狀態</th><th>付款狀態</th><th>付款方式</th><th class="right">金額</th><th>動作</th></tr></thead>
+          <thead><tr><th data-i18n="aePayThId">編號</th><th data-i18n="aePayThTeam">隊名</th><th data-i18n="aePayThStatus">狀態</th><th data-i18n="aePayThPayStatus">付款狀態</th><th data-i18n="aePayThMethod">付款方式</th><th class="right" data-i18n="aePayThAmount">金額</th><th data-i18n="aePayThActions">動作</th></tr></thead>
           <tbody id="tblBody"></tbody>
         </table>
       </div>
@@ -190,20 +190,20 @@
 
       <!-- ===== Tab 2: 平台代收轉付 (PayUNI settlement / payouts) ===== -->
       <div class="ptab-pane" data-ppane="payout" style="display:none">
-        <div id="payoutLoading" class="loading-c">載入代收轉付資料⋯</div>
+        <div id="payoutLoading" class="loading-c" data-i18n="aePayPayoutLoading">載入代收轉付資料⋯</div>
         <div id="payoutContent" style="display:none">
           <div class="po-intro">
-            <h3>💸 平台代收轉付</h3>
-            <p>線上付款（PayUNI）由平台代收，扣除手續費後依轉帳週期匯入主辦方「收款帳戶」。銀行轉帳（ATM）由報名者直接匯入主辦方帳戶，不在此列。</p>
+            <h3 data-i18n="aePayPayoutIntroTitle">💸 平台代收轉付</h3>
+            <p data-i18n="aePayPayoutIntroDesc">線上付款（PayUNI）由平台代收，扣除手續費後依轉帳週期匯入主辦方「收款帳戶」。銀行轉帳（ATM）由報名者直接匯入主辦方帳戶，不在此列。</p>
           </div>
           <div class="po-bars">
             <div class="po-bar" id="payoutAccountBar"></div>
             <div class="po-bar" id="payoutCycleBar"></div>
           </div>
           <div class="bill-summary" id="payoutSummary"></div>
-          <h4 class="po-sec-h">各隊收款明細</h4>
+          <h4 class="po-sec-h" data-i18n="aePayPayoutSecOrders">各隊收款明細</h4>
           <div class="bill-detail" id="payoutOrders"></div>
-          <h4 class="po-sec-h">平台匯款紀錄</h4>
+          <h4 class="po-sec-h" data-i18n="aePayPayoutSecRemittances">平台匯款紀錄</h4>
           <div id="payoutRemittances"></div>
         </div>
       </div>
@@ -212,6 +212,7 @@
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-payments.js"></script>
 <script src="/shared/admin-nav.js"></script>
 <script>
 (function(){
@@ -221,7 +222,7 @@
   var compId = '';
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/payments/);
   if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
-  if (!compId) { alert('未指定活動編號'); location.href = '/admin/events/'; return; }
+  if (!compId) { alert(window.L('aePayAlertNoId')); location.href = '/admin/events/'; return; }
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   ['hubLink','editLink','annLink','scoringLink','checkinLink'].forEach(function (id) {
     var el = document.getElementById(id);
@@ -253,6 +254,7 @@
       document.getElementById('reconcileBar').style.display = bankOn ? '' : 'none';
       document.getElementById('reconcileDisabledNote').style.display = bankOn ? 'none' : '';
       renderSum(); renderTable();
+      if (window.applyI18n) window.applyI18n();
     });
   }
   function renderSum() {
@@ -264,30 +266,30 @@
     var total = paid + pending;
     var revenue = paid * FEE;
     document.getElementById('sumRow').innerHTML =
-      '<div class="sum-card featured"><div class="l">應收總額</div><div class="v">NT$ ' + (total * FEE).toLocaleString() + '</div><div class="sub">' + total + ' 筆 × NT$ ' + FEE.toLocaleString() + '</div></div>' +
-      '<div class="sum-card"><div class="l">已收</div><div class="v" style="color:var(--ok-700)">NT$ ' + revenue.toLocaleString() + '</div><div class="sub">' + paid + ' 筆已確認</div></div>' +
-      '<div class="sum-card"><div class="l">待收</div><div class="v" style="color:var(--warn-700)">NT$ ' + (pending * FEE).toLocaleString() + '</div><div class="sub">' + pending + ' 筆待付款</div></div>' +
-      '<div class="sum-card"><div class="l">收款率</div><div class="v">' + (total > 0 ? Math.round(paid / total * 100) : 0) + '<em>%</em></div><div class="sub">已付款 / 總報名</div></div>';
+      '<div class="sum-card featured"><div class="l">' + window.L('aePaySumTotalDue') + '</div><div class="v">NT$ ' + (total * FEE).toLocaleString() + '</div><div class="sub">' + total + window.L('aePaySumTotalSubPre') + FEE.toLocaleString() + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aePaySumReceived') + '</div><div class="v" style="color:var(--ok-700)">NT$ ' + revenue.toLocaleString() + '</div><div class="sub">' + paid + window.L('aePaySumReceivedSub') + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aePaySumPending') + '</div><div class="v" style="color:var(--warn-700)">NT$ ' + (pending * FEE).toLocaleString() + '</div><div class="sub">' + pending + window.L('aePaySumPendingSub') + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aePaySumRate') + '</div><div class="v">' + (total > 0 ? Math.round(paid / total * 100) : 0) + '<em>%</em></div><div class="sub">' + window.L('aePaySumRateSub') + '</div></div>';
   }
   function renderTable() {
     var rows = TEAMS.filter(function (t) { return t.status !== '已取消'; });
     if (rows.length === 0) {
-      document.getElementById('tblBody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:40px">尚無報名資料</td></tr>';
+      document.getElementById('tblBody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:40px">' + window.L('aePayEmptyRows') + '</td></tr>';
       return;
     }
     document.getElementById('tblBody').innerHTML = rows.map(function (t) {
       var paid = (t.paymentStatus || '').includes('已確認');
       return '<tr>' +
         '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
-        '<td><b>' + escapeHtml(t.teamNameCN || t.teamNameEN || '(無)') + '</b></td>' +
+        '<td><b>' + escapeHtml(t.teamNameCN || t.teamNameEN || window.L('aePayNoName')) + '</b></td>' +
         '<td>' + escapeHtml(t.status || '') + '</td>' +
-        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus || '待確認') + '</span></td>' +
+        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus || window.L('aePayPillDefault')) + '</span></td>' +
         '<td>' + escapeHtml(t.paymentMethod || '—') + '</td>' +
         '<td class="right">NT$ ' + FEE.toLocaleString() + '</td>' +
         '<td>' +
-          (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">確認付款</button>' : '') +
-          '<button class="action-btn" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">查看</button>' +
-          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">刪除</button>' +
+          (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
+          '<button class="action-btn" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnView') + '</button>' +
+          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnDelete') + '</button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -295,11 +297,11 @@
       b.addEventListener('click', function () {
         var tid = b.dataset.tid;
         if (b.dataset.act === 'confirm') {
-          uiConfirm('確認此筆付款？', { title: '確認付款' }).then(function (ok) {
+          uiConfirm(window.L('aePayConfirmMsg'), { title: window.L('aePayConfirmTitle') }).then(function (ok) {
             if (!ok) return;
             google.script.run
               .withSuccessHandler(function () { load(); })
-              .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+              .withFailureHandler(function (err) { uiAlert(window.L('aePayConfirmFailPre') + (err && err.message)); })
               .confirmPayment(tid, me.username);
           });
         } else if (b.dataset.act === 'view') {
@@ -318,7 +320,7 @@
     ov.innerHTML =
       '<div class="modal-card">' +
         '<div class="modal-h"><h3>' + escapeHtml(title) + '</h3>' +
-          '<button class="btn btn-ghost btn-sm" id="modalClose">關閉</button>' +
+          '<button class="btn btn-ghost btn-sm" id="modalClose">' + window.L('aePayModalClose') + '</button>' +
         '</div>' +
         '<div class="modal-body">' + innerHtml + '</div>' +
       '</div>';
@@ -331,11 +333,11 @@
   function kvHtml(k, v) { if (v === undefined || v === null || v === '') return ''; return '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + escapeHtml(String(v)) + '</div>'; }
   function memberKVs(m) {
     var fields = [
-      ['中文姓名','chineseName'],['英文姓名','englishName'],['性別','gender'],['生日','birthday'],
-      ['身分證','idNumber'],['護照','passport'],['國籍','nationality'],
-      ['學校','school'],['系所','department'],['年級','grade'],['職稱','jobTitle'],['服務單位','organization'],
-      ['Email','email'],['電話','phone'],['郵遞區號','postalCode'],['地址','address'],
-      ['飲食','dietary'],['飲食限制','dietaryRestriction'],['T-shirt','tshirt'],['住宿','accommodation']
+      [window.L('aePayFldChineseName'),'chineseName'],[window.L('aePayFldEnglishName'),'englishName'],[window.L('aePayFldGender'),'gender'],[window.L('aePayFldBirthday'),'birthday'],
+      [window.L('aePayFldIdNumber'),'idNumber'],[window.L('aePayFldPassport'),'passport'],[window.L('aePayFldNationality'),'nationality'],
+      [window.L('aePayFldSchool'),'school'],[window.L('aePayFldDepartment'),'department'],[window.L('aePayFldGrade'),'grade'],[window.L('aePayFldJobTitle'),'jobTitle'],[window.L('aePayFldOrganization'),'organization'],
+      [window.L('aePayFldEmail'),'email'],[window.L('aePayFldPhone'),'phone'],[window.L('aePayFldPostalCode'),'postalCode'],[window.L('aePayFldAddress'),'address'],
+      [window.L('aePayFldDietary'),'dietary'],[window.L('aePayFldDietaryRestriction'),'dietaryRestriction'],[window.L('aePayFldTshirt'),'tshirt'],[window.L('aePayFldAccommodation'),'accommodation']
     ];
     var rows = fields.map(function (f) { return kvHtml(f[0], m[f[1]]); }).join('');
     if (m.customAnswers && typeof m.customAnswers === 'object') {
@@ -344,55 +346,55 @@
     return rows;
   }
   function openTeamDetail(tid) {
-    var modal = openModal('報名詳情 · ' + tid, '<p style="color:var(--muted)">載入中⋯</p>');
+    var modal = openModal(window.L('aePayModalDetailPre') + tid, '<p style="color:var(--muted)">' + window.L('aePayModalLoading') + '</p>');
     google.script.run
       .withSuccessHandler(function (t) {
-        if (!t) { modal.ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">查無此筆報名</p>'; return; }
+        if (!t) { modal.ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aePayModalNotFound') + '</p>'; return; }
         var html = '';
-        html += '<div class="group"><h5>隊伍資訊</h5><div class="kv">' +
-          kvHtml('編號', t.teamId) + kvHtml('中文隊名', t.teamNameCN) + kvHtml('英文隊名', t.teamNameEN) +
-          kvHtml('組別', t.group) + kvHtml('狀態', t.status) +
-          kvHtml('付款狀態', t.paymentStatus) + kvHtml('付款方式', t.paymentMethod) +
-          kvHtml('匯款銀行', t.remitterBank) + kvHtml('匯款帳號末 5 碼', t.remitterAccount) +
-          kvHtml('報名時間', t.registrationTime) +
-          (t.fileUrl ? '<div class="k">檔案</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">檢視 / 下載</a></div>' : '') +
+        html += '<div class="group"><h5>' + window.L('aePayGroupTeamInfo') + '</h5><div class="kv">' +
+          kvHtml(window.L('aePayKvId'), t.teamId) + kvHtml(window.L('aePayKvTeamCN'), t.teamNameCN) + kvHtml(window.L('aePayKvTeamEN'), t.teamNameEN) +
+          kvHtml(window.L('aePayKvGroup'), t.group) + kvHtml(window.L('aePayKvStatus'), t.status) +
+          kvHtml(window.L('aePayKvPayStatus'), t.paymentStatus) + kvHtml(window.L('aePayKvMethod'), t.paymentMethod) +
+          kvHtml(window.L('aePayKvRemitBank'), t.remitterBank) + kvHtml(window.L('aePayKvRemitAccount'), t.remitterAccount) +
+          kvHtml(window.L('aePayKvRegTime'), t.registrationTime) +
+          (t.fileUrl ? '<div class="k">' + window.L('aePayKvFile') + '</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">' + window.L('aePayKvFileLink') + '</a></div>' : '') +
         '</div></div>';
-        (t.students || []).forEach(function (s, i) { html += '<div class="group"><h5>學員 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>'; });
-        (t.teachers || []).forEach(function (s, i) { html += '<div class="group"><h5>指導者 ' + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>'; });
+        (t.students || []).forEach(function (s, i) { html += '<div class="group"><h5>' + window.L('aePayGroupStudent') + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>'; });
+        (t.teachers || []).forEach(function (s, i) { html += '<div class="group"><h5>' + window.L('aePayGroupTeacher') + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>'; });
         modal.ov.querySelector('.modal-body').innerHTML = html;
       })
       .withFailureHandler(function (e) {
-        modal.ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">載入失敗：' + escapeHtml((e && e.message) || '') + '</p>';
+        modal.ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aePayModalLoadFailPre') + escapeHtml((e && e.message) || '') + '</p>';
       })
       .getTeamDetail(tid);
   }
   function confirmDelete(tid) {
     var t = TEAMS.filter(function (x) { return x.teamId === tid; })[0] || {};
     var teamLbl = t.teamNameCN || t.teamNameEN || tid;
-    uiConfirm('確定刪除隊伍「' + teamLbl + '」（' + tid + '）？此操作無法復原，隊伍的所有成員資料與上傳檔案也會一併刪除。', { title: '刪除報名', okText: '永久刪除', danger: true }).then(function (ok) {
+    uiConfirm(window.L('aePayDeleteMsgPre') + teamLbl + window.L('aePayDeleteMsgMid') + tid + window.L('aePayDeleteMsgSuf'), { title: window.L('aePayDeleteTitle'), okText: window.L('aePayDeleteOk'), danger: true }).then(function (ok) {
       if (!ok) return;
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success) {
-            uiAlert('已刪除「' + teamLbl + '」').then(function () { load(); });
-          } else { uiAlert((res && res.message) || '刪除失敗'); }
+            uiAlert(window.L('aePayDeleteDonePre') + teamLbl + window.L('aePayDeleteDoneSuf')).then(function () { load(); });
+          } else { uiAlert((res && res.message) || window.L('aePayDeleteFail')); }
         })
-        .withFailureHandler(function (e) { uiAlert('刪除失敗：' + (e && e.message)); })
+        .withFailureHandler(function (e) { uiAlert(window.L('aePayDeleteFailPre') + (e && e.message)); })
         .deleteTeam(tid);
     });
   }
 
   document.getElementById('reconcileBtn').addEventListener('click', function () {
     var suffix = document.getElementById('reconcileSuffix').value.trim();
-    if (!/^\d{5}$/.test(suffix)) return alert('請輸入 5 位數字');
-    var btn = this; btn.disabled = true; btn.textContent = '對帳中⋯';
+    if (!/^\d{5}$/.test(suffix)) return alert(window.L('aePayReconcileBadInput'));
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aePayReconcileRunning');
     google.script.run
       .withSuccessHandler(function (res) {
-        btn.disabled = false; btn.textContent = '執行對帳';
-        alert('對帳完成：標記 ' + ((res && res.matched) || 0) + ' 筆為已確認');
+        btn.disabled = false; btn.textContent = window.L('aePayReconcileBtn');
+        alert(window.L('aePayReconcileDonePre') + ((res && res.matched) || 0) + window.L('aePayReconcileDoneSuf'));
         load();
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = '執行對帳'; alert('失敗：' + (err && err.message)); })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aePayReconcileBtn'); alert(window.L('aePayReconcileFailPre') + (err && err.message)); })
       .reconcilePayments(compId, suffix);
   });
   document.getElementById('exportBtn').addEventListener('click', function () {
@@ -418,11 +420,11 @@
       var t = new Date(d.getFullYear(), d.getMonth(), 5);
       if (t < d) t = new Date(d.getFullYear(), d.getMonth() + 1, 5);
       while (t.getDay() === 0 || t.getDay() === 6) t.setDate(t.getDate() + 1); // weekend → next weekday
-      return iso(t) + '（每月 5 日，遇假日順延）';
+      return iso(t) + window.L('aePayPayoutNextMonthly');
     }
     var add = (4 - d.getDay() + 7) % 7;                  // weekly → Thursday (getDay 4)
     var t2 = new Date(d); t2.setDate(d.getDate() + add);
-    return iso(t2) + '（每週四）';
+    return iso(t2) + window.L('aePayPayoutNextWeekly');
   }
 
   function loadPayout() {
@@ -433,8 +435,9 @@
         document.getElementById('payoutLoading').style.display = 'none';
         document.getElementById('payoutContent').style.display = '';
         renderPayout(res || {});
+        if (window.applyI18n) window.applyI18n();
       })
-      .withFailureHandler(function (e) { document.getElementById('payoutLoading').textContent = '載入失敗：' + ((e && e.message) || ''); })
+      .withFailureHandler(function (e) { document.getElementById('payoutLoading').textContent = window.L('aePayPayoutLoadFailPre') + ((e && e.message) || ''); })
       .getSettlementData('', compId);
   }
 
@@ -444,39 +447,39 @@
     var acctBar = document.getElementById('payoutAccountBar');
     if (po.accountNumber) {
       acctBar.className = 'po-bar';
-      acctBar.innerHTML = '<h6>收款帳戶</h6>' +
+      acctBar.innerHTML = '<h6>' + window.L('aePayPayoutAcctTitle') + '</h6>' +
         '<div class="big">' + escapeHtml((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '</div>' +
         '<div>' + escapeHtml((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div>' +
-        '<div>帳號 ' + escapeHtml(po.accountNumber) + '　戶名 ' + escapeHtml(po.accountName || '') + '</div>';
+        '<div>' + window.L('aePayPayoutAcctAccountPre') + escapeHtml(po.accountNumber) + window.L('aePayPayoutAcctNamePre') + escapeHtml(po.accountName || '') + '</div>';
     } else {
       acctBar.className = 'po-bar warn';
-      acctBar.innerHTML = '<h6>收款帳戶</h6><div class="big" style="color:var(--warn-700)">尚未設定</div>' +
-        '<div>請至「<a href="/admin/settings.html" style="color:var(--acc)">帳戶設定 → 收款帳戶</a>」填寫，平台才能匯款給您。</div>';
+      acctBar.innerHTML = '<h6>' + window.L('aePayPayoutAcctTitle') + '</h6><div class="big" style="color:var(--warn-700)">' + window.L('aePayPayoutAcctNotSet') + '</div>' +
+        '<div>' + window.L('aePayPayoutAcctNoteHtml') + '</div>';
     }
     document.getElementById('payoutCycleBar').innerHTML =
-      '<h6>轉帳週期</h6>' +
-      '<div class="big">' + (d.payoutCycle === 'monthly' ? '每月匯款' : '每週匯款') + '</div>' +
-      '<div>下次預計匯款日：' + escapeHtml(nextPayoutDate(d.payoutCycle)) + '</div>' +
-      '<div style="color:var(--muted)">PayUNI 手續費 ' + Number(d.feePct || 0).toFixed(1) + '%　每次匯款扣 NT$15 匯費</div>';
+      '<h6>' + window.L('aePayPayoutCycleTitle') + '</h6>' +
+      '<div class="big">' + (d.payoutCycle === 'monthly' ? window.L('aePayPayoutCycleMonthly') : window.L('aePayPayoutCycleWeekly')) + '</div>' +
+      '<div>' + window.L('aePayPayoutCycleNextPre') + escapeHtml(nextPayoutDate(d.payoutCycle)) + '</div>' +
+      '<div style="color:var(--muted)">' + window.L('aePayPayoutFeePre') + Number(d.feePct || 0).toFixed(1) + window.L('aePayPayoutFeeSuf') + '</div>';
 
     document.getElementById('payoutSummary').innerHTML =
-      '<div class="b-c"><div class="l">PayUNI 收款</div><div class="v">' + fmtMoney(s.gross) + '</div><div class="sub">' + s.orderCount + ' 筆訂單</div></div>' +
-      '<div class="b-c"><div class="l">扣除手續費</div><div class="v" style="color:var(--err-700)">− ' + fmtMoney(s.feeTotal) + '</div></div>' +
-      '<div class="b-c featured"><div class="l">實領合計</div><div class="v">' + fmtMoney(s.net) + '</div></div>' +
-      '<div class="b-c"><div class="l">平台已轉</div><div class="v" style="color:var(--ok-700)">' + fmtMoney(s.settledNet) + '</div><div class="sub">' + s.settledCount + ' 筆已匯款</div></div>' +
-      '<div class="b-c"><div class="l">尚未轉付</div><div class="v" style="color:var(--warn-700)">' + fmtMoney(s.unsettledNet) + '</div><div class="sub">' + s.unsettledCount + ' 筆待匯款</div></div>';
+      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumGross') + '</div><div class="v">' + fmtMoney(s.gross) + '</div><div class="sub">' + s.orderCount + window.L('aePayPayoutSumGrossSub') + '</div></div>' +
+      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumFee') + '</div><div class="v" style="color:var(--err-700)">− ' + fmtMoney(s.feeTotal) + '</div></div>' +
+      '<div class="b-c featured"><div class="l">' + window.L('aePayPayoutSumNet') + '</div><div class="v">' + fmtMoney(s.net) + '</div></div>' +
+      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumSettled') + '</div><div class="v" style="color:var(--ok-700)">' + fmtMoney(s.settledNet) + '</div><div class="sub">' + s.settledCount + window.L('aePayPayoutSumSettledSub') + '</div></div>' +
+      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumUnsettled') + '</div><div class="v" style="color:var(--warn-700)">' + fmtMoney(s.unsettledNet) + '</div><div class="sub">' + s.unsettledCount + window.L('aePayPayoutSumUnsettledSub') + '</div></div>';
 
     var det = document.getElementById('payoutOrders');
     var orders = d.orders || [];
     if (!orders.length) {
-      det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">尚無線上付款（PayUNI）訂單</p>';
+      det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">' + window.L('aePayPayoutOrdEmpty') + '</p>';
     } else {
       det.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl">' +
-        '<thead><tr><th>隊伍</th><th>付款時間</th><th class="right">報名費</th><th class="right">手續費</th><th class="right">實領</th><th>轉付狀態</th></tr></thead><tbody>' +
+        '<thead><tr><th>' + window.L('aePayOrdThTeam') + '</th><th>' + window.L('aePayOrdThPaidAt') + '</th><th class="right">' + window.L('aePayOrdThFee2') + '</th><th class="right">' + window.L('aePayOrdThCharge') + '</th><th class="right">' + window.L('aePayOrdThNet') + '</th><th>' + window.L('aePayOrdThSettleStatus') + '</th></tr></thead><tbody>' +
         orders.map(function (o) {
           var pill = o.settled
-            ? '<span class="po-settle-pill done">✓ 已轉 ' + escapeHtml(String(o.settledAt).slice(0, 10)) + '</span>'
-            : '<span class="po-settle-pill wait">待轉付</span>';
+            ? '<span class="po-settle-pill done">' + window.L('aePayOrdSettledPre') + escapeHtml(String(o.settledAt).slice(0, 10)) + '</span>'
+            : '<span class="po-settle-pill wait">' + window.L('aePayOrdWaiting') + '</span>';
           return '<tr>' +
             '<td><b>' + escapeHtml(o.teamNameCN || o.teamNameEN || '—') + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(o.teamId) + '</span></td>' +
             '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
@@ -491,10 +494,10 @@
     var rem = document.getElementById('payoutRemittances');
     var sets = d.settlements || [];
     if (!sets.length) {
-      rem.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">平台尚未對本活動匯款</p>';
+      rem.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">' + window.L('aePayPayoutRemEmpty') + '</p>';
     } else {
       rem.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl">' +
-        '<thead><tr><th>結算編號</th><th>匯款時間</th><th class="right">本活動筆數</th><th class="right">本活動實領</th><th>收款帳戶</th><th>備註</th></tr></thead><tbody>' +
+        '<thead><tr><th>' + window.L('aePayRemThId') + '</th><th>' + window.L('aePayRemThRemitAt') + '</th><th class="right">' + window.L('aePayRemThCount') + '</th><th class="right">' + window.L('aePayRemThNet') + '</th><th>' + window.L('aePayRemThAcct') + '</th><th>' + window.L('aePayRemThNote') + '</th></tr></thead><tbody>' +
         sets.map(function (st) {
           var p = st.payout || {};
           return '<tr>' +
