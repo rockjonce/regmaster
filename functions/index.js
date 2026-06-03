@@ -2872,12 +2872,16 @@ function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
 // absent, and encodes the product decisions (Free 可收款 5%；報到/評分為 Starter+).
 const DEFAULT_PLANS = {
   free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,
+             name:{ zh:"免費版 Free", en:"Free" }, tagline:{ zh:"適合測試或只辦小型活動", en:"For testing or small one-off events" },
              features:{ payment:true,  csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, waitlist:false, certificate:false } },
   starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,
+             name:{ zh:"入門版 Starter", en:"Starter" }, tagline:{ zh:"適合單次活動、小型主辦方", en:"For single events and small organizers" },
              features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  waitlist:true,  certificate:false } },
   pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
+             name:{ zh:"專業版 Pro", en:"Pro" }, tagline:{ zh:"學校 / 中型機構 · 完整功能", en:"Schools & mid-size orgs · full features" },
              features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } },
   team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
+             name:{ zh:"團隊版 Team", en:"Team" }, tagline:{ zh:"大型機構 · 政府單位", en:"Large organizations & government" },
              features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } }
 };
 const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","waitlist","certificate"];
@@ -4374,7 +4378,7 @@ exports.getPublicPlans = callable(async () => {
   const safe = {};
   for (const t of ["free","starter","pro","team"]) {
     const p = plans[t];
-    safe[t] = { price: p.price, feePct: p.feePct, maxActiveEvents: p.maxActiveEvents, maxCapacity: p.maxCapacity, features: { ...p.features } };
+    safe[t] = { price: p.price, feePct: p.feePct, maxActiveEvents: p.maxActiveEvents, maxCapacity: p.maxCapacity, name: p.name || null, tagline: p.tagline || null, features: { ...p.features } };
   }
   return { plans: safe };
 });

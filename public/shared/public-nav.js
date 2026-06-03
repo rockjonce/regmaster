@@ -60,6 +60,23 @@
       });
       if (wrap.children.length) drawer.appendChild(wrap);
     }
+    // Language toggle — the desktop 中/EN button is hidden on mobile, so surface it here.
+    if (window.AppState && typeof window.AppState.setLang === 'function') {
+      var langRow = document.createElement('div');
+      langRow.className = 'dr-actions';
+      var langBtn = document.createElement('button');
+      langBtn.type = 'button';
+      langBtn.className = 'btn btn-quiet';
+      langBtn.textContent = '🌐 中文 / English';
+      langBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var cur = window.AppState.getLang();
+        window.AppState.setLang(cur === 'en' ? 'zh' : 'en'); // i18n.js applies live if loaded
+        close();
+      });
+      langRow.appendChild(langBtn);
+      drawer.appendChild(langRow);
+    }
     document.body.appendChild(drawer);
 
     function close() {

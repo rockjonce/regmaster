@@ -109,7 +109,7 @@
       // ----- dashboard mock -----
       dbMenu: '主選單', dbDashboard: '儀表板', dbMyEvents: '我的活動', dbRegList: '報名名單', dbCreate: '建立活動',
       dbTools: '工具', dbRecon: '金流對帳', dbCert: '證書 / 名牌', dbAI: 'AI 助理',
-      dbEventName: '春季校園程式競賽 2026', dbOpen: '報名中', dbExport: '匯出 CSV',
+      dbEventName: '春季校園程式競賽 2026', dbVenue: '某科技大學', dbOpen: '報名中', dbExport: '匯出 CSV',
       dbKpi1: '總報名數', dbKpi2: '已收費', dbKpi3: '已審核', dbKpi4: '轉換率',
       dbToday: '↑ 18 今日', dbWeek: '+ $36k 今週', dbReviewed: '90%', dbConv: '↓ 3% 上週',
       dbTrend: '報名趨勢', db7: '7天', db30: '30天', db90: '90天',
@@ -146,6 +146,10 @@
       feScoreMulti: '評分 · 多評審評分 · 公告群發', feQrAiAdmin: 'QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理',
       feActiveUnlim: '<b>無限</b> 進行中活動', feRegUnlim: '<b>無限</b> 報名名額', feFee1: '金流手續費 <b>1%</b>',
       btnUseFree: '開始使用', btnUpStarter: '升級 Starter', btnUpPro: '升級 Pro →', btnChooseTeam: '選擇 Team →',
+      // ----- plan-card features / unit templates ({n} = number) -----
+      pfPayment: '線上金流收款', pfCsv: '匯出報表', pfScoring: '評分', pfMultiJudge: '多評審評分', pfCampaigns: '公告群發',
+      pfCheckin: 'QR 報到', pfWaitlist: '允許候補', pfEventAi: '活動 AI 助理', pfAdminAi: '主辦後台 AI 助理', pfCert: '名牌 / 證書',
+      tActive: '<b>{n}</b> 個進行中活動', tReg: '每活動 <b>{n}</b> 筆報名', tFee: '金流手續費 <b>{n}%</b>', uUnlimited: '無限',
       // ----- faq -----
       faqH2: '常見問題',
       faqQ1: 'RegMaster 跟 Google Form 有什麼不一樣？',
@@ -199,7 +203,7 @@
       // ----- dashboard mock -----
       dbMenu: 'Menu', dbDashboard: 'Dashboard', dbMyEvents: 'My Events', dbRegList: 'Registrations', dbCreate: 'Create Event',
       dbTools: 'Tools', dbRecon: 'Reconciliation', dbCert: 'Certificates', dbAI: 'AI Assistant',
-      dbEventName: 'Spring Campus Coding Contest 2026', dbOpen: 'Open', dbExport: 'Export CSV',
+      dbEventName: 'Spring Campus Coding Contest 2026', dbVenue: 'A University of Technology', dbOpen: 'Open', dbExport: 'Export CSV',
       dbKpi1: 'Total', dbKpi2: 'Collected', dbKpi3: 'Reviewed', dbKpi4: 'Conversion',
       dbToday: '↑ 18 today', dbWeek: '+ $36k this wk', dbReviewed: '90%', dbConv: '↓ 3% last wk',
       dbTrend: 'Registration Trend', db7: '7d', db30: '30d', db90: '90d',
@@ -236,6 +240,10 @@
       feScoreMulti: 'Scoring · multi-judge scoring · broadcast notices', feQrAiAdmin: 'QR check-in · event AI · organizer-console AI',
       feActiveUnlim: '<b>Unlimited</b> active events', feRegUnlim: '<b>Unlimited</b> registrations', feFee1: '<b>1%</b> transaction fee',
       btnUseFree: 'Get started', btnUpStarter: 'Upgrade to Starter', btnUpPro: 'Upgrade to Pro →', btnChooseTeam: 'Choose Team →',
+      // ----- plan-card features / unit templates ({n} = number) -----
+      pfPayment: 'Online payments', pfCsv: 'Report export', pfScoring: 'Scoring', pfMultiJudge: 'Multi-judge scoring', pfCampaigns: 'Broadcast notices',
+      pfCheckin: 'QR check-in', pfWaitlist: 'Waitlist', pfEventAi: 'Event AI assistant', pfAdminAi: 'Organizer-console AI', pfCert: 'Badges & certificates',
+      tActive: '<b>{n}</b> active events', tReg: '<b>{n}</b> registrations per event', tFee: '<b>{n}%</b> transaction fee', uUnlimited: 'Unlimited',
       // ----- faq -----
       faqH2: 'Frequently asked questions',
       faqQ1: 'How is RegMaster different from Google Forms?',

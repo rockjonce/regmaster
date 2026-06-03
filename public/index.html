@@ -388,41 +388,41 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
         </div>
         <div class="dashboard-body">
           <aside class="db-side">
-            <div class="lbl">主選單</div>
-            <div class="item on"><svg data-hero viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>儀表板</div>
-            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>我的活動</div>
-            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M17 20h5V8.5L12 3 2 8.5V20h5m10 0H7m10 0v-8H7v8"/></svg>報名名單<span style="margin-left:auto;font:500 10px/1 var(--f-mono);background:var(--ink);color:var(--surface);padding:2px 5px;border-radius:4px;">142</span></div>
-            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>建立活動</div>
+            <div class="lbl" data-i18n="dbMenu">主選單</div>
+            <div class="item on"><svg data-hero viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg><span data-i18n="dbDashboard">儀表板</span></div>
+            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span data-i18n="dbMyEvents">我的活動</span></div>
+            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M17 20h5V8.5L12 3 2 8.5V20h5m10 0H7m10 0v-8H7v8"/></svg><span data-i18n="dbRegList">報名名單</span><span style="margin-left:auto;font:500 10px/1 var(--f-mono);background:var(--ink);color:var(--surface);padding:2px 5px;border-radius:4px;">142</span></div>
+            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg><span data-i18n="dbCreate">建立活動</span></div>
             <div class="div"></div>
-            <div class="lbl">工具</div>
-            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M9 17l-3-3m0 0l3-3m-3 3h12M9 5l-3 3m0 0l3 3"/></svg>金流對帳</div>
-            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5"/></svg>證書 / 名牌</div>
+            <div class="lbl" data-i18n="dbTools">工具</div>
+            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M9 17l-3-3m0 0l3-3m-3 3h12M9 5l-3 3m0 0l3 3"/></svg><span data-i18n="dbRecon">金流對帳</span></div>
+            <div class="item"><svg data-hero viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5"/></svg><span data-i18n="dbCert">證書 / 名牌</span></div>
             <div class="item" style="background:linear-gradient(135deg, rgba(61,107,255,.06), rgba(234,88,12,.04)); color: var(--ink); border:1px dashed rgba(61,107,255,.2);">
               <svg data-hero viewBox="0 0 24 24" style="color:var(--acc)"><path d="M5 3v18M19 3v18M3 12h18"/></svg>
-              <span style="background:linear-gradient(120deg, var(--acc), var(--amber-500)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:600;">AI 助理</span>
+              <span style="background:linear-gradient(120deg, var(--acc), var(--amber-500)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:600;" data-i18n="dbAI">AI 助理</span>
             </div>
           </aside>
           <div class="db-main">
             <div class="db-head">
               <div>
-                <h3>春季校園程式競賽 2026</h3>
-                <div class="sub">2026/04/12 · 某科技大學 · <span class="chip chip-ok chip-dot" style="margin-left:6px">報名中</span></div>
+                <h3 data-i18n="dbEventName">春季校園程式競賽 2026</h3>
+                <div class="sub">2026/04/12 · <span data-i18n="dbVenue">某科技大學</span> · <span class="chip chip-ok chip-dot" style="margin-left:6px" data-i18n="dbOpen">報名中</span></div>
               </div>
               <button class="btn btn-ghost btn-sm">
                 <svg data-hero viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-                匯出 CSV
+                <span data-i18n="dbExport">匯出 CSV</span>
               </button>
             </div>
             <div class="db-kpi-row">
-              <div class="db-kpi"><div class="l">總報名數</div><div class="v">142</div><div class="d">↑ 18 今日</div></div>
-              <div class="db-kpi"><div class="l">已收費</div><div class="v">$284k</div><div class="d">+ $36k 今週</div></div>
-              <div class="db-kpi"><div class="l">已審核</div><div class="v">128 / 142</div><div class="d">90%</div></div>
-              <div class="db-kpi"><div class="l">轉換率</div><div class="v">62%</div><div class="d dn">↓ 3% 上週</div></div>
+              <div class="db-kpi"><div class="l" data-i18n="dbKpi1">總報名數</div><div class="v">142</div><div class="d" data-i18n="dbToday">↑ 18 今日</div></div>
+              <div class="db-kpi"><div class="l" data-i18n="dbKpi2">已收費</div><div class="v">$284k</div><div class="d" data-i18n="dbWeek">+ $36k 今週</div></div>
+              <div class="db-kpi"><div class="l" data-i18n="dbKpi3">已審核</div><div class="v">128 / 142</div><div class="d">90%</div></div>
+              <div class="db-kpi"><div class="l" data-i18n="dbKpi4">轉換率</div><div class="v">62%</div><div class="d dn" data-i18n="dbConv">↓ 3% 上週</div></div>
             </div>
             <div class="db-chart">
               <div class="top">
-                <h4>報名趨勢</h4>
-                <div class="seg"><span>7天</span><span class="on">30天</span><span>90天</span></div>
+                <h4 data-i18n="dbTrend">報名趨勢</h4>
+                <div class="seg"><span data-i18n="db7">7天</span><span class="on" data-i18n="db30">30天</span><span data-i18n="db90">90天</span></div>
               </div>
               <svg viewBox="0 0 600 140" style="width:100%; height:140px;">
                 <defs>
@@ -777,33 +777,46 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 <script src="/shared/track-visit.js"></script>
 <script>
 // Hydrate the pricing cards from config/sales.plans (public). Static cards are the fallback.
+// Cards are rendered in the current language (labels via i18n) and re-rendered on lang change.
 (function () {
-  var PFEAT = [['payment','線上金流收款'],['csvExport','匯出報表'],['scoring','評分'],['multiJudge','多評審評分'],['campaigns','公告群發'],['checkin','QR 報到'],['waitlist','允許候補'],['eventAi','活動 AI 助理'],['ai','主辦後台 AI 助理'],['certificate','名牌 / 證書']];
+  var PFEAT = [['payment','pfPayment'],['csvExport','pfCsv'],['scoring','pfScoring'],['multiJudge','pfMultiJudge'],['campaigns','pfCampaigns'],['checkin','pfCheckin'],['waitlist','pfWaitlist'],['eventAi','pfEventAi'],['ai','pfAdminAi'],['certificate','pfCert']];
   var PTIERS = [
-    ['free','免費版 Free','適合測試或只辦小型活動','btn-ghost','/signup.html?plan=free','開始使用'],
-    ['starter','入門版 Starter','適合單次活動、小型主辦方','btn-ghost','/signup.html?plan=starter','升級 Starter'],
-    ['pro','專業版 Pro','學校 / 中型機構 · 完整功能','btn-accent','/signup.html?plan=pro','升級 Pro →'],
-    ['team','團隊版 Team','大型機構 · 政府單位','btn-ghost','/signup.html?plan=team','選擇 Team →']
+    ['free','btn-ghost','/signup.html?plan=free','btnUseFree'],
+    ['starter','btn-ghost','/signup.html?plan=starter','btnUpStarter'],
+    ['pro','btn-accent','/signup.html?plan=pro','btnUpPro'],
+    ['team','btn-ghost','/signup.html?plan=team','btnChooseTeam']
   ];
+  var lastPlans = null;
+  function L(k){ return (window.L ? window.L(k) : k); }
+  function lang(){ return window.LANG || 'zh'; }
   function _n(x){ return Number(x||0).toLocaleString(); }
-  function _limTxt(v){ return (v===0||v==null) ? '無限' : _n(v); }
+  function _lim(v){ return (v===0||v==null) ? L('uUnlimited') : _n(v); }
+  function tpl(k,n){ return L(k).replace('{n}', n); }
+  function nameOf(p,key){ var o=p.name; return (o&&(o[lang()]||o.zh)) || L('plan'+key.charAt(0).toUpperCase()+key.slice(1)+'Name'); }
+  function tagOf(p,key){ var o=p.tagline; return (o&&(o[lang()]||o.zh)) || L('plan'+key.charAt(0).toUpperCase()+key.slice(1)+'Tag'); }
   function render(plans){
+    lastPlans = plans;
     var row = document.getElementById('plansRow');
     if (!row) return;
     row.innerHTML = PTIERS.map(function(tt){
       var t=tt[0], p=plans[t]||{}, f=p.features||{};
-      var feat = PFEAT.filter(function(ff){ return f[ff[0]]===true; }).map(function(ff){ return '<li>'+ff[1]+'</li>'; }).join('');
+      var feat = PFEAT.filter(function(ff){ return f[ff[0]]===true; }).map(function(ff){ return '<li>'+L(ff[1])+'</li>'; }).join('');
       var priceBlock = (Number(p.price)||0) > 0
-        ? '<div class="price"><span class="price-cur">NT$</span><span class="price-num">'+_n(p.price)+'</span><span class="price-suf">/年</span></div><div class="price-foot">未含稅</div>'
-        : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">/永久免費</span></div><div class="price-foot">無需信用卡</div>';
-      return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">Most Popular</span>':'')+
-        '<h3>'+tt[1]+'</h3><p>'+tt[2]+'</p>'+priceBlock+
-        '<ul><li><b>'+_limTxt(p.maxActiveEvents)+'</b> 個進行中活動</li><li>每活動 <b>'+_limTxt(p.maxCapacity)+'</b> 筆報名</li><li>金流手續費 <b>'+(Number(p.feePct)||0)+'%</b></li>'+feat+'</ul>'+
-        '<a href="'+tt[4]+'" class="btn '+tt[3]+' btn-block">'+tt[5]+'</a></div>';
+        ? '<div class="price"><span class="price-cur">NT$</span><span class="price-num">'+_n(p.price)+'</span><span class="price-suf">'+L('priceYear')+'</span></div><div class="price-foot">'+L('pfNoTax')+'</div>'
+        : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">'+L('priceForever')+'</span></div><div class="price-foot">'+L('pfNoCard')+'</div>';
+      return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">'+L('badgePopular')+'</span>':'')+
+        '<h3>'+nameOf(p,t)+'</h3><p>'+tagOf(p,t)+'</p>'+priceBlock+
+        '<ul><li>'+tpl('tActive',_lim(p.maxActiveEvents))+'</li><li>'+tpl('tReg',_lim(p.maxCapacity))+'</li><li>'+tpl('tFee',(Number(p.feePct)||0))+'</li>'+feat+'</ul>'+
+        '<a href="'+tt[2]+'" class="btn '+tt[1]+' btn-block">'+L(tt[3])+'</a></div>';
     }).join('');
   }
   if (window.google && google.script && google.script.run) {
-    google.script.run.withSuccessHandler(function(res){ if (res && res.plans) render(res.plans); }).withFailureHandler(function(){}).getPublicPlans();
+    google.script.run.withSuccessHandler(function(res){
+      if (res && res.plans) {
+        render(res.plans);
+        if (window.AppState && window.AppState.on) window.AppState.on('lang-changed', function(){ if (lastPlans) render(lastPlans); });
+      }
+    }).withFailureHandler(function(){}).getPublicPlans();
   }
 })();
 </script>
