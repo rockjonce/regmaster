@@ -167,7 +167,15 @@
       // ----- closing cta -----
       ctaH2: '10 分鐘後，<br>你的活動就<em>上線了</em>。',
       ctaLead: '不需要信用卡 · 不需要工程師 · 不需要客服打擾你。<br>用熱忱去辦活動，剩下的交給 RegMaster。',
-      ctaFree2: '免費開始 →', ctaExplore: '探索活動'
+      ctaFree2: '免費開始 →', ctaExplore: '探索活動',
+      // ----- shared admin shell (admin-nav.js) -----
+      anBrandSubSystem: '系統管理員', anBrandSubOrg: '主辦後台', anRoleSystem: '系統管理員', anRoleOrg: '主辦方',
+      anGrpOverview: '概覽', anDashboard: '儀表板', anAllEvents: '所有活動', anAi: 'AI 助理',
+      anGrpThisEvent: '本活動', anEvtOverview: '總覽', anEvtSettings: '設定', anEvtForm: '表單設計', anEvtReg: '報名管理', anEvtNotice: '通知', anEvtBilling: '帳務', anEvtScoring: '評分', anEvtCheckin: '報到',
+      anGrpManage: '管理', anLicense: '方案與授權', anLogs: '操作紀錄', anSettings: '設定',
+      anGrpSysadmin: '系統管理', anSysSettings: '系統設定', anAudit: '操作日誌',
+      anUsageCur: '目前方案', anUsageFreeText: '免費方案', anUsageFreeHint: '免費方案 — 升級解鎖更多', anUpgrade: '升級方案 →', anLogout: '登出',
+      anUntil: '至 ', anLangTitle: '切換語言 / Switch language'
     },
     en: {
       // ----- shared nav -----
@@ -261,7 +269,15 @@
       // ----- closing cta -----
       ctaH2: 'In 10 minutes,<br>your event is <em>live</em>.',
       ctaLead: 'No credit card · no engineers · no sales calls to bother you.<br>Bring the passion for your event; leave the rest to RegMaster.',
-      ctaFree2: 'Start free →', ctaExplore: 'Explore events'
+      ctaFree2: 'Start free →', ctaExplore: 'Explore events',
+      // ----- shared admin shell (admin-nav.js) -----
+      anBrandSubSystem: 'System Admin', anBrandSubOrg: 'Organizer Console', anRoleSystem: 'System Admin', anRoleOrg: 'Organizer',
+      anGrpOverview: 'Overview', anDashboard: 'Dashboard', anAllEvents: 'All Events', anAi: 'AI Assistant',
+      anGrpThisEvent: 'This Event', anEvtOverview: 'Overview', anEvtSettings: 'Settings', anEvtForm: 'Form Builder', anEvtReg: 'Registrations', anEvtNotice: 'Notices', anEvtBilling: 'Billing', anEvtScoring: 'Scoring', anEvtCheckin: 'Check-in',
+      anGrpManage: 'Manage', anLicense: 'Plans & Licenses', anLogs: 'Activity Log', anSettings: 'Settings',
+      anGrpSysadmin: 'System Admin', anSysSettings: 'System Settings', anAudit: 'Audit Log',
+      anUsageCur: 'Current plan', anUsageFreeText: 'Free plan', anUsageFreeHint: 'Free plan — upgrade to unlock more', anUpgrade: 'Upgrade →', anLogout: 'Log out',
+      anUntil: 'Until ', anLangTitle: '切換語言 / Switch language'
     }
   };
   Object.keys(ADD.zh).forEach(function (k) { if (!(k in window.I18N.zh)) window.I18N.zh[k] = ADD.zh[k]; });

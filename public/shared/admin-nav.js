@@ -53,9 +53,9 @@
     chev: '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>'
   };
 
-  function item(href, label, icon, extra) {
+  function item(href, key, label, icon, extra) {
     return '<a class="nav-it' + (active(href) ? ' on' : '') + '" href="' + href + '">' + icon +
-      '<span>' + esc(label) + '</span>' + (extra || '') + '</a>';
+      '<span data-i18n="' + key + '">' + esc(label) + '</span>' + (extra || '') + '</a>';
   }
 
   // Event-context sub-navigation ("本活動") — shown when inside a single event.
@@ -65,51 +65,51 @@
   var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|registrations|announcements|payments|scoring|checkin))?\/?$/);
   if (em && em[1] && em[1] !== 'index.html') {
     var cid = em[1], sub = em[2] || 'hub';
-    var eitem = function (suffix, label, key, icon, extra) {
+    var eitem = function (suffix, i18nKey, label, key, icon, extra) {
       return '<a class="nav-it' + (key === sub ? ' on' : '') + '" href="/admin/events/' + cid + suffix + '">' +
-        icon + '<span>' + esc(label) + '</span>' + (extra || '') + '</a>';
+        icon + '<span data-i18n="' + i18nKey + '">' + esc(label) + '</span>' + (extra || '') + '</a>';
     };
     evtNavHtml =
-      '<div class="nav-grp"><div class="l-grp">本活動</div>' +
-        eitem('', '總覽', 'hub', IC.home, '<span class="ct" id="navRegCt"></span>') +
-        eitem('/edit', '設定', 'edit', IC.gear) +
-        eitem('/form-builder', '表單設計', 'form-builder', IC.cal) +
-        eitem('/registrations', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>') +
-        eitem('/announcements', '通知', 'announcements', IC.log) +
-        eitem('/payments', '帳務', 'payments', IC.lic) +
-        eitem('/scoring', '評分', 'scoring', IC.sys) +
-        eitem('/checkin', '報到', 'checkin', IC.ai) +
+      '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpThisEvent">本活動</div>' +
+        eitem('', 'anEvtOverview', '總覽', 'hub', IC.home, '<span class="ct" id="navRegCt"></span>') +
+        eitem('/edit', 'anEvtSettings', '設定', 'edit', IC.gear) +
+        eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.cal) +
+        eitem('/registrations', 'anEvtReg', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>') +
+        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log) +
+        eitem('/payments', 'anEvtBilling', '帳務', 'payments', IC.lic) +
+        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys) +
+        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai) +
       '</div>';
   }
 
   var html =
     '<a class="brand" href="/admin/"><div class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></div>' +
-      '<div class="nm">RegMaster<small>' + (isSystem ? '系統管理員' : '主辦後台') + '</small></div>' +
+      '<div class="nm">RegMaster<small data-i18n="' + (isSystem ? 'anBrandSubSystem' : 'anBrandSubOrg') + '">' + (isSystem ? '系統管理員' : '主辦後台') + '</small></div>' +
     '</a>' +
     '<div class="org-switcher"><div class="av" id="orgAv">' + esc(initial) + '</div>' +
-      '<div class="body"><h6 id="orgName">' + esc(name) + '</h6><p id="orgPlan">' + roleLabel + '</p></div></div>' +
-    '<div class="nav-grp"><div class="l-grp">概覽</div>' +
-      item('/admin/', '儀表板', IC.home) +
-      item('/admin/events/', '所有活動', IC.cal, '<span class="ct" id="navCompCount"></span>') +
-      item('/admin/ai.html', 'AI 助理', IC.ai) +
+      '<div class="body"><h6 id="orgName">' + esc(name) + '</h6><p id="orgPlan" data-i18n="' + (isSystem ? 'anRoleSystem' : 'anRoleOrg') + '">' + roleLabel + '</p></div></div>' +
+    '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpOverview">概覽</div>' +
+      item('/admin/', 'anDashboard', '儀表板', IC.home) +
+      item('/admin/events/', 'anAllEvents', '所有活動', IC.cal, '<span class="ct" id="navCompCount"></span>') +
+      item('/admin/ai.html', 'anAi', 'AI 助理', IC.ai) +
     '</div>' +
     evtNavHtml +
-    '<div class="nav-grp"><div class="l-grp">管理</div>' +
-      item('/admin/license.html', '方案與授權', IC.lic) +
-      item('/admin/my-logs.html', '操作紀錄', IC.log) +
-      item('/admin/settings.html', '設定', IC.gear) +
+    '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpManage">管理</div>' +
+      item('/admin/license.html', 'anLicense', '方案與授權', IC.lic) +
+      item('/admin/my-logs.html', 'anLogs', '操作紀錄', IC.log) +
+      item('/admin/settings.html', 'anSettings', '設定', IC.gear) +
     '</div>' +
     (isSystem ?
-      '<div class="nav-grp"><div class="l-grp">系統管理</div>' +
-        item('/admin/system.html', '系統設定', IC.sys) +
-        item('/admin/audit.html', '操作日誌', IC.log) +
+      '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpSysadmin">系統管理</div>' +
+        item('/admin/system.html', 'anSysSettings', '系統設定', IC.sys) +
+        item('/admin/audit.html', 'anAudit', '操作日誌', IC.log) +
       '</div>' : '') +
     '<div class="side-foot">' +
-      '<div class="usage-card"><h6>目前方案</h6><div class="nm-p" id="planBadge">FREE</div>' +
+      '<div class="usage-card"><h6 data-i18n="anUsageCur">目前方案</h6><div class="nm-p" id="planBadge">FREE</div>' +
         '<div class="bar"><div id="usageBar" style="width:0%"></div></div>' +
-        '<div class="meta-u"><span id="usageText">免費方案</span><span id="usagePct"></span></div>' +
-        '<a class="upgrade-link" href="/admin/license.html">升級方案 →</a></div>' +
-      '<a class="nav-it" id="logoutBtn" href="/login.html">' + IC.out + '<span>登出</span></a>' +
+        '<div class="meta-u"><span id="usageText" data-i18n="anUsageFreeText">免費方案</span><span id="usagePct"></span></div>' +
+        '<a class="upgrade-link" href="/admin/license.html" data-i18n="anUpgrade">升級方案 →</a></div>' +
+      '<a class="nav-it" id="logoutBtn" href="/login.html">' + IC.out + '<span data-i18n="anLogout">登出</span></a>' +
     '</div>';
 
   side.innerHTML = html;
@@ -131,12 +131,15 @@
         var badge = document.getElementById('planBadge');
         var ut = document.getElementById('usageText');
         if (!badge) return;
+        var LL = function (k, fb) { return window.L ? window.L(k) : fb; };
+        // These are now dynamic; drop data-i18n so the applier won't clobber them on lang switch.
+        if (ut) ut.removeAttribute('data-i18n');
         if (res && res.hasValid) {
-          badge.textContent = res.planLabel || '付費方案';
-          if (ut) ut.textContent = res.expiresAt ? ('至 ' + res.expiresAt) : (res.message || '已啟用');
+          badge.textContent = res.planLabel || LL('anUsageFreeText', '付費方案');
+          if (ut) ut.textContent = res.expiresAt ? (LL('anUntil', '至 ') + res.expiresAt) : (res.message || '');
         } else {
           badge.textContent = 'FREE';
-          if (ut) ut.textContent = '免費方案 — 升級解鎖更多';
+          if (ut) ut.textContent = LL('anUsageFreeHint', '免費方案 — 升級解鎖更多');
         }
       }).withFailureHandler(function () {}).getLicenseStatus();
     } catch (x) {}
@@ -176,6 +179,20 @@
       }
     });
     head.insertBefore(burger, head.firstChild);
+  }
+  // Language toggle in the admin topbar (中/EN) — lets organisers switch inside the console.
+  if (head && window.AppState && typeof window.AppState.setLang === 'function' && !head.querySelector('.admin-lang-toggle')) {
+    var lang = document.createElement('button');
+    lang.type = 'button';
+    lang.className = 'admin-lang-toggle';
+    lang.title = window.L ? window.L('anLangTitle') : '切換語言 / Switch language';
+    lang.textContent = '中/EN';
+    lang.style.cssText = 'margin-left:auto;background:var(--surface-2,#f1f5f9);border:1px solid var(--line,#e2e8f0);color:var(--ink-2,#334155);font:600 12px/1 var(--f-tc,system-ui);padding:7px 11px;border-radius:8px;cursor:pointer;flex-shrink:0';
+    lang.addEventListener('click', function () {
+      var cur = window.AppState.getLang();
+      window.AppState.setLang(cur === 'en' ? 'zh' : 'en');
+    });
+    head.appendChild(lang);
   }
   // Close the drawer after tapping a link on mobile.
   side.addEventListener('click', function (e) {
