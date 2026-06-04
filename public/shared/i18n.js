@@ -396,6 +396,48 @@
   };
 
   // ---------------------------------------------------------------------------
+  // Built-in registration FIELD LABEL localizer. The standard field labels
+  // (中文姓名, 性別, 緊急聯絡關係 …) are built-in defaults; organiser-customised
+  // labels are data and must be left as typed. window.LF() can be called either
+  // with a field KEY (LF('gender', currentLabel)) or with a label STRING
+  // (LF('性別')). In English it returns the built-in English label; if the
+  // organiser changed the label away from the built-in default, the custom label
+  // is returned unchanged. In Chinese it returns the original.
+  // ---------------------------------------------------------------------------
+  var FIELD_LABEL_MAP = {
+    chineseName: { zh: '中文姓名', en: 'Chinese name' }, englishName: { zh: '英文姓名', en: 'English name' },
+    idNumber: { zh: '身分證', en: 'National ID' }, birthday: { zh: '出生年月日', en: 'Date of birth' },
+    school: { zh: '學校', en: 'School' }, department: { zh: '系所', en: 'Department' }, grade: { zh: '年級', en: 'Grade / Year' },
+    email: { zh: 'Email', en: 'Email' }, phone: { zh: '電話', en: 'Phone' }, address: { zh: '地址', en: 'Address' },
+    dietary: { zh: '飲食習慣', en: 'Dietary preference' }, tshirt: { zh: 'T-shirt 尺寸', en: 'T-shirt size' },
+    gender: { zh: '性別', en: 'Gender' }, nationality: { zh: '國籍', en: 'Nationality' }, passport: { zh: '護照號碼', en: 'Passport number' },
+    classroom: { zh: '班級', en: 'Class' }, organization: { zh: '服務單位', en: 'Organization' }, jobTitle: { zh: '職稱', en: 'Job title' },
+    postalCode: { zh: '郵遞區號', en: 'Postal code' }, emergencyName: { zh: '緊急聯絡人', en: 'Emergency contact' },
+    emergencyPhone: { zh: '緊急聯絡電話', en: 'Emergency contact phone' }, emergencyRelation: { zh: '緊急聯絡關係', en: 'Relationship to emergency contact' },
+    dietaryRestriction: { zh: '飲食限制 / 過敏', en: 'Dietary restriction / allergy' }, bloodType: { zh: '血型', en: 'Blood type' },
+    healthNote: { zh: '特殊健康狀況', en: 'Special health conditions' }, invoiceType: { zh: '發票類型', en: 'Invoice type' },
+    invoiceTitle: { zh: '發票抬頭', en: 'Invoice title' }, taxId: { zh: '統一編號', en: 'Business tax ID' },
+    accommodation: { zh: '住宿需求', en: 'Accommodation needed' }, lineId: { zh: 'LINE ID', en: 'LINE ID' },
+    salutation: { zh: '尊稱', en: 'Salutation' }, city: { zh: '居住縣市', en: 'City of residence' }, eduLevel: { zh: '教育階段', en: 'Education level' },
+    studentId: { zh: '學號', en: 'Student ID' }, referralSource: { zh: '如何得知本活動', en: 'How you heard about this event' },
+    transportation: { zh: '交通方式', en: 'Transportation' }, accessibility: { zh: '特殊需求/無障礙', en: 'Special / accessibility needs' },
+    guardianName: { zh: '監護人姓名', en: 'Guardian name' }, guardianPhone: { zh: '監護人電話', en: 'Guardian phone' },
+    guardianConsent: { zh: '家長同意', en: 'Parental consent' }, consent: { zh: '條款/肖像權同意', en: 'Terms / portrait-rights consent' },
+    website: { zh: '網站', en: 'Website' }
+  };
+  var FIELD_LABEL_ZH = {};
+  Object.keys(FIELD_LABEL_MAP).forEach(function (k) { FIELD_LABEL_ZH[FIELD_LABEL_MAP[k].zh] = FIELD_LABEL_MAP[k].en; });
+  window.LF = function (keyOrLabel, fallback, lang) {
+    var L = lang || window.LANG || 'zh';
+    var lbl = (fallback != null ? fallback : keyOrLabel);
+    if (L !== 'en') return lbl; // Chinese: show as-is
+    var e = FIELD_LABEL_MAP[keyOrLabel];
+    if (e) return (fallback == null || fallback === e.zh) ? e.en : fallback; // built-in key
+    if (FIELD_LABEL_ZH[lbl]) return FIELD_LABEL_ZH[lbl]; // reverse-lookup by zh label
+    return lbl; // organiser-defined / unknown
+  };
+
+  // ---------------------------------------------------------------------------
   // Applier: walk the DOM and translate elements tagged with data-i18n*.
   //   data-i18n           → textContent
   //   data-i18n-html      → innerHTML (for nodes containing <br>/<em>/<b>/<a>)

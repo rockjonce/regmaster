@@ -973,7 +973,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var isFull = (def.type === 'textarea' || def.type === 'file' || def.key === 'address' || def.key === 'nationality');
     var req = def.req ? ' <span class="req">*</span>' : '';
     var help = def.help ? '<div class="help-f" style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:3px">' + sanitizeHelpInline(def.help) + '</div>' : '';
-    return '<div class="fld' + (isFull ? ' field-full' : '') + '" data-fld-key="' + escapeHtml(def.key) + '"><div class="lbl">' + escapeHtml(def.label) + req + '</div>' + renderInput(def, domId) + help + '<div class="err" data-i18n="rgFieldRequired">請填寫此欄位</div></div>';
+    return '<div class="fld' + (isFull ? ' field-full' : '') + '" data-fld-key="' + escapeHtml(def.key) + '"><div class="lbl">' + escapeHtml(window.LF(def.key, def.label)) + req + '</div>' + renderInput(def, domId) + help + '<div class="err" data-i18n="rgFieldRequired">請填寫此欄位</div></div>';
   }
   // Wire file uploads + conditional show/hide within a container (prefix scopes ids)
   function wireFieldContainer(container, defs, prefix) {
@@ -1338,11 +1338,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var html = '<div class="review-section"><h5>' + escapeHtml(window.L('rgReviewBasic')) + '</h5>' + rows.map(function (r) { return '<div class="r-row"><span class="k">' + escapeHtml(r.k) + '</span><span class="v">' + escapeHtml(r.v) + '</span></div>'; }).join('') + '</div>';
     // Students
     STATE.students.forEach(function (s, i) {
-      var lines = Object.keys(s).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(LABEL_MAP[k] || FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(window.LO(s[k])) + '</span></div>'; }).join('');
+      var lines = Object.keys(s).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(window.LF(k, LABEL_MAP[k] || FIELD_LABELS[k] || k)) + '</span><span class="v">' + escapeHtml(window.LO(s[k])) + '</span></div>'; }).join('');
       html += '<div class="review-section"><h5>' + escapeHtml(window.L('rgStudentN') + ' ' + (i+1)) + '</h5>' + lines + '</div>';
     });
     STATE.teachers.forEach(function (t, i) {
-      var lines = Object.keys(t).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(LABEL_MAP[k] || FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(window.LO(t[k])) + '</span></div>'; }).join('');
+      var lines = Object.keys(t).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(window.LF(k, LABEL_MAP[k] || FIELD_LABELS[k] || k)) + '</span><span class="v">' + escapeHtml(window.LO(t[k])) + '</span></div>'; }).join('');
       html += '<div class="review-section"><h5>' + escapeHtml(window.L('rgTeacherN') + ' ' + (i+1)) + '</h5>' + lines + '</div>';
     });
     if (Object.keys(STATE.customAnswers).length > 0) {
