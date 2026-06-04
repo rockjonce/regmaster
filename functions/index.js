@@ -174,8 +174,39 @@ function authCallable(roles, handler) {
   });
 }
 
-// ===== Competition-level auth: verifies activity ownership =====
-function compAuthCallable(handler) {
+// ===== Org RBAC (#3): sub-account roles & capabilities =====
+// Owner (competition.creator) & system always have full access (handled below).
+// 'danger' (e.g. delete whole event) is owner-only — granted to no member role.
+const ROLE_CAPS = {
+  manager: ["view", "checkin", "scoring", "manage"],
+  staff:   ["view", "checkin"],
+  judge:   ["view", "scoring"]
+};
+// Is `username` an active member of `orgOwner`'s org holding `capability` for `compId`?
+// Queries by memberUsername only (single-field, auto-indexed — no composite index needed)
+// and filters the rest in memory. Returns false when there are no membership records,
+// so behaviour is identical to the previous owner-only check until members are invited.
+async function memberHasCapability(username, orgOwner, compId, capability) {
+  try {
+    const snap = await db.collection("orgMembers").where("memberUsername", "==", username).get();
+    for (const d of snap.docs) {
+      const m = d.data();
+      if (m.orgOwner !== orgOwner || m.status !== "active") continue;
+      if (Array.isArray(m.scope) && m.scope.indexOf(compId) < 0) continue; // event-scoped membership
+      if ((ROLE_CAPS[m.role] || []).indexOf(capability) >= 0) return true;
+    }
+    return false;
+  } catch (e) { return false; }
+}
+
+// ===== Competition-level auth: verifies activity ownership + member capability =====
+// Usage:  compAuthCallable(handler)              → capability defaults to "manage"
+//         compAuthCallable("checkin", handler)   → require a specific capability
+// Backward-compatible: with no orgMembers records, this is identical to the prior
+// owner-only check (owner/system pass; everyone else denied).
+function compAuthCallable(capabilityOrHandler, maybeHandler) {
+  const capability = (typeof capabilityOrHandler === "function") ? "manage" : (capabilityOrHandler || "manage");
+  const handler = (typeof capabilityOrHandler === "function") ? capabilityOrHandler : maybeHandler;
   return authCallable(["system","competition"], async (data, request) => {
     if (request.authUser.role === "competition") {
       let compId = data.compId;
@@ -186,8 +217,11 @@ function compAuthCallable(handler) {
       if (compId) {
         const compDoc = await db.collection("competitions").doc(compId).get();
         if (!compDoc.exists) throw new HttpsError("not-found", "活動不存在");
-        if (compDoc.data().creator !== request.authUser.username) {
-          throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
+        const comp = compDoc.data();
+        if (comp.creator !== request.authUser.username) {
+          const ok = await memberHasCapability(request.authUser.username, comp.creator, compId, capability);
+          if (!ok) throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
+          request.memberRole = true; // handler hint: caller is a member, not the owner
         }
       }
     }
@@ -1299,7 +1333,7 @@ exports.setCapacityLimit = authCallable(["system"], async (data) => {
   return { success: true };
 });
 
-exports.deleteCompetition = compAuthCallable(async (data) => {
+exports.deleteCompetition = compAuthCallable("danger", async (data) => {
   const compId = data.compId;
   
   /* Clean up teamFiles chunks first (they reference parentId=teamId, not compId) */
@@ -2333,7 +2367,7 @@ exports.checkDuplicates = callable(async (data) => {
 });
 
 // ===== Dashboard =====
-exports.getDashboardStats = compAuthCallable(async (data) => {
+exports.getDashboardStats = compAuthCallable("view", async (data) => {
   const compId = data.compId;
   const [compDoc, tSnap] = await Promise.all([
     db.collection("competitions").doc(compId).get(),
@@ -2394,7 +2428,7 @@ exports.getDashboardStats = compAuthCallable(async (data) => {
     hasWaitlist: cfg.allowWaitlist !== false, hasPayment: (cfg.paymentMethods || []).length > 0, hasGender };
 });
 
-exports.getAllTeams = compAuthCallable(async (data) => {
+exports.getAllTeams = compAuthCallable("view", async (data) => {
   const [snap, mSnap] = await Promise.all([
     db.collection("teams").where("compId", "==", data.compId).get(),
     db.collection("members").where("compId", "==", data.compId).get()
@@ -2427,7 +2461,7 @@ exports.getAllTeams = compAuthCallable(async (data) => {
 // 報名管理: stats aggregation for the dashboard tab. One callable, one round-trip.
 // Returns enough data for ~12 charts; frontend hides individual charts based on which
 // fields the organiser actually configured / collected.
-exports.getRegistrationStats = compAuthCallable(async (data) => {
+exports.getRegistrationStats = compAuthCallable("view", async (data) => {
   const compId = data.compId;
   const [tSnap, mSnap] = await Promise.all([
     db.collection("teams").where("compId", "==", compId).get(),
@@ -2550,7 +2584,7 @@ exports.sendTeamEmail = compAuthCallable(async (data, request) => {
   return { success: true, recipientCount: tos.length };
 });
 
-exports.getTeamDetail = compAuthCallable(async (data) => {
+exports.getTeamDetail = compAuthCallable("view", async (data) => {
   const doc = await db.collection("teams").doc(data.teamId).get();
   if (!doc.exists) return null;
   const t = doc.data();
@@ -2836,7 +2870,7 @@ exports.sendNotificationToAll = compAuthCallable(async (data, request) => {
 });
 
 // ===== Scores =====
-exports.saveScore = compAuthCallable(async (data, request) => {
+exports.saveScore = compAuthCallable("scoring", async (data, request) => {
   await requireFeature(request.authUser, "scoring");
   const { compId, teamId, item, score, rank, comment, user } = data;
   const snap = await db.collection("scores").where("compId", "==", compId).where("teamId", "==", teamId).where("item", "==", item).limit(1).get();
@@ -2848,7 +2882,7 @@ exports.saveScore = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
-exports.getScores = compAuthCallable(async (data) => {
+exports.getScores = compAuthCallable("scoring", async (data) => {
   const snap = await db.collection("scores").where("compId", "==", data.compId).get();
   return snap.docs.map(d => {
     const s = d.data();
@@ -2893,18 +2927,18 @@ function tierLimits(tier) { return TIER_LIMITS[tier] || TIER_LIMITS.free; }
 const DEFAULT_PLANS = {
   free:    { price:0,     feePct:5, maxActiveEvents:1,  maxCapacity:60,
              name:{ zh:"免費版 Free", en:"Free" }, tagline:{ zh:"適合測試或只辦小型活動", en:"For testing or small one-off events" },
-             features:{ payment:true,  csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, waitlist:false, certificate:false } },
+             features:{ payment:true,  csvExport:false, ai:false, eventAi:false, scoring:false, multiJudge:false, campaigns:false, checkin:false, waitlist:false, certificate:false, roles:false } },
   starter: { price:4990,  feePct:3, maxActiveEvents:3,  maxCapacity:300,
              name:{ zh:"入門版 Starter", en:"Starter" }, tagline:{ zh:"適合單次活動、小型主辦方", en:"For single events and small organizers" },
-             features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  waitlist:true,  certificate:false } },
+             features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  waitlist:true,  certificate:false, roles:false } },
   pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
              name:{ zh:"專業版 Pro", en:"Pro" }, tagline:{ zh:"學校 / 中型機構 · 完整功能", en:"Schools & mid-size orgs · full features" },
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } },
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:false } },
   team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
              name:{ zh:"團隊版 Team", en:"Team" }, tagline:{ zh:"大型機構 · 政府單位", en:"Large organizations & government" },
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false } }
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:true } }
 };
-const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","waitlist","certificate"];
+const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","waitlist","certificate","roles"];
 
 // Read config/sales and produce the resolved plan matrix (deep-merged over defaults).
 // Back-compat: if config/sales has no `plans` object yet, only legacy money fields
@@ -4318,7 +4352,7 @@ exports.duplicateCompetition = compAuthCallable(async (data, request) => {
 });
 
 // ===== QR Code Check-in =====
-exports.checkInTeam = compAuthCallable(async (data, request) => {
+exports.checkInTeam = compAuthCallable("checkin", async (data, request) => {
   await requireFeature(request.authUser, "checkin");
   const { teamId } = data;
   if (!teamId) return { success: false, message: "missing teamId" };
@@ -6274,7 +6308,7 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
 // Schema: scores/{compId_teamId_judgeId} = { compId, teamId, judgeId, items[], totalScore, comment, createdAt }
 // Legacy saveScore (single-judge) still works; we just add a new shape.
 
-exports.submitJudgeScore = compAuthCallable(async (data, request) => {
+exports.submitJudgeScore = compAuthCallable("scoring", async (data, request) => {
   // Scoring is the gated feature (STARTER+). "multiJudge" (Pro+) is matrix/label-only
   // for now — v3 has no separate judge accounts (compAuthCallable = owner only), so
   // multiple judges per team cannot occur yet; gate it here when that ships.
@@ -6302,7 +6336,7 @@ exports.submitJudgeScore = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
-exports.getLiveLeaderboard = compAuthCallable(async (data) => {
+exports.getLiveLeaderboard = compAuthCallable("scoring", async (data) => {
   const { compId } = data;
   const [tSnap, sSnap] = await Promise.all([
     db.collection("teams").where("compId", "==", compId).get(),
@@ -6346,7 +6380,7 @@ exports.getLiveLeaderboard = compAuthCallable(async (data) => {
 
 // Already exists: exports.checkInTeam — leave untouched. Add a sister
 // callable that records extras separately so the legacy field stays clean.
-exports.checkInTeamV2 = compAuthCallable(async (data, request) => {
+exports.checkInTeamV2 = compAuthCallable("checkin", async (data, request) => {
   await requireFeature(request.authUser, "checkin");
   const { teamId, extras } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
