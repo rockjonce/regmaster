@@ -8,6 +8,15 @@
     ],
     "headers": [
       {
+        "_comment": "Baseline security headers (M-5). Deliberately NO Content-Security-Policy: the app uses many inline <script> blocks + external origins (firebase, quickchart.io, ipapi.co, Google/LINE OAuth), so a strict CSP would break it; needs a dedicated effort with nonces/allowlist. No Permissions-Policy either (check-in uses the camera). X-Frame-Options:SAMEORIGIN is safe — the only iframes are same-origin srcdoc/data: previews.",
+        "source": "**",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        ]
+      },
+      {
         "_comment": "Static media may be cached for a day.",
         "source": "**/*.@(jpg|jpeg|png|gif|svg|webp|ico|woff|woff2|ttf)",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
