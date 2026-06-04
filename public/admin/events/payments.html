@@ -282,9 +282,9 @@
       return '<tr>' +
         '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
         '<td><b>' + escapeHtml(t.teamNameCN || t.teamNameEN || window.L('aePayNoName')) + '</b></td>' +
-        '<td>' + escapeHtml(t.status || '') + '</td>' +
-        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus || window.L('aePayPillDefault')) + '</span></td>' +
-        '<td>' + escapeHtml(t.paymentMethod || '—') + '</td>' +
+        '<td>' + escapeHtml(window.LS(t.status || '')) + '</td>' +
+        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus ? window.LS(t.paymentStatus) : window.L('aePayPillDefault')) + '</span></td>' +
+        '<td>' + escapeHtml(t.paymentMethod ? window.LS(t.paymentMethod) : '—') + '</td>' +
         '<td class="right">NT$ ' + FEE.toLocaleString() + '</td>' +
         '<td>' +
           (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
@@ -353,8 +353,8 @@
         var html = '';
         html += '<div class="group"><h5>' + window.L('aePayGroupTeamInfo') + '</h5><div class="kv">' +
           kvHtml(window.L('aePayKvId'), t.teamId) + kvHtml(window.L('aePayKvTeamCN'), t.teamNameCN) + kvHtml(window.L('aePayKvTeamEN'), t.teamNameEN) +
-          kvHtml(window.L('aePayKvGroup'), t.group) + kvHtml(window.L('aePayKvStatus'), t.status) +
-          kvHtml(window.L('aePayKvPayStatus'), t.paymentStatus) + kvHtml(window.L('aePayKvMethod'), t.paymentMethod) +
+          kvHtml(window.L('aePayKvGroup'), t.group) + kvHtml(window.L('aePayKvStatus'), t.status ? window.LS(t.status) : t.status) +
+          kvHtml(window.L('aePayKvPayStatus'), t.paymentStatus ? window.LS(t.paymentStatus) : t.paymentStatus) + kvHtml(window.L('aePayKvMethod'), t.paymentMethod ? window.LS(t.paymentMethod) : t.paymentMethod) +
           kvHtml(window.L('aePayKvRemitBank'), t.remitterBank) + kvHtml(window.L('aePayKvRemitAccount'), t.remitterAccount) +
           kvHtml(window.L('aePayKvRegTime'), t.registrationTime) +
           (t.fileUrl ? '<div class="k">' + window.L('aePayKvFile') + '</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">' + window.L('aePayKvFileLink') + '</a></div>' : '') +
@@ -408,6 +408,7 @@
 
   // ===== 平台代收轉付 — per-order settlement view (read-only for organiser) =====
   var PAYOUT_LOADED = false;
+  var PAYOUT_DATA = null;
   function fmtMoney(n) { return 'NT$ ' + (parseInt(n, 10) || 0).toLocaleString(); }
 
   // Next payout date from the platform cycle. weekly → next Thursday; monthly → 5th
@@ -434,7 +435,8 @@
       .withSuccessHandler(function (res) {
         document.getElementById('payoutLoading').style.display = 'none';
         document.getElementById('payoutContent').style.display = '';
-        renderPayout(res || {});
+        PAYOUT_DATA = res || {};
+        renderPayout(PAYOUT_DATA);
         if (window.applyI18n) window.applyI18n();
       })
       .withFailureHandler(function (e) { document.getElementById('payoutLoading').textContent = window.L('aePayPayoutLoadFailPre') + ((e && e.message) || ''); })
@@ -521,6 +523,13 @@
       document.querySelectorAll('.ptab-pane').forEach(function (p) { p.style.display = p.dataset.ppane === tab ? '' : 'none'; });
       if (tab === 'payout' && !PAYOUT_LOADED) { PAYOUT_LOADED = true; loadPayout(); }
     });
+  });
+
+  // Re-render stored status/enum cells (via window.LS) in the newly active language.
+  AppState.on('lang-changed', function () {
+    if (TEAMS && TEAMS.length) { renderSum(); renderTable(); }
+    if (PAYOUT_LOADED) renderPayout(PAYOUT_DATA || {});
+    if (window.applyI18n) window.applyI18n();
   });
 
   load();

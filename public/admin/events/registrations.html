@@ -260,6 +260,14 @@
   }
   function loadAll() { bootData(); }
   bootData();
+  // Re-render localized stored values (status / paymentStatus / paymentMethod via window.LS)
+  // when the active language changes. Re-applies the current search filter and re-draws charts.
+  AppState.on('lang-changed', function () {
+    if (document.getElementById('content').style.display === 'none') return;
+    var inp = document.getElementById('searchInp');
+    if (inp) { inp.dispatchEvent(new Event('input')); } else { renderList(TEAMS); }
+    renderCharts();
+  });
   document.getElementById('refundReqBtn').addEventListener('click', openRefundManager);
 
   // ---------- TABS ----------
@@ -372,7 +380,7 @@
     document.getElementById('statusCardWrap').style.display = vis.status ? '' : 'none';
     if (vis.status) {
       destroyChart('status');
-      charts.status = donut('chartStatus', statusKeys, statusKeys.map(function (k) { return statusCounts[k]; }));
+      charts.status = donut('chartStatus', statusKeys.map(function (k) { return window.LS(k); }), statusKeys.map(function (k) { return statusCounts[k]; }));
     }
 
     // ----- (a) Payment status pie -----
@@ -601,8 +609,8 @@
         '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
         '<td><b>' + escapeHtml(t.teamNameCN || window.L('aeRegDash')) + '</b></td>' +
         '<td>' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
-        '<td>' + escapeHtml(t.status || '正取') + '</td>' +
-        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus || '待確認') + '</span></td>' +
+        '<td>' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
+        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +
         '<td>' +
           '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnView') + '</button>' +
           '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' +
@@ -804,9 +812,9 @@
       kv(window.L('aeRegFieldNameCN'), t.teamNameCN) +
       kv(window.L('aeRegFieldNameEN'), t.teamNameEN) +
       kv(window.L('aeRegFieldGroup'), t.group) +
-      kv(window.L('aeRegFieldStatus'), t.status) +
-      kv(window.L('aeRegFieldPayStatus'), t.paymentStatus) +
-      kv(window.L('aeRegFieldPayMethod'), t.paymentMethod) +
+      kv(window.L('aeRegFieldStatus'), window.LS(t.status)) +
+      kv(window.L('aeRegFieldPayStatus'), window.LS(t.paymentStatus)) +
+      kv(window.L('aeRegFieldPayMethod'), window.LS(t.paymentMethod)) +
       kv(window.L('aeRegFieldRemitBank'), t.remitterBank) +
       kv(window.L('aeRegFieldRemitAccount'), t.remitterAccount) +
       kv(window.L('aeRegFieldRegTime'), t.registrationTime) +

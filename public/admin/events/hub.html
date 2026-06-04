@@ -495,7 +495,7 @@
               '<div style="font:600 13px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || window.L('aeHubNoTeamName')) + (t.group ? '<span style="margin-left:8px; padding:1px 6px; background:var(--surface); border:1px solid var(--line); border-radius:4px; font:500 11px/1.4 var(--f-mono); color:var(--ink-3)">' + escapeHtml(t.group) + '</span>' : '') + '</div>' +
               '<div style="font:500 11px/1.4 var(--f-mono); color:var(--muted)">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.registrationTime || '') + '</div>' +
             '</div>' +
-            '<div style="font:500 11px/1.3 var(--f-tc); color:' + (t.status === '正取' ? 'var(--ok-700)' : 'var(--amber-700, var(--warn-700))') + '">' + escapeHtml(t.status || '') + '</div>' +
+            '<div style="font:500 11px/1.3 var(--f-tc); color:' + (t.status === '正取' ? 'var(--ok-700)' : 'var(--amber-700, var(--warn-700))') + '">' + escapeHtml(window.LS(t.status || '')) + '</div>' +
           '</div>';
         }).join('') +
         '</div>';
