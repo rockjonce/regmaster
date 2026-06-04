@@ -33,6 +33,11 @@
     aeCrtSavedEmpty: '尚未建立任何範本',
     aeCrtNewBlank: '＋ 空白',
     aeCrtNewUpload: '＋ 上傳背景',
+    aeCrtUseBuiltin: '＋ 套用內建範本',
+    aeCrtBuiltinTitle: '套用內建範本',
+    aeCrtBuiltinUse: '使用',
+    aeCrtBuiltinClose: '關閉',
+    aeCrtUnsaved: '尚有未儲存的變更，確定要離開嗎？',
     aeCrtUseEdit: '使用 / 編輯',
     aeCrtDuplicate: '複製',
     aeCrtDelete: '刪除',
@@ -99,8 +104,17 @@
     aeCrtPropImage: '圖片資產',
     aeCrtPropImageUpload: '上傳圖片',
     aeCrtPropImageKind: '類型',
+    aeCrtPropImageHeight: '高（%）',
     aeCrtKindLogo: 'Logo',
     aeCrtKindSignature: '簽名',
+
+    // ----- QR mode -----
+    aeCrtQrMode: 'QR 內容',
+    aeCrtQrModeCheckin: '報到核對（純報名編號，可現場掃碼報到）',
+    aeCrtQrModeEvent: '活動頁面',
+    aeCrtQrModeTeamData: '該隊報名資料',
+    aeCrtQrModeRegister: '報名／修改頁',
+    aeCrtQrModeNote: '※ 非「報到核對」模式無法用於現場掃碼報到。',
 
     // ----- editor: preview -----
     aeCrtPreviewTitle: '即時預覽',
@@ -118,6 +132,9 @@
     aeCrtTokAward: '獎項',
     aeCrtTokDate: '日期',
     aeCrtTokQr: 'QR Code',
+    aeCrtTokTeam: '隊名',
+    aeCrtTokTeamEN: '英文隊名',
+    aeCrtTokRole: '稱謂（學員/指導者）',
 
     // ----- generate / export -----
     aeCrtGenTitle: '產生 / 匯出',
@@ -128,6 +145,8 @@
     aeCrtScopeCheckedIn: '僅已報到',
     aeCrtScopeWinners: '得獎者',
     aeCrtScopeManual: '手動勾選',
+    aeCrtScopeStudents: '僅學員',
+    aeCrtScopeTeachers: '僅指導者',
     aeCrtScopeGroupPick: '選擇組別',
     aeCrtScopeManualPick: '勾選對象',
     aeCrtGranularity: '產生粒度',
@@ -167,6 +186,12 @@
     aeCrtPresetMinimal: '極簡證書',
     aeCrtPresetElegant: '典雅證書',
     aeCrtPresetBadge: '簡約名牌',
+    aeCrtPresetGoldborder: '古典金框獎狀',
+    aeCrtPresetThanks: '感謝狀',
+    aeCrtPresetDiplomaEn: '英文證書',
+    aeCrtPresetRibbon: '獎章緞帶',
+    aeCrtPresetNavy: '深藍正式',
+    aeCrtPresetBadgePortrait: '直式名牌',
 
     // ----- default field text -----
     aeCrtDefaultCertTitle: '獎狀',
@@ -197,6 +222,11 @@
     aeCrtSavedEmpty: 'No templates yet',
     aeCrtNewBlank: '+ Blank',
     aeCrtNewUpload: '+ Upload Background',
+    aeCrtUseBuiltin: '+ Use a Built-in Template',
+    aeCrtBuiltinTitle: 'Apply a Built-in Template',
+    aeCrtBuiltinUse: 'Use',
+    aeCrtBuiltinClose: 'Close',
+    aeCrtUnsaved: 'You have unsaved changes. Leave anyway?',
     aeCrtUseEdit: 'Use / Edit',
     aeCrtDuplicate: 'Duplicate',
     aeCrtDelete: 'Delete',
@@ -263,8 +293,17 @@
     aeCrtPropImage: 'Image Asset',
     aeCrtPropImageUpload: 'Upload Image',
     aeCrtPropImageKind: 'Kind',
+    aeCrtPropImageHeight: 'Height (%)',
     aeCrtKindLogo: 'Logo',
     aeCrtKindSignature: 'Signature',
+
+    // ----- QR mode -----
+    aeCrtQrMode: 'QR Content',
+    aeCrtQrModeCheckin: 'Check-in match (plain registration ID — scannable at the door)',
+    aeCrtQrModeEvent: 'Event page',
+    aeCrtQrModeTeamData: "This team's registration data",
+    aeCrtQrModeRegister: 'Register / Edit page',
+    aeCrtQrModeNote: 'Note: modes other than “Check-in match” cannot be scanned for on-site check-in.',
 
     // ----- editor: preview -----
     aeCrtPreviewTitle: 'Live Preview',
@@ -282,6 +321,9 @@
     aeCrtTokAward: 'Award',
     aeCrtTokDate: 'Date',
     aeCrtTokQr: 'QR Code',
+    aeCrtTokTeam: 'Team Name',
+    aeCrtTokTeamEN: 'Team Name (EN)',
+    aeCrtTokRole: 'Title (Student / Instructor)',
 
     // ----- generate / export -----
     aeCrtGenTitle: 'Generate / Export',
@@ -292,6 +334,8 @@
     aeCrtScopeCheckedIn: 'Checked-in Only',
     aeCrtScopeWinners: 'Winners',
     aeCrtScopeManual: 'Manual Select',
+    aeCrtScopeStudents: 'Students Only',
+    aeCrtScopeTeachers: 'Instructors Only',
     aeCrtScopeGroupPick: 'Choose Group',
     aeCrtScopeManualPick: 'Select Recipients',
     aeCrtGranularity: 'Generate Per',
@@ -331,6 +375,12 @@
     aeCrtPresetMinimal: 'Minimal',
     aeCrtPresetElegant: 'Elegant',
     aeCrtPresetBadge: 'Simple Badge Card',
+    aeCrtPresetGoldborder: 'Classic Gold Frame',
+    aeCrtPresetThanks: 'Certificate of Appreciation',
+    aeCrtPresetDiplomaEn: 'English Certificate',
+    aeCrtPresetRibbon: 'Ribbon & Seal',
+    aeCrtPresetNavy: 'Formal Navy',
+    aeCrtPresetBadgePortrait: 'Portrait Name Badge',
 
     // ----- default field text -----
     aeCrtDefaultCertTitle: 'Certificate',

@@ -10,7 +10,7 @@
 <!-- Certificate fonts (Chinese + Latin) — only needed for self-serve cert download -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Dancing+Script:wght@400;700&family=LXGW+WenKai+TC:wght@400;700&family=Cinzel:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
 <!-- jsPDF UMD (for self-serve certificate download); non-blocking, page works if it fails -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -443,7 +443,7 @@
   var CERT_FONTS_READY = false;
   function ensureCertFonts() {
     if (CERT_FONTS_READY) return Promise.resolve();
-    var faces = ['700 24px "Noto Sans TC"', '700 24px "Noto Serif TC"', '700 24px "Playfair Display"', '700 24px "Montserrat"', '700 24px "Dancing Script"'];
+    var faces = ['700 24px "Noto Sans TC"', '700 24px "Noto Serif TC"', '700 24px "Playfair Display"', '700 24px "Montserrat"', '700 24px "Dancing Script"', '700 24px "LXGW WenKai TC"', '700 24px "Cinzel"', '700 24px "Cormorant Garamond"', '400 24px "Great Vibes"'];
     var loads = [];
     faces.forEach(function (f) {
       try { loads.push(document.fonts.load(f)); loads.push(document.fonts.load(f.replace('700', '400'))); } catch (e) {}
@@ -497,6 +497,67 @@
       gb.addColorStop(0, '#3D6BFF'); gb.addColorStop(1, '#7c5cff');
       ctx.fillStyle = gb; ctx.fillRect(0, 0, W, H * 0.16);
       ctx.fillStyle = gb; ctx.fillRect(0, H * 0.9, W, H * 0.1);
+    } else if (preset === 'goldborder') {
+      ctx.fillStyle = baseColor || '#fbf6e9'; ctx.fillRect(0, 0, W, H);
+      var gp = W * 0.035;
+      ctx.strokeStyle = '#c9a227'; ctx.lineWidth = Math.max(3, W * 0.009);
+      ctx.strokeRect(gp, gp, W - gp * 2, H - gp * 2);
+      ctx.strokeStyle = '#e3c766'; ctx.lineWidth = Math.max(1, W * 0.003);
+      ctx.strokeRect(gp * 1.8, gp * 1.8, W - gp * 3.6, H - gp * 3.6);
+      ctx.strokeStyle = '#c9a227'; ctx.lineWidth = Math.max(1.5, W * 0.004);
+      var co = W * 0.05;
+      [[gp, gp, 1, 1], [W - gp, gp, -1, 1], [gp, H - gp, 1, -1], [W - gp, H - gp, -1, -1]].forEach(function (c) {
+        ctx.beginPath();
+        ctx.moveTo(c[0] + c[2] * co, c[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(c[0], c[1] + c[3] * co);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(c[0] + c[2] * co * 0.5, c[1] + c[3] * co * 0.5, W * 0.006, 0, Math.PI * 2); ctx.fillStyle = '#c9a227'; ctx.fill();
+      });
+    } else if (preset === 'thanks') {
+      ctx.fillStyle = baseColor || '#fffaf0'; ctx.fillRect(0, 0, W, H);
+      var tp = W * 0.05;
+      ctx.strokeStyle = '#d8b48a'; ctx.lineWidth = Math.max(1.5, W * 0.0035);
+      ctx.strokeRect(tp, tp, W - tp * 2, H - tp * 2);
+      var tg = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+      tg.addColorStop(0, 'rgba(216,180,138,0.18)'); tg.addColorStop(1, 'rgba(216,180,138,0)');
+      ctx.fillStyle = tg; ctx.fillRect(tp, tp, W - tp * 2, H * 0.4);
+    } else if (preset === 'diploma_en') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#222'; ctx.lineWidth = Math.max(1, W * 0.0018);
+      ctx.beginPath(); ctx.moveTo(W * 0.32, H * 0.42); ctx.lineTo(W * 0.68, H * 0.42); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(W * 0.28, H * 0.74); ctx.lineTo(W * 0.72, H * 0.74); ctx.stroke();
+      ctx.strokeStyle = '#b8860b'; ctx.lineWidth = Math.max(1.5, W * 0.003);
+      ctx.beginPath(); ctx.arc(W * 0.82, H * 0.82, W * 0.06, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(W * 0.82, H * 0.82, W * 0.045, 0, Math.PI * 2); ctx.stroke();
+    } else if (preset === 'ribbon') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var rg = ctx.createLinearGradient(0, 0, W, 0);
+      rg.addColorStop(0, '#b8860b'); rg.addColorStop(1, '#e0b84a');
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H * 0.14);
+      ctx.save();
+      ctx.translate(W * 0.82, H * 0.78);
+      ctx.fillStyle = '#b8860b';
+      ctx.beginPath();
+      for (var si = 0; si < 24; si++) {
+        var a = si / 24 * Math.PI * 2, rr = (si % 2 === 0) ? W * 0.075 : W * 0.06;
+        ctx[si === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#e0b84a'; ctx.beginPath(); ctx.arc(0, 0, W * 0.045, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else if (preset === 'navy') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var ng = ctx.createLinearGradient(0, 0, W, 0);
+      ng.addColorStop(0, '#0f1b3d'); ng.addColorStop(1, '#1c2f63');
+      ctx.fillStyle = ng; ctx.fillRect(0, 0, W, H * 0.18);
+      ctx.fillStyle = ng; ctx.fillRect(0, H * 0.85, W, H * 0.15);
+      ctx.fillStyle = '#caa84f'; ctx.fillRect(0, H * 0.18, W, H * 0.006);
+      ctx.fillStyle = '#caa84f'; ctx.fillRect(0, H * 0.844, W, H * 0.006);
+    } else if (preset === 'badge_portrait') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var bg2 = ctx.createLinearGradient(0, 0, W, 0);
+      bg2.addColorStop(0, '#3D6BFF'); bg2.addColorStop(1, '#7c5cff');
+      ctx.fillStyle = bg2; ctx.fillRect(0, 0, W, H * 0.14);
+      ctx.fillStyle = bg2; ctx.fillRect(0, H * 0.93, W, H * 0.07);
     } else {
       ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
     }
@@ -534,8 +595,17 @@
   }
 
   // ---- token resolution (TEAM granularity, using the registrant's own data) ----
-  function certQrUrl(r) {
-    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(r.teamId || '');
+  function certQrUrl(r, field) {
+    // Mirror of certificates.html qrUrl(). Default 'checkin' encodes the bare teamId so the
+    // existing check-in scanner reads a printed badge exactly like the email QR.
+    var origin = location.origin, cid = r.compId || '', txt;
+    switch ((field && field.qrMode) || 'checkin') {
+      case 'event':    txt = origin + '/events/detail.html?id=' + encodeURIComponent(cid); break;
+      case 'teamdata': txt = origin + '/events/detail.html?id=' + encodeURIComponent(cid) + '&team=' + encodeURIComponent(r.teamId || ''); break;
+      case 'register': txt = origin + '/events/register.html?id=' + encodeURIComponent(cid) + '&edit=' + encodeURIComponent(r.teamId || ''); break;
+      default:         txt = r.teamId || '';
+    }
+    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(txt);
   }
   function resolveCertToken(tok, r) {
     switch (tok) {
@@ -547,6 +617,9 @@
       case '{{名次}}': return '';
       case '{{獎項}}': return '';
       case '{{日期}}': return new Date().toISOString().slice(0, 10);
+      case '{{隊名}}': return r.teamNameCN || '';
+      case '{{英文隊名}}': return r.teamNameEN || '';
+      case '{{稱謂}}': return (r.role === '教練' || r.role === 'teacher') ? '指導者' : '學員';
       case '{{QR}}': return '';
       default: return '';
     }
@@ -588,12 +661,12 @@
       if (!f.assetId) return Promise.resolve();
       return loadCertAsset(f.assetId).then(function (img) {
         if (!img) return;
-        var ratio = img.height / img.width;
-        ctx.drawImage(img, fx, fy, fw, fw * ratio);
+        var fh = f.h ? (f.h / 100) * H : fw * (img.height / img.width);
+        ctx.drawImage(img, fx, fy, fw, fh);
       });
     }
     if (f.kind === 'qr') {
-      return loadUrlImage(certQrUrl(r)).then(function (img) {
+      return loadUrlImage(certQrUrl(r, f)).then(function (img) {
         if (img) ctx.drawImage(img, fx, fy, fw, fw);
         else { ctx.strokeStyle = '#ccc'; ctx.strokeRect(fx, fy, fw, fw); }
       });

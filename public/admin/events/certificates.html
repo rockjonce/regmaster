@@ -10,7 +10,7 @@
 <!-- Fonts: Chinese + Latin (all OFL / free for commercial use) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Dancing+Script:wght@400;700&family=LXGW+WenKai+TC:wght@400;700&family=Cinzel:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
 <script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
@@ -58,6 +58,7 @@
 .fld-hit { position:absolute; border:1px dashed transparent; box-sizing:border-box; cursor:move; }
 .fld-hit.sel { border-color:var(--acc); background:color-mix(in srgb,var(--acc) 8%,transparent); }
 .fld-hit:hover { border-color:color-mix(in srgb,var(--acc) 60%,transparent); }
+.fld-hit .rz-h { position:absolute; right:-5px; bottom:-5px; width:11px; height:11px; background:var(--acc); border:1.5px solid #fff; border-radius:2px; cursor:nwse-resize; box-shadow:0 1px 3px rgba(0,0,0,.3); }
 
 /* ---- field list / props ---- */
 .fld-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:var(--surface); cursor:pointer; }
@@ -89,6 +90,19 @@
 .upgrade-c h2 { font:700 20px/1.3 var(--f-display); margin-bottom:10px; }
 .upgrade-c p { color:var(--muted); font:400 14px/1.6 var(--f-tc); margin-bottom:22px; }
 .hidden { display:none !important; }
+
+/* ---- built-in template modal ---- */
+.modal-ov { position:fixed; inset:0; z-index:300; background:rgba(15,23,42,.55); display:grid; place-items:center; padding:20px; }
+.modal-box { background:var(--surface); border:1px solid var(--line); border-radius:16px; max-width:920px; width:100%; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 12px 48px rgba(0,0,0,.25); }
+.modal-box .mhd { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); }
+.modal-box .mhd h3 { font:700 16px/1.3 var(--f-display); margin:0; }
+.modal-box .mhd .x { background:none; border:0; font-size:24px; cursor:pointer; color:var(--muted); line-height:1; }
+.modal-box .mbd { padding:20px 22px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+.preset-card { border:1px solid var(--line); border-radius:11px; padding:12px; background:var(--surface); display:flex; flex-direction:column; }
+.preset-card .pc-thumb { width:100%; aspect-ratio:1.414; border-radius:7px; overflow:hidden; background:var(--surface-3); border:1px solid var(--line-2); }
+.preset-card.badge .pc-thumb { aspect-ratio:.66; }
+.preset-card .pc-thumb canvas { width:100%; height:100%; display:block; }
+.preset-card .pc-nm { font:600 13px/1.3 var(--f-display); margin:9px 0 8px; }
 </style>
 </head>
 <body>
@@ -115,12 +129,11 @@
       <!-- LEFT: template list -->
       <aside class="col-l">
         <h4 class="sec-h" data-i18n="aeCrtListTitle">範本</h4>
-        <div style="display:flex; gap:6px; margin-bottom:14px">
+        <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap">
           <button class="cbtn sm" id="newBlankBtn" data-i18n="aeCrtNewBlank">＋ 空白</button>
           <button class="cbtn sm" id="newUploadBtn" data-i18n="aeCrtNewUpload">＋ 上傳背景</button>
         </div>
-        <h4 class="sec-h" data-i18n="aeCrtPresetsLabel">內建範本</h4>
-        <div id="presetList"></div>
+        <button class="cbtn sm" id="useBuiltinBtn" style="width:100%; margin-bottom:14px" data-i18n="aeCrtUseBuiltin">＋ 套用內建範本</button>
         <h4 class="sec-h mt" data-i18n="aeCrtSavedLabel">我的範本</h4>
         <div id="savedList"><p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)" data-i18n="aeCrtSavedEmpty">尚未建立任何範本</p></div>
       </aside>
@@ -200,6 +213,8 @@
           <label><input type="radio" name="scope" value="confirmed"> <span data-i18n="aeCrtScopeConfirmed">僅正取</span></label>
           <label><input type="radio" name="scope" value="checkedin"> <span data-i18n="aeCrtScopeCheckedIn">僅已報到</span></label>
           <label><input type="radio" name="scope" value="winners"> <span data-i18n="aeCrtScopeWinners">得獎者</span></label>
+          <label><input type="radio" name="scope" value="students"> <span data-i18n="aeCrtScopeStudents">僅學員</span></label>
+          <label><input type="radio" name="scope" value="teachers"> <span data-i18n="aeCrtScopeTeachers">僅指導者</span></label>
           <label><input type="radio" name="scope" value="manual"> <span data-i18n="aeCrtScopeManual">手動勾選</span></label>
         </div>
         <div id="groupPick" class="hidden" style="margin-top:6px">
@@ -263,6 +278,12 @@
   var SELECTED = null;          // selected field index
   var ASSET_CACHE = {};         // assetId -> Image
   var RECIPIENTS = [];          // active recipient list (per-person or per-team, by granularity)
+  var DIRTY = false;            // unsaved-changes flag
+
+  function setDirty() { DIRTY = true; }
+  function markClean() { DIRTY = false; }
+  // Returns true if it is safe to discard current edits (no changes, or user confirmed).
+  function confirmDiscard() { return !DIRTY || window.confirm(L('aeCrtUnsaved')); }
 
   // Aspect ratios (w:h). landscape cert = A4 landscape-ish; badge = card.
   function canvasDims(tpl) {
@@ -284,6 +305,9 @@
     { tok: '{{名次}}', i: 'aeCrtTokRank' },
     { tok: '{{獎項}}', i: 'aeCrtTokAward' },
     { tok: '{{日期}}', i: 'aeCrtTokDate' },
+    { tok: '{{隊名}}', i: 'aeCrtTokTeam' },
+    { tok: '{{英文隊名}}', i: 'aeCrtTokTeamEN' },
+    { tok: '{{稱謂}}', i: 'aeCrtTokRole' },
     { tok: '{{QR}}', i: 'aeCrtTokQr' }
   ];
   function allTokens() {
@@ -309,7 +333,11 @@
     { css: "'Noto Serif TC', serif", load: '700 24px "Noto Serif TC"', name: 'Noto Serif TC' },
     { css: "'Playfair Display', serif", load: '700 24px "Playfair Display"', name: 'Playfair Display' },
     { css: "'Montserrat', sans-serif", load: '700 24px "Montserrat"', name: 'Montserrat' },
-    { css: "'Dancing Script', cursive", load: '700 24px "Dancing Script"', name: 'Dancing Script' }
+    { css: "'Dancing Script', cursive", load: '700 24px "Dancing Script"', name: 'Dancing Script' },
+    { css: "'LXGW WenKai TC', cursive", load: '700 24px "LXGW WenKai TC"', name: '霞鶩文楷（手寫楷體）' },
+    { css: "'Cinzel', serif",            load: '700 24px "Cinzel"',            name: 'Cinzel（羅馬大寫）' },
+    { css: "'Cormorant Garamond', serif",load: '700 24px "Cormorant Garamond"',name: 'Cormorant Garamond' },
+    { css: "'Great Vibes', cursive",     load: '400 24px "Great Vibes"',       name: 'Great Vibes（花體簽名）' }
   ];
   var fontsReady = false;
   function ensureFonts() {
@@ -363,7 +391,6 @@
 
       $('content').classList.remove('hidden');
       buildRecipients();
-      renderPresetList();
       renderSavedList();
       renderPreviewRecipientSel();
       renderGroupSel();
@@ -405,6 +432,7 @@
       return {
         teamId: r.teamId || '',
         role: r.role || '',
+        seq: (r.seq != null ? r.seq : (r.memberSeq != null ? r.memberSeq : 0)),
         nameCN: cn,
         nameEN: r.englishName || r.teamNameEN || '',
         email: r.email || '',
@@ -419,6 +447,8 @@
         display: cn || r.teamNameCN || L('aeCrtNoName')
       };
     });
+
+    sortRecipients(perPerson);
 
     if (currentGranularity() === 'team') {
       // dedupe to one entry per teamId — use the first member but show the team name as the CN name
@@ -439,6 +469,25 @@
     }
   }
 
+  // Order recipients: group members of the same team together (by teamId, then seq);
+  // but if every team has exactly one member, sort purely by Chinese name.
+  function sortRecipients(list) {
+    var counts = {};
+    list.forEach(function (r) { counts[r.teamId] = (counts[r.teamId] || 0) + 1; });
+    var anyMulti = Object.keys(counts).some(function (k) { return counts[k] > 1; });
+    if (!anyMulti) {
+      list.sort(function (a, b) { return String(a.nameCN || '').localeCompare(String(b.nameCN || ''), 'zh-Hant'); });
+    } else {
+      list.sort(function (a, b) {
+        var ta = String(a.teamNameCN || a.teamId || ''), tb = String(b.teamNameCN || b.teamId || '');
+        if (ta !== tb) return ta.localeCompare(tb, 'zh-Hant');
+        if (a.teamId !== b.teamId) return String(a.teamId).localeCompare(String(b.teamId));
+        return (a.seq || 0) - (b.seq || 0);
+      });
+    }
+    return list;
+  }
+
   function resolveToken(tok, rec) {
     switch (tok) {
       case '{{中文姓名}}': return rec.nameCN || rec.display || '';
@@ -449,6 +498,9 @@
       case '{{名次}}': return rec.rank ? L('aeCrtRankNth').replace('{n}', rec.rank) : '';
       case '{{獎項}}': return rec.rank && rec.rank <= 3 ? L('aeCrtRankNth').replace('{n}', rec.rank) : '';
       case '{{日期}}': return (CONFIG && (CONFIG.competitionDate || CONFIG.deadline)) || new Date().toISOString().slice(0, 10);
+      case '{{隊名}}': return rec.teamNameCN || '';
+      case '{{英文隊名}}': return rec.teamNameEN || '';
+      case '{{稱謂}}': return (rec.role === '教練' || rec.role === 'teacher') ? '指導者' : '學員';
       case '{{QR}}': return '';
       default: {
         // custom form token: {{<label>}} -> team's customAnswers[label], fallback to member[fieldKey]
@@ -467,10 +519,18 @@
     if (!value) return '';
     return String(value).replace(/\{\{[^}]+\}\}/g, function (mm) { return resolveToken(mm, rec); });
   }
-  function qrUrl(rec) {
-    // Encode the bare teamId — identical to the registration-confirmation QR — so the
-    // existing check-in scanner (checkin.html) reads a printed badge exactly like the email QR.
-    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(rec.teamId || '');
+  function qrUrl(rec, field) {
+    // Build the encoded text per the field's qrMode. Default 'checkin' encodes the bare
+    // teamId — identical to the registration-confirmation QR — so the existing check-in
+    // scanner (checkin.html) reads a printed badge exactly like the email QR.
+    var origin = location.origin, txt;
+    switch ((field && field.qrMode) || 'checkin') {
+      case 'event':    txt = origin + '/events/detail.html?id=' + encodeURIComponent(compId); break;
+      case 'teamdata': txt = origin + '/events/detail.html?id=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(rec.teamId || ''); break;
+      case 'register': txt = origin + '/events/register.html?id=' + encodeURIComponent(compId) + '&edit=' + encodeURIComponent(rec.teamId || ''); break;
+      default:         txt = rec.teamId || '';   // checkin: bare teamId, unchanged behaviour
+    }
+    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(txt);
   }
 
   // ===========================================================================
@@ -527,7 +587,72 @@
         txtField({ x: 6, y: 12, w: 60, align: 'left', fontSizePct: 6, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#0b1c3d', bind: 'token', value: '{{活動名稱}}' }),
         txtField({ y: 42, w: 88, fontSizePct: 14, fontFamily: "'Noto Sans TC', sans-serif", weight: 'bold', color: '#111', bind: 'token', value: '{{中文姓名}}' }),
         txtField({ y: 68, w: 88, fontSizePct: 6, color: '#3D6BFF', bind: 'token', value: '{{組別}}' }),
-        { kind: 'qr', x: 74, y: 66, w: 20, align: 'center' }
+        { kind: 'qr', x: 74, y: 66, w: 20, align: 'center', qrMode: 'checkin' }
+      ]
+    },
+    {
+      id: '__preset_goldborder', preset: 'goldborder', type: 'cert', name: L('aeCrtPresetGoldborder'), orientation: 'landscape',
+      bgPreset: 'goldborder', bgAssetId: '', bgColor: '#fbf6e9',
+      fields: [
+        txtField({ y: 18, fontSizePct: 9, fontFamily: "'Cinzel', serif", weight: 'bold', color: '#8a6d24', bind: 'fixed', value: 'CERTIFICATE' }),
+        txtField({ y: 36, fontSizePct: 4.5, fontFamily: "'Noto Serif TC', serif", color: '#5a4a22', bind: 'fixed', value: '茲證明' }),
+        txtField({ y: 46, fontSizePct: 7.5, fontFamily: "'Noto Serif TC', serif", weight: 'bold', color: '#2a2417', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 62, fontSizePct: 3.6, fontFamily: "'Noto Serif TC', serif", color: '#5a4a22', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 82, fontSizePct: 3, color: '#7a6a42', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_thanks', preset: 'thanks', type: 'cert', name: L('aeCrtPresetThanks'), orientation: 'landscape',
+      bgPreset: 'thanks', bgAssetId: '', bgColor: '#fffaf0',
+      fields: [
+        txtField({ y: 18, fontSizePct: 11, fontFamily: "'LXGW WenKai TC', cursive", weight: 'bold', color: '#9a4b2e', bind: 'fixed', value: '感謝狀' }),
+        txtField({ y: 40, fontSizePct: 7, fontFamily: "'LXGW WenKai TC', cursive", weight: 'bold', color: '#3a2e22', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 54, fontSizePct: 3.8, fontFamily: "'LXGW WenKai TC', cursive", color: '#5a4a3a', bind: 'token', value: '{{稱謂}}' }),
+        txtField({ y: 66, fontSizePct: 3.6, fontFamily: "'LXGW WenKai TC', cursive", color: '#5a4a3a', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 84, fontSizePct: 3, color: '#8a7a66', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_diploma_en', preset: 'diploma_en', type: 'cert', name: L('aeCrtPresetDiplomaEn'), orientation: 'landscape',
+      bgPreset: 'diploma_en', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ y: 16, fontSizePct: 8.5, fontFamily: "'Cinzel', serif", weight: 'bold', color: '#1a1a1a', bind: 'fixed', value: 'CERTIFICATE' }),
+        txtField({ y: 30, fontSizePct: 3, fontFamily: "'Cinzel', serif", color: '#555', bind: 'fixed', value: 'OF ACHIEVEMENT' }),
+        txtField({ y: 46, fontSizePct: 7, fontFamily: "'Cormorant Garamond', serif", weight: 'bold', color: '#111', bind: 'token', value: '{{英文姓名}}' }),
+        txtField({ y: 62, fontSizePct: 3.6, fontFamily: "'Cormorant Garamond', serif", color: '#444', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 84, fontSizePct: 2.8, fontFamily: "'Cormorant Garamond', serif", color: '#777', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_ribbon', preset: 'ribbon', type: 'cert', name: L('aeCrtPresetRibbon'), orientation: 'landscape',
+      bgPreset: 'ribbon', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ y: 5, fontSizePct: 4.5, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#ffffff', bind: 'fixed', value: 'AWARD' }),
+        txtField({ y: 30, fontSizePct: 6.5, fontFamily: "'Playfair Display', serif", weight: 'bold', color: '#b8860b', bind: 'fixed', value: '獎狀' }),
+        txtField({ y: 46, fontSizePct: 7, fontFamily: "'Noto Serif TC', serif", weight: 'bold', color: '#1a1a1a', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ x: 6, y: 62, w: 60, align: 'left', fontSizePct: 3.6, color: '#444', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ x: 6, y: 84, w: 50, align: 'left', fontSizePct: 3, color: '#777', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_navy', preset: 'navy', type: 'cert', name: L('aeCrtPresetNavy'), orientation: 'landscape',
+      bgPreset: 'navy', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ y: 5, fontSizePct: 5, fontFamily: "'Cinzel', serif", weight: 'bold', color: '#e7c878', bind: 'fixed', value: 'CERTIFICATE' }),
+        txtField({ y: 40, fontSizePct: 7, fontFamily: "'Noto Serif TC', serif", weight: 'bold', color: '#16244a', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 56, fontSizePct: 3.6, color: '#3a4a6a', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 90, fontSizePct: 3, fontFamily: "'Cinzel', serif", color: '#caa84f', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_badge_portrait', preset: 'badge_portrait', type: 'badge', name: L('aeCrtPresetBadgePortrait'), orientation: 'portrait',
+      bgPreset: 'badge_portrait', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ x: 6, y: 8, w: 88, fontSizePct: 5, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#ffffff', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 34, w: 88, fontSizePct: 12, fontFamily: "'Noto Sans TC', sans-serif", weight: 'bold', color: '#111', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 50, w: 88, fontSizePct: 5, fontFamily: "'Montserrat', sans-serif", color: '#444', bind: 'token', value: '{{英文姓名}}' }),
+        txtField({ y: 60, w: 60, fontSizePct: 4.5, color: '#3D6BFF', bind: 'token', value: '{{組別}}' }),
+        { kind: 'qr', x: 35, y: 70, w: 30, align: 'center', qrMode: 'checkin' }
       ]
     }
   ];
@@ -570,6 +695,71 @@
       gb.addColorStop(0, '#3D6BFF'); gb.addColorStop(1, '#7c5cff');
       ctx.fillStyle = gb; ctx.fillRect(0, 0, W, H * 0.16);
       ctx.fillStyle = gb; ctx.fillRect(0, H * 0.9, W, H * 0.1);
+    } else if (preset === 'goldborder') {
+      ctx.fillStyle = baseColor || '#fbf6e9'; ctx.fillRect(0, 0, W, H);
+      var gp = W * 0.035;
+      ctx.strokeStyle = '#c9a227'; ctx.lineWidth = Math.max(3, W * 0.009);
+      ctx.strokeRect(gp, gp, W - gp * 2, H - gp * 2);
+      ctx.strokeStyle = '#e3c766'; ctx.lineWidth = Math.max(1, W * 0.003);
+      ctx.strokeRect(gp * 1.8, gp * 1.8, W - gp * 3.6, H - gp * 3.6);
+      // corner ornaments
+      ctx.strokeStyle = '#c9a227'; ctx.lineWidth = Math.max(1.5, W * 0.004);
+      var co = W * 0.05;
+      [[gp, gp, 1, 1], [W - gp, gp, -1, 1], [gp, H - gp, 1, -1], [W - gp, H - gp, -1, -1]].forEach(function (c) {
+        ctx.beginPath();
+        ctx.moveTo(c[0] + c[2] * co, c[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(c[0], c[1] + c[3] * co);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(c[0] + c[2] * co * 0.5, c[1] + c[3] * co * 0.5, W * 0.006, 0, Math.PI * 2); ctx.fillStyle = '#c9a227'; ctx.fill();
+      });
+    } else if (preset === 'thanks') {
+      ctx.fillStyle = baseColor || '#fffaf0'; ctx.fillRect(0, 0, W, H);
+      var tp = W * 0.05;
+      ctx.strokeStyle = '#d8b48a'; ctx.lineWidth = Math.max(1.5, W * 0.0035);
+      ctx.strokeRect(tp, tp, W - tp * 2, H - tp * 2);
+      // soft warm top wash
+      var tg = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+      tg.addColorStop(0, 'rgba(216,180,138,0.18)'); tg.addColorStop(1, 'rgba(216,180,138,0)');
+      ctx.fillStyle = tg; ctx.fillRect(tp, tp, W - tp * 2, H * 0.4);
+    } else if (preset === 'diploma_en') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#222'; ctx.lineWidth = Math.max(1, W * 0.0018);
+      ctx.beginPath(); ctx.moveTo(W * 0.32, H * 0.42); ctx.lineTo(W * 0.68, H * 0.42); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(W * 0.28, H * 0.74); ctx.lineTo(W * 0.72, H * 0.74); ctx.stroke();
+      // small seal area bottom-right
+      ctx.strokeStyle = '#b8860b'; ctx.lineWidth = Math.max(1.5, W * 0.003);
+      ctx.beginPath(); ctx.arc(W * 0.82, H * 0.82, W * 0.06, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(W * 0.82, H * 0.82, W * 0.045, 0, Math.PI * 2); ctx.stroke();
+    } else if (preset === 'ribbon') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var rg = ctx.createLinearGradient(0, 0, W, 0);
+      rg.addColorStop(0, '#b8860b'); rg.addColorStop(1, '#e0b84a');
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H * 0.14);
+      // drawn circular seal bottom-right
+      ctx.save();
+      ctx.translate(W * 0.82, H * 0.78);
+      ctx.fillStyle = '#b8860b';
+      ctx.beginPath();
+      for (var si = 0; si < 24; si++) {
+        var a = si / 24 * Math.PI * 2, rr = (si % 2 === 0) ? W * 0.075 : W * 0.06;
+        ctx[si === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#e0b84a'; ctx.beginPath(); ctx.arc(0, 0, W * 0.045, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else if (preset === 'navy') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var ng = ctx.createLinearGradient(0, 0, W, 0);
+      ng.addColorStop(0, '#0f1b3d'); ng.addColorStop(1, '#1c2f63');
+      ctx.fillStyle = ng; ctx.fillRect(0, 0, W, H * 0.18);
+      ctx.fillStyle = ng; ctx.fillRect(0, H * 0.85, W, H * 0.15);
+      ctx.fillStyle = '#caa84f'; ctx.fillRect(0, H * 0.18, W, H * 0.006);
+      ctx.fillStyle = '#caa84f'; ctx.fillRect(0, H * 0.844, W, H * 0.006);
+    } else if (preset === 'badge_portrait') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var bg2 = ctx.createLinearGradient(0, 0, W, 0);
+      bg2.addColorStop(0, '#3D6BFF'); bg2.addColorStop(1, '#7c5cff');
+      ctx.fillStyle = bg2; ctx.fillRect(0, 0, W, H * 0.14);
+      ctx.fillStyle = bg2; ctx.fillRect(0, H * 0.93, W, H * 0.07);
     } else {
       ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
     }
@@ -658,12 +848,12 @@
       if (!f.assetId) return Promise.resolve();
       return loadAsset(f.assetId).then(function (img) {
         if (!img) return;
-        var ratio = img.height / img.width;
-        ctx.drawImage(img, fx, fy, fw, fw * ratio);
+        var fh = f.h ? (f.h / 100) * H : fw * (img.height / img.width);
+        ctx.drawImage(img, fx, fy, fw, fh);
       });
     }
     if (f.kind === 'qr') {
-      return loadUrlImage(qrUrl(rec)).then(function (img) {
+      return loadUrlImage(qrUrl(rec, f)).then(function (img) {
         if (img) ctx.drawImage(img, fx, fy, fw, fw);
         else { ctx.strokeStyle = '#ccc'; ctx.strokeRect(fx, fy, fw, fw); }
       });
@@ -726,10 +916,20 @@
       hit.style.left = (f.x / 100 * canvas.width * sx) + 'px';
       hit.style.top = (f.y / 100 * canvas.height * sy) + 'px';
       hit.style.width = ((f.w || 80) / 100 * canvas.width * sx) + 'px';
-      var hh = f.kind === 'qr' ? ((f.w || 20) / 100 * canvas.width * sx) : Math.max(18, (f.fontSizePct || 5) / 100 * canvas.height * sy * 1.3);
+      var hh;
+      if (f.kind === 'qr') hh = (f.w || 20) / 100 * canvas.width * sx;
+      else if (f.kind === 'image') hh = (f.h ? f.h / 100 * canvas.height * sy : (f.w || 24) / 100 * canvas.width * sx);
+      else hh = Math.max(18, (f.fontSizePct || 5) / 100 * canvas.height * sy * 1.3);
       hit.style.height = hh + 'px';
       hit.dataset.idx = idx;
       enableDrag(hit, idx, sx, sy);
+      // resize handle on the selected field only
+      if (SELECTED === idx) {
+        var rz = document.createElement('div');
+        rz.className = 'rz-h';
+        enableResize(rz, idx, sx, sy);
+        hit.appendChild(rz);
+      }
       host.appendChild(hit);
     });
   }
@@ -737,20 +937,57 @@
   function enableDrag(hit, idx, sx, sy) {
     var canvas = $('editCanvas');
     hit.addEventListener('mousedown', function (e) {
+      if (e.target && e.target.classList && e.target.classList.contains('rz-h')) return; // resize handled separately
       e.preventDefault();
       SELECTED = idx; renderFieldList(); renderProps(); positionHitboxes();
       var startX = e.clientX, startY = e.clientY;
       var f = TEMPLATE.fields[idx];
       var ox = f.x, oy = f.y;
+      var moved = false;
       function mv(ev) {
         var dx = (ev.clientX - startX) / (canvas.width * sx) * 100;
         var dy = (ev.clientY - startY) / (canvas.height * sy) * 100;
         f.x = Math.max(0, Math.min(100, ox + dx));
         f.y = Math.max(0, Math.min(100, oy + dy));
+        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) moved = true;
         scheduleDraw();
         renderProps();
       }
-      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
+      function up() {
+        document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+        if (moved) { setDirty(); positionHitboxes(); }
+      }
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    });
+  }
+
+  function enableResize(handle, idx, sx, sy) {
+    var canvas = $('editCanvas');
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var f = TEMPLATE.fields[idx];
+      var startX = e.clientX, startY = e.clientY;
+      var ow = f.w || (f.kind === 'qr' ? 20 : 80);
+      var oh = f.h || 0;
+      var resizeH = (f.kind === 'image');   // images also resize vertically
+      var moved = false;
+      function mv(ev) {
+        var dxPct = (ev.clientX - startX) / (canvas.width * sx) * 100;
+        f.w = Math.max(5, Math.min(100, ow + dxPct));
+        if (resizeH) {
+          var dyPct = (ev.clientY - startY) / (canvas.height * sy) * 100;
+          var baseH = oh || (ow * (canvas.width / canvas.height)); // approx square seed if none
+          f.h = Math.max(2, Math.min(100, baseH + dyPct));
+        }
+        moved = true;
+        scheduleDraw();
+        renderProps();
+        positionHitboxes();
+      }
+      function up() {
+        document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+        if (moved) setDirty();
+      }
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     });
   }
@@ -768,6 +1005,7 @@
     renderFieldList();
     renderProps();
     scheduleDraw();
+    markClean();
   }
 
   // Reflect / gate the "require check-in" sub-option on the self-serve toggle
@@ -782,7 +1020,7 @@
   function renderBgPresetSel() {
     var sel = $('bgPresetSel');
     var opts = '<option value="">' + esc(L('aeCrtBgNone')) + '</option>';
-    [['classic','aeCrtPresetClassic'],['accent','aeCrtPresetAccent'],['minimal','aeCrtPresetMinimal'],['elegant','aeCrtPresetElegant'],['badge','aeCrtPresetBadge']].forEach(function (p) {
+    [['classic','aeCrtPresetClassic'],['accent','aeCrtPresetAccent'],['minimal','aeCrtPresetMinimal'],['elegant','aeCrtPresetElegant'],['badge','aeCrtPresetBadge'],['goldborder','aeCrtPresetGoldborder'],['thanks','aeCrtPresetThanks'],['diploma_en','aeCrtPresetDiplomaEn'],['ribbon','aeCrtPresetRibbon'],['navy','aeCrtPresetNavy'],['badge_portrait','aeCrtPresetBadgePortrait']].forEach(function (p) {
       opts += '<option value="' + p[0] + '"' + (TEMPLATE && TEMPLATE.bgPreset === p[0] ? ' selected' : '') + '>' + esc(L(p[1])) + '</option>';
     });
     sel.innerHTML = opts;
@@ -809,9 +1047,9 @@
       row.addEventListener('click', function (e) {
         var act = e.target.getAttribute('data-act');
         var idx = parseInt(e.target.getAttribute('data-idx') != null ? e.target.getAttribute('data-idx') : row.dataset.idx, 10);
-        if (act === 'up' && idx > 0) { swap(idx, idx - 1); SELECTED = idx - 1; }
-        else if (act === 'down' && idx < TEMPLATE.fields.length - 1) { swap(idx, idx + 1); SELECTED = idx + 1; }
-        else if (act === 'del') { TEMPLATE.fields.splice(idx, 1); SELECTED = null; }
+        if (act === 'up' && idx > 0) { swap(idx, idx - 1); SELECTED = idx - 1; setDirty(); }
+        else if (act === 'down' && idx < TEMPLATE.fields.length - 1) { swap(idx, idx + 1); SELECTED = idx + 1; setDirty(); }
+        else if (act === 'del') { TEMPLATE.fields.splice(idx, 1); SELECTED = null; setDirty(); }
         else { SELECTED = parseInt(row.dataset.idx, 10); }
         renderFieldList(); renderProps(); scheduleDraw();
       });
@@ -855,10 +1093,16 @@
         ['left','center','right'].map(function (a) { return '<button data-align="' + a + '" class="' + (f.align === a ? 'on' : '') + '">' + esc(L(a === 'left' ? 'aeCrtPropAlignLeft' : a === 'center' ? 'aeCrtPropAlignCenter' : 'aeCrtPropAlignRight')) + '</button>'; }).join('') +
         '</div></div>';
     } else if (f.kind === 'image') {
+      html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropImageHeight')) + '</label><input class="in" type="number" step="1" data-p="h" value="' + (f.h != null ? (Math.round(f.h * 10) / 10) : '') + '" placeholder="auto"></div>';
       html += '<div class="full"><button class="cbtn sm" id="propImgUpload" style="width:100%">' + esc(L('aeCrtPropImageUpload')) + '</button></div>';
       if (f.assetId) html += '<div class="full" style="font:500 11px/1.4 var(--f-mono); color:var(--muted)">asset: ' + esc(f.assetId) + '</div>';
     } else if (f.kind === 'qr') {
-      html += '<div class="full" style="font:400 12px/1.5 var(--f-tc); color:var(--muted)">QR → check-in URL</div>';
+      var qrModes = [['checkin','aeCrtQrModeCheckin'],['event','aeCrtQrModeEvent'],['teamdata','aeCrtQrModeTeamData'],['register','aeCrtQrModeRegister']];
+      var qm = f.qrMode || 'checkin';
+      html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtQrMode')) + '</label><select class="in" data-p="qrMode">';
+      qrModes.forEach(function (o) { html += '<option value="' + o[0] + '"' + (qm === o[0] ? ' selected' : '') + '>' + esc(L(o[1])) + '</option>'; });
+      html += '</select></div>';
+      html += '<div class="full" style="font:400 11px/1.5 var(--f-tc); color:var(--muted)">' + esc(L('aeCrtQrModeNote')) + '</div>';
     }
     html += '</div>';
     box.innerHTML = html;
@@ -873,7 +1117,9 @@
         if (p === 'weight') { f.weight = el.checked ? 'bold' : 'normal'; }
         else if (el.type === 'number') { f[p] = parseFloat(el.value) || 0; }
         else { f[p] = el.value; }
+        setDirty();
         scheduleDraw(); renderFieldList();
+        if (p === 'w' || p === 'h') positionHitboxes();
       });
     });
     box.querySelectorAll('[data-seg=bind] button').forEach(function (b) {
@@ -881,11 +1127,12 @@
         f.bind = b.getAttribute('data-bind');
         if (f.bind === 'token' && (!f.value || f.value.indexOf('{{') !== 0)) f.value = '{{中文姓名}}';
         if (f.bind === 'fixed' && f.value && f.value.indexOf('{{') === 0) f.value = '';
+        setDirty();
         renderProps(); scheduleDraw();
       });
     });
     box.querySelectorAll('[data-seg=align] button').forEach(function (b) {
-      b.addEventListener('click', function () { f.align = b.getAttribute('data-align'); renderProps(); scheduleDraw(); });
+      b.addEventListener('click', function () { f.align = b.getAttribute('data-align'); setDirty(); renderProps(); scheduleDraw(); });
     });
     var up = box.querySelector('#propImgUpload');
     if (up) up.addEventListener('click', function () { uploadFieldImage(f); });
@@ -903,6 +1150,7 @@
     TEMPLATE.fields = TEMPLATE.fields || [];
     TEMPLATE.fields.push(nf);
     SELECTED = TEMPLATE.fields.length - 1;
+    setDirty();
     renderFieldList(); renderProps(); scheduleDraw();
   }
 
@@ -931,6 +1179,7 @@
     }).then(function (r) {
       if (r && r.success && r.assetId) {
         TEMPLATE.bgAssetId = r.assetId; TEMPLATE.bgPreset = '';
+        setDirty();
         renderBgPresetSel(); scheduleDraw(); uiToast(L('aeCrtSaved'), 'ok');
       } else uiToast(L('aeCrtUploadFail'), 'err');
     }).catch(function () { uiToast(L('aeCrtUploadFail'), 'err'); });
@@ -946,7 +1195,7 @@
       fileToBase64(file).then(function (b64) {
         return call('uploadCertAsset', compId, b64, file.name, file.type, kind);
       }).then(function (r) {
-        if (r && r.success && r.assetId) { f.assetId = r.assetId; renderProps(); scheduleDraw(); uiToast(L('aeCrtSaved'), 'ok'); }
+        if (r && r.success && r.assetId) { f.assetId = r.assetId; setDirty(); renderProps(); scheduleDraw(); uiToast(L('aeCrtSaved'), 'ok'); }
         else uiToast(L('aeCrtUploadFail'), 'err');
       }).catch(function () { uiToast(L('aeCrtUploadFail'), 'err'); });
     };
@@ -962,12 +1211,41 @@
     ensureFonts().then(function () { renderToCanvas(c, tpl, rec, 0.5); });
     return c;
   }
-  function renderPresetList() {
-    var box = $('presetList');
-    box.innerHTML = '';
+  // Built-in presets are surfaced through a modal picker (declutters the left panel).
+  function openBuiltinModal() {
+    var ov = document.createElement('div');
+    ov.className = 'modal-ov';
+    var box = document.createElement('div'); box.className = 'modal-box';
+    var hd = document.createElement('div'); hd.className = 'mhd';
+    var h3 = document.createElement('h3'); h3.textContent = L('aeCrtBuiltinTitle'); hd.appendChild(h3);
+    var x = document.createElement('button'); x.className = 'x'; x.innerHTML = '&times;'; x.title = L('aeCrtBuiltinClose'); hd.appendChild(x);
+    box.appendChild(hd);
+    var bd = document.createElement('div'); bd.className = 'mbd';
     PRESETS.forEach(function (p) {
-      box.appendChild(tplCardEl(p, true));
+      var card = document.createElement('div'); card.className = 'preset-card' + (p.type === 'badge' ? ' badge' : '');
+      var thumb = document.createElement('div'); thumb.className = 'pc-thumb';
+      thumb.appendChild(thumbCanvas(p));
+      card.appendChild(thumb);
+      var nm = document.createElement('div'); nm.className = 'pc-nm'; nm.textContent = p.name || L('aeCrtUntitled');
+      card.appendChild(nm);
+      var btn = document.createElement('button'); btn.className = 'cbtn sm pri'; btn.textContent = L('aeCrtBuiltinUse');
+      btn.addEventListener('click', function () {
+        if (!confirmDiscard()) return;
+        var copy = JSON.parse(JSON.stringify(p));
+        delete copy.id; delete copy.preset;   // load as a NEW unsaved template
+        copy.name = p.name;
+        close();
+        loadTemplate(copy);
+      });
+      card.appendChild(btn);
+      bd.appendChild(card);
     });
+    box.appendChild(bd);
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    x.addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
   }
   function renderSavedList() {
     var box = $('savedList');
@@ -990,6 +1268,7 @@
 
     var useBtn = document.createElement('button'); useBtn.className = 'cbtn sm'; useBtn.textContent = L('aeCrtUseEdit');
     useBtn.addEventListener('click', function () {
+      if (!confirmDiscard()) return;
       var copy = JSON.parse(JSON.stringify(tpl));
       if (isPreset) { delete copy.id; copy.name = tpl.name; }
       loadTemplate(copy);
@@ -998,6 +1277,7 @@
 
     var dupBtn = document.createElement('button'); dupBtn.className = 'cbtn sm'; dupBtn.textContent = L('aeCrtDuplicate');
     dupBtn.addEventListener('click', function () {
+      if (!confirmDiscard()) return;
       var copy = JSON.parse(JSON.stringify(tpl));
       delete copy.id; copy.name = (tpl.name || L('aeCrtUntitled')) + L('aeCrtCopySuffix');
       loadTemplate(copy);
@@ -1040,6 +1320,7 @@
         if (existing) { SAVED = SAVED.map(function (x) { return x.id === r.id ? snapshot : x; }); }
         else SAVED.push(snapshot);
         renderSavedList();
+        markClean();
         uiToast(L('aeCrtSaved'), 'ok');
       } else uiToast(L('aeCrtSaveFail'), 'err');
     }).catch(function () { btn.disabled = false; btn.textContent = L('aeCrtSave'); uiToast(L('aeCrtSaveFail'), 'err'); });
@@ -1079,6 +1360,8 @@
     if (s === 'confirmed') return RECIPIENTS.filter(function (r) { return r.status === '正取'; });
     if (s === 'checkedin') return RECIPIENTS.filter(function (r) { return r.checkedIn; });
     if (s === 'winners') return RECIPIENTS.filter(function (r) { return r.rank && r.rank <= 3; });
+    if (s === 'students') return RECIPIENTS.filter(function (r) { return r.role !== '教練' && r.role !== 'teacher'; });
+    if (s === 'teachers') return RECIPIENTS.filter(function (r) { return r.role === '教練' || r.role === 'teacher'; });
     if (s === 'manual') {
       var idxs = {};
       Array.prototype.slice.call(document.querySelectorAll('.manual-chk:checked')).forEach(function (c) { idxs[c.value] = true; });
@@ -1180,24 +1463,27 @@
   // Wiring
   // ===========================================================================
   function wire() {
-    $('tplNameIn').addEventListener('input', function () { if (TEMPLATE) TEMPLATE.name = this.value; });
+    $('tplNameIn').addEventListener('input', function () { if (TEMPLATE) { TEMPLATE.name = this.value; setDirty(); } });
     Array.prototype.slice.call($('orientSeg').children).forEach(function (b) {
       b.addEventListener('click', function () {
         if (!TEMPLATE) return;
         TEMPLATE.orientation = b.dataset.or;
         Array.prototype.slice.call($('orientSeg').children).forEach(function (x) { x.classList.toggle('on', x === b); });
+        setDirty();
         scheduleDraw();
       });
     });
-    $('bgColorIn').addEventListener('input', function () { if (TEMPLATE) { TEMPLATE.bgColor = this.value; scheduleDraw(); } });
+    $('bgColorIn').addEventListener('input', function () { if (TEMPLATE) { TEMPLATE.bgColor = this.value; setDirty(); scheduleDraw(); } });
     $('selfServeChk').addEventListener('change', function () {
       if (TEMPLATE) TEMPLATE.selfServe = this.checked;
+      setDirty();
       updateSelfServeUi();
     });
     $('selfServeReqCheckinChk').addEventListener('change', function () {
       if (TEMPLATE) TEMPLATE.selfServeRequireCheckin = this.checked;
+      setDirty();
     });
-    $('bgPresetSel').addEventListener('change', function () { if (!TEMPLATE) return; TEMPLATE.bgPreset = this.value; if (this.value) TEMPLATE.bgAssetId = ''; scheduleDraw(); });
+    $('bgPresetSel').addEventListener('change', function () { if (!TEMPLATE) return; TEMPLATE.bgPreset = this.value; if (this.value) TEMPLATE.bgAssetId = ''; setDirty(); scheduleDraw(); });
     $('bgUploadBtn').addEventListener('click', function () { $('bgFileIn').click(); });
     $('bgFileIn').addEventListener('change', function () { if (this.files && this.files[0]) uploadBgImage(this.files[0]); this.value = ''; });
 
@@ -1206,13 +1492,19 @@
     $('addQrBtn').addEventListener('click', function () { addField('qr'); });
 
     $('newBlankBtn').addEventListener('click', function () {
+      if (!confirmDiscard()) return;
       loadTemplate({ type: 'cert', name: L('aeCrtUntitled'), orientation: 'landscape', bgPreset: '', bgAssetId: '', bgColor: '#ffffff', fields: [] });
     });
     $('newUploadBtn').addEventListener('click', function () {
+      if (!confirmDiscard()) return;
       loadTemplate({ type: 'cert', name: L('aeCrtUntitled'), orientation: 'landscape', bgPreset: '', bgAssetId: '', bgColor: '#ffffff', fields: [] });
       $('bgFileIn').click();
     });
-    $('backToListBtn').addEventListener('click', function () { window.scrollTo(0, 0); });
+    $('useBuiltinBtn').addEventListener('click', openBuiltinModal);
+    $('backToListBtn').addEventListener('click', function () {
+      if (!confirmDiscard()) return;
+      window.scrollTo(0, 0);
+    });
     $('saveTplBtn').addEventListener('click', saveTemplate);
     $('genBtn').addEventListener('click', generate);
 
@@ -1222,6 +1514,12 @@
     $('groupSel').addEventListener('change', updateRecipCount);
     $('manualList').addEventListener('change', updateRecipCount);
     window.addEventListener('resize', function () { positionHitboxes(); });
+    window.addEventListener('beforeunload', function (e) {
+      if (!DIRTY) return;
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    });
   }
 
   // boot
