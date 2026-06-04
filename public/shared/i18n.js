@@ -143,11 +143,11 @@
       feActive3: '<b>3</b> 個進行中活動', feReg300: '每活動 <b>300</b> 筆報名', feFee3: '金流手續費 <b>3%</b>',
       feOnlineExport: '線上金流收款 · 匯出報表', feScoreQrAi: '評分 · QR 報到 · 活動 AI 助理',
       feActive15: '<b>15</b> 個進行中活動', feReg1500: '每活動 <b>1,500</b> 筆報名', feFee2: '金流手續費 <b>2%</b>',
-      feScoreMulti: '評分 · 多評審評分 · 公告群發', feQrAiAdmin: 'QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理',
+      feScoreMulti: '評分 · 多評審 · 團隊成員權限 · 公告群發', feQrAiAdmin: 'QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理',
       feActiveUnlim: '<b>無限</b> 進行中活動', feRegUnlim: '<b>無限</b> 報名名額', feFee1: '金流手續費 <b>1%</b>',
       btnUseFree: '開始使用', btnUpStarter: '升級 Starter', btnUpPro: '升級 Pro →', btnChooseTeam: '選擇 Team →',
       // ----- plan-card features / unit templates ({n} = number) -----
-      pfPayment: '線上金流收款', pfCsv: '匯出報表', pfScoring: '評分', pfMultiJudge: '多評審評分', pfCampaigns: '公告群發',
+      pfPayment: '線上金流收款', pfCsv: '匯出報表', pfScoring: '評分', pfMultiJudge: '多評審評分 + 團隊成員權限', pfCampaigns: '公告群發',
       pfCheckin: 'QR 報到', pfWaitlist: '允許候補', pfEventAi: '活動 AI 助理', pfAdminAi: '主辦後台 AI 助理', pfCert: '名牌 / 證書',
       tActive: '<b>{n}</b> 個進行中活動', tReg: '每活動 <b>{n}</b> 筆報名', tFee: '金流手續費 <b>{n}%</b>', uUnlimited: '無限',
       // ----- faq -----
@@ -245,11 +245,11 @@
       feActive3: '<b>3</b> active events', feReg300: '<b>300</b> registrations per event', feFee3: '<b>3%</b> transaction fee',
       feOnlineExport: 'Online payments · report export', feScoreQrAi: 'Scoring · QR check-in · event AI assistant',
       feActive15: '<b>15</b> active events', feReg1500: '<b>1,500</b> registrations per event', feFee2: '<b>2%</b> transaction fee',
-      feScoreMulti: 'Scoring · multi-judge scoring · broadcast notices', feQrAiAdmin: 'QR check-in · event AI · organizer-console AI',
+      feScoreMulti: 'Scoring · multi-judge · team member roles · broadcast notices', feQrAiAdmin: 'QR check-in · event AI · organizer-console AI',
       feActiveUnlim: '<b>Unlimited</b> active events', feRegUnlim: '<b>Unlimited</b> registrations', feFee1: '<b>1%</b> transaction fee',
       btnUseFree: 'Get started', btnUpStarter: 'Upgrade to Starter', btnUpPro: 'Upgrade to Pro →', btnChooseTeam: 'Choose Team →',
       // ----- plan-card features / unit templates ({n} = number) -----
-      pfPayment: 'Online payments', pfCsv: 'Report export', pfScoring: 'Scoring', pfMultiJudge: 'Multi-judge scoring', pfCampaigns: 'Broadcast notices',
+      pfPayment: 'Online payments', pfCsv: 'Report export', pfScoring: 'Scoring', pfMultiJudge: 'Multi-judge + team member roles', pfCampaigns: 'Broadcast notices',
       pfCheckin: 'QR check-in', pfWaitlist: 'Waitlist', pfEventAi: 'Event AI assistant', pfAdminAi: 'Organizer-console AI', pfCert: 'Badges & certificates',
       tActive: '<b>{n}</b> active events', tReg: '<b>{n}</b> registrations per event', tFee: '<b>{n}%</b> transaction fee', uUnlimited: 'Unlimited',
       // ----- faq -----

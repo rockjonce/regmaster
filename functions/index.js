@@ -2954,7 +2954,7 @@ const DEFAULT_PLANS = {
              features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  waitlist:true,  certificate:false, roles:false } },
   pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
              name:{ zh:"專業版 Pro", en:"Pro" }, tagline:{ zh:"學校 / 中型機構 · 完整功能", en:"Schools & mid-size orgs · full features" },
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:false } },
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:true } },
   team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
              name:{ zh:"團隊版 Team", en:"Team" }, tagline:{ zh:"大型機構 · 政府單位", en:"Large organizations & government" },
              features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:true } }

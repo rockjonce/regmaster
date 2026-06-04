@@ -716,6 +716,8 @@ body { background:var(--bg); }
       if (path[1] === 'features') plans[t].features[path[2]] = el.checked;
       else plans[t][path[1]] = (el.value === '' ? 0 : Number(el.value));
     });
+    // 「多評審評分 + 團隊成員權限」連動：roles 永遠等於 multiJudge（單一合併開關，不可獨立切換）。
+    Object.keys(plans).forEach(function (t) { if (plans[t].features) plans[t].features.roles = (plans[t].features.multiJudge === true); });
     var btn = document.getElementById('plansSave'); btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('adSysPlansSaving');
     google.script.run
       .withSuccessHandler(function (r) { btn.disabled = false; btn.textContent = o; if (r && r.success) toast(window.L('adSysPlansSaved')); else toast((r && r.message) || window.L('adSysSaveFail'), 'err'); })
