@@ -137,6 +137,11 @@
           <button class="cbtn pri" id="saveTplBtn" data-i18n="aeCrtSave">儲存範本</button>
         </div>
 
+        <div class="editor-bar" style="gap:18px">
+          <label class="chk-line"><input type="checkbox" id="selfServeChk"> <span data-i18n="aeCrtSelfServe">開放報名者自行下載</span></label>
+          <label class="chk-line" id="selfServeReqCheckinWrap"><input type="checkbox" id="selfServeReqCheckinChk"> <span data-i18n="aeCrtSelfServeReqCheckin">限已報到者</span></label>
+        </div>
+
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
           <label class="fld-lbl" style="margin:0" data-i18n="aeCrtPreviewRecipient">預覽對象</label>
           <select class="in" id="previewRecipient" style="max-width:280px"></select>
@@ -463,8 +468,9 @@
     return String(value).replace(/\{\{[^}]+\}\}/g, function (mm) { return resolveToken(mm, rec); });
   }
   function qrUrl(rec) {
-    var checkinUrl = 'https://regmaster-v3.web.app/?comp=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(rec.teamId);
-    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(checkinUrl);
+    // Encode the bare teamId — identical to the registration-confirmation QR — so the
+    // existing check-in scanner (checkin.html) reads a printed badge exactly like the email QR.
+    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(rec.teamId || '');
   }
 
   // ===========================================================================
@@ -755,10 +761,22 @@
     $('tplNameIn').value = tpl.name || '';
     Array.prototype.slice.call($('orientSeg').children).forEach(function (b) { b.classList.toggle('on', b.dataset.or === tpl.orientation); });
     $('bgColorIn').value = tpl.bgColor || '#ffffff';
+    $('selfServeChk').checked = !!tpl.selfServe;
+    $('selfServeReqCheckinChk').checked = !!tpl.selfServeRequireCheckin;
+    updateSelfServeUi();
     renderBgPresetSel();
     renderFieldList();
     renderProps();
     scheduleDraw();
+  }
+
+  // Reflect / gate the "require check-in" sub-option on the self-serve toggle
+  function updateSelfServeUi() {
+    var on = $('selfServeChk').checked;
+    var wrap = $('selfServeReqCheckinWrap');
+    var sub = $('selfServeReqCheckinChk');
+    sub.disabled = !on;
+    wrap.style.opacity = on ? '1' : '.5';
   }
 
   function renderBgPresetSel() {
@@ -1172,6 +1190,13 @@
       });
     });
     $('bgColorIn').addEventListener('input', function () { if (TEMPLATE) { TEMPLATE.bgColor = this.value; scheduleDraw(); } });
+    $('selfServeChk').addEventListener('change', function () {
+      if (TEMPLATE) TEMPLATE.selfServe = this.checked;
+      updateSelfServeUi();
+    });
+    $('selfServeReqCheckinChk').addEventListener('change', function () {
+      if (TEMPLATE) TEMPLATE.selfServeRequireCheckin = this.checked;
+    });
     $('bgPresetSel').addEventListener('change', function () { if (!TEMPLATE) return; TEMPLATE.bgPreset = this.value; if (this.value) TEMPLATE.bgAssetId = ''; scheduleDraw(); });
     $('bgUploadBtn').addEventListener('click', function () { $('bgFileIn').click(); });
     $('bgFileIn').addEventListener('change', function () { if (this.files && this.files[0]) uploadBgImage(this.files[0]); this.value = ''; });

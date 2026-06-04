@@ -7307,6 +7307,9 @@ exports.saveCertTemplate = compAuthCallable("manage", async (data, request) => {
     size: t.size || null,
     bgAssetId: String(t.bgAssetId || ""), bgPreset: String(t.bgPreset || ""), bgColor: String(t.bgColor || ""),
     fields: Array.isArray(t.fields) ? t.fields.slice(0, 60) : [],
+    // Self-service: when enabled, registrants can download this template from 我的報名 (my.html).
+    selfServe: t.selfServe === true,
+    selfServeRequireCheckin: t.selfServeRequireCheckin === true,
     updatedAt: fmtNow(), updatedBy: request.authUser.username
   };
   let id = t.id ? String(t.id) : "";
@@ -7359,5 +7362,21 @@ exports.getCertRecipients = compAuthCallable("view", async (data) => {
     });
   });
   return { recipients };
+});
+
+// Public: templates the organiser marked self-serve, for registrant download in my.html.
+// Only returns rendering data (no auth needed); registrants render client-side with their
+// own team data. Returns [] if the event's owner isn't on a plan with the certificate feature.
+exports.getPublicCertTemplates = callable(async (data) => {
+  const compId = String(data.compId || "");
+  if (!compId) return { templates: [] };
+  if (!(await eventHasFeature(compId, "certificate"))) return { templates: [] };
+  const snap = await db.collection("certTemplates").where("compId", "==", compId).get();
+  const templates = snap.docs.map(d => d.data()).filter(t => t.selfServe === true).map(t => ({
+    id: "", type: t.type || "cert", name: t.name || "", orientation: t.orientation || "landscape",
+    size: t.size || null, bgAssetId: t.bgAssetId || "", bgPreset: t.bgPreset || "", bgColor: t.bgColor || "",
+    fields: Array.isArray(t.fields) ? t.fields : [], requireCheckin: t.selfServeRequireCheckin === true
+  }));
+  return { templates };
 });
 

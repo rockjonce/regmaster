@@ -115,7 +115,7 @@
     feQrDemoTotal: '128 / 142 到場 · 90%',
 
     // ----- block: certificate -----
-    feCertEyebrow: '證書與名牌 · 🚧 即將推出',
+    feCertEyebrow: '證書與名牌',
     feCertH2: '專業證書<br>和名牌<br>批次產生。',
     feCertP: '上傳一份範本，系統自動套版每位報名者的姓名、組別、證號。PDF 一鍵下載、Email 批次寄送。',
     feCertLi1: '內建 12 種證書範本，可微調字體 / 配色 / 印章',
@@ -269,7 +269,7 @@
     feQrDemoTotal: '128 / 142 checked in · 90%',
 
     // ----- block: certificate -----
-    feCertEyebrow: 'Certificates & badges · 🚧 coming soon',
+    feCertEyebrow: 'Certificates & badges',
     feCertH2: 'Professional<br>certificates and badges,<br>generated in bulk.',
     feCertP: 'Upload one template and the system auto-fills each registrant\'s name, group and certificate number. Download as PDF in one click or email them out in bulk.',
     feCertLi1: '12 built-in certificate templates with adjustable fonts / colors / seals',

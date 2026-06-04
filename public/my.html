@@ -7,6 +7,12 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
+<!-- Certificate fonts (Chinese + Latin) — only needed for self-serve cert download -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+<!-- jsPDF UMD (for self-serve certificate download); non-blocking, page works if it fails -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
@@ -326,15 +332,315 @@
           ? '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">' + window.L('myActRefund') + '</button>'
           : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActRefund') + '</button>';
       }
-      return '<div class="reg-card">' +
+      return '<div class="reg-card" data-comp="' + escapeHtml(r.compId) + '" data-team="' + escapeHtml(r.teamId) + '">' +
         date +
         '<div class="body"><h4>' + escapeHtml(r.competitionName) + '</h4>' +
           '<div class="meta">' + meta + '</div>' +
         '</div>' +
-        '<div class="actions">' + actions + '<span class="teamid">' + escapeHtml(r.teamId) + '</span></div>' +
+        '<div class="actions">' + actions + '<span class="cert-slot"></span><span class="teamid">' + escapeHtml(r.teamId) + '</span></div>' +
       '</div>';
     }).join('');
     window.applyI18n(list);
+    // After cards are in the DOM, lazily probe each event for self-serve certificate templates.
+    filtered.forEach(function (r) { maybeAddCertButton(r); });
+  }
+
+  // ===========================================================================
+  // Self-serve certificate download (client-side render → PDF)
+  // ===========================================================================
+  var CERT_TPL_CACHE = {};   // compId -> Promise<[templates]>
+  var CERT_ASSET_CACHE = {}; // assetId -> Promise<Image|null>
+
+  function fetchCertTemplates(compId) {
+    if (CERT_TPL_CACHE[compId]) return CERT_TPL_CACHE[compId];
+    CERT_TPL_CACHE[compId] = new Promise(function (res) {
+      try {
+        google.script.run
+          .withSuccessHandler(function (r) { res((r && r.templates) || []); })
+          .withFailureHandler(function () { res([]); })
+          .getPublicCertTemplates(compId);
+      } catch (e) { res([]); }
+    });
+    return CERT_TPL_CACHE[compId];
+  }
+
+  // Best-effort check-in detection from whatever the registration object carries.
+  function regCheckedIn(r) {
+    return !!(r && (r.checkedIn || r.checkin || r.checkedInAt || r.checkInTime));
+  }
+  // Whether we even know the check-in status (so we can choose to "allow if unknown").
+  function regCheckinKnown(r) {
+    return !!(r && ('checkedIn' in r || 'checkin' in r || 'checkedInAt' in r || 'checkInTime' in r));
+  }
+
+  function maybeAddCertButton(r) {
+    if (!r || !r.compId) return;
+    var card = document.querySelector('.reg-card[data-comp="' + (window.CSS && CSS.escape ? CSS.escape(r.compId) : r.compId) + '"][data-team="' + (window.CSS && CSS.escape ? CSS.escape(r.teamId) : r.teamId) + '"]');
+    if (!card) return;
+    var slot = card.querySelector('.cert-slot');
+    if (!slot || slot.dataset.done) return;
+    fetchCertTemplates(r.compId).then(function (tpls) {
+      if (!slot || !tpls || !tpls.length) return;
+      slot.dataset.done = '1';
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-ghost';
+      btn.textContent = window.L('myCertDownload');
+      // Gate by check-in only when a chosen template requires it AND we can tell the user is not checked in.
+      var anyReq = tpls.some(function (t) { return t.requireCheckin; });
+      if (anyReq && regCheckinKnown(r) && !regCheckedIn(r)) {
+        btn.disabled = true;
+        btn.title = window.L('myCertNeedCheckin');
+        btn.style.opacity = '.45';
+        btn.style.cursor = 'not-allowed';
+      } else {
+        btn.addEventListener('click', function () { onCertClick(btn, r, tpls); });
+      }
+      slot.appendChild(btn);
+    });
+  }
+
+  function onCertClick(btn, r, tpls) {
+    // pick template: if multiple, let the user choose; else use the only one
+    pickTemplate(tpls).then(function (tpl) {
+      if (!tpl) return;
+      if (!window.jspdf || !window.jspdf.jsPDF) { alert(window.L('myCertLibFail')); return; }
+      var old = btn.textContent;
+      btn.disabled = true; btn.textContent = window.L('myCertGenerating');
+      generateCert(tpl, r).then(function () {
+        btn.disabled = false; btn.textContent = old;
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = old;
+        alert(window.L('myCertFail'));
+      });
+    });
+  }
+
+  // Simple chooser overlay when more than one self-serve template exists.
+  function pickTemplate(tpls) {
+    if (tpls.length === 1) return Promise.resolve(tpls[0]);
+    return new Promise(function (res) {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:16px';
+      var box = '<div style="background:var(--surface);border-radius:14px;max-width:380px;width:100%;padding:22px">' +
+        '<h3 style="font:700 16px/1.3 var(--f-display);margin-bottom:14px">' + escapeHtml(window.L('myCertPickTitle')) + '</h3>' +
+        '<div style="display:flex;flex-direction:column;gap:8px">';
+      tpls.forEach(function (t, i) {
+        box += '<button class="btn btn-ghost" data-i="' + i + '" style="text-align:left">' + escapeHtml(t.name || ('#' + (i + 1))) + '</button>';
+      });
+      box += '</div></div>';
+      ov.innerHTML = box;
+      document.body.appendChild(ov);
+      function close(v) { if (ov.parentNode) document.body.removeChild(ov); res(v); }
+      ov.addEventListener('click', function (e) {
+        if (e.target === ov) return close(null);
+        var b = e.target.closest('[data-i]');
+        if (b) close(tpls[parseInt(b.getAttribute('data-i'), 10)]);
+      });
+    });
+  }
+
+  // ---- fonts ----
+  var CERT_FONTS_READY = false;
+  function ensureCertFonts() {
+    if (CERT_FONTS_READY) return Promise.resolve();
+    var faces = ['700 24px "Noto Sans TC"', '700 24px "Noto Serif TC"', '700 24px "Playfair Display"', '700 24px "Montserrat"', '700 24px "Dancing Script"'];
+    var loads = [];
+    faces.forEach(function (f) {
+      try { loads.push(document.fonts.load(f)); loads.push(document.fonts.load(f.replace('700', '400'))); } catch (e) {}
+    });
+    return Promise.all(loads).then(function () { return document.fonts.ready; })
+      .then(function () { CERT_FONTS_READY = true; }).catch(function () { CERT_FONTS_READY = true; });
+  }
+
+  // ---- canvas geometry (mirror of certificates.html) ----
+  function certDims(tpl) {
+    if (tpl.type === 'badge') {
+      return tpl.orientation === 'portrait' ? { w: 600, h: 900 } : { w: 900, h: 560 };
+    }
+    return tpl.orientation === 'portrait' ? { w: 700, h: 990 } : { w: 990, h: 700 };
+  }
+
+  // ---- preset background painter (mirror of certificates.html) ----
+  function paintPresetBg(ctx, preset, W, H, baseColor) {
+    ctx.save();
+    if (preset === 'classic') {
+      ctx.fillStyle = baseColor || '#fffdf6'; ctx.fillRect(0, 0, W, H);
+      var pad = W * 0.04;
+      ctx.strokeStyle = '#b99a4a'; ctx.lineWidth = Math.max(2, W * 0.006);
+      ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+      ctx.strokeStyle = '#d9c488'; ctx.lineWidth = Math.max(1, W * 0.0025);
+      ctx.strokeRect(pad * 1.7, pad * 1.7, W - pad * 3.4, H - pad * 3.4);
+    } else if (preset === 'accent') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#3D6BFF'); g.addColorStop(1, '#1F3FB8');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W * 0.06, H);
+      ctx.fillStyle = '#eef2ff'; ctx.fillRect(W * 0.06, 0, W * 0.012, H);
+    } else if (preset === 'minimal') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#222'; ctx.lineWidth = Math.max(1, W * 0.002);
+      ctx.beginPath(); ctx.moveTo(W * 0.5 - W * 0.08, H * 0.74); ctx.lineTo(W * 0.5 + W * 0.08, H * 0.74); ctx.stroke();
+    } else if (preset === 'elegant') {
+      var ge = ctx.createLinearGradient(0, 0, W, H);
+      ge.addColorStop(0, '#0e1430'); ge.addColorStop(1, '#1b2452');
+      ctx.fillStyle = ge; ctx.fillRect(0, 0, W, H);
+      var pad2 = W * 0.05;
+      ctx.strokeStyle = '#c9a85f'; ctx.lineWidth = Math.max(1.5, W * 0.004);
+      ctx.strokeRect(pad2, pad2, W - pad2 * 2, H - pad2 * 2);
+      ctx.fillStyle = '#c9a85f';
+      [[pad2, pad2], [W - pad2, pad2], [pad2, H - pad2], [W - pad2, H - pad2]].forEach(function (p) {
+        ctx.beginPath(); ctx.arc(p[0], p[1], W * 0.008, 0, Math.PI * 2); ctx.fill();
+      });
+    } else if (preset === 'badge') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var gb = ctx.createLinearGradient(0, 0, W, 0);
+      gb.addColorStop(0, '#3D6BFF'); gb.addColorStop(1, '#7c5cff');
+      ctx.fillStyle = gb; ctx.fillRect(0, 0, W, H * 0.16);
+      ctx.fillStyle = gb; ctx.fillRect(0, H * 0.9, W, H * 0.1);
+    } else {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+    }
+    ctx.restore();
+  }
+
+  // ---- asset / url image loaders ----
+  function loadCertAsset(assetId) {
+    if (!assetId) return Promise.resolve(null);
+    if (CERT_ASSET_CACHE[assetId]) return CERT_ASSET_CACHE[assetId];
+    CERT_ASSET_CACHE[assetId] = new Promise(function (res) {
+      try {
+        google.script.run
+          .withSuccessHandler(function (r) {
+            if (!r || !r.dataUri) { res(null); return; }
+            var img = new Image();
+            img.onload = function () { res(img); };
+            img.onerror = function () { res(null); };
+            img.src = r.dataUri;
+          })
+          .withFailureHandler(function () { res(null); })
+          .getCertAssetData(assetId);
+      } catch (e) { res(null); }
+    });
+    return CERT_ASSET_CACHE[assetId];
+  }
+  function loadUrlImage(url) {
+    return new Promise(function (res) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () { res(img); };
+      img.onerror = function () { res(null); };
+      img.src = url;
+    });
+  }
+
+  // ---- token resolution (TEAM granularity, using the registrant's own data) ----
+  function certQrUrl(r) {
+    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(r.teamId || '');
+  }
+  function resolveCertToken(tok, r) {
+    switch (tok) {
+      case '{{中文姓名}}': return r.teamNameCN || '';
+      case '{{英文姓名}}': return r.teamNameEN || '';
+      case '{{活動名稱}}': return r.competitionName || '';
+      case '{{組別}}': return r.group || '';
+      case '{{報名編號}}': return r.teamId || '';
+      case '{{名次}}': return '';
+      case '{{獎項}}': return '';
+      case '{{日期}}': return new Date().toISOString().slice(0, 10);
+      case '{{QR}}': return '';
+      default: return '';
+    }
+  }
+  function resolveCertText(value, r) {
+    if (!value) return '';
+    return String(value).replace(/\{\{[^}]+\}\}/g, function (mm) { return resolveCertToken(mm, r); });
+  }
+  function certWrapText(ctx, text, maxW) {
+    text = String(text == null ? '' : text);
+    if (!text) return [''];
+    if (ctx.measureText(text).width <= maxW) return [text];
+    var lines = [], cur = '', chars = text.split('');
+    for (var i = 0; i < chars.length; i++) {
+      var test = cur + chars[i];
+      if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = chars[i]; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [text];
+  }
+
+  function drawCertField(ctx, f, r, W, H) {
+    var fx = (f.x / 100) * W, fy = (f.y / 100) * H, fw = ((f.w || 80) / 100) * W;
+    if (f.kind === 'text') {
+      var size = Math.max(6, (f.fontSizePct / 100) * H);
+      var weight = f.weight === 'bold' ? '700' : '400';
+      ctx.font = weight + ' ' + size + 'px ' + (f.fontFamily || "'Noto Sans TC', sans-serif");
+      ctx.fillStyle = f.color || '#000';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = f.align || 'center';
+      var tx = f.align === 'center' ? fx + fw / 2 : f.align === 'right' ? fx + fw : fx;
+      var text = f.bind === 'token' ? resolveCertText(f.value, r) : (f.value || '');
+      var lines = certWrapText(ctx, text, fw);
+      lines.forEach(function (ln, i) { ctx.fillText(ln, tx, fy + i * size * 1.2); });
+      return Promise.resolve();
+    }
+    if (f.kind === 'image') {
+      if (!f.assetId) return Promise.resolve();
+      return loadCertAsset(f.assetId).then(function (img) {
+        if (!img) return;
+        var ratio = img.height / img.width;
+        ctx.drawImage(img, fx, fy, fw, fw * ratio);
+      });
+    }
+    if (f.kind === 'qr') {
+      return loadUrlImage(certQrUrl(r)).then(function (img) {
+        if (img) ctx.drawImage(img, fx, fy, fw, fw);
+        else { ctx.strokeStyle = '#ccc'; ctx.strokeRect(fx, fy, fw, fw); }
+      });
+    }
+    return Promise.resolve();
+  }
+
+  function renderCertToCanvas(canvas, tpl, r, scale) {
+    scale = scale || 1;
+    var dims = certDims(tpl);
+    var W = dims.w * scale, H = dims.h * scale;
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    var bgP;
+    if (tpl.bgAssetId) {
+      bgP = loadCertAsset(tpl.bgAssetId).then(function (img) {
+        if (img) ctx.drawImage(img, 0, 0, W, H);
+        else { ctx.fillStyle = tpl.bgColor || '#fff'; ctx.fillRect(0, 0, W, H); }
+      });
+    } else if (tpl.bgPreset) {
+      paintPresetBg(ctx, tpl.bgPreset, W, H, tpl.bgColor); bgP = Promise.resolve();
+    } else {
+      ctx.fillStyle = tpl.bgColor || '#ffffff'; ctx.fillRect(0, 0, W, H); bgP = Promise.resolve();
+    }
+    return bgP.then(function () {
+      var seq = Promise.resolve();
+      (tpl.fields || []).forEach(function (f) { seq = seq.then(function () { return drawCertField(ctx, f, r, W, H); }); });
+      return seq;
+    });
+  }
+
+  function certSafeName(s) { return String(s || 'certificate').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60); }
+
+  function generateCert(tpl, r) {
+    return ensureCertFonts().then(function () {
+      var dims = certDims(tpl);
+      var scale = 2.5;
+      var canvas = document.createElement('canvas');
+      return renderCertToCanvas(canvas, tpl, r, scale).then(function () {
+        var imgData = canvas.toDataURL('image/jpeg', 0.92);
+        var orient = tpl.orientation === 'portrait' ? 'p' : 'l';
+        var pdf = new window.jspdf.jsPDF({ orientation: orient, unit: 'px', format: [dims.w, dims.h] });
+        pdf.addImage(imgData, 'JPEG', 0, 0, dims.w, dims.h);
+        pdf.save(certSafeName(r.competitionName) + '_certificate.pdf');
+      });
+    });
   }
 
   // ===== 申請退費 (registrant) =====

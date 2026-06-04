@@ -237,6 +237,7 @@
     saveCertTemplate:["compId","template"],
     deleteCertTemplate:["compId","templateId"],
     getCertRecipients:["compId"],
+    getPublicCertTemplates:["compId"],
 
     // V3 Phase 3 additions
     listMyRegistrationsByEmail:["email","phone"],
