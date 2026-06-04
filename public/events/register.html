@@ -1366,7 +1366,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     }
     feeRows += '<div class="r-row" style="border-top:1px solid var(--line-2); margin-top:6px; padding-top:8px; font-weight:700"><span class="k">' + escapeHtml(window.L('rgSumTotal')) + '</span><span class="v" style="color:var(--ink)">' + (feeSum > 0 ? ('NT$ ' + feeSum.toLocaleString()) : window.L('rgSumFree')) + '</span></div>';
     html += '<div class="review-section"><h5>' + escapeHtml(window.L('rgReviewFee')) + '</h5>' + feeRows + '</div>';
+    html += '<p style="font:400 12px/1.6 var(--f-tc); color:var(--muted); margin-top:4px" data-i18n-html="rgConsentNotice">點擊「送出報名」即表示你已閱讀並同意本活動之 <a href="/terms.html" target="_blank">服務條款</a> 與隱私權政策；系統將記錄你的同意時間與來源 IP 作為憑證。</p>';
     document.getElementById('reviewArea').innerHTML = html;
+    if (window.applyI18n) window.applyI18n(document.getElementById('reviewArea'));
   }
 
   document.getElementById('prevBtn').addEventListener('click', function () {

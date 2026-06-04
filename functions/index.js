@@ -45,6 +45,20 @@ function generatePassword() {
   for (let i = 0; i < 8; i++) r += c[Math.floor(Math.random() * c.length)];
   return r;
 }
+// Legal-document versions for click-wrap e-signing (EULA / Terms acceptance audit trail).
+const EULA_VERSION = "2026-01-01";
+const TERMS_VERSION = "2026-06-01";
+// Best-effort client IP from a callable's underlying request (behind the Firebase proxy,
+// the real client is the first entry of X-Forwarded-For).
+function clientIp(request) {
+  try {
+    const r = request && request.rawRequest;
+    if (!r) return "";
+    const xff = (r.headers && (r.headers["x-forwarded-for"] || r.headers["X-Forwarded-For"])) || "";
+    if (xff) return String(xff).split(",")[0].trim();
+    return r.ip || "";
+  } catch (e) { return ""; }
+}
 async function auditLog(user, action, target, detail) {
   try {
     await db.collection("auditLogs").add({
@@ -1419,7 +1433,7 @@ exports.deleteAnnouncement = compAuthCallable(async (data) => {
 });
 
 // ===== Registration =====
-exports.submitRegistration = callable(async (data) => {
+exports.submitRegistration = callable(async (data, request) => {
   const { compId, fd } = data;
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { success: false, message: "找不到競賽" };
@@ -1558,7 +1572,9 @@ exports.submitRegistration = callable(async (data) => {
         remitterAccount: fd.remitterAccount || "", note: "", password: pwd,
         waitlistNum: txWn, creditCardOrderNo: fd.creditCardOrderNo || "", fileUrl: "",
         selectedSessions: fd.selectedSessions || [fd.selectedSession || 0],
-        customAnswers: fd.customAnswers || {}
+        customAnswers: fd.customAnswers || {},
+        // Registrant terms e-signature audit trail (#1): submitting = click-wrap acceptance.
+        consentSignature: { agreed: true, signedAt: fmtNow(), ip: clientIp(request), version: TERMS_VERSION }
       });
 
       // Increment teamCount atomically (reuse compRef already in transaction read set)
@@ -1626,8 +1642,9 @@ exports.submitRegistration = callable(async (data) => {
 
 // ===== 新增：帳號申請與驗證信功能 =====
 exports.requestAccount = callable(async (data) => {
-  const { username, password, displayName, email, phone, intendedPlan } = data;
+  const { username, password, displayName, email, phone, intendedPlan, eulaAgreed } = data;
   if (!username || !password || !email || !displayName) return { success: false, message: "必填欄位請填寫完整" };
+  if (!eulaAgreed) return { success: false, message: "請先閱讀並同意服務條款與 EULA" };
 
   // V3 Phase 2.5: validate plan from signup page (defaults to "free" legacy behavior)
   const validPlans = ["free", "trial", "starter", "pro"];
@@ -1647,6 +1664,7 @@ exports.requestAccount = callable(async (data) => {
   await db.collection("accountRequests").doc(username).set({
     username, passwordHash: hashPwd(password), displayName, email, phone, otp,
     intendedPlan: plan,
+    eulaVersion: EULA_VERSION, eulaAgreed: true,
     expiresAt: new Date(Date.now() + 15 * 60000).getTime()
   });
 
@@ -1730,7 +1748,7 @@ exports.sendSystemEmail = authCallable(["system"], async (data, request) => {
 
 
 
-exports.verifyAccount = callable(async (data) => {
+exports.verifyAccount = callable(async (data, request) => {
   const { username, otp } = data;
   const doc = await db.collection("accountRequests").doc(username).get();
   if (!doc.exists) return { success: false, message: "查無申請紀錄，或已逾期失效" };
@@ -1758,6 +1776,8 @@ exports.verifyAccount = callable(async (data) => {
     displayName: reqData.displayName, email: reqData.email, phone: reqData.phone || "",
     emailVerified: true,
     intendedPlan,                       // V3: signup-time plan choice (free/trial/starter/pro)
+    // EULA click-wrap acceptance audit trail (#1)
+    eulaAcceptedAt: fmtNow(), eulaVersion: reqData.eulaVersion || EULA_VERSION, eulaIp: clientIp(request),
     createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
   });
 

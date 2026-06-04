@@ -52,7 +52,7 @@
     sgPwdSym: '含特殊符號',
 
     // ----- consent -----
-    sgAgree: '我已閱讀並同意 <a href="/terms.html" target="_blank">服務條款</a> 與 <a href="/privacy.html" target="_blank">隱私權政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。',
+    sgAgree: '我已閱讀並同意 <a href="/terms.html" target="_blank">服務條款</a>、<a href="/EULA.html" target="_blank">使用者授權合約（EULA）</a> 與 <a href="/privacy.html" target="_blank">隱私權政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。',
     sgNewsletter: '我願意接收 RegMaster 的產品更新與電子報（可隨時退訂）。',
 
     sgSubmitBtn: '建立帳號 →',
@@ -153,7 +153,7 @@
     sgPwdSym: 'Includes a symbol',
 
     // ----- consent -----
-    sgAgree: 'I have read and agree to the <a href="/terms.html" target="_blank">Terms of Service</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>, and consent to RegMaster processing my personal data in compliance with applicable laws.',
+    sgAgree: 'I have read and agree to the <a href="/terms.html" target="_blank">Terms of Service</a>, <a href="/EULA.html" target="_blank">End-User License Agreement (EULA)</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>, and consent to RegMaster processing my personal data in compliance with applicable laws.',
     sgNewsletter: 'I\'d like to receive RegMaster product updates and the newsletter (unsubscribe anytime).',
 
     sgSubmitBtn: 'Create account →',

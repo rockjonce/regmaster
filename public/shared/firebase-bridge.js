@@ -204,7 +204,7 @@
     rebuildKnowledgeBase:[],
     getKnowledgeBaseStatus:[],
     addNotification:["compId","question"],
-    requestAccount:["username","password","displayName","email","phone","intendedPlan"],
+    requestAccount:["username","password","displayName","email","phone","intendedPlan","eulaAgreed"],
     verifyAccount:["username","otp"],
     resetAdminPassword:["email"],
     sendSystemEmail:["targetEmail","subject","content","user"],

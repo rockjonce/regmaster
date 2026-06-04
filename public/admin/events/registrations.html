@@ -818,6 +818,7 @@
       kv(window.L('aeRegFieldRemitBank'), t.remitterBank) +
       kv(window.L('aeRegFieldRemitAccount'), t.remitterAccount) +
       kv(window.L('aeRegFieldRegTime'), t.registrationTime) +
+      ((t.consentSignature && t.consentSignature.agreed) ? kv(window.L('aeRegFieldConsent'), window.L('aeRegConsentSigned').replace('{v}', t.consentSignature.version || '').replace('{t}', t.consentSignature.signedAt || '').replace('{ip}', t.consentSignature.ip || '—')) : '') +
       (t.fileUrl ? '<div class="k">' + window.L('aeRegFieldFile') + '</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">' + window.L('aeRegFileView') + '</a></div>' : '') +
     '</div></div>';
     // 學員們

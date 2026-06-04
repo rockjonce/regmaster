@@ -180,6 +180,7 @@
     rgReviewBasic: '基本資訊',
     rgReviewCustomQs: '附加問題',
     rgReviewFee: '報名費用',
+    rgConsentNotice: '點擊「送出報名」即表示你已閱讀並同意本活動之 <a href="/terms.html" target="_blank">服務條款</a> 與隱私權政策；系統將記錄你的同意時間與來源 IP 作為憑證。',
     rgFeeItemFallback: '收費項目',
 
     // ----- dynamic: validation messages -----
@@ -399,6 +400,7 @@
     rgReviewBasic: 'Basic information',
     rgReviewCustomQs: 'Additional questions',
     rgReviewFee: 'Registration fee',
+    rgConsentNotice: 'By clicking "Submit Registration" you confirm you have read and agree to this event\'s <a href="/terms.html" target="_blank">Terms of Service</a> and Privacy Policy; the system records your acceptance time and source IP as proof.',
     rgFeeItemFallback: 'Fee item',
 
     rgValPickGroup: 'Please select a group',

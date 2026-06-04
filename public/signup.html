@@ -171,7 +171,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 
         <div class="terms-row">
           <input type="checkbox" id="suAgree" required>
-          <div data-i18n-html="sgAgree">我已閱讀並同意 <a href="/terms.html" target="_blank">服務條款</a> 與 <a href="/privacy.html" target="_blank">隱私權政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。</div>
+          <div data-i18n-html="sgAgree">我已閱讀並同意 <a href="/terms.html" target="_blank">服務條款</a>、<a href="/EULA.html" target="_blank">使用者授權合約（EULA）</a> 與 <a href="/privacy.html" target="_blank">隱私權政策</a>，並同意 RegMaster 在符合法規前提下處理我的個人資料。</div>
         </div>
 
         <div class="terms-row" style="background:transparent">
@@ -349,7 +349,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
         btn.disabled = false; btn.textContent = oldText;
         showErr((err && err.message) || window.L('sgErrNetwork'));
       })
-      .requestAccount(username, password, displayName, email, phone, pendingPlan);
+      .requestAccount(username, password, displayName, email, phone, pendingPlan, agree);
   });
 
   // ---- OTP input handling ----
