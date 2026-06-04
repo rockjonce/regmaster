@@ -31,6 +31,8 @@
     adSetPhOrgName: '例：廣天國際有限公司',
     adSetLblEmail: 'Email',
     adSetLblPhone: '電話',
+    adSetLblEula: '條款 / EULA 簽署',
+    adSetEulaSigned: '已簽署 v{v} · {t} · IP {ip}',
     adSetBtnSaveProfile: '儲存變更',
     // ----- payout account section -----
     adSetPayoutH3: '收款帳戶',
@@ -212,6 +214,8 @@
     adSetPhOrgName: 'e.g. Kuang-Tien International Co., Ltd.',
     adSetLblEmail: 'Email',
     adSetLblPhone: 'Phone',
+    adSetLblEula: 'Terms / EULA acceptance',
+    adSetEulaSigned: 'Signed v{v} · {t} · IP {ip}',
     adSetBtnSaveProfile: 'Save Changes',
     adSetPayoutH3: 'Payout Account',
     adSetPayoutSub: 'Online registration fees collected on your behalf by the platform (net of transaction fees) will be transferred to this account by the system administrator. Please make sure the details are correct.',

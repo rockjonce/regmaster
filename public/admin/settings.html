@@ -126,6 +126,7 @@
                 <div class="fld"><div class="lbl" data-i18n="adSetLblOrgName">機構名稱</div><input id="prof-organizationName" placeholder="例：廣天國際有限公司" data-i18n-placeholder="adSetPhOrgName"></div>
                 <div class="fld"><div class="lbl" data-i18n="adSetLblEmail">Email</div><input id="prof-email" type="email"></div>
                 <div class="fld"><div class="lbl" data-i18n="adSetLblPhone">電話</div><input id="prof-phone" type="tel"></div>
+                <div class="fld" id="prof-eula-row" style="display:none"><div class="lbl" data-i18n="adSetLblEula">條款 / EULA 簽署</div><div id="prof-eula" style="font:400 13px/1.5 var(--f-tc); color:var(--ink-3); padding:6px 0"></div></div>
               </div>
               <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveProfileBtn" data-i18n="adSetBtnSaveProfile">儲存變更</button></div>
             </div>
@@ -350,6 +351,11 @@
     document.getElementById('prof-organizationName').value = p.organizationName || '';
     document.getElementById('prof-email').value = p.email || '';
     document.getElementById('prof-phone').value = p.phone || '';
+    // EULA acceptance record (#1) — read-only
+    if (p.eulaAcceptedAt) {
+      document.getElementById('prof-eula-row').style.display = '';
+      document.getElementById('prof-eula').textContent = window.L('adSetEulaSigned').replace('{v}', p.eulaVersion || '').replace('{t}', p.eulaAcceptedAt || '').replace('{ip}', p.eulaIp || '—');
+    }
     // Payout account
     TWBankUI.fillBanks(payoutBankSel, p.payoutBankCode || '');
     TWBankUI.fillBranches(payoutBranchSel, p.payoutBankCode || '', p.payoutBranchCode || '');

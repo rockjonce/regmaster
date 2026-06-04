@@ -65,20 +65,21 @@
   var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|registrations|announcements|payments|scoring|checkin))?\/?$/);
   if (em && em[1] && em[1] !== 'index.html') {
     var cid = em[1], sub = em[2] || 'hub';
-    var eitem = function (suffix, i18nKey, label, key, icon, extra) {
-      return '<a class="nav-it' + (key === sub ? ' on' : '') + '" href="/admin/events/' + cid + suffix + '">' +
+    // roles = which member roles may see this item (owner/system always see all).
+    var eitem = function (suffix, i18nKey, label, key, icon, roles, extra) {
+      return '<a class="nav-it' + (key === sub ? ' on' : '') + '" href="/admin/events/' + cid + suffix + '" data-evt-roles="' + roles + '">' +
         icon + '<span data-i18n="' + i18nKey + '">' + esc(label) + '</span>' + (extra || '') + '</a>';
     };
     evtNavHtml =
       '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpThisEvent">本活動</div>' +
-        eitem('', 'anEvtOverview', '總覽', 'hub', IC.home, '<span class="ct" id="navRegCt"></span>') +
-        eitem('/edit', 'anEvtSettings', '設定', 'edit', IC.gear) +
-        eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.cal) +
-        eitem('/registrations', 'anEvtReg', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>') +
-        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log) +
-        eitem('/payments', 'anEvtBilling', '帳務', 'payments', IC.lic) +
-        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys) +
-        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai) +
+        eitem('', 'anEvtOverview', '總覽', 'hub', IC.home, 'manager staff judge', '<span class="ct" id="navRegCt"></span>') +
+        eitem('/edit', 'anEvtSettings', '設定', 'edit', IC.gear, 'manager') +
+        eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.cal, 'manager') +
+        eitem('/registrations', 'anEvtReg', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>', 'manager') +
+        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log, 'manager') +
+        eitem('/payments', 'anEvtBilling', '帳務', 'payments', IC.lic, '') +
+        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge') +
+        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff') +
       '</div>';
   }
 
@@ -113,6 +114,22 @@
     '</div>';
 
   side.innerHTML = html;
+
+  // --- #3 RBAC: hide event sub-nav items the member's role can't use ---
+  // Owner/system see everything; a member's role determines visible event tabs.
+  // UI only — the backend (compAuthCallable capabilities) enforces access regardless.
+  if (em && em[1] && em[1] !== 'index.html' && window.google && window.google.script && window.google.script.run && window.google.script.run.getMyEventRole) {
+    try {
+      window.google.script.run.withSuccessHandler(function (res) {
+        var role = res && res.role;
+        if (!role || role === 'owner') return; // owner/system: show all
+        side.querySelectorAll('a.nav-it[data-evt-roles]').forEach(function (a) {
+          var allowed = (a.getAttribute('data-evt-roles') || '').split(/\s+/);
+          if (allowed.indexOf(role) < 0) a.style.display = 'none';
+        });
+      }).withFailureHandler(function () {}).getMyEventRole(em[1]);
+    } catch (e) {}
+  }
 
   // --- Logout ---
   var logoutBtn = document.getElementById('logoutBtn');

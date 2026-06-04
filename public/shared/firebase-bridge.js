@@ -230,6 +230,7 @@
     listMyInvites:[],
     acceptInvite:["memberId"],
     declineInvite:["memberId"],
+    getMyEventRole:["compId"],
 
     // V3 Phase 3 additions
     listMyRegistrationsByEmail:["email","phone"],

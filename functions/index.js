@@ -652,6 +652,8 @@ exports.getMyProfile = authCallable(["system", "competition"], async (data, requ
     displayName: a.displayName || "", organizationName: a.organizationName || "",
     email: a.email || "", phone: a.phone || "",
     emailVerified: a.emailVerified || false,
+    // EULA click-wrap acceptance record (#1) — shown read-only in settings.
+    eulaAcceptedAt: a.eulaAcceptedAt || "", eulaVersion: a.eulaVersion || "", eulaIp: a.eulaIp || "",
     // 收款帳戶 (payout): where the platform wires this organiser's PayUNI net to.
     payoutBankCode: a.payoutBankCode || "", payoutBankName: a.payoutBankName || "",
     payoutBranchCode: a.payoutBranchCode || "", payoutBranchName: a.payoutBranchName || "",
@@ -7213,5 +7215,24 @@ exports.declineInvite = authCallable(["system", "competition"], async (data, req
   if (!mine) return { success: false, message: "無權限" };
   await ref.delete();
   return { success: true };
+});
+
+// The caller's effective role for one event: "owner" | "manager" | "staff" | "judge" | null.
+// Used by the shared sidebar to hide event sub-nav items the role can't use (UI only;
+// the backend always enforces via compAuthCallable regardless).
+exports.getMyEventRole = authCallable(["system", "competition"], async (data, request) => {
+  if (request.authUser.role === "system") return { role: "owner" };
+  const compId = String(data.compId || "");
+  if (!compId) return { role: null };
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) return { role: null };
+  const comp = compDoc.data();
+  if (comp.creator === request.authUser.username) return { role: "owner" };
+  const snap = await db.collection("orgMembers").where("memberUsername", "==", request.authUser.username).get();
+  for (const d of snap.docs) {
+    const m = d.data();
+    if (m.orgOwner === comp.creator && m.status === "active" && (!Array.isArray(m.scope) || m.scope.indexOf(compId) >= 0)) return { role: m.role };
+  }
+  return { role: null };
 });
 
