@@ -223,6 +223,13 @@
     submitContactInquiry:[],   // takes single object arg with form fields
     getOnboardingState:["username"],
     saveOnboardingStep:["username","step","data"],
+    inviteMember:["email","role","scope"],
+    listOrgMembers:[],
+    updateMemberRole:["memberId","role","scope"],
+    revokeMember:["memberId"],
+    listMyInvites:[],
+    acceptInvite:["memberId"],
+    declineInvite:["memberId"],
 
     // V3 Phase 3 additions
     listMyRegistrationsByEmail:["email","phone"],

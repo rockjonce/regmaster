@@ -944,21 +944,40 @@ exports.listCompetitionsPublic = callable(async () => {
 exports.listCompetitions = authCallable(["system","competition"], async (data, request) => {
   const role = request.authUser.role;
   const username = request.authUser.username;
-  let snap;
-  if (role === "competition") snap = await db.collection("competitions").where("creator", "==", username).get();
-  else snap = await db.collection("competitions").get();
-  const results = [];
-  for (const doc of snap.docs) {
-    const r = doc.data();
-    results.push({
-      compId: doc.id, name: r.name || "", createdAt: r.createdAt || "", isOpen: r.isOpen === true,
+  // Map compId -> { data, memberRole }. memberRole=null means the caller owns it.
+  const found = {};
+  if (role === "competition") {
+    // (a) Events this account owns.
+    const owned = await db.collection("competitions").where("creator", "==", username).get();
+    owned.forEach(d => { found[d.id] = { r: d.data(), memberRole: null }; });
+    // (b) #3 RBAC: events of orgs this account is an active member of (single-field query,
+    //     no composite index; filter status/scope in memory). No memberships → no-op.
+    const orgScopes = {}; // orgOwner -> { role, scope }
+    const mem = await db.collection("orgMembers").where("memberUsername", "==", username).get();
+    mem.forEach(m => { const x = m.data(); if (x.status === "active") orgScopes[x.orgOwner] = { role: x.role, scope: x.scope }; });
+    for (const orgOwner of Object.keys(orgScopes)) {
+      const { role: mrole, scope } = orgScopes[orgOwner];
+      const evs = await db.collection("competitions").where("creator", "==", orgOwner).get();
+      evs.forEach(d => {
+        if (Array.isArray(scope) && scope.indexOf(d.id) < 0) return; // event-scoped membership
+        if (!found[d.id]) found[d.id] = { r: d.data(), memberRole: mrole };
+      });
+    }
+  } else {
+    const all = await db.collection("competitions").get();
+    all.forEach(d => { found[d.id] = { r: d.data(), memberRole: null }; });
+  }
+  return Object.keys(found).map(id => {
+    const { r, memberRole } = found[id];
+    return {
+      compId: id, name: r.name || "", createdAt: r.createdAt || "", isOpen: r.isOpen === true,
       deadline: r.deadline || "", maxTeams: r.maxTeams || 0, creator: r.creator || "",
       teamCount: r.teamCount || 0, viewCount: r.viewCount || 0, hasRules: !!r.rulesPdfId, themeColors: r.themeColors || "",
       maxCapacityLimit: r.maxCapacityLimit !== undefined ? r.maxCapacityLimit : 300,
-      capacityLimitUnlocked: r.capacityLimitUnlocked === true
-    });
-  }
-  return results;
+      capacityLimitUnlocked: r.capacityLimitUnlocked === true,
+      memberRole: memberRole   // #3: null = owner; otherwise 'manager'|'staff'|'judge'
+    };
+  });
 });
 
 // Strict rule: 1 區塊 = 1 人. Any section with repeat > 1 from older data gets split
@@ -7073,6 +7092,126 @@ exports.saveOnboardingStep = authCallable(["system", "competition"], async (data
     existing.updatedAt = fmtNow();
   }
   await ref.set(existing, { merge: true });
+  return { success: true };
+});
+
+// ============================================================================
+// #3 Phase 3 — Org member management (RBAC invites). Owner invites sub-accounts
+// (manager/staff/judge), org-wide or event-scoped. Inviting requires the Team
+// `roles` feature; the membership records are consumed by compAuthCallable.
+// ============================================================================
+const RBAC_ROLES = ["manager", "staff", "judge"];
+async function ownerHasRolesFeature(username, role) {
+  if (role === "system") return true;
+  const tier = await getEffectiveTier(username);
+  const plans = await getPlans();
+  return !!(plans[tier] && plans[tier].features && plans[tier].features.roles);
+}
+
+exports.inviteMember = authCallable(["system", "competition"], async (data, request) => {
+  const owner = request.authUser.username;
+  if (!(await ownerHasRolesFeature(owner, request.authUser.role))) {
+    return { success: false, message: "成員與權限為 Team 方案功能，請先升級。" };
+  }
+  const email = String(data.email || "").trim().toLowerCase();
+  const role = String(data.role || "");
+  let scope = data.scope;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { success: false, message: "請輸入有效的 Email" };
+  if (RBAC_ROLES.indexOf(role) < 0) return { success: false, message: "角色無效" };
+  if (scope !== "all" && !Array.isArray(scope)) scope = "all";
+  if (email === String(request.authUser.email || "").toLowerCase()) return { success: false, message: "不能邀請自己" };
+  const existing = await db.collection("orgMembers").where("orgOwner", "==", owner).get();
+  for (const d of existing.docs) { if ((d.data().memberEmail || "").toLowerCase() === email) return { success: false, message: "此 Email 已是成員或已被邀請" }; }
+  const ref = await db.collection("orgMembers").add({
+    orgOwner: owner, memberEmail: email, memberUsername: "", role, scope,
+    status: "invited", token: generateSessionToken(), invitedBy: owner, invitedAt: fmtNow()
+  });
+  const orgName = request.authUser.organizationName || request.authUser.displayName || owner;
+  const link = EMAIL_HOST + "/admin/settings.html#members";
+  const html = emailWrap("您被邀請加入 RegMaster 團隊", `
+    <p><b>${escMail(orgName)}</b> 邀請您協作其活動。</p>
+    <p>請以您的 RegMaster 帳號（Email：${escMail(email)}）登入，於「設定 → 成員與權限」接受邀請。若尚無帳號，請先以此 Email 註冊。</p>
+    <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:20px auto"><tr><td style="background:#0A437A;padding:12px 26px;border-radius:8px"><a href="${link}" target="_blank" style="color:#fff;text-decoration:none;font-weight:700">前往接受邀請</a></td></tr></table>`);
+  await queueMail(email, "[RegMaster] 團隊協作邀請 — " + orgName, html);
+  await auditLog(owner, "邀請成員", String(ref.id), email + " / " + role);
+  return { success: true };
+});
+
+exports.listOrgMembers = authCallable(["system", "competition"], async (data, request) => {
+  const owner = request.authUser.username;
+  const snap = await db.collection("orgMembers").where("orgOwner", "==", owner).get();
+  const members = snap.docs.map(d => { const m = d.data(); return {
+    id: d.id, memberEmail: m.memberEmail || "", memberUsername: m.memberUsername || "",
+    role: m.role || "", scope: m.scope || "all", status: m.status || "invited",
+    invitedAt: m.invitedAt || "", acceptedAt: m.acceptedAt || ""
+  }; });
+  return { members, canManage: await ownerHasRolesFeature(owner, request.authUser.role) };
+});
+
+exports.updateMemberRole = authCallable(["system", "competition"], async (data, request) => {
+  const owner = request.authUser.username;
+  const ref = db.collection("orgMembers").doc(String(data.memberId || ""));
+  const doc = await ref.get();
+  if (!doc.exists || doc.data().orgOwner !== owner) return { success: false, message: "找不到成員或無權限" };
+  const upd = {};
+  if (RBAC_ROLES.indexOf(data.role) >= 0) upd.role = data.role;
+  if (data.scope === "all" || Array.isArray(data.scope)) upd.scope = data.scope;
+  if (!Object.keys(upd).length) return { success: false, message: "無可更新欄位" };
+  await ref.update(upd);
+  await auditLog(owner, "更新成員權限", String(data.memberId), JSON.stringify(upd).slice(0, 80));
+  return { success: true };
+});
+
+exports.revokeMember = authCallable(["system", "competition"], async (data, request) => {
+  const owner = request.authUser.username;
+  const ref = db.collection("orgMembers").doc(String(data.memberId || ""));
+  const doc = await ref.get();
+  if (!doc.exists || doc.data().orgOwner !== owner) return { success: false, message: "找不到成員或無權限" };
+  await ref.delete();
+  await auditLog(owner, "移除成員", String(data.memberId), doc.data().memberEmail || "");
+  return { success: true };
+});
+
+exports.listMyInvites = authCallable(["system", "competition"], async (data, request) => {
+  const email = String(request.authUser.email || "").toLowerCase();
+  const me = request.authUser.username;
+  const invites = [];
+  const snap = await db.collection("orgMembers").get();
+  snap.docs.forEach(d => {
+    const m = d.data();
+    const pendingForMe = email && (m.memberEmail || "").toLowerCase() === email && m.status === "invited";
+    const activeMine = m.memberUsername === me && m.status === "active";
+    if (pendingForMe || activeMine) invites.push({
+      id: d.id, orgOwner: m.orgOwner, role: m.role, scope: m.scope, status: m.status,
+      invitedAt: m.invitedAt || "", acceptedAt: m.acceptedAt || ""
+    });
+  });
+  return { invites };
+});
+
+exports.acceptInvite = authCallable(["system", "competition"], async (data, request) => {
+  const ref = db.collection("orgMembers").doc(String(data.memberId || ""));
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "邀請不存在" };
+  const m = doc.data();
+  if (m.status !== "invited") return { success: false, message: "此邀請已處理" };
+  if ((m.memberEmail || "").toLowerCase() !== String(request.authUser.email || "").toLowerCase()) {
+    return { success: false, message: "此邀請寄給其他 Email，無法接受" };
+  }
+  if (m.orgOwner === request.authUser.username) return { success: false, message: "不能加入自己的組織" };
+  await ref.update({ memberUsername: request.authUser.username, status: "active", acceptedAt: fmtNow(), token: "" });
+  await auditLog(request.authUser.username, "接受團隊邀請", String(data.memberId), m.orgOwner);
+  return { success: true };
+});
+
+exports.declineInvite = authCallable(["system", "competition"], async (data, request) => {
+  const ref = db.collection("orgMembers").doc(String(data.memberId || ""));
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "邀請不存在" };
+  const m = doc.data();
+  const mine = (m.memberEmail || "").toLowerCase() === String(request.authUser.email || "").toLowerCase() || m.memberUsername === request.authUser.username;
+  if (!mine) return { success: false, message: "無權限" };
+  await ref.delete();
   return { success: true };
 });
 
