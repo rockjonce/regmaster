@@ -185,7 +185,7 @@
       ftTagline: 'The online registration platform built for people who take their events seriously.', ftColProduct: 'Product', ftColCompany: 'Company', ftColSupport: 'Support',
       ftFeatures: 'Features', ftPricing: 'Pricing', ftExplore: 'Explore Events', ftAbout: 'About Us', ftPrivacy: 'Privacy Policy',
       ftTerms: 'Terms of Service', ftManual: 'Documentation', ftContact: 'Contact Us', ftSupport: 'Customer Support',
-      ftCopyright: '© 2026 RegMaster · GuangTian International Co., Ltd.', ftCompliance: 'SSL encrypted · PDPA compliant',
+      ftCopyright: '© 2026 RegMaster · Kuang-Tien International Co., Ltd.', ftCompliance: 'SSL encrypted · PDPA compliant',
       // ----- hero -----
       heroBadge: 'v3 · AI Assistant now live',
       heroTitleFull: '<span class="tc">The registration system</span><br>built for <em>serious organizers</em>.',

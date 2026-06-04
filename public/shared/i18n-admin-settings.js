@@ -167,7 +167,7 @@
     adSetLblRole: 'Role (cannot be changed)',
     adSetLblDisplayName: 'Display Name',
     adSetLblOrgName: 'Organization Name',
-    adSetPhOrgName: 'e.g. GuangTian International Co., Ltd.',
+    adSetPhOrgName: 'e.g. Kuang-Tien International Co., Ltd.',
     adSetLblEmail: 'Email',
     adSetLblPhone: 'Phone',
     adSetBtnSaveProfile: 'Save Changes',

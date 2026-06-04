@@ -93,14 +93,14 @@
   var E = {
     // ----- <title> / meta -----
     tmPageTitle: 'Terms of Service · RegMaster',
-    tmMetaDesc: 'Terms of Service for the RegMaster online event registration platform (a product of GuangTian International Co., Ltd.): membership eligibility, rules of use, rights and obligations, disclaimers, and governing law.',
+    tmMetaDesc: 'Terms of Service for the RegMaster online event registration platform (a product of Kuang-Tien International Co., Ltd.): membership eligibility, rules of use, rights and obligations, disclaimers, and governing law.',
 
     // ----- hero -----
     tmHeroTitle: 'Terms of Service',
-    tmHeroSub: 'RegMaster Online Event Registration Platform · A product of GuangTian International Co., Ltd. (Kuang-Tien International Co., Ltd.)<br>Last updated: 1 June 2026',
+    tmHeroSub: 'RegMaster Online Event Registration Platform · A product of Kuang-Tien International Co., Ltd.<br>Last updated: 1 June 2026',
 
     // ----- preamble -----
-    tmIntro: 'RegMaster (hereinafter the "Service" or "the Platform") is an online event registration and management service developed and operated by GuangTian International Co., Ltd. (hereinafter the "Company"). By registering an account or using any part of the Service, you represent that you have read, understood, and agree to be bound by all provisions of these Terms of Service. If you do not agree to these Terms, you shall not use the Service.',
+    tmIntro: 'RegMaster (hereinafter the "Service" or "the Platform") is an online event registration and management service developed and operated by Kuang-Tien International Co., Ltd. (hereinafter the "Company"). By registering an account or using any part of the Service, you represent that you have read, understood, and agree to be bound by all provisions of these Terms of Service. If you do not agree to these Terms, you shall not use the Service.',
     tmNoteAmend: 'The Company reserves the right to amend these Terms of Service at any time, and any amended Terms shall take effect upon being posted on the Platform. Your continued use of the Platform after the amended Terms take effect shall be deemed your acceptance of the amended Terms.',
 
     // ----- Article 1 Membership Eligibility -----
@@ -163,7 +163,7 @@
     tmC12: 'The interpretation and application of these Terms shall be governed by the laws of the Republic of China. The parties agree that the Taiwan Taipei District Court shall be the court of first instance with jurisdiction over any and all disputes arising out of these Terms.',
 
     // ----- closing note -----
-    tmNoteAddr: 'GuangTian International Co., Ltd. (Kuang-Tien International Co., Ltd.)<br>Address: 7F-3, No. 115, Sec. 2, Keelung Rd., Xinyi Dist., Taipei'
+    tmNoteAddr: 'Kuang-Tien International Co., Ltd.<br>Address: 7F-3, No. 115, Sec. 2, Keelung Rd., Xinyi Dist., Taipei'
   };
 
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });

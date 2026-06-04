@@ -93,7 +93,7 @@
   var E = {
     // ----- <title> / meta -----
     pvPageTitle: 'Privacy Policy · RegMaster',
-    pvMetaDesc: 'Privacy Policy of the RegMaster online event registration platform (a product of GuangTian International Co., Ltd.): explaining the collection, processing, use and protection of personal data and your rights.',
+    pvMetaDesc: 'Privacy Policy of the RegMaster online event registration platform (a product of Kuang-Tien International Co., Ltd.): explaining the collection, processing, use and protection of personal data and your rights.',
 
     // ----- nav links -----
     pvNavExplore: 'Explore',
@@ -103,10 +103,10 @@
 
     // ----- hero -----
     pvH1: 'Privacy Policy',
-    pvHeroSub: 'RegMaster Online Event Registration Platform · a product of GuangTian International Co., Ltd. (Kuang-Tien International Co., Ltd.)<br>Last updated: 1 June 2026',
+    pvHeroSub: 'RegMaster Online Event Registration Platform · a product of Kuang-Tien International Co., Ltd.<br>Last updated: 1 June 2026',
 
     // ----- intro -----
-    pvIntro: 'Welcome to RegMaster (the “Platform”). The Platform is an online event registration management service developed and operated by GuangTian International Co., Ltd. (the “Company”). The Company places the utmost importance on your right to privacy. So that you may use the Platform’s services and features with confidence, the Company hereby sets out this privacy protection policy to safeguard your interests. Please read the following carefully.',
+    pvIntro: 'Welcome to RegMaster (the “Platform”). The Platform is an online event registration management service developed and operated by Kuang-Tien International Co., Ltd. (the “Company”). The Company places the utmost importance on your right to privacy. So that you may use the Platform’s services and features with confidence, the Company hereby sets out this privacy protection policy to safeguard your interests. Please read the following carefully.',
     pvNote1: 'This Privacy Policy applies to the collection, processing and use of personally identifiable data that you provide when using the Platform’s services; it does not apply to any linked websites outside the Platform, nor to any persons not engaged or involved in management by the Company.',
 
     // ----- 一、適用範圍 -----
@@ -158,10 +158,10 @@
     pvS9H: '9. Contact Us',
     pvS9P: 'If you have any questions regarding this Privacy Policy, or wish to exercise the foregoing rights in relation to personal data, you are welcome to write to us at <a href="mailto:support@calculator.com.tw" style="color:var(--acc)">support@calculator.com.tw</a>, or to refer to the <a href="/contact.html" style="color:var(--acc)">Contact Us</a> page.',
 
-    pvNoteCompany: 'GuangTian International Co., Ltd. (Kuang-Tien International Co., Ltd.)<br>Address: 7F-3, No. 115, Sec. 2, Keelung Rd., Xinyi Dist., Taipei',
+    pvNoteCompany: 'Kuang-Tien International Co., Ltd.<br>Address: 7F-3, No. 115, Sec. 2, Keelung Rd., Xinyi Dist., Taipei',
 
     // ----- footer -----
-    pvFootCopyright: '© 2026 RegMaster · GuangTian International Co., Ltd.',
+    pvFootCopyright: '© 2026 RegMaster · Kuang-Tien International Co., Ltd.',
     pvFootPrivacy: 'Privacy Policy',
     pvFootTerms: 'Terms of Service',
     pvFootContact: 'Contact Us'

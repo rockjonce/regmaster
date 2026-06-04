@@ -21,7 +21,7 @@
 
     // ----- Article 1: Definitions -----
     euA1H: '第一條　定義',
-    euA1P: '本條款所稱「本平台」，係指由廣天國際有限公司（Kuang-Tien International CO., Ltd.，以下簡稱「本公司」）開發及營運之 RegMaster 線上報名平台軟體服務。「使用者」係指透過授權碼啟用本平台服務之活動管理者。「授權碼」係指本公司核發之數位憑證，用以啟用本平台之特定使用權限。',
+    euA1P: '本條款所稱「本平台」，係指由廣天國際有限公司（Kuang-Tien International Co., Ltd.，以下簡稱「本公司」）開發及營運之 RegMaster 線上報名平台軟體服務。「使用者」係指透過授權碼啟用本平台服務之活動管理者。「授權碼」係指本公司核發之數位憑證，用以啟用本平台之特定使用權限。',
 
     // ----- Article 2: Scope of License -----
     euA2H: '第二條　授權範圍',
@@ -69,7 +69,7 @@
     euA10P: '本條款之解釋與適用，以中華民國法律為準據法。因本條款所生之一切爭議，雙方合意以臺灣臺北地方法院為第一審管轄法院。',
 
     // ----- legal footer block -----
-    euLegal: '<b>Kuang-Tien International CO., Ltd. 廣天國際有限公司</b><br>Copyright © 2026 All rights reserved.<br>本條款自使用者點擊「同意」時起生效。'
+    euLegal: '<b>Kuang-Tien International Co., Ltd. 廣天國際有限公司</b><br>Copyright © 2026 All rights reserved.<br>本條款自使用者點擊「同意」時起生效。'
   };
 
   var E = {
@@ -79,7 +79,7 @@
 
     // ----- Article 1: Definitions -----
     euA1H: 'Article 1　Definitions',
-    euA1P: 'In this Agreement, the "Platform" means the RegMaster online registration platform software service developed and operated by GuangTian International Co., Ltd. (Kuang-Tien International CO., Ltd.; hereinafter the "Company"). "User" means the event administrator who activates the Platform service by means of a License Key. "License Key" means the digital credential issued by the Company for the purpose of activating specified usage rights in the Platform.',
+    euA1P: 'In this Agreement, the "Platform" means the RegMaster online registration platform software service developed and operated by Kuang-Tien International Co., Ltd. (hereinafter the "Company"). "User" means the event administrator who activates the Platform service by means of a License Key. "License Key" means the digital credential issued by the Company for the purpose of activating specified usage rights in the Platform.',
 
     // ----- Article 2: Scope of License -----
     euA2H: 'Article 2　Scope of License',
@@ -127,7 +127,7 @@
     euA10P: 'The interpretation and application of this Agreement shall be governed by the laws of the Republic of China (Taiwan). The parties agree that the Taiwan Taipei District Court shall be the court of first instance with jurisdiction over any and all disputes arising out of this Agreement.',
 
     // ----- legal footer block -----
-    euLegal: '<b>Kuang-Tien International CO., Ltd. 廣天國際有限公司</b><br>Copyright © 2026 All rights reserved.<br>This Agreement takes effect upon the User\'s clicking "Agree".'
+    euLegal: '<b>Kuang-Tien International Co., Ltd. 廣天國際有限公司</b><br>Copyright © 2026 All rights reserved.<br>This Agreement takes effect upon the User\'s clicking "Agree".'
   };
 
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });

@@ -115,7 +115,7 @@
     cnContactLineP: 'Weekdays 10:00–18:00',
 
     cnOfficeCaption: '📍 OFFICE',
-    cnOfficeAddr: '<b>GuangTian International Co., Ltd.</b><br>7F-3, No. 115, Sec. 2, Keelung Rd., Xinyi Dist., Taipei',
+    cnOfficeAddr: '<b>Kuang-Tien International Co., Ltd.</b><br>7F-3, No. 115, Sec. 2, Keelung Rd., Xinyi Dist., Taipei',
 
     // ----- right panel: tabs -----
     cnTabGeneral: '📨 General Inquiry',

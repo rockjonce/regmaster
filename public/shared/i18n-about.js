@@ -62,17 +62,17 @@
     // ----- hero -----
     abHeroEyebrow: 'ABOUT REGMASTER',
     abHeroTitle: 'So the people who run events<br>can <em>focus on the event</em>.',
-    abHeroP: 'RegMaster is the online event registration platform built by <strong>GuangTian International Co., Ltd.</strong> We believe organizers should spend their time on content and on their attendees — not on forms, spreadsheets and one notification email after another.',
+    abHeroP: 'RegMaster is the online event registration platform built by <strong>Kuang-Tien International Co., Ltd.</strong> We believe organizers should spend their time on content and on their attendees — not on forms, spreadsheets and one notification email after another.',
     // ----- our story -----
     abStoryEyebrow: 'OUR STORY',
     abStoryH2: 'It started with a<br>500-person contest',
-    abStoryLead: 'GuangTian International was founded in 2010 as a company built around education (<a href="https://www.calculator.com.tw" target="_blank" rel="noopener" style="color:var(--acc)">www.calculator.com.tw</a>). For years we have worked alongside teachers, students and organizations of every kind to make learning and events better.',
+    abStoryLead: 'Kuang-Tien International was founded in 2010 as a company built around education (<a href="https://www.calculator.com.tw" target="_blank" rel="noopener" style="color:var(--acc)">www.calculator.com.tw</a>). For years we have worked alongside teachers, students and organizations of every kind to make learning and events better.',
     abStoryP1: 'In 2022, we were organizing a 500-person wind-energy competition. Registrations came in through a form, payments were reconciled by hand against ATM transfers, the roster was scattered across several spreadsheets, and notices had to be sent one at a time. The admin work wore everyone out — and the thing that really mattered, the event itself, never got the attention it deserved.',
     abStoryP2: 'We realized organizers never lack passion; what they lack is a set of tools that keeps that passion from being drained by busywork. So we built RegMaster, bringing registration, payment, reconciliation, notifications and check-in together in a single dashboard — and added AI, so technology genuinely helps everyone who wants to run a great event.',
     abStoryQuote: 'We simply wanted to run one event well. Every organizer deserves a better, simpler system.',
-    abStoryCite: '— GuangTian International Co., Ltd.',
+    abStoryCite: '— Kuang-Tien International Co., Ltd.',
     // ----- timeline -----
-    abTl2010H: 'GuangTian International founded',
+    abTl2010H: 'Kuang-Tien International founded',
     abTl2010P: 'Built around education, supporting learning and events of every kind.',
     abTl2022H: '500-person wind-energy contest',
     abTl2022P: 'Bogged down by tedious registration and admin work, we set out to build our own system.',
