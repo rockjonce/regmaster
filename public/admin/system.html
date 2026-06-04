@@ -688,7 +688,7 @@ body { background:var(--bg); }
       var t = tt[0], label = tt[1], p = (plans && plans[t]) || {}, feats = p.features || {};
       var num = function (k, lbl, extra) { return '<div class="fld"><label class="lbl">' + lbl + '</label><input type="number" min="0" ' + (extra||'') + ' data-pl="' + t + '.' + k + '" value="' + _escAttr(p[k] != null ? p[k] : 0) + '"></div>'; };
       var togs = PLAN_FEATS.map(function (ff) {
-        var k = ff[0], on = feats[k] === true, note = (k === 'certificate') ? '<em>' + window.L('adSysFeatCertNote') + '</em>' : '';
+        var k = ff[0], on = feats[k] === true, note = '';
         return '<label class="plan-tog"><input type="checkbox" data-pl="' + t + '.features.' + k + '"' + (on ? ' checked' : '') + '><span>' + window.L(ff[1]) + '</span>' + note + '</label>';
       }).join('');
       wrap.insertAdjacentHTML('beforeend',
