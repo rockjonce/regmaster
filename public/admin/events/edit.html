@@ -822,12 +822,12 @@
     if (CFG.posterUrl) {
       document.getElementById('analyzeColorsBtn').disabled = false;
       document.getElementById('posterPreviewBtn').disabled = false;
-      document.getElementById('posterMsg').textContent = '已有海報（縮圖載入中⋯）';
+      document.getElementById('posterMsg').textContent = window.L('aeEditPosterHasLoading');
       google.script.run.withSuccessHandler(function (res) {
         var src = res && (res.dataUri || res.dataUrl || (res.base64 ? ('data:image/jpeg;base64,' + res.base64) : ''));
-        if (src) { showPosterImg(src); LAST_POSTER_SRC = src; document.getElementById('posterMsg').textContent = '已有海報'; }
-        else { document.getElementById('posterMsg').textContent = '已有海報（縮圖無法載入）'; }
-      }).withFailureHandler(function () { document.getElementById('posterMsg').textContent = '已有海報（縮圖載入失敗）'; }).getPosterData(compId);
+        if (src) { showPosterImg(src); LAST_POSTER_SRC = src; document.getElementById('posterMsg').textContent = window.L('aeEditPosterHas'); }
+        else { document.getElementById('posterMsg').textContent = window.L('aeEditPosterHasNoThumb'); }
+      }).withFailureHandler(function () { document.getElementById('posterMsg').textContent = window.L('aeEditPosterHasThumbFail'); }).getPosterData(compId);
     }
     // A.3: if AI palette previously analysed, render swatches now so organiser always sees the result
     renderPaletteFromTheme(COMP.themeColors || CFG.themeColors);
@@ -1265,7 +1265,7 @@
         out.push('<li style="margin:3px 0;line-height:1.7">' + linkify(escapeHtml(line.replace(/^[-*•]\s+/, ''))) + '</li>');
       } else if (/^https?:\/\/\S+$/.test(line)) {
         if (inList) { out.push('</ul>'); inList = false; }
-        out.push('<p style="margin:8px 0"><a href="' + escapeHtml(line) + '" target="_blank" style="display:inline-block;padding:8px 16px;background:#3D6BFF;color:#fff;border-radius:8px;text-decoration:none">前往連結 →</a></p>');
+        out.push('<p style="margin:8px 0"><a href="' + escapeHtml(line) + '" target="_blank" style="display:inline-block;padding:8px 16px;background:#3D6BFF;color:#fff;border-radius:8px;text-decoration:none">' + escapeHtml(window.L('aeEditConvertLinkText')) + '</a></p>');
       } else {
         if (inList) { out.push('</ul>'); inList = false; }
         var t = line; Object.keys(EMOJI).forEach(function (k) { if (t.indexOf(k) === 0) t = EMOJI[k] + t; });
@@ -1338,18 +1338,18 @@
   });
   document.getElementById('posterUploadBtn').addEventListener('click', function () {
     if (!posterChosen) return;
-    var btn = this; btn.disabled = true; btn.textContent = '上傳中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditPosterUploadBusy');
     compressImage(posterChosen, 650, function (b64) {
       google.script.run.withSuccessHandler(function (res) {
-        btn.textContent = '上傳海報';
+        btn.textContent = window.L('aeEditPosterUploadBtn');
         if (res && res.success) {
           CFG.posterUrl = 'pfid:' + res.posterDocId;
-          document.getElementById('posterMsg').textContent = '✓ 海報已上傳';
+          document.getElementById('posterMsg').textContent = window.L('aeEditPosterUploaded');
           document.getElementById('analyzeColorsBtn').disabled = false;
           if (res.posterUrl) showPosterImg(res.posterUrl);
           posterChosen = null;
-        } else { btn.disabled = false; uiAlert((res && res.message) || '上傳失敗'); }
-      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '上傳海報'; uiAlert('上傳失敗：' + (e && e.message)); })
+        } else { btn.disabled = false; uiAlert((res && res.message) || window.L('aeEditPosterUploadFail')); }
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = window.L('aeEditPosterUploadBtn'); uiAlert(window.L('aeEditPosterUploadFailPre') + (e && e.message)); })
         .uploadPosterImage(compId, b64, posterChosen.name, 'image/jpeg');
     });
   });
@@ -1365,18 +1365,18 @@
     if (!document.getElementById('posterMsg').textContent.match(/配色/)) {
       // append a status line about the existing palette without clobbering a poster-load message
       var pm = document.getElementById('posterMsg');
-      pm.textContent = (pm.textContent || '') + (pm.textContent ? '　·　' : '') + '✓ 已套用 AI 配色（' + Object.keys(c).length + ' 色）';
+      pm.textContent = (pm.textContent || '') + (pm.textContent ? '　·　' : '') + window.L('aeEditPaletteAppliedPre') + Object.keys(c).length + window.L('aeEditPaletteAppliedSuf');
     }
   }
   document.getElementById('analyzeColorsBtn').addEventListener('click', function () {
-    var btn = this; btn.disabled = true; btn.textContent = 'AI 分析中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditColorsBusy');
     google.script.run.withSuccessHandler(function (res) {
-      btn.disabled = false; btn.textContent = '🎨 AI 配色';
+      btn.disabled = false; btn.textContent = window.L('aeEditAnalyzeColorsBtn');
       if (res && res.success && res.colors) {
         renderPaletteFromTheme(res.colors);
-        document.getElementById('posterMsg').textContent = '✓ 已套用配色到公開頁主題（' + Object.keys(res.colors).length + ' 色）';
-      } else { uiAlert((res && res.message) || 'AI 配色失敗'); }
-    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '🎨 AI 配色'; uiAlert('AI 配色失敗：' + (e && e.message)); })
+        document.getElementById('posterMsg').textContent = window.L('aeEditColorsAppliedPre') + Object.keys(res.colors).length + window.L('aeEditColorsAppliedSuf');
+      } else { uiAlert((res && res.message) || window.L('aeEditColorsFail')); }
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = window.L('aeEditAnalyzeColorsBtn'); uiAlert(window.L('aeEditColorsFailPre') + (e && e.message)); })
       .analyzePosterColors(compId, CFG.posterUrl || '');
   });
 
@@ -1386,52 +1386,52 @@
     var el = document.getElementById('pdfStatus');
     if (CFG.rulesPdfId || CFG.pdfDocId) {
       var chars = (CFG.rulesText || '').length;
-      el.innerHTML = '✓ 已上傳簡章' + (chars ? ('（已擷取約 ' + chars + ' 字作為 AI 知識庫）') : '') +
-        ' <button type="button" class="btn btn-ghost btn-sm" id="viewPdfLink" style="margin-left:6px">🔍 預覽 PDF</button>';
+      el.innerHTML = window.L('aeEditPdfUploadedPre') + (chars ? (window.L('aeEditPdfExtractedPre') + chars + window.L('aeEditPdfExtractedSuf')) : '') +
+        ' <button type="button" class="btn btn-ghost btn-sm" id="viewPdfLink" style="margin-left:6px">' + escapeHtml(window.L('aeEditPdfPreviewBtn')) + '</button>';
       var vp = document.getElementById('viewPdfLink');
       if (vp) vp.addEventListener('click', function () {
         var docId = CFG.pdfDocId || String(CFG.rulesPdfId || '').replace('pfpdf:', '');
-        vp.disabled = true; vp.textContent = '載入中⋯';
+        vp.disabled = true; vp.textContent = window.L('aeEditPdfLoadingBtn');
         google.script.run.withSuccessHandler(function (res) {
-          vp.disabled = false; vp.textContent = '🔍 預覽 PDF';
+          vp.disabled = false; vp.textContent = window.L('aeEditPdfPreviewBtn');
           var d = res && (res.dataUrl || res.dataUri || (res.base64 ? ('data:application/pdf;base64,' + res.base64) : ''));
-          if (d) openMediaModal('<iframe src="' + d + '" style="width:100%;height:70vh;border:0;border-radius:8px"></iframe>', '活動簡章預覽');
-          else uiAlert('無法載入 PDF');
-        }).withFailureHandler(function () { vp.disabled = false; vp.textContent = '🔍 預覽 PDF'; uiAlert('無法載入 PDF'); }).getPdfData(docId);
+          if (d) openMediaModal('<iframe src="' + d + '" style="width:100%;height:70vh;border:0;border-radius:8px"></iframe>', window.L('aeEditModalPdfTitle'));
+          else uiAlert(window.L('aeEditPdfLoadFail'));
+        }).withFailureHandler(function () { vp.disabled = false; vp.textContent = window.L('aeEditPdfPreviewBtn'); uiAlert(window.L('aeEditPdfLoadFail')); }).getPdfData(docId);
       });
-    } else { el.textContent = '尚未上傳簡章。'; }
+    } else { el.textContent = window.L('aeEditPdfNone'); }
   }
   document.getElementById('pdfPickBtn').addEventListener('click', function () { document.getElementById('pdfFile').click(); });
   document.getElementById('pdfFile').addEventListener('change', function () {
     var file = this.files[0]; if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { uiAlert('PDF 不可超過 5MB'); this.value = ''; return; }
+    if (file.size > 5 * 1024 * 1024) { uiAlert(window.L('aeEditPdfTooLarge')); this.value = ''; return; }
     pdfChosen = file; document.getElementById('pdfUploadBtn').disabled = false;
-    document.getElementById('pdfMsg').textContent = '已選擇：' + file.name;
+    document.getElementById('pdfMsg').textContent = window.L('aeEditPdfChosenPre') + file.name;
   });
   document.getElementById('pdfUploadBtn').addEventListener('click', function () {
     if (!pdfChosen) return;
-    var btn = this; btn.disabled = true; btn.textContent = '上傳中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditPdfUploadBusy');
     var r = new FileReader();
     r.onload = function (e) {
       var b64 = e.target.result.split(',')[1];
       google.script.run.withSuccessHandler(function (res) {
-        btn.textContent = '上傳簡章';
+        btn.textContent = window.L('aeEditPdfUploadBtn');
         if (res && res.success) {
           CFG.rulesPdfId = 'pfpdf:' + res.fileId; CFG.pdfDocId = res.fileId;
           CFG.rulesText = new Array((res.textExtracted || 0) + 1).join(' ');
-          document.getElementById('pdfMsg').textContent = '✓ 簡章已上傳，擷取 ' + (res.textExtracted || 0) + ' 字';
+          document.getElementById('pdfMsg').textContent = window.L('aeEditPdfUploadedShortPre') + (res.textExtracted || 0) + window.L('aeEditPdfUploadedShortSuf');
           refreshPdfStatus(); pdfChosen = null;
-        } else { btn.disabled = false; uiAlert((res && res.message) || '上傳失敗'); }
-      }).withFailureHandler(function (er) { btn.disabled = false; btn.textContent = '上傳簡章'; uiAlert('上傳失敗：' + (er && er.message)); })
+        } else { btn.disabled = false; uiAlert((res && res.message) || window.L('aeEditPdfUploadFail')); }
+      }).withFailureHandler(function (er) { btn.disabled = false; btn.textContent = window.L('aeEditPdfUploadBtn'); uiAlert(window.L('aeEditPdfUploadFailPre') + (er && er.message)); })
         .uploadRulesPdf(compId, b64, pdfChosen.name);
     };
     r.readAsDataURL(pdfChosen);
   });
   document.getElementById('aiFillBtn').addEventListener('click', function () {
-    if (!(CFG.rulesPdfId || CFG.pdfDocId)) { uiAlert('請先上傳簡章 PDF'); return; }
-    var btn = this; btn.disabled = true; btn.textContent = 'AI 分析中⋯';
+    if (!(CFG.rulesPdfId || CFG.pdfDocId)) { uiAlert(window.L('aeEditAiFillNeedPdf')); return; }
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditAiFillBusy');
     google.script.run.withSuccessHandler(function (res) {
-      btn.disabled = false; btn.textContent = '🤖 用簡章 AI 自動填寫設定';
+      btn.disabled = false; btn.textContent = window.L('aeEditAiFillBtn');
       if (res && res.success && res.data) {
         var d = res.data;
         if (d.competitionName) document.getElementById('basic-name').value = d.competitionName;
@@ -1440,50 +1440,50 @@
         if (d.deadline) document.getElementById('basic-deadline').value = toLocalInput(d.deadline);
         if (d.competitionDate) document.getElementById('basic-competitionDate').value = toLocalInput(d.competitionDate);
         markDirty();
-        uiAlert('AI 已依簡章填入可辨識的欄位，請檢查後再按「儲存變更」。');
-      } else { uiAlert((res && res.message) || 'AI 分析失敗'); }
-    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = '🤖 用簡章 AI 自動填寫設定'; uiAlert('AI 分析失敗：' + (e && e.message)); })
+        uiAlert(window.L('aeEditAiFillDone'));
+      } else { uiAlert((res && res.message) || window.L('aeEditAiFillFail')); }
+    }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = window.L('aeEditAiFillBtn'); uiAlert(window.L('aeEditAiFillFailPre') + (e && e.message)); })
       .analyzeRulesWithAI(compId);
   });
 
   // Item 3: show the REAL current form design (read-only) from the form schema.
   function renderFormSummary() {
     var el = document.getElementById('formSummary');
-    el.innerHTML = '<p style="color:var(--muted)">載入表單設計⋯</p>';
-    var roleLabel = { student: '學員', teacher: '指導者', custom: '自訂' };
-    var typeLabel = { text: '單行文字', textarea: '多行文字', email: 'Email', tel: '電話', select: '下拉', radio: '單選', checkbox: '複選', date: '日期', idnumber: '身分證', number: '數字', file: '上傳檔案' };
+    el.innerHTML = '<p style="color:var(--muted)">' + escapeHtml(window.L('aeEditFsLoading')) + '</p>';
+    var roleLabel = { student: window.L('aeEditFsRoleStudent'), teacher: window.L('aeEditFsRoleTeacher'), custom: window.L('aeEditFsRoleCustom') };
+    var typeLabel = { text: window.L('aeEditFsTypeText'), textarea: window.L('aeEditFsTypeTextarea'), email: window.L('aeEditFsTypeEmail'), tel: window.L('aeEditFsTypeTel'), select: window.L('aeEditFsTypeSelect'), radio: window.L('aeEditFsTypeRadio'), checkbox: window.L('aeEditFsTypeCheckbox'), date: window.L('aeEditFsTypeDate'), idnumber: window.L('aeEditFsTypeIdnumber'), number: window.L('aeEditFsTypeNumber'), file: window.L('aeEditFsTypeFile') };
     google.script.run.withSuccessHandler(function (res) {
       var schema = res && res.schema;
       if (!schema || !schema.sections || !schema.sections.length) {
-        el.innerHTML = '<p style="color:var(--muted)">尚未設計任何欄位。點上方「開啟設計器」開始設計報名表單。</p>';
+        el.innerHTML = '<p style="color:var(--muted)">' + escapeHtml(window.L('aeEditFsEmpty')) + '</p>';
         return;
       }
       var total = schema.sections.reduce(function (n, s) { return n + (s.fields || []).length; }, 0);
       // Strict rule: 1 區塊 = 1 人. Totals are simple section counts; `repeat` is ignored.
       var stuCount = schema.sections.filter(function (s) { return s.role === 'student'; }).length;
       var tchCount = schema.sections.filter(function (s) { return s.role === 'teacher'; }).length;
-      var html = '<p style="margin-bottom:12px">共 <b>' + schema.sections.length + '</b> 個區塊（學員 <b>' + stuCount + '</b> 位、指導者 <b>' + tchCount + '</b> 位）、<b>' + total + '</b> 個欄位 — 僅供檢視，修改請按上方「開啟設計器」。</p>';
+      var html = '<p style="margin-bottom:12px">' + window.L('aeEditFsSummaryPre') + schema.sections.length + window.L('aeEditFsSummaryMid1') + stuCount + window.L('aeEditFsSummaryMid2') + tchCount + window.L('aeEditFsSummaryMid3') + total + window.L('aeEditFsSummarySuf') + '</p>';
       schema.sections.forEach(function (s) {
         // Always "1 位" per section — section count IS the person count.
-        var cnt = (s.role === 'student' || s.role === 'teacher') ? '1 位' : '';
+        var cnt = (s.role === 'student' || s.role === 'teacher') ? window.L('aeEditFsPerPerson') : '';
         html += '<div style="margin-bottom:12px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">' +
-          '<div style="font:600 13px/1.3 var(--f-display); margin-bottom:8px">' + escapeHtml(s.title || '(無標題)') +
-            ' <span style="font:500 10.5px/1 var(--f-mono); color:var(--muted)">' + (roleLabel[s.role] || '自訂') + (cnt ? (' · ' + cnt) : '') + '</span></div>';
+          '<div style="font:600 13px/1.3 var(--f-display); margin-bottom:8px">' + escapeHtml(s.title || window.L('aeEditFsSectionNoTitle')) +
+            ' <span style="font:500 10.5px/1 var(--f-mono); color:var(--muted)">' + escapeHtml(roleLabel[s.role] || window.L('aeEditFsRoleCustom')) + (cnt ? (' · ' + cnt) : '') + '</span></div>';
         var fields = s.fields || [];
-        if (!fields.length) { html += '<div style="font:400 12px/1.5 var(--f-tc); color:var(--muted)">（此區塊尚無欄位）</div>'; }
+        if (!fields.length) { html += '<div style="font:400 12px/1.5 var(--f-tc); color:var(--muted)">' + escapeHtml(window.L('aeEditFsSectionEmpty')) + '</div>'; }
         else {
           html += '<div style="display:flex; flex-wrap:wrap; gap:6px">' + fields.map(function (f) {
             return '<span style="font:400 11.5px/1.4 var(--f-tc); padding:3px 9px; background:var(--surface); border:1px solid var(--line); border-radius:6px">' +
-              escapeHtml(f.label || '(未命名)') + (f.req ? ' <span style="color:var(--err-500)">*</span>' : '') +
+              escapeHtml(f.label || window.L('aeEditFsFieldUnnamed')) + (f.req ? ' <span style="color:var(--err-500)">*</span>' : '') +
               ' <span style="color:var(--muted)">· ' + escapeHtml(typeLabel[f.type] || f.type || '') + '</span>' +
-              (f.logic && f.logic.key ? ' <span style="color:var(--acc)">· 條件</span>' : '') + '</span>';
+              (f.logic && f.logic.key ? ' <span style="color:var(--acc)">· ' + escapeHtml(window.L('aeEditFsFieldLogic')) + '</span>' : '') + '</span>';
           }).join('') + '</div>';
         }
         html += '</div>';
       });
       el.innerHTML = html;
     }).withFailureHandler(function () {
-      el.innerHTML = '<p style="color:var(--err-700)">載入表單摘要失敗，請重新整理。</p>';
+      el.innerHTML = '<p style="color:var(--err-700)">' + escapeHtml(window.L('aeEditFsLoadFail')) + '</p>';
     }).getFormSchema(compId);
   }
 
@@ -1535,7 +1535,7 @@
   function markDirty() {
     var cur = serialize();
     var dirty = cur !== ORIGINAL_JSON;
-    document.getElementById('saveMeta').textContent = dirty ? '有未儲存變更' : '已儲存';
+    document.getElementById('saveMeta').textContent = dirty ? window.L('aeEditDirty') : window.L('aeEditSaved');
     document.getElementById('saveMeta').className = 'meta ' + (dirty ? 'dirty' : 'saved');
     document.getElementById('saveBtn').disabled = !dirty;
     document.getElementById('revertBtn').disabled = !dirty;
@@ -1545,7 +1545,7 @@
     el.addEventListener('change', markDirty);
   });
   document.getElementById('revertBtn').addEventListener('click', function () {
-    uiConfirm('還原所有未儲存變更？', { title: '還原變更' }).then(function (ok) {
+    uiConfirm(window.L('aeEditRevertConfirm'), { title: window.L('aeEditRevertTitle') }).then(function (ok) {
       if (!ok) return;
       populate();
       markDirty();
@@ -1557,15 +1557,15 @@
 
     // Client-side validation
     if (data.bankEnabled && !(data.bankInfo.accountNumber && data.bankInfo.accountName && data.bankInfo.bankName)) {
-      uiAlert('已啟用銀行轉帳，請完整填寫銀行名稱、帳號與戶名。'); return;
+      uiAlert(window.L('aeEditValBank')); return;
     }
     if (data.openDate && data.deadline && data.openDate >= data.deadline) {
-      uiAlert('開放報名時間必須早於報名截止時間。'); return;
+      uiAlert(window.L('aeEditValOpenDeadline')); return;
     }
     // Item 1 & 2: block save when capacity exceeds the plan's per-activity cap.
     if (!validateCapacity()) {
       var em = document.getElementById('maxTeamsErr');
-      uiAlert((em && em.textContent) || '報名上限超過您的方案上限，請調整或升級方案。');
+      uiAlert((em && em.textContent) || window.L('aeEditValCapacityFallback'));
       return;
     }
 
@@ -1614,13 +1614,13 @@
       maxTeams: data.maxTeams,
       maxCapacityLimit: data.maxTeams
     });
-    var btn = this; btn.disabled = true; btn.textContent = '儲存中⋯';
+    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditSaveBusy');
     google.script.run
       .withSuccessHandler(function (res) {
         // Backend may reject (e.g. capacity over plan limit) with {success:false,message}.
         if (res && res.success === false) {
-          btn.disabled = false; btn.textContent = '儲存變更';
-          uiAlert((res && res.message) || '儲存失敗');
+          btn.disabled = false; btn.textContent = window.L('aeEditSaveBtn');
+          uiAlert((res && res.message) || window.L('aeEditSaveFail'));
           return;
         }
         // isOpen lives on the top-level comp doc and has its own callable.
@@ -1630,43 +1630,43 @@
         }).then(function () {
           ORIGINAL_JSON = serialize();
           markDirty();
-          btn.textContent = '儲存變更';
+          btn.textContent = window.L('aeEditSaveBtn');
           var meta = document.getElementById('saveMeta');
           // P3: surface AI summary status so organiser sees whether the hero text was regenerated
           var aiNote = '';
-          if (res && res.summaryUpdated) aiNote = '　·　🤖 AI 摘要已更新（' + (res.summaryLength || 0) + ' 字）';
-          else if (res && res.summaryReason) aiNote = '　·　AI 摘要：' + res.summaryReason;
-          meta.textContent = '✓ 儲存成功' + aiNote;
+          if (res && res.summaryUpdated) aiNote = window.L('aeEditSaveAiSummaryPre') + (res.summaryLength || 0) + window.L('aeEditSaveAiSummarySuf');
+          else if (res && res.summaryReason) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + res.summaryReason;
+          meta.textContent = window.L('aeEditSaveOk') + aiNote;
           meta.className = 'meta saved';
           // Refresh local cfg so re-saves know the current summary
           if (res && typeof res.summaryLength === 'number') CFG.descriptionSummary = (res.summaryLength > 0) ? (CFG.descriptionSummary || '<已更新>') : '';
         });
       })
       .withFailureHandler(function (err) {
-        btn.disabled = false; btn.textContent = '儲存變更';
-        alert('儲存失敗：' + (err && err.message));
+        btn.disabled = false; btn.textContent = window.L('aeEditSaveBtn');
+        alert(window.L('aeEditSaveFailPre') + (err && err.message));
       })
       .saveCompetitionConfig(compId, newCfg);
   });
 
   // Danger zone
   document.getElementById('dupBtn').addEventListener('click', function () {
-    uiPrompt('請輸入複本名稱', (CFG.competitionName || '活動') + ' (複製)', { title: '複製活動' }).then(function (name) {
+    uiPrompt(window.L('aeEditDupPromptMsg'), (CFG.competitionName || window.L('aeEditDefaultEventName')) + window.L('aeEditDupNameSuffix'), { title: window.L('aeEditDupTitle') }).then(function (name) {
       if (!name) return;
       google.script.run
-        .withSuccessHandler(function () { uiAlert('已建立複本，請至活動列表查看').then(function () { location.href = '/admin/events/'; }); })
-        .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+        .withSuccessHandler(function () { uiAlert(window.L('aeEditDupDone')).then(function () { location.href = '/admin/events/'; }); })
+        .withFailureHandler(function (err) { uiAlert(window.L('aeEditDupFailPre') + (err && err.message)); })
         .duplicateCompetition(compId, name, me.username);
     });
   });
   document.getElementById('deleteBtn').addEventListener('click', function () {
-    uiConfirm('永久刪除「' + CFG.competitionName + '」及其所有報名資料？此操作無法復原。', { title: '刪除活動', okText: '繼續', danger: true }).then(function (ok) {
+    uiConfirm(window.L('aeEditDeleteConfirmPre') + CFG.competitionName + window.L('aeEditDeleteConfirmSuf'), { title: window.L('aeEditDeleteTitle'), okText: window.L('aeEditDeleteOk'), danger: true }).then(function (ok) {
       if (!ok) return;
-      uiPrompt('請輸入活動名稱以確認刪除：', '', { title: '最終確認', placeholder: CFG.competitionName, danger: true, okText: '永久刪除' }).then(function (typed) {
-        if (typed !== CFG.competitionName) { if (typed !== null) uiAlert('名稱不符，已取消。'); return; }
+      uiPrompt(window.L('aeEditDeleteFinalPrompt'), '', { title: window.L('aeEditDeleteFinalTitle'), placeholder: CFG.competitionName, danger: true, okText: window.L('aeEditDeleteFinalOk') }).then(function (typed) {
+        if (typed !== CFG.competitionName) { if (typed !== null) uiAlert(window.L('aeEditDeleteNameMismatch')); return; }
         google.script.run
-          .withSuccessHandler(function () { uiAlert('已刪除').then(function () { location.href = '/admin/events/'; }); })
-          .withFailureHandler(function (err) { uiAlert('失敗：' + (err && err.message)); })
+          .withSuccessHandler(function () { uiAlert(window.L('aeEditDeleteDone')).then(function () { location.href = '/admin/events/'; }); })
+          .withFailureHandler(function (err) { uiAlert(window.L('aeEditDeleteFailPre') + (err && err.message)); })
           .deleteCompetition(compId);
       });
     });

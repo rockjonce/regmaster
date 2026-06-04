@@ -969,17 +969,29 @@ body { background:var(--bg); overflow:hidden; }
     render(); markDirty();
   }
 
+  // Default field LABEL inserted when a special palette item is dropped/added.
+  // This is a UI-generated default (the organiser hasn't typed anything yet), so it's
+  // translatable chrome — NOT an organiser-entered label value. Each legacy key maps to
+  // an i18n key (reusing the palette display keys where the wording matches); resolved
+  // through window.L at insert time. The legacy KEY strings here are schema keys, unchanged.
+  var LEGACY_LABEL_KEYS = {
+    chineseName:'aeFormSpChineseName', englishName:'aeFormSpEnglishName', idNumber:'aeFormSpIdNumber',
+    email:'aeFormSpEmail', phone:'aeFormSpPhone', school:'aeFormSpSchool', department:'aeFormSpDepartment',
+    grade:'aeFormSpGrade', dietary:'aeFormDefDietary', tshirt:'aeFormDefTshirt', birthday:'aeFormSpBirthday',
+    address:'aeFormSpAddress', gender:'aeFormSpGender', nationality:'aeFormSpNationality', passport:'aeFormSpPassport',
+    classroom:'aeFormSpClassroom', organization:'aeFormSpOrganization', jobTitle:'aeFormSpJobTitle',
+    postalCode:'aeFormSpPostalCode', birthplace:'aeFormSpBirthplace', emergencyName:'aeFormSpEmergencyName',
+    emergencyPhone:'aeFormSpEmergencyPhone', emergencyRelation:'aeFormSpEmergencyRelation',
+    dietaryRestriction:'aeFormSpDietaryRestriction', bloodType:'aeFormSpBloodType', healthNote:'aeFormSpHealthNote',
+    invoiceType:'aeFormSpInvoiceType', invoiceTitle:'aeFormSpInvoiceTitle', taxId:'aeFormSpTaxId',
+    accommodation:'aeFormSpAccommodation', lineId:'aeFormSpLineId', salutation:'aeFormSpSalutation',
+    city:'aeFormSpCity', eduLevel:'aeFormSpEduLevel', studentId:'aeFormSpStudentId',
+    referralSource:'aeFormSpReferralSource', transportation:'aeFormSpTransportation',
+    accessibility:'aeFormSpAccessibility', guardianName:'aeFormSpGuardianName', guardianPhone:'aeFormSpGuardianPhone',
+    guardianConsent:'aeFormSpGuardianConsent', consent:'aeFormSpConsent', website:'aeFormSpWebsite'
+  };
   function labelForLegacy(k) {
-    return ({ chineseName:'中文姓名', englishName:'英文姓名', idNumber:'身分證', email:'Email', phone:'電話',
-              school:'學校', department:'系所', grade:'年級', dietary:'飲食習慣', tshirt:'T-shirt 尺寸',
-              birthday:'生日', address:'地址', gender:'性別', nationality:'國籍', passport:'護照號碼',
-              classroom:'班級', organization:'服務單位', jobTitle:'職稱', postalCode:'郵遞區號', birthplace:'出生地',
-              department:'系所/科系', emergencyName:'緊急聯絡人', emergencyPhone:'緊急聯絡電話',
-              emergencyRelation:'緊急聯絡關係', dietaryRestriction:'飲食限制/過敏', bloodType:'血型',
-              healthNote:'特殊健康狀況', invoiceType:'發票類型', invoiceTitle:'發票抬頭', taxId:'統一編號', accommodation:'住宿需求', lineId:'LINE ID',
-              salutation:'尊稱', city:'居住縣市', eduLevel:'教育階段', studentId:'學號', referralSource:'如何得知本活動',
-              transportation:'交通方式', accessibility:'特殊需求/無障礙', guardianName:'監護人姓名', guardianPhone:'監護人電話',
-              guardianConsent:'家長同意', consent:'條款/肖像權同意', website:'網站' })[k] || '';
+    return LEGACY_LABEL_KEYS[k] ? window.L(LEGACY_LABEL_KEYS[k]) : '';
   }
 
   // ---- Add section (item 1: 學員 / 指導者 / 自訂 dropdown) ----

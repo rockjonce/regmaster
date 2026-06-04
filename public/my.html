@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>我的報名 · RegMaster</title>
+<title data-i18n="myPageTitle">我的報名 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -287,7 +287,7 @@
     var list = document.getElementById('regList');
     var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
     var monthsEN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    var weekdays = ['週日','週一','週二','週三','週四','週五','週六'];
+    var weekdays = window.L('myWeekdays').split(',');
     var filtered = ALL.filter(function (r) {
       if (STATE_FILTER === 'all') return true;
       return classifyReg(r) === STATE_FILTER;
@@ -454,6 +454,13 @@
     location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
       encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
   });
+
+  // Re-render JS-built list (weekday labels, status pills, action buttons) on language switch
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () {
+      if (document.getElementById('resultsArea').style.display !== 'none') render();
+    });
+  }
 
   // Auto-trigger if ?email= in URL (e.g. from email link)
   var qs = new URLSearchParams(location.search);

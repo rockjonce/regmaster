@@ -1479,7 +1479,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.getElementById('successArea').style.display = 'block';
     document.getElementById('resTeamId').textContent = res.teamId || '—';
     document.getElementById('resPwd').textContent = res.password || '—';
-    document.getElementById('resStatus').textContent = res.status || window.L('rgStatusAccepted');
+    document.getElementById('resStatus').textContent = res.status ? window.LS(res.status) : window.L('rgStatusAccepted');
     // T2: only ATM users see bank info here; PayUNI users won't reach this page (they
     // get bounced to PayUNI before success), free events have no fee.
     if (STATE.payMethod === 'atm' && CFG.bankInfo && CFG.bankInfo.accountNumber) {

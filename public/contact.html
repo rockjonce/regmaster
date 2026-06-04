@@ -283,7 +283,7 @@
   // ---- Char counter ----
   var counter = document.getElementById('charCounter');
   document.getElementById('cMessage').addEventListener('input', function (e) {
-    counter.textContent = '已填 ' + e.target.value.length + ' 字 · 越具體我們回得越精準';
+    counter.textContent = window.L('cnCharCounterPre') + e.target.value.length + window.L('cnCharCounterSuf');
   });
 
   // ---- Submit handler ----
@@ -302,13 +302,13 @@
     var message = document.getElementById('cMessage').value.trim();
     var newsletter = document.querySelector('input[name="newsletter"]').checked;
 
-    if (!name) { alert('請填寫姓名'); document.getElementById('cName').focus(); return; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('請填寫正確的 Email'); document.getElementById('cEmail').focus(); return; }
-    if (!message) { alert('請告訴我們你的需求'); document.getElementById('cMessage').focus(); return; }
+    if (!name) { alert(window.L('cnAlertName')); document.getElementById('cName').focus(); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert(window.L('cnAlertEmail')); document.getElementById('cEmail').focus(); return; }
+    if (!message) { alert(window.L('cnAlertMessage')); document.getElementById('cMessage').focus(); return; }
 
     var btn = e.currentTarget;
     btn.disabled = true;
-    btn.textContent = '送出中...';
+    btn.textContent = window.L('cnSubmitting');
 
     var payload = {
       category: activeTab,
@@ -336,15 +336,15 @@
           document.getElementById('successBox').scrollIntoView({behavior:'smooth', block:'center'});
         } else {
           btn.disabled = false;
-          btn.textContent = '送出 →';
-          alert('送出失敗：' + (res && res.message || '請改用 support@calculator.com.tw 寄信'));
+          btn.textContent = window.L('cnSubmit');
+          alert(window.L('cnSubmitFailPre') + (res && res.message || window.L('cnSubmitFailFallback')));
         }
       })
       .withFailureHandler(function (err) {
         console.error('Contact submit failed:', err);
         btn.disabled = false;
-        btn.textContent = '送出 →';
-        alert('送出失敗，請改用 support@calculator.com.tw 寄信。\n\n錯誤訊息: ' + (err && err.message || err));
+        btn.textContent = window.L('cnSubmit');
+        alert(window.L('cnSubmitFailNet') + (err && err.message || err));
       })
       .submitContactInquiry(payload);
   });

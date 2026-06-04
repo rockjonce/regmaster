@@ -114,6 +114,11 @@
     aeFormSpTransportation: '交通方式',
     aeFormSpAccommodation: '住宿需求',
 
+    // ----- default field LABEL values for special palette items whose default
+    //       wording differs from the palette display name (labelForLegacy) -----
+    aeFormDefDietary: '飲食習慣',
+    aeFormDefTshirt: 'T-shirt 尺寸',
+
     // ----- canvas -----
     aeFormCanvasTitle: '報名表預覽',
     aeFormCanvasSub: '從左側拖曳欄位類型到此處，或點擊區塊內的「＋ 新增欄位」',
@@ -328,6 +333,11 @@
     aeFormSpReferralSource: 'How You Heard About This Event',
     aeFormSpTransportation: 'Transportation',
     aeFormSpAccommodation: 'Accommodation',
+
+    // ----- default field LABEL values for special palette items whose default
+    //       wording differs from the palette display name (labelForLegacy) -----
+    aeFormDefDietary: 'Dietary Preference',
+    aeFormDefTshirt: 'T-shirt Size',
 
     // ----- canvas -----
     aeFormCanvasTitle: 'Registration Form Preview',

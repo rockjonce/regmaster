@@ -291,6 +291,46 @@
   };
 
   // ---------------------------------------------------------------------------
+  // System status / enum value localizer.
+  // The backend stores certain values in Chinese (registration status, payment
+  // status, payment method). Those stored strings are used in comparisons and
+  // must NOT change. Use window.LS(value) at RENDER time to get a display label
+  // in the active language; the stored value is untouched. Unknown values pass
+  // through unchanged. Handles the dynamic "備取N" (waitlist #N) form.
+  // ---------------------------------------------------------------------------
+  var STATUS_MAP = {
+    '正取':   { zh: '正取',   en: 'Accepted' },
+    '已取消': { zh: '已取消', en: 'Cancelled' },
+    '待審核': { zh: '待審核', en: 'Under review' },
+    '待確認': { zh: '待確認', en: 'Pending' },
+    '已確認': { zh: '已確認', en: 'Confirmed' },
+    '待付款': { zh: '待付款', en: 'Unpaid' },
+    '已付款': { zh: '已付款', en: 'Paid' },
+    '未付款': { zh: '未付款', en: 'Unpaid' },
+    '已退費': { zh: '已退費', en: 'Refunded' },
+    '免費':   { zh: '免費',   en: 'Free' },
+    '信用卡': { zh: '信用卡', en: 'Credit card' },
+    'ATM':    { zh: 'ATM',    en: 'ATM' },
+    '超商':   { zh: '超商',   en: 'Convenience store' },
+    '超商代碼': { zh: '超商代碼', en: 'Convenience-store code' },
+    '銀行轉帳': { zh: '銀行轉帳', en: 'Bank transfer' },
+    '匯款':   { zh: '匯款',   en: 'Bank transfer' },
+    '轉帳':   { zh: '轉帳',   en: 'Bank transfer' },
+    'LINE Pay': { zh: 'LINE Pay', en: 'LINE Pay' },
+    '線上付款': { zh: '線上付款', en: 'Online payment' },
+    '折抵':   { zh: '折抵',   en: 'Discount' }
+  };
+  window.LS = function (val, lang) {
+    var L = lang || window.LANG || 'zh';
+    if (val == null) return val;
+    var s = String(val);
+    var m = s.match(/^備取\s*(\d*)$/); // waitlist, optional number
+    if (m) return L === 'en' ? ('Waitlist' + (m[1] ? (' #' + m[1]) : '')) : s;
+    var e = STATUS_MAP[s];
+    return e ? (L === 'en' ? e.en : e.zh) : s;
+  };
+
+  // ---------------------------------------------------------------------------
   // Applier: walk the DOM and translate elements tagged with data-i18n*.
   //   data-i18n           → textContent
   //   data-i18n-html      → innerHTML (for nodes containing <br>/<em>/<b>/<a>)

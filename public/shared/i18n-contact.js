@@ -83,7 +83,18 @@
     cnFaqQ2: '怎麼收報名費？',
     cnFaqA2: '啟用線上付款（PayUNI 信用卡）由平台代收，扣除手續費後依週期撥款給你；或填寫銀行帳戶讓報名者直接 ATM 轉帳，並用「末 5 碼快速對帳」核帳。',
     cnFaqQ3: '是學校 / 非營利單位，有優惠嗎？',
-    cnFaqA3: '歡迎以機構信箱來信 <a href="mailto:sales@calculator.com.tw" style="color:var(--acc)">sales@calculator.com.tw</a> 洽詢，我們會視情況提供協助。'
+    cnFaqA3: '歡迎以機構信箱來信 <a href="mailto:sales@calculator.com.tw" style="color:var(--acc)">sales@calculator.com.tw</a> 洽詢，我們會視情況提供協助。',
+
+    // ----- dynamic JS strings -----
+    cnCharCounterPre: '已填 ',
+    cnCharCounterSuf: ' 字 · 越具體我們回得越精準',
+    cnAlertName: '請填寫姓名',
+    cnAlertEmail: '請填寫正確的 Email',
+    cnAlertMessage: '請告訴我們你的需求',
+    cnSubmitting: '送出中...',
+    cnSubmitFailPre: '送出失敗：',
+    cnSubmitFailFallback: '請改用 support@calculator.com.tw 寄信',
+    cnSubmitFailNet: '送出失敗，請改用 support@calculator.com.tw 寄信。\n\n錯誤訊息: '
   };
 
   var E = {
@@ -160,7 +171,18 @@
     cnFaqQ2: 'How do I collect registration fees?',
     cnFaqA2: 'Enable online payments (PayUNI credit card) and the platform collects on your behalf, paying out on a regular cycle after fees; or add a bank account so registrants pay by ATM transfer directly, reconciled quickly via the last 5 digits.',
     cnFaqQ3: 'We\'re a school / nonprofit — are there discounts?',
-    cnFaqA3: 'Reach out from your institutional email at <a href="mailto:sales@calculator.com.tw" style="color:var(--acc)">sales@calculator.com.tw</a> and we\'ll see how we can help.'
+    cnFaqA3: 'Reach out from your institutional email at <a href="mailto:sales@calculator.com.tw" style="color:var(--acc)">sales@calculator.com.tw</a> and we\'ll see how we can help.',
+
+    // ----- dynamic JS strings -----
+    cnCharCounterPre: '',
+    cnCharCounterSuf: ' characters · the more detail, the sharper our reply',
+    cnAlertName: 'Please enter your name',
+    cnAlertEmail: 'Please enter a valid email',
+    cnAlertMessage: 'Please tell us what you need',
+    cnSubmitting: 'Sending...',
+    cnSubmitFailPre: 'Submission failed: ',
+    cnSubmitFailFallback: 'please email us at support@calculator.com.tw instead',
+    cnSubmitFailNet: 'Submission failed. Please email us at support@calculator.com.tw instead.\n\nError: '
   };
 
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });

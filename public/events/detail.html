@@ -340,6 +340,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 <script>
 (function () {
   AppState.init();
+  document.title = window.L('edPageTitle');
   document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
 
   var qs = new URLSearchParams(location.search);
@@ -878,7 +879,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         '<b style="font:700 15px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || teamId) + '</b><br>' +
         escapeHtml(window.L('edTeamIdLabel')) + '<span style="font-family:var(--f-mono)">' + escapeHtml(teamId) + '</span><br>' +
         (t.group ? escapeHtml(window.L('edGroupLabel')) + escapeHtml(t.group) + '<br>' : '') +
-        escapeHtml(window.L('edStatusLabel')) + escapeHtml(t.status || window.L('edStatusDefault')) + escapeHtml(window.L('edPayLabelInline')) + escapeHtml(t.paymentStatus || window.L('edPayDefault')) +
+        escapeHtml(window.L('edStatusLabel')) + escapeHtml(t.status ? window.LS(t.status) : window.L('edStatusDefault')) + escapeHtml(window.L('edPayLabelInline')) + escapeHtml(t.paymentStatus ? window.LS(t.paymentStatus) : window.L('edPayDefault')) +
         (memHtml ? '<ul style="margin:10px 0 0;padding-left:20px">' + memHtml + '</ul>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +

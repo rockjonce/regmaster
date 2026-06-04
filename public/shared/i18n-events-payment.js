@@ -75,7 +75,10 @@
     pmErrCompNotFound: '找不到活動',
     pmErrNetwork: '網路錯誤',
     pmErrRegNotFound: '找不到此筆報名',
-    pmErrCreateOrder: '無法產生付款訂單'
+    pmErrCreateOrder: '無法產生付款訂單',
+    // ----- document title prefix -----
+    pmTitlePrefix: '付款 · ',
+    pmDocTitle: '付款 · RegMaster'
   };
   var E={
     pmCrumbDetail: 'Event details',
@@ -140,7 +143,9 @@
     pmErrCompNotFound: 'Event not found',
     pmErrNetwork: 'Network error',
     pmErrRegNotFound: 'Registration not found',
-    pmErrCreateOrder: 'Unable to create the payment order'
+    pmErrCreateOrder: 'Unable to create the payment order',
+    pmTitlePrefix: 'Payment · ',
+    pmDocTitle: 'Payment · RegMaster'
   };
   Object.keys(Z).forEach(function(k){window.I18N.zh[k]=Z[k];});
   Object.keys(E).forEach(function(k){window.I18N.en[k]=E[k];});

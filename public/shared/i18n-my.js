@@ -86,7 +86,11 @@
     myRfDoneA: '<b style="color:var(--ok-700,#047857)">✓ 退費申請已送出</b><br>應退 ',
     myRfDoneB: '% ＝ NT$',
     myRfDoneC: '，待主辦方審核並退款。',
-    myRfErrSubmitFail: '送出失敗'
+    myRfErrSubmitFail: '送出失敗',
+    // ----- page <title> -----
+    myPageTitle: '我的報名 · RegMaster',
+    // ----- dynamic: weekday short labels (Sun..Sat, comma-separated) -----
+    myWeekdays: '週日,週一,週二,週三,週四,週五,週六'
   };
   var E={
     myHeroEyebrow: 'MY REGISTRATIONS',
@@ -163,7 +167,9 @@
     myRfDoneA: '<b style="color:var(--ok-700,#047857)">✓ Refund request submitted</b><br>Refundable ',
     myRfDoneB: '% = NT$',
     myRfDoneC: ', pending the organizer’s review and refund.',
-    myRfErrSubmitFail: 'Submission failed'
+    myRfErrSubmitFail: 'Submission failed',
+    myPageTitle: 'My Registrations · RegMaster',
+    myWeekdays: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat'
   };
   Object.keys(Z).forEach(function(k){window.I18N.zh[k]=Z[k];});
   Object.keys(E).forEach(function(k){window.I18N.en[k]=E[k];});

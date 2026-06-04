@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>付款 · RegMaster</title>
+<title data-i18n="pmDocTitle">付款 · RegMaster</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -272,13 +272,13 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   function render(team) {
-    document.title = '付款 · ' + (CFG.competitionName || '') + ' · RegMaster';
+    document.title = window.L('pmTitlePrefix') + (CFG.competitionName || '') + ' · RegMaster';
     document.getElementById('cName').textContent = CFG.competitionName || window.L('pmDash');
     document.getElementById('cTeamId').textContent = team.teamId || teamId;
     document.getElementById('cTeamName').textContent = team.teamNameCN || team.teamNameEN || window.L('pmDash');
-    document.getElementById('cStatus').textContent = team.status || window.L('pmDefaultRegStatus');
+    document.getElementById('cStatus').textContent = team.status ? window.LS(team.status) : window.L('pmDefaultRegStatus');
     var payStatus = team.paymentStatus || window.L('pmDefaultPayStatus');
-    document.getElementById('cPayStatus').textContent = payStatus;
+    document.getElementById('cPayStatus').textContent = team.paymentStatus ? window.LS(team.paymentStatus) : window.L('pmDefaultPayStatus');
     document.getElementById('feeAmt').textContent = 'NT$ ' + fee.toLocaleString();
     document.getElementById('totalAmt').textContent = 'NT$ ' + fee.toLocaleString();
     quoteTotal = fee;

@@ -11,6 +11,9 @@
   if (!window.I18N) return;
 
   var Z = {
+    // ----- page title -----
+    edPageTitle: '活動詳情 · RegMaster',
+
     // ----- nav / crumbs -----
     edCrumbExplore: '探索活動',
     edCrumbLoading: '載入中⋯⋯',
@@ -191,6 +194,9 @@
   };
 
   var E = {
+    // ----- page title -----
+    edPageTitle: 'Event Details · RegMaster',
+
     // ----- nav / crumbs -----
     edCrumbExplore: 'Explore',
     edCrumbLoading: 'Loading…',
