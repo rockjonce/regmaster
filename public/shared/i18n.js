@@ -331,6 +331,71 @@
   };
 
   // ---------------------------------------------------------------------------
+  // Form OPTION value localizer. Built-in registration-form option lists store
+  // their Chinese string as BOTH the <option> value and visible text, and that
+  // value is what gets submitted / compared. window.LO(value) returns a display
+  // label for the active language WITHOUT changing the stored value — use it for
+  // the option's visible TEXT only (keep value="<original Chinese>").
+  //   • Explicit map below covers the built-in enumerations.
+  //   • Bilingual "中文 English" entries (e.g. country list "台灣 Taiwan") return
+  //     the English portion in en mode automatically.
+  //   • Organiser-defined options (dietary/tshirt) and unknown values pass through
+  //     unchanged (so user-generated content is never altered).
+  // ---------------------------------------------------------------------------
+  var OPTIONS_MAP = {
+    // gender (student)
+    '男生': 'Male', '女生': 'Female', '男': 'Male', '女': 'Female',
+    // salutation
+    '先生': 'Mr.', '小姐': 'Ms.', '女士': 'Madam', '太太': 'Mrs.', '老師': 'Teacher', '教授': 'Professor', '博士': 'Dr.', '醫師': 'Doctor',
+    // Taiwan cities / counties
+    '台北市': 'Taipei City', '新北市': 'New Taipei City', '桃園市': 'Taoyuan City', '台中市': 'Taichung City',
+    '台南市': 'Tainan City', '高雄市': 'Kaohsiung City', '基隆市': 'Keelung City', '新竹市': 'Hsinchu City', '嘉義市': 'Chiayi City',
+    '新竹縣': 'Hsinchu County', '苗栗縣': 'Miaoli County', '彰化縣': 'Changhua County', '南投縣': 'Nantou County',
+    '雲林縣': 'Yunlin County', '嘉義縣': 'Chiayi County', '屏東縣': 'Pingtung County', '宜蘭縣': 'Yilan County',
+    '花蓮縣': 'Hualien County', '台東縣': 'Taitung County', '澎湖縣': 'Penghu County', '金門縣': 'Kinmen County', '連江縣': 'Lienchiang County',
+    // education level
+    '國小': 'Elementary school', '國中': 'Junior high school', '高中職': 'Senior / vocational high school', '五專': 'Junior college (5-year)',
+    '大學': 'University', '碩士': "Master's", '博士後': 'Postdoctoral', '社會人士': 'Working professional',
+    // referral source
+    '親友介紹': 'Friend / family referral', '社群媒體(FB‧IG)': 'Social media (FB / IG)', '官方網站': 'Official website',
+    '電子報': 'Newsletter', '學校公告': 'School announcement',
+    // transportation
+    '自行前往': 'Travelling on my own', '搭乘接駁車': 'Shuttle bus', '大眾運輸': 'Public transport',
+    // consent
+    '同意': 'Agree', '不同意': 'Disagree',
+    // dietary restriction
+    '一般': 'No restriction', '蛋奶素': 'Lacto-ovo vegetarian', '全素': 'Vegan', '不吃牛': 'No beef', '清真 (Halal)': 'Halal',
+    '海鮮過敏': 'Seafood allergy', '堅果過敏': 'Nut allergy', '麩質過敏': 'Gluten allergy',
+    // accommodation
+    '需要': 'Required', '不需要': 'Not required',
+    // invoice type
+    '二聯式': 'Duplicate (B2C)', '三聯式': 'Triplicate (B2B)',
+    // misc / shared
+    '其他': 'Other',
+    // phone country-code dropdown labels (country part only; the value is the dial code)
+    '台灣': 'Taiwan', '中國': 'China', '香港': 'Hong Kong', '澳門': 'Macau', '日本': 'Japan', '韓國': 'South Korea',
+    '新加坡': 'Singapore', '馬來西亞': 'Malaysia', '泰國': 'Thailand', '越南': 'Vietnam', '菲律賓': 'Philippines', '印尼': 'Indonesia',
+    '印度': 'India', '澳洲': 'Australia', '紐西蘭': 'New Zealand', '美國 / 加拿大': 'USA / Canada', '英國': 'United Kingdom',
+    '法國': 'France', '德國': 'Germany', '義大利': 'Italy', '西班牙': 'Spain', '葡萄牙': 'Portugal', '荷蘭': 'Netherlands',
+    '比利時': 'Belgium', '瑞士': 'Switzerland', '奧地利': 'Austria', '瑞典': 'Sweden', '挪威': 'Norway', '丹麥': 'Denmark',
+    '芬蘭': 'Finland', '愛爾蘭': 'Ireland', '波蘭': 'Poland', '捷克': 'Czech Republic', '希臘': 'Greece', '俄羅斯': 'Russia',
+    '土耳其': 'Turkey', '以色列': 'Israel', '阿聯酋': 'UAE', '沙烏地': 'Saudi Arabia', '埃及': 'Egypt', '南非': 'South Africa',
+    '奈及利亞': 'Nigeria', '肯亞': 'Kenya', '墨西哥': 'Mexico', '巴西': 'Brazil', '阿根廷': 'Argentina', '智利': 'Chile',
+    '哥倫比亞': 'Colombia', '秘魯': 'Peru'
+  };
+  window.LO = function (val, lang) {
+    var L = lang || window.LANG || 'zh';
+    if (val == null) return val;
+    var s = String(val);
+    if (L !== 'en') return s; // Chinese mode: show the original value verbatim
+    if (OPTIONS_MAP[s]) return OPTIONS_MAP[s];
+    // Bilingual "中文 English" pair → English portion (covers the country list).
+    var m = s.match(/^[㐀-鿿][㐀-鿿·]*\s+([A-Za-z].*)$/);
+    if (m) return m[1];
+    return s; // unknown / organiser-defined → unchanged
+  };
+
+  // ---------------------------------------------------------------------------
   // Applier: walk the DOM and translate elements tagged with data-i18n*.
   //   data-i18n           → textContent
   //   data-i18n-html      → innerHTML (for nodes containing <br>/<em>/<b>/<a>)

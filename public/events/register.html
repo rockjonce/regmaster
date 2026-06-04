@@ -948,9 +948,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   ];
   function renderInput(def, domId) {
     var t = def.type;
-    if (t === 'select') { return '<select id="' + domId + '"><option value="" data-i18n="rgSelectPlaceholder">請選擇</option>' + (def.opts || []).map(function (o) { return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + '</option>'; }).join('') + '</select>'; }
-    if (t === 'radio') { return '<div class="opt-group">' + (def.opts || []).map(function (o) { return '<label class="opt-pill"><input type="radio" name="' + domId + '" value="' + escapeHtml(o) + '"> ' + escapeHtml(o) + '</label>'; }).join('') + '</div>'; }
-    if (t === 'checkbox') { return '<div class="opt-group">' + (def.opts || []).map(function (o) { return '<label class="opt-pill"><input type="checkbox" data-cbgroup="' + domId + '" value="' + escapeHtml(o) + '"> ' + escapeHtml(o) + '</label>'; }).join('') + '</div>'; }
+    if (t === 'select') { return '<select id="' + domId + '"><option value="" data-i18n="rgSelectPlaceholder">請選擇</option>' + (def.opts || []).map(function (o) { return '<option value="' + escapeHtml(o) + '">' + escapeHtml(window.LO(o)) + '</option>'; }).join('') + '</select>'; }
+    if (t === 'radio') { return '<div class="opt-group">' + (def.opts || []).map(function (o) { return '<label class="opt-pill"><input type="radio" name="' + domId + '" value="' + escapeHtml(o) + '"> ' + escapeHtml(window.LO(o)) + '</label>'; }).join('') + '</div>'; }
+    if (t === 'checkbox') { return '<div class="opt-group">' + (def.opts || []).map(function (o) { return '<label class="opt-pill"><input type="checkbox" data-cbgroup="' + domId + '" value="' + escapeHtml(o) + '"> ' + escapeHtml(window.LO(o)) + '</label>'; }).join('') + '</div>'; }
     if (t === 'textarea') { return '<textarea id="' + domId + '" rows="3"></textarea>'; }
     if (t === 'file') {
       // FB4: file constraints — accept attr from def.acceptTypes (or custom ext list); size validated at change
@@ -960,7 +960,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     }
     if (t === 'phoneIntl') {
       // FB2: country-code dropdown + tel input. Value is "+CC NNNNNNN" joined on submit.
-      var ccOpts = COUNTRY_CODES.map(function (c) { return '<option value="' + escapeHtml(c[1]) + '"' + (c[1] === '+886' ? ' selected' : '') + '>' + escapeHtml(c[0]) + ' ' + escapeHtml(c[1]) + '</option>'; }).join('');
+      var ccOpts = COUNTRY_CODES.map(function (c) { return '<option value="' + escapeHtml(c[1]) + '"' + (c[1] === '+886' ? ' selected' : '') + '>' + escapeHtml(window.LO(c[0])) + ' ' + escapeHtml(c[1]) + '</option>'; }).join('');
       return '<div style="display:flex; gap:6px"><select id="' + domId + '_cc" style="width:170px; flex-shrink:0">' + ccOpts + '</select><input type="tel" id="' + domId + '_num" style="flex:1" placeholder="例：912345678" data-i18n-placeholder="rgPhonePlaceholder" inputmode="tel"><input type="hidden" id="' + domId + '"></div>';
     }
     var it = (t === 'email') ? 'email' : (t === 'tel') ? 'tel' : (t === 'date') ? 'date' : (t === 'number') ? 'number' : (t === 'url') ? 'url' : 'text';
@@ -1338,15 +1338,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var html = '<div class="review-section"><h5>' + escapeHtml(window.L('rgReviewBasic')) + '</h5>' + rows.map(function (r) { return '<div class="r-row"><span class="k">' + escapeHtml(r.k) + '</span><span class="v">' + escapeHtml(r.v) + '</span></div>'; }).join('') + '</div>';
     // Students
     STATE.students.forEach(function (s, i) {
-      var lines = Object.keys(s).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(LABEL_MAP[k] || FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(s[k]) + '</span></div>'; }).join('');
+      var lines = Object.keys(s).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(LABEL_MAP[k] || FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(window.LO(s[k])) + '</span></div>'; }).join('');
       html += '<div class="review-section"><h5>' + escapeHtml(window.L('rgStudentN') + ' ' + (i+1)) + '</h5>' + lines + '</div>';
     });
     STATE.teachers.forEach(function (t, i) {
-      var lines = Object.keys(t).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(LABEL_MAP[k] || FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(t[k]) + '</span></div>'; }).join('');
+      var lines = Object.keys(t).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(LABEL_MAP[k] || FIELD_LABELS[k] || k) + '</span><span class="v">' + escapeHtml(window.LO(t[k])) + '</span></div>'; }).join('');
       html += '<div class="review-section"><h5>' + escapeHtml(window.L('rgTeacherN') + ' ' + (i+1)) + '</h5>' + lines + '</div>';
     });
     if (Object.keys(STATE.customAnswers).length > 0) {
-      var lines = Object.keys(STATE.customAnswers).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(k) + '</span><span class="v">' + escapeHtml(STATE.customAnswers[k]) + '</span></div>'; }).join('');
+      var lines = Object.keys(STATE.customAnswers).map(function (k) { return '<div class="r-row"><span class="k">' + escapeHtml(k) + '</span><span class="v">' + escapeHtml(window.LO(STATE.customAnswers[k])) + '</span></div>'; }).join('');
       html += '<div class="review-section"><h5>' + escapeHtml(window.L('rgReviewCustomQs')) + '</h5>' + lines + '</div>';
     }
     // P2: 報名費用一覽 — keeps review consistent with the right-hand summary
