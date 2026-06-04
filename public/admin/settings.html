@@ -95,6 +95,7 @@
       <aside class="set-nav">
         <a class="on" data-tab="profile" data-i18n="adSetTabProfile">個人資料</a>
         <a data-tab="notifications" data-i18n="adSetTabNotifications">通知偏好</a>
+        <a data-tab="members" data-i18n="adSetTabMembers">成員與權限</a>
         <a data-tab="security" data-i18n="adSetTabSecurity">安全與登入</a>
         <a data-tab="sessions" data-i18n="adSetTabSessions">登入裝置</a>
         <a data-tab="account" data-i18n="adSetTabAccount">帳戶</a>
@@ -164,6 +165,63 @@
             </div>
           </div>
           <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveNotifBtn" data-i18n="adSetBtnSaveNotif">儲存通知偏好</button></div>
+        </div>
+
+        <!-- members & permissions -->
+        <div class="tab-pane" data-pane="members" style="display:none">
+          <!-- 我的邀請與協作 (invites addressed to me + memberships I joined) -->
+          <div class="section">
+            <div class="sh"><h3 data-i18n="adSetMyInvitesH3">我的邀請與協作</h3><p data-i18n="adSetMyInvitesSub">您收到的協作邀請，以及您已加入的其他主辦方團隊。</p></div>
+            <div class="sb" id="myInvitesList" data-i18n="adSetLoading">載入中⋯</div>
+          </div>
+
+          <!-- 團隊成員 (owner management) -->
+          <div class="section">
+            <div class="sh"><h3 data-i18n="adSetTeamH3">團隊成員</h3><p data-i18n="adSetTeamSub">邀請夥伴協助管理您的活動，並指派角色與可存取範圍。</p></div>
+            <div class="sb" id="teamBody">
+              <!-- upgrade notice (shown when not on Team plan) -->
+              <div id="teamUpgradeNotice" style="display:none;gap:10px;align-items:flex-start;padding:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;margin-bottom:16px">
+                <div style="font:400 12.5px/1.6 var(--f-tc);color:var(--ink-2)">
+                  <b style="color:var(--ink)" data-i18n="adSetTeamUpgradeTitle">成員與權限為 Team 方案功能</b><br>
+                  <span data-i18n="adSetTeamUpgradeDesc">升級至 Team 方案即可邀請夥伴共同管理活動、指派角色與權限。</span><br>
+                  <a href="/admin/license.html" style="color:var(--acc);font-weight:600" data-i18n="adSetTeamUpgradeLink">前往方案與授權 →</a>
+                </div>
+              </div>
+
+              <!-- invite form -->
+              <div id="inviteForm">
+                <div class="row-2">
+                  <div class="fld"><div class="lbl" data-i18n="adSetLblInviteEmail">受邀者 Email</div><input id="inviteEmail" type="email" placeholder="member@example.com" data-i18n-placeholder="adSetPhInviteEmail"></div>
+                  <div class="fld"><div class="lbl" data-i18n="adSetLblInviteRole">角色</div>
+                    <select id="inviteRole">
+                      <option value="manager" data-i18n="adSetRoleManager">管理員</option>
+                      <option value="staff" data-i18n="adSetRoleStaff">工作人員</option>
+                      <option value="judge" data-i18n="adSetRoleJudge">評審</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="fld">
+                  <div class="lbl" data-i18n="adSetLblInviteScope">可存取範圍</div>
+                  <label style="display:flex;align-items:center;gap:8px;font:400 13px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">
+                    <input type="radio" name="inviteScope" value="all" checked> <span data-i18n="adSetScopeAll">所有活動</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;font:400 13px/1.4 var(--f-tc);color:var(--ink-2)">
+                    <input type="radio" name="inviteScope" value="some"> <span data-i18n="adSetScopeSome">指定活動</span>
+                  </label>
+                  <div id="inviteEventList" style="display:none;margin-top:10px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;max-height:200px;overflow:auto" data-i18n="adSetLoading">載入中⋯</div>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center">
+                  <button class="btn btn-primary" id="inviteSubmitBtn" data-i18n="adSetBtnInvite">送出邀請</button>
+                  <span id="inviteMsg" style="font:500 12.5px/1.4 var(--f-tc)"></span>
+                </div>
+              </div>
+
+              <!-- member list -->
+              <div id="memberListWrap" style="margin-top:20px;border-top:1px solid var(--line-2);padding-top:18px">
+                <div id="memberList" data-i18n="adSetLoading">載入中⋯</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- security -->
@@ -323,6 +381,7 @@
       a.classList.add('on');
       document.querySelectorAll('.tab-pane').forEach(function (p) { p.style.display = p.dataset.pane === a.dataset.tab ? 'block' : 'none'; });
       if (a.dataset.tab === 'sessions') loadSessions();
+      if (a.dataset.tab === 'members') loadMembersTab();
     });
   });
 
@@ -587,6 +646,223 @@
       location.href = '/login.html';
     });
   });
+
+  // ===== Members & Permissions =====
+  var membersLoaded = false;
+  var ROLE_KEY = { manager: 'adSetRoleManager', staff: 'adSetRoleStaff', judge: 'adSetRoleJudge' };
+  function roleLabel(r) { return ROLE_KEY[r] ? L(ROLE_KEY[r]) : escapeHtml(r || ''); }
+  function scopeLabel(scope) {
+    if (!scope || scope === 'all') return L('adSetScopeAll');
+    var arr = Array.isArray(scope) ? scope : [];
+    return L('adSetScopeNEventsPre') + arr.length + L('adSetScopeNEventsPost');
+  }
+
+  // --- 我的邀請與協作 ---
+  function loadMyInvites() {
+    var box = document.getElementById('myInvitesList');
+    box.textContent = L('adSetLoading');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        var invites = (res && res.invites) || [];
+        var pending = invites.filter(function (i) { return i.status === 'invited'; });
+        var active = invites.filter(function (i) { return i.status === 'active'; });
+        if (!pending.length && !active.length) {
+          box.innerHTML = '<p style="font:400 13px/1.6 var(--f-tc);color:var(--ink-3);margin:0">' + escapeHtml(L('adSetMyInvitesEmpty')) + '</p>';
+          return;
+        }
+        var html = '';
+        pending.forEach(function (i) {
+          html += '<div class="session-row">' +
+            '<div class="body"><h6>' + escapeHtml(i.orgOwner || '') + '</h6>' +
+            '<p>' + escapeHtml(L('adSetInviteRolePrefix')) + ' ' + escapeHtml(roleLabel(i.role)) + ' · ' + escapeHtml(L('adSetInviteStatusPending')) + '</p></div>' +
+            '<button class="btn btn-primary btn-sm" data-inv-accept="' + escapeHtml(i.id) + '">' + escapeHtml(L('adSetBtnAcceptInvite')) + '</button>' +
+            '<button class="btn btn-ghost btn-sm" data-inv-decline="' + escapeHtml(i.id) + '">' + escapeHtml(L('adSetBtnDeclineInvite')) + '</button>' +
+          '</div>';
+        });
+        active.forEach(function (i) {
+          html += '<div class="session-row">' +
+            '<div class="body"><h6>' + escapeHtml(i.orgOwner || '') + '</h6>' +
+            '<p>' + escapeHtml(L('adSetInviteRolePrefix')) + ' ' + escapeHtml(roleLabel(i.role)) + ' · ' + escapeHtml(L('adSetInviteStatusActive')) + '</p></div>' +
+            '<button class="btn btn-ghost btn-sm" style="color:var(--err-700);border-color:var(--err-500)" data-inv-leave="' + escapeHtml(i.id) + '">' + escapeHtml(L('adSetBtnLeaveTeam')) + '</button>' +
+          '</div>';
+        });
+        box.innerHTML = html;
+        box.querySelectorAll('[data-inv-accept]').forEach(function (b) {
+          b.addEventListener('click', function () { inviteAction('acceptInvite', b.getAttribute('data-inv-accept')); });
+        });
+        box.querySelectorAll('[data-inv-decline]').forEach(function (b) {
+          b.addEventListener('click', function () { inviteAction('declineInvite', b.getAttribute('data-inv-decline')); });
+        });
+        box.querySelectorAll('[data-inv-leave]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            uiConfirm(L('adSetLeaveConfirm'), { title: L('adSetBtnLeaveTeam'), okText: L('adSetBtnLeaveTeam'), danger: true }).then(function (ok) {
+              if (ok) inviteAction('declineInvite', b.getAttribute('data-inv-leave'));
+            });
+          });
+        });
+      })
+      .withFailureHandler(function (e) { box.textContent = L('adSetFail') + (e && e.message); })
+      .listMyInvites();
+  }
+  function inviteAction(method, id) {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) { uiToast(L('adSetActionDone')); loadMyInvites(); loadOrgMembers(); }
+        else uiAlert((res && res.message) || L('adSetGenericFail'));
+      })
+      .withFailureHandler(function (e) { uiAlert(L('adSetFail') + (e && e.message)); })
+      [method](id);
+  }
+
+  // --- 團隊成員 (owner management) ---
+  var canManageMembers = false;
+  var myEvents = [];
+  function loadCompetitionsForScope() {
+    var list = document.getElementById('inviteEventList');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        myEvents = Array.isArray(res) ? res : [];
+        if (!myEvents.length) {
+          list.innerHTML = '<p style="font:400 12.5px/1.5 var(--f-tc);color:var(--muted);margin:0">' + escapeHtml(L('adSetNoEvents')) + '</p>';
+          return;
+        }
+        list.innerHTML = myEvents.map(function (c) {
+          return '<label style="display:flex;align-items:center;gap:8px;font:400 13px/1.6 var(--f-tc);color:var(--ink-2)">' +
+            '<input type="checkbox" class="inv-comp" value="' + escapeHtml(c.compId) + '"> ' + escapeHtml(c.name || c.compId) + '</label>';
+        }).join('');
+      })
+      .withFailureHandler(function () { list.innerHTML = '<p style="font:400 12.5px/1.5 var(--f-tc);color:var(--muted);margin:0">' + escapeHtml(L('adSetStateQueryFail')) + '</p>'; })
+      .listCompetitions();
+  }
+  function loadOrgMembers() {
+    var box = document.getElementById('memberList');
+    box.textContent = L('adSetLoading');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        res = res || {};
+        canManageMembers = !!res.canManage;
+        var notice = document.getElementById('teamUpgradeNotice');
+        var form = document.getElementById('inviteForm');
+        if (!canManageMembers) {
+          notice.style.display = 'flex';
+          form.style.opacity = '0.5'; form.style.pointerEvents = 'none';
+          form.querySelectorAll('input,select,button').forEach(function (el) { el.disabled = true; });
+        } else {
+          notice.style.display = 'none';
+          form.style.opacity = ''; form.style.pointerEvents = '';
+          form.querySelectorAll('input,select,button').forEach(function (el) { el.disabled = false; });
+        }
+        var members = (res.members) || [];
+        if (!members.length) {
+          box.innerHTML = '<p style="font:400 13px/1.6 var(--f-tc);color:var(--ink-3);margin:0">' + escapeHtml(L('adSetNoMembers')) + '</p>';
+          return;
+        }
+        box.innerHTML = members.map(function (m) {
+          var statusKey = m.status === 'invited' ? 'adSetInviteStatusPending' : 'adSetInviteStatusActive';
+          return '<div class="session-row">' +
+            '<div class="body" style="min-width:0">' +
+              '<h6>' + escapeHtml(m.memberEmail || m.memberUsername || '') + '</h6>' +
+              '<p>' + escapeHtml(roleLabel(m.role)) + ' · ' + escapeHtml(scopeLabel(m.scope)) + ' · ' + escapeHtml(L(statusKey)) + '</p>' +
+            '</div>' +
+            '<button class="btn btn-ghost btn-sm" data-mem-edit="' + escapeHtml(m.id) + '">' + escapeHtml(L('adSetBtnEditRole')) + '</button>' +
+            '<button class="btn btn-ghost btn-sm" style="color:var(--err-700);border-color:var(--err-500)" data-mem-revoke="' + escapeHtml(m.id) + '">' + escapeHtml(L('adSetBtnRevoke')) + '</button>' +
+          '</div>';
+        }).join('');
+        if (!canManageMembers) {
+          box.querySelectorAll('button').forEach(function (b) { b.disabled = true; b.style.opacity = '0.5'; });
+        }
+        box.querySelectorAll('[data-mem-edit]').forEach(function (b) {
+          var mem = members.filter(function (x) { return String(x.id) === b.getAttribute('data-mem-edit'); })[0];
+          b.addEventListener('click', function () { editMemberRole(mem); });
+        });
+        box.querySelectorAll('[data-mem-revoke]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            uiConfirm(L('adSetRevokeConfirm'), { title: L('adSetBtnRevoke'), okText: L('adSetBtnRevoke'), danger: true }).then(function (ok) {
+              if (!ok) return;
+              google.script.run
+                .withSuccessHandler(function (r) {
+                  if (r && r.success) { uiToast(L('adSetActionDone')); loadOrgMembers(); }
+                  else uiAlert((r && r.message) || L('adSetGenericFail'));
+                })
+                .withFailureHandler(function (e) { uiAlert(L('adSetFail') + (e && e.message)); })
+                .revokeMember(b.getAttribute('data-mem-revoke'));
+            });
+          });
+        });
+      })
+      .withFailureHandler(function (e) { box.textContent = L('adSetFail') + (e && e.message); })
+      .listOrgMembers();
+  }
+  function editMemberRole(mem) {
+    if (!mem) return;
+    uiPrompt(L('adSetEditRolePrompt'), mem.role || 'manager', { title: L('adSetBtnEditRole'), inputType: 'text' }).then(function (val) {
+      if (!val) return;
+      var role = String(val).trim().toLowerCase();
+      if (['manager', 'staff', 'judge'].indexOf(role) < 0) { uiAlert(L('adSetRoleInvalid')); return; }
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (r && r.success) { uiToast(L('adSetActionDone')); loadOrgMembers(); }
+          else uiAlert((r && r.message) || L('adSetGenericFail'));
+        })
+        .withFailureHandler(function (e) { uiAlert(L('adSetFail') + (e && e.message)); })
+        .updateMemberRole(mem.id, role, mem.scope || 'all');
+    });
+  }
+  // scope radio toggle
+  document.querySelectorAll('input[name="inviteScope"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      var some = document.querySelector('input[name="inviteScope"]:checked').value === 'some';
+      document.getElementById('inviteEventList').style.display = some ? 'block' : 'none';
+      if (some && !myEvents.length) loadCompetitionsForScope();
+    });
+  });
+  // invite submit
+  document.getElementById('inviteSubmitBtn').addEventListener('click', function () {
+    var msg = document.getElementById('inviteMsg');
+    msg.textContent = '';
+    var email = document.getElementById('inviteEmail').value.trim();
+    var role = document.getElementById('inviteRole').value;
+    if (!email) { msg.style.color = 'var(--err-700)'; msg.textContent = L('adSetInviteEmailRequired'); return; }
+    var scopeMode = document.querySelector('input[name="inviteScope"]:checked').value;
+    var scopeValue;
+    if (scopeMode === 'all') { scopeValue = 'all'; }
+    else {
+      scopeValue = Array.prototype.map.call(document.querySelectorAll('.inv-comp:checked'), function (c) { return c.value; });
+      if (!scopeValue.length) { msg.style.color = 'var(--err-700)'; msg.textContent = L('adSetInviteScopeRequired'); return; }
+    }
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetInvitingBusy');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = o;
+        if (res && res.success) {
+          msg.style.color = 'var(--ok-700)'; msg.textContent = L('adSetInviteSentOk');
+          document.getElementById('inviteEmail').value = '';
+          document.querySelector('input[name="inviteScope"][value="all"]').checked = true;
+          document.getElementById('inviteEventList').style.display = 'none';
+          document.querySelectorAll('.inv-comp:checked').forEach(function (c) { c.checked = false; });
+          loadOrgMembers();
+          setTimeout(function () { msg.textContent = ''; }, 2400);
+        } else {
+          msg.style.color = 'var(--err-700)'; msg.textContent = (res && res.message) || L('adSetInviteFail');
+        }
+      })
+      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; msg.style.color = 'var(--err-700)'; msg.textContent = L('adSetFail') + (e && e.message); })
+      .inviteMember(email, role, scopeValue);
+  });
+
+  function loadMembersTab() {
+    if (membersLoaded) return;
+    membersLoaded = true;
+    loadMyInvites();
+    loadOrgMembers();
+    applyI18n(document.querySelector('[data-pane="members"]'));
+  }
+
+  // open members pane via #members hash (invite emails link here)
+  if ((location.hash || '').toLowerCase() === '#members') {
+    var memTab = document.querySelector('.set-nav a[data-tab="members"]');
+    if (memTab) memTab.click();
+  }
 })();
 </script>
 </body>
