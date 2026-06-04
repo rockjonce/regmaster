@@ -371,7 +371,7 @@
     document.getElementById('genderCardWrap').style.display = vis.gender ? '' : 'none';
     if (vis.gender) {
       destroyChart('gender');
-      charts.gender = donut('chartGender', genderKeys, genderKeys.map(function (k) { return genderCounts[k]; }));
+      charts.gender = donut('chartGender', genderKeys.map(function (k) { return window.LO(k); }), genderKeys.map(function (k) { return genderCounts[k]; }));
     }
 
     // ----- (c) Status pie (正取/備取) -----
@@ -811,7 +811,7 @@
       kv(window.L('aeRegFieldId'), t.teamId) +
       kv(window.L('aeRegFieldNameCN'), t.teamNameCN) +
       kv(window.L('aeRegFieldNameEN'), t.teamNameEN) +
-      kv(window.L('aeRegFieldGroup'), t.group) +
+      kv(window.L('aeRegFieldGroup'), window.LO(t.group)) +
       kv(window.L('aeRegFieldStatus'), window.LS(t.status)) +
       kv(window.L('aeRegFieldPayStatus'), window.LS(t.paymentStatus)) +
       kv(window.L('aeRegFieldPayMethod'), window.LS(t.paymentMethod)) +
@@ -832,7 +832,7 @@
     var teamAnsKeys = Object.keys(teamAns).filter(function (k) { return teamAns[k] !== '' && teamAns[k] != null; });
     if (teamAnsKeys.length > 0) {
       html += '<div class="group"><h5>' + window.L('aeRegGrpCustom') + '</h5><div class="kv">' +
-        teamAnsKeys.map(function (k) { return kv(k, teamAns[k]); }).join('') +
+        teamAnsKeys.map(function (k) { return kv(k, window.LO(teamAns[k])); }).join('') +
       '</div></div>';
     }
     // Async-wire file viewers after innerHTML insertion (see openTeamDetail)
@@ -866,9 +866,13 @@
       [window.L('aeRegMReferralSource'),'referralSource'],[window.L('aeRegMWebsite'),'website'],[window.L('aeRegMConsent'),'consent'],
       [window.L('aeRegMInvoiceType'),'invoiceType'],[window.L('aeRegMInvoiceTitle'),'invoiceTitle'],[window.L('aeRegMTaxId'),'taxId']
     ];
-    var rows = fields.map(function (f) { return kv(f[0], m[f[1]]); }).join('');
+    // Localize DISPLAY only: built-in field LABEL via window.LF(key, currentLabel)
+    // and built-in option VALUE via window.LO(value). Stored data/keys unchanged;
+    // organiser-custom labels/values pass through LF/LO untouched.
+    var rows = fields.map(function (f) { return kv(window.LF(f[1], f[0]), window.LO(m[f[1]])); }).join('');
     if (m.customAnswers && typeof m.customAnswers === 'object') {
-      Object.keys(m.customAnswers).forEach(function (k) { rows += kv(k, m.customAnswers[k]); });
+      // Custom-question text is organiser-authored → leave label as-is; value via LO (passes through free text).
+      Object.keys(m.customAnswers).forEach(function (k) { rows += kv(k, window.LO(m.customAnswers[k])); });
     }
     return rows;
   }

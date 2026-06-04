@@ -872,7 +872,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     ov.querySelector('#mLogin').style.display = 'none';
     var t = res.team || {}, mem = (res.students || []).concat(res.teachers || []);
     var paid = String(t.paymentStatus || '').indexOf('已確認') !== -1;
-    var memHtml = mem.map(function (m) { return '<li>' + escapeHtml((m.role || '') + '：' + (m.chineseName || m.name || '') + (m.email ? '（' + m.email + '）' : '')) + '</li>'; }).join('');
+    var memHtml = mem.map(function (m) { return '<li>' + escapeHtml((window.LO(m.role || '')) + '：' + (m.chineseName || m.name || '') + (m.email ? '（' + m.email + '）' : '')) + '</li>'; }).join('');
     var v = ov.querySelector('#mView');
     v.innerHTML =
       '<div style="border:1px solid var(--line);border-radius:11px;padding:16px;margin-bottom:14px;font:400 13.5px/1.8 var(--f-tc)">' +
