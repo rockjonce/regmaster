@@ -231,6 +231,12 @@
     acceptInvite:["memberId"],
     declineInvite:["memberId"],
     getMyEventRole:["compId"],
+    uploadCertAsset:["compId","base64Data","fileName","mimeType","kind"],
+    getCertAssetData:["assetId"],
+    listCertTemplates:["compId"],
+    saveCertTemplate:["compId","template"],
+    deleteCertTemplate:["compId","templateId"],
+    getCertRecipients:["compId"],
 
     // V3 Phase 3 additions
     listMyRegistrationsByEmail:["email","phone"],

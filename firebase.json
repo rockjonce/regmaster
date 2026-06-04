@@ -62,6 +62,10 @@
         "destination": "/admin/events/checkin.html"
       },
       {
+        "source": "/admin/events/*/certificates",
+        "destination": "/admin/events/certificates.html"
+      },
+      {
         "source": "/admin/events/*",
         "destination": "/admin/events/hub.html"
       },

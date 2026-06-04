@@ -62,7 +62,7 @@
   // The per-page sidebars used to carry this; the unified shell now provides it
   // so navigating between an event's sub-pages keeps working.
   var evtNavHtml = '';
-  var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|registrations|announcements|payments|scoring|checkin))?\/?$/);
+  var em = location.pathname.match(/^\/admin\/events\/([^/]+)(?:\/(edit|form-builder|registrations|announcements|payments|scoring|checkin|certificates))?\/?$/);
   if (em && em[1] && em[1] !== 'index.html') {
     var cid = em[1], sub = em[2] || 'hub';
     // roles = which member roles may see this item (owner/system always see all).
@@ -80,6 +80,7 @@
         eitem('/payments', 'anEvtBilling', '帳務', 'payments', IC.lic, '') +
         eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge') +
         eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff') +
+        eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager') +
       '</div>';
   }
 

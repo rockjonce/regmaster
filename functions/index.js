@@ -2954,10 +2954,10 @@ const DEFAULT_PLANS = {
              features:{ payment:true,  csvExport:true,  ai:false, eventAi:true,  scoring:true,  multiJudge:false, campaigns:false, checkin:true,  waitlist:true,  certificate:false, roles:false } },
   pro:     { price:13990, feePct:2, maxActiveEvents:15, maxCapacity:1500,
              name:{ zh:"專業版 Pro", en:"Pro" }, tagline:{ zh:"學校 / 中型機構 · 完整功能", en:"Schools & mid-size orgs · full features" },
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:true } },
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:true, roles:true } },
   team:    { price:39900, feePct:1, maxActiveEvents:0,  maxCapacity:0,
              name:{ zh:"團隊版 Team", en:"Team" }, tagline:{ zh:"大型機構 · 政府單位", en:"Large organizations & government" },
-             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:false, roles:true } }
+             features:{ payment:true,  csvExport:true,  ai:true,  eventAi:true,  scoring:true,  multiJudge:true,  campaigns:true,  checkin:true,  waitlist:true,  certificate:true, roles:true } }
 };
 const PLAN_FEATURE_KEYS = ["payment","csvExport","ai","eventAi","scoring","multiJudge","campaigns","checkin","waitlist","certificate","roles"];
 
@@ -7234,5 +7234,130 @@ exports.getMyEventRole = authCallable(["system", "competition"], async (data, re
     if (m.orgOwner === comp.creator && m.status === "active" && (!Array.isArray(m.scope) || m.scope.indexOf(compId) >= 0)) return { role: m.role };
   }
   return { role: null };
+});
+
+// ============================================================================
+// 證書 / 名牌 (certificate) — 範本與資產儲存。前端 Canvas 負責渲染/輸出；後端
+// 僅存範本定義與圖檔（背景/logo/簽名沿用既有 base64-chunk 模式）。Pro+Team。
+// ============================================================================
+// Event-scoped feature gate: checks the EVENT OWNER's tier (not the caller's),
+// so a manager member on a Pro/Team owner's event is correctly allowed.
+async function eventHasFeature(compId, key) {
+  try {
+    const compDoc = await db.collection("competitions").doc(compId).get();
+    if (!compDoc.exists) return false;
+    const tier = await getEffectiveTier(compDoc.data().creator);
+    const plans = await getPlans();
+    return !!(plans[tier] && plans[tier].features && plans[tier].features[key]);
+  } catch (e) { return false; }
+}
+
+exports.uploadCertAsset = compAuthCallable("manage", async (data, request) => {
+  const compId = String(data.compId || "");
+  if (!(await eventHasFeature(compId, "certificate"))) return { success: false, message: "證書功能為 Pro / Team 方案" };
+  const base64Data = String(data.base64Data || "");
+  if (!compId || !base64Data) return { success: false, message: "缺少資料" };
+  if (base64Data.length > 8 * 1024 * 1024) return { success: false, message: "圖檔過大（約 6MB 上限）" };
+  const CHUNK = 800000;
+  const total = Math.ceil(base64Data.length / CHUNK);
+  const ref = db.collection("certAssets").doc();
+  await ref.set({
+    compId, kind: String(data.kind || "bg"), mimeType: String(data.mimeType || "image/png"),
+    fileName: String(data.fileName || "").slice(0, 120),
+    data: base64Data.substring(0, CHUNK), totalChunks: total, totalSize: base64Data.length, createdAt: fmtNow()
+  });
+  for (let i = 1; i < total; i++) {
+    await db.collection("certAssets").doc(ref.id + "_chunk" + i).set({ parentId: ref.id, chunkIndex: i, data: base64Data.substring(i * CHUNK, (i + 1) * CHUNK) });
+  }
+  return { success: true, assetId: ref.id };
+});
+
+// Public fetch by unguessable assetId (also used by registrant self-service later).
+exports.getCertAssetData = callable(async (data) => {
+  const id = String(data.assetId || "");
+  if (!id) return { success: false };
+  const doc = await db.collection("certAssets").doc(id).get();
+  if (!doc.exists) return { success: false };
+  const p = doc.data();
+  let full = p.data || "";
+  const total = p.totalChunks || 1;
+  for (let i = 1; i < total; i++) {
+    const c = await db.collection("certAssets").doc(id + "_chunk" + i).get();
+    if (c.exists) full += c.data().data || "";
+  }
+  return { success: true, dataUri: "data:" + (p.mimeType || "image/png") + ";base64," + full, kind: p.kind || "bg" };
+});
+
+exports.listCertTemplates = compAuthCallable("manage", async (data) => {
+  const compId = String(data.compId || "");
+  const snap = await db.collection("certTemplates").where("compId", "==", compId).get();
+  const templates = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+  return { templates, enabled: await eventHasFeature(compId, "certificate") };
+});
+
+exports.saveCertTemplate = compAuthCallable("manage", async (data, request) => {
+  const compId = String(data.compId || "");
+  if (!(await eventHasFeature(compId, "certificate"))) return { success: false, message: "證書功能為 Pro / Team 方案" };
+  const t = data.template || {};
+  if (!t || typeof t !== "object") return { success: false, message: "缺少資料" };
+  const payload = {
+    compId, type: (t.type === "badge" ? "badge" : "cert"),
+    name: String(t.name || "未命名範本").slice(0, 80),
+    orientation: String(t.orientation || "landscape"),
+    size: t.size || null,
+    bgAssetId: String(t.bgAssetId || ""), bgPreset: String(t.bgPreset || ""), bgColor: String(t.bgColor || ""),
+    fields: Array.isArray(t.fields) ? t.fields.slice(0, 60) : [],
+    updatedAt: fmtNow(), updatedBy: request.authUser.username
+  };
+  let id = t.id ? String(t.id) : "";
+  if (id) {
+    const ref = db.collection("certTemplates").doc(id);
+    const doc = await ref.get();
+    if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "範本不存在" };
+    await ref.update(payload);
+  } else {
+    payload.createdAt = fmtNow();
+    const ref = await db.collection("certTemplates").add(payload);
+    id = ref.id;
+  }
+  await auditLog(request.authUser.username, "儲存證書範本", compId, payload.name);
+  return { success: true, id };
+});
+
+exports.deleteCertTemplate = compAuthCallable("manage", async (data, request) => {
+  const compId = String(data.compId || "");
+  const ref = db.collection("certTemplates").doc(String(data.templateId || ""));
+  const doc = await ref.get();
+  if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "範本不存在" };
+  await ref.delete();
+  await auditLog(request.authUser.username, "刪除證書範本", compId, String(data.templateId));
+  return { success: true };
+});
+
+// Flat recipient list for certificate generation: one entry per MEMBER (student/teacher),
+// carrying that person's fields + their team's meta + the team's custom-form answers.
+// The client can dedupe to one-per-team for team certificates, and merge leaderboard rank
+// by teamId. Used instead of getAllTeams so {{中文姓名}} / custom tokens resolve per person.
+exports.getCertRecipients = compAuthCallable("view", async (data) => {
+  const compId = String(data.compId || "");
+  const teamsSnap = await db.collection("teams").where("compId", "==", compId).get();
+  const teams = {};
+  teamsSnap.docs.forEach(d => { teams[d.id] = d.data(); });
+  const memSnap = await db.collection("members").where("compId", "==", compId).get();
+  const recipients = [];
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    const t = teams[m.teamId] || {};
+    if (t.status === "已取消") return; // skip cancelled
+    recipients.push({
+      teamId: m.teamId, role: m.role || "", seq: m.seq || 0,
+      chineseName: m.chineseName || m.name || "", englishName: m.englishName || "",
+      email: m.email || "", member: m,
+      teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
+      group: t.group || "", status: t.status || "正取", checkedIn: !!t.checkedIn,
+      customAnswers: t.customAnswers || {}
+    });
+  });
+  return { recipients };
 });
 

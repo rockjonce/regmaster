@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-i18n="aeCrtDocTitle">證書 / 名牌 · 主辦後台 · RegMaster</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/shared/styles.css">
+<link rel="stylesheet" href="/shared/admin-layout.css">
+<!-- Fonts: Chinese + Latin (all OFL / free for commercial use) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&family=Montserrat:wght@400;700&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+<script src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+<script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/ui-dialog.js"></script>
+<!-- Export libs (UMD via CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+.crt-wrap { display:grid; grid-template-columns:300px 1fr 320px; min-height:calc(100vh - 60px); }
+@media (max-width:1100px){ .crt-wrap { grid-template-columns:1fr; } }
+
+/* ---- generic buttons (page-scoped) ---- */
+.cbtn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 14px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:600 13px/1 var(--f-tc); cursor:pointer; transition:.15s; }
+.cbtn:hover { background:var(--surface-2); }
+.cbtn.pri { background:var(--acc); border-color:var(--acc); color:#fff; }
+.cbtn.pri:hover { filter:brightness(.95); }
+.cbtn.sm { padding:6px 10px; font-size:12px; border-radius:7px; }
+.cbtn:disabled { opacity:.5; cursor:not-allowed; }
+.cbtn.danger { color:var(--err-500); border-color:color-mix(in srgb,var(--err-500) 40%,var(--line)); }
+
+/* ---- columns ---- */
+.col-l { background:var(--surface); border-right:1px solid var(--line); padding:18px; overflow-y:auto; }
+.col-c { padding:24px; overflow-y:auto; display:flex; flex-direction:column; gap:18px; background:var(--surface-2); }
+.col-r { background:var(--surface); border-left:1px solid var(--line); padding:18px; overflow-y:auto; }
+.sec-h { font:600 11px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
+.sec-h.mt { margin-top:22px; }
+
+/* ---- template cards ---- */
+.tpl-card { border:1px solid var(--line); border-radius:11px; padding:12px; margin-bottom:10px; background:var(--surface); }
+.tpl-card .tpl-thumb { width:100%; aspect-ratio:1.414; border-radius:7px; overflow:hidden; background:var(--surface-3); border:1px solid var(--line-2); display:block; }
+.tpl-card.badge .tpl-thumb { aspect-ratio:1.6; }
+.tpl-card .tpl-thumb canvas { width:100%; height:100%; display:block; }
+.tpl-card .tpl-nm { font:600 13px/1.3 var(--f-display); margin:9px 0 2px; }
+.tpl-card .tpl-meta { font:500 11px/1 var(--f-mono); color:var(--muted); }
+.tpl-card .tpl-acts { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.tag { display:inline-block; padding:2px 7px; border-radius:5px; font:600 10px/1.5 var(--f-mono); background:var(--surface-2); border:1px solid var(--line); color:var(--ink-3); }
+
+/* ---- editor center ---- */
+.editor-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:12px 14px; }
+.editor-bar input.nm-in { flex:1; min-width:140px; padding:8px 11px; border:1px solid var(--line); border-radius:8px; font:600 14px/1 var(--f-tc); background:var(--surface-2); color:var(--ink); }
+.canvas-stage { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; display:flex; align-items:center; justify-content:center; min-height:300px; }
+.canvas-host { position:relative; max-width:100%; box-shadow:0 6px 28px rgba(0,0,0,.12); }
+#editCanvas { display:block; max-width:100%; height:auto; cursor:default; }
+.fld-hit { position:absolute; border:1px dashed transparent; box-sizing:border-box; cursor:move; }
+.fld-hit.sel { border-color:var(--acc); background:color-mix(in srgb,var(--acc) 8%,transparent); }
+.fld-hit:hover { border-color:color-mix(in srgb,var(--acc) 60%,transparent); }
+
+/* ---- field list / props ---- */
+.fld-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:var(--surface); cursor:pointer; }
+.fld-row.sel { border-color:var(--acc); background:color-mix(in srgb,var(--acc) 6%,transparent); }
+.fld-row .ft { flex:1; min-width:0; font:500 12px/1.3 var(--f-tc); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fld-row .mini { width:24px; height:24px; border:1px solid var(--line); border-radius:6px; background:var(--surface); cursor:pointer; display:grid; place-items:center; font:600 11px/1 var(--f-mono); color:var(--ink-2); }
+.prop-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.prop-grid .full { grid-column:1/-1; }
+.fld-lbl { font:600 11px/1 var(--f-mono); color:var(--muted); display:block; margin-bottom:4px; }
+.in, select.in { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:7px; font:500 13px/1.3 var(--f-tc); background:var(--surface-2); color:var(--ink); }
+.in[type=color] { padding:2px; height:34px; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.seg button { padding:7px 11px; border:0; background:var(--surface); font:600 12px/1 var(--f-tc); color:var(--ink-2); cursor:pointer; }
+.seg button.on { background:var(--acc); color:#fff; }
+.chk-line { display:flex; align-items:center; gap:8px; font:500 13px/1 var(--f-tc); }
+
+/* ---- generate / scope ---- */
+.scope-list label { display:flex; align-items:center; gap:8px; padding:6px 0; font:500 13px/1.3 var(--f-tc); cursor:pointer; }
+.manual-list { max-height:200px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px; margin-top:6px; }
+.manual-list label { display:flex; align-items:center; gap:8px; padding:4px 0; font:500 12px/1.3 var(--f-tc); }
+.progress-wrap { margin-top:12px; }
+.progress-wrap .bar { height:7px; background:var(--line); border-radius:4px; overflow:hidden; }
+.progress-wrap .bar > div { height:100%; width:0%; background:var(--acc); transition:.2s; }
+.progress-wrap .txt { font:500 12px/1.4 var(--f-mono); color:var(--muted); margin-top:6px; }
+
+/* ---- upgrade gate ---- */
+.upgrade-c { max-width:520px; margin:60px auto; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:40px 32px; }
+.upgrade-c .ic { font-size:42px; margin-bottom:14px; }
+.upgrade-c h2 { font:700 20px/1.3 var(--f-display); margin-bottom:10px; }
+.upgrade-c p { color:var(--muted); font:400 14px/1.6 var(--f-tc); margin-bottom:22px; }
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="admin">
+  <aside class="side"></aside>
+  <main>
+    <header class="head">
+      <div class="crumbs"><a href="/admin/" data-i18n="aeCrtCrumbHome">主辦後台</a><span class="sep">/</span><a href="/admin/events/" data-i18n="aeCrtCrumbEvents">活動</a><span class="sep">/</span><a id="crumbHub">—</a><span class="sep">/</span><b data-i18n="aeCrtCrumbHere">證書 / 名牌</b></div>
+      <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
+    </header>
+
+    <div id="loadingState" class="loading-c" data-i18n="aeCrtLoading">載入證書設計器⋯</div>
+
+    <!-- plan gate -->
+    <div id="upgradeState" class="upgrade-c hidden">
+      <div class="ic">🏅</div>
+      <h2 data-i18n="aeCrtUpgradeTitle">證書 / 名牌為 Pro / Team 方案功能</h2>
+      <p data-i18n="aeCrtUpgradeBody">升級方案即可使用證書與名牌的設計與批次產生功能。</p>
+      <a class="cbtn pri" href="/admin/license.html" data-i18n="aeCrtUpgradeBtn">查看方案與授權 →</a>
+    </div>
+
+    <!-- main UI -->
+    <div class="crt-wrap hidden" id="content">
+      <!-- LEFT: template list -->
+      <aside class="col-l">
+        <h4 class="sec-h" data-i18n="aeCrtListTitle">範本</h4>
+        <div style="display:flex; gap:6px; margin-bottom:14px">
+          <button class="cbtn sm" id="newBlankBtn" data-i18n="aeCrtNewBlank">＋ 空白</button>
+          <button class="cbtn sm" id="newUploadBtn" data-i18n="aeCrtNewUpload">＋ 上傳背景</button>
+        </div>
+        <h4 class="sec-h" data-i18n="aeCrtPresetsLabel">內建範本</h4>
+        <div id="presetList"></div>
+        <h4 class="sec-h mt" data-i18n="aeCrtSavedLabel">我的範本</h4>
+        <div id="savedList"><p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)" data-i18n="aeCrtSavedEmpty">尚未建立任何範本</p></div>
+      </aside>
+
+      <!-- CENTER: editor + preview -->
+      <section class="col-c">
+        <div class="editor-bar">
+          <button class="cbtn sm" id="backToListBtn" data-i18n="aeCrtBack">← 返回清單</button>
+          <input class="nm-in" id="tplNameIn" data-i18n-placeholder="aeCrtTplNamePh" placeholder="例：2026 決賽證書">
+          <div class="seg" id="orientSeg">
+            <button data-or="landscape" data-i18n="aeCrtLandscape">橫式</button>
+            <button data-or="portrait" data-i18n="aeCrtPortrait">直式</button>
+          </div>
+          <button class="cbtn pri" id="saveTplBtn" data-i18n="aeCrtSave">儲存範本</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+          <label class="fld-lbl" style="margin:0" data-i18n="aeCrtPreviewRecipient">預覽對象</label>
+          <select class="in" id="previewRecipient" style="max-width:280px"></select>
+          <span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)" data-i18n="aeCrtDragHint">可直接在畫布上拖曳欄位調整位置</span>
+        </div>
+
+        <div class="canvas-stage">
+          <div class="canvas-host" id="canvasHost">
+            <canvas id="editCanvas" width="900" height="636"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: background, add fields, props, generate -->
+      <aside class="col-r">
+        <!-- background -->
+        <h4 class="sec-h" data-i18n="aeCrtBgTitle">背景</h4>
+        <div class="prop-grid" style="margin-bottom:8px">
+          <div class="full">
+            <label class="fld-lbl" data-i18n="aeCrtBgPreset">內建底圖</label>
+            <select class="in" id="bgPresetSel"></select>
+          </div>
+          <div>
+            <label class="fld-lbl" data-i18n="aeCrtBgColor">純色</label>
+            <input class="in" type="color" id="bgColorIn" value="#ffffff">
+          </div>
+          <div style="display:flex; align-items:flex-end">
+            <button class="cbtn sm" id="bgUploadBtn" style="width:100%" data-i18n="aeCrtBgUpload">上傳圖片</button>
+            <input type="file" id="bgFileIn" accept="image/*" class="hidden">
+          </div>
+        </div>
+
+        <!-- add fields -->
+        <h4 class="sec-h mt" data-i18n="aeCrtAddTitle">新增欄位</h4>
+        <div style="display:flex; gap:6px; flex-wrap:wrap">
+          <button class="cbtn sm" id="addTextBtn" data-i18n="aeCrtAddText">＋ 文字</button>
+          <button class="cbtn sm" id="addImageBtn" data-i18n="aeCrtAddImage">＋ 圖片 / 簽名</button>
+          <button class="cbtn sm" id="addQrBtn" data-i18n="aeCrtAddQr">＋ QR Code</button>
+          <input type="file" id="fieldImgIn" accept="image/*" class="hidden">
+        </div>
+
+        <!-- field list -->
+        <h4 class="sec-h mt" data-i18n="aeCrtFieldsTitle">欄位</h4>
+        <div id="fieldList"><p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)" data-i18n="aeCrtFieldsEmpty">尚無欄位，點上方按鈕新增</p></div>
+
+        <!-- props -->
+        <h4 class="sec-h mt" data-i18n="aeCrtPropTitle">欄位屬性</h4>
+        <div id="propPanel"><p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)" data-i18n="aeCrtPropPickField">點選畫布或清單上的欄位以編輯屬性</p></div>
+
+        <!-- generate -->
+        <h4 class="sec-h mt" data-i18n="aeCrtGenTitle">產生 / 匯出</h4>
+        <label class="fld-lbl" data-i18n="aeCrtScope">對象範圍</label>
+        <div class="scope-list">
+          <label><input type="radio" name="scope" value="all" checked> <span data-i18n="aeCrtScopeAll">全部</span></label>
+          <label><input type="radio" name="scope" value="group"> <span data-i18n="aeCrtScopeGroup">指定組別</span></label>
+          <label><input type="radio" name="scope" value="confirmed"> <span data-i18n="aeCrtScopeConfirmed">僅正取</span></label>
+          <label><input type="radio" name="scope" value="checkedin"> <span data-i18n="aeCrtScopeCheckedIn">僅已報到</span></label>
+          <label><input type="radio" name="scope" value="winners"> <span data-i18n="aeCrtScopeWinners">得獎者</span></label>
+          <label><input type="radio" name="scope" value="manual"> <span data-i18n="aeCrtScopeManual">手動勾選</span></label>
+        </div>
+        <div id="groupPick" class="hidden" style="margin-top:6px">
+          <label class="fld-lbl" data-i18n="aeCrtScopeGroupPick">選擇組別</label>
+          <select class="in" id="groupSel"></select>
+        </div>
+        <div id="manualPick" class="hidden">
+          <label class="fld-lbl" style="margin-top:6px" data-i18n="aeCrtScopeManualPick">勾選對象</label>
+          <div class="manual-list" id="manualList"></div>
+        </div>
+
+        <label class="fld-lbl" style="margin-top:10px" data-i18n="aeCrtGranularity">產生粒度</label>
+        <div class="scope-list">
+          <label><input type="radio" name="gran" value="person" checked> <span data-i18n="aeCrtGranPerPerson">每人一張</span></label>
+          <label><input type="radio" name="gran" value="team"> <span data-i18n="aeCrtGranPerTeam">每隊一張</span></label>
+        </div>
+        <p style="font:600 12px/1.4 var(--f-mono); color:var(--ink-2); margin:10px 0 4px" id="recipCount"></p>
+
+        <label class="fld-lbl mt" style="margin-top:10px" data-i18n="aeCrtOutputFormat">輸出格式</label>
+        <div class="scope-list">
+          <label><input type="radio" name="ofmt" value="pdf" checked> <span data-i18n="aeCrtOutputPdf">合併 PDF（多頁）</span></label>
+          <label><input type="radio" name="ofmt" value="zip"> <span data-i18n="aeCrtOutputZip">每人單獨 PDF（ZIP 壓縮）</span></label>
+        </div>
+        <button class="cbtn pri" id="genBtn" style="width:100%; margin-top:10px" data-i18n="aeCrtGenerate">產生並下載</button>
+        <div class="progress-wrap hidden" id="progWrap"><div class="bar"><div id="progBar"></div></div><div class="txt" id="progTxt"></div></div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<script src="/shared/app-state.js"></script>
+<script src="/shared/i18n.js"></script>
+<script src="/shared/i18n-admin-events-certificates.js"></script>
+<script src="/shared/admin-nav.js"></script>
+<script>
+(function () {
+  AppState.init();
+  var me = AppState.getMe();
+  if (!me || !me.sessionToken) { location.href = '/login.html?next=' + encodeURIComponent(location.pathname); return; }
+
+  var compId = '';
+  var m = location.pathname.match(/\/admin\/events\/([^/]+)\/certificates/);
+  if (m) compId = decodeURIComponent(m[1]);
+  if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
+  if (!compId) { alert(window.L('aeCrtNoCompId')); location.href = '/admin/events/'; return; }
+
+  function L(k) { return (window.L ? window.L(k) : k); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]; }); }
+  function $(id) { return document.getElementById(id); }
+
+  $('meAv').textContent = (me.displayName || me.username || '?').charAt(0).toUpperCase();
+  $('meName').textContent = me.displayName || me.username || '';
+
+  // ===========================================================================
+  // State
+  // ===========================================================================
+  var CONFIG = {}, RAW_RECIPIENTS = [], LEADERBOARD = [], SCHEMA = { sections: [] };
+  var SAVED = [];               // saved templates from backend
+  var ENABLED = false;
+  var TEMPLATE = null;          // currently-edited template object
+  var SELECTED = null;          // selected field index
+  var ASSET_CACHE = {};         // assetId -> Image
+  var RECIPIENTS = [];          // active recipient list (per-person or per-team, by granularity)
+
+  // Aspect ratios (w:h). landscape cert = A4 landscape-ish; badge = card.
+  function canvasDims(tpl) {
+    if (tpl.type === 'badge') {
+      return tpl.orientation === 'portrait' ? { w: 600, h: 900 } : { w: 900, h: 560 };
+    }
+    return tpl.orientation === 'portrait' ? { w: 700, h: 990 } : { w: 990, h: 700 };
+  }
+
+  // ===========================================================================
+  // Tokens
+  // ===========================================================================
+  var BASE_TOKENS = [
+    { tok: '{{中文姓名}}', i: 'aeCrtTokName' },
+    { tok: '{{英文姓名}}', i: 'aeCrtTokNameEN' },
+    { tok: '{{活動名稱}}', i: 'aeCrtTokEvent' },
+    { tok: '{{組別}}', i: 'aeCrtTokGroup' },
+    { tok: '{{報名編號}}', i: 'aeCrtTokRegNo' },
+    { tok: '{{名次}}', i: 'aeCrtTokRank' },
+    { tok: '{{獎項}}', i: 'aeCrtTokAward' },
+    { tok: '{{日期}}', i: 'aeCrtTokDate' },
+    { tok: '{{QR}}', i: 'aeCrtTokQr' }
+  ];
+  function allTokens() {
+    var list = BASE_TOKENS.map(function (t) { return { tok: t.tok, label: L(t.i) }; });
+    // custom form questions -> tokens
+    (SCHEMA.sections || []).forEach(function (sec) {
+      (sec.fields || []).forEach(function (f) {
+        var lbl = (f.label || '').trim();
+        if (!lbl) return;
+        var tok = '{{' + lbl + '}}';
+        if (list.some(function (x) { return x.tok === tok; })) return;
+        list.push({ tok: tok, label: lbl });
+      });
+    });
+    return list;
+  }
+
+  // ===========================================================================
+  // Fonts (must await before any draw/export)
+  // ===========================================================================
+  var FONTS = [
+    { css: "'Noto Sans TC', sans-serif", load: '700 24px "Noto Sans TC"', name: 'Noto Sans TC' },
+    { css: "'Noto Serif TC', serif", load: '700 24px "Noto Serif TC"', name: 'Noto Serif TC' },
+    { css: "'Playfair Display', serif", load: '700 24px "Playfair Display"', name: 'Playfair Display' },
+    { css: "'Montserrat', sans-serif", load: '700 24px "Montserrat"', name: 'Montserrat' },
+    { css: "'Dancing Script', cursive", load: '700 24px "Dancing Script"', name: 'Dancing Script' }
+  ];
+  var fontsReady = false;
+  function ensureFonts() {
+    if (fontsReady) return Promise.resolve();
+    var loads = FONTS.map(function (f) { try { return document.fonts.load(f.load); } catch (e) { return Promise.resolve(); } });
+    // also load 400-weight variants so non-bold text renders right
+    FONTS.forEach(function (f) { try { loads.push(document.fonts.load(f.load.replace('700', '400'))); } catch (e) {} });
+    return Promise.all(loads).then(function () { return document.fonts.ready; }).then(function () { fontsReady = true; }).catch(function () { fontsReady = true; });
+  }
+
+  // ===========================================================================
+  // Backend loads
+  // ===========================================================================
+  function call(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (res, rej) {
+      var runner = google.script.run.withSuccessHandler(res).withFailureHandler(rej);
+      runner[fn].apply(runner, args);
+    });
+  }
+  function callSafe(fn, fallback) {
+    var args = Array.prototype.slice.call(arguments, 2);
+    return new Promise(function (res) {
+      var runner = google.script.run.withSuccessHandler(res).withFailureHandler(function () { res(fallback); });
+      runner[fn].apply(runner, args);
+    });
+  }
+
+  function load() {
+    Promise.all([
+      callSafe('listCertTemplates', { templates: [], enabled: false }, compId),
+      callSafe('getCompetitionConfig', {}, compId),
+      callSafe('getCertRecipients', { recipients: [] }, compId),
+      callSafe('getLiveLeaderboard', [], compId),
+      callSafe('getFormSchema', { schema: { sections: [] } }, compId)
+    ]).then(function (r) {
+      var tplRes = r[0] || {};
+      CONFIG = r[1] || {};
+      RAW_RECIPIENTS = (r[2] && r[2].recipients) || [];
+      LEADERBOARD = r[3] || [];
+      var fs = r[4] || {};
+      SCHEMA = (fs && fs.schema) ? fs.schema : { sections: [] };
+      ENABLED = tplRes.enabled !== false;
+      SAVED = tplRes.templates || [];
+
+      $('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+      $('crumbHub').textContent = (CONFIG && CONFIG.competitionName) || compId;
+      $('loadingState').style.display = 'none';
+
+      if (!ENABLED) { $('upgradeState').classList.remove('hidden'); return; }
+
+      $('content').classList.remove('hidden');
+      buildRecipients();
+      renderPresetList();
+      renderSavedList();
+      renderPreviewRecipientSel();
+      renderGroupSel();
+      renderManualList();
+      // open first preset by default
+      loadTemplate(JSON.parse(JSON.stringify(PRESETS[0])));
+      ensureFonts().then(drawEditor);
+    });
+  }
+
+  // ===========================================================================
+  // Recipients
+  // ===========================================================================
+  // Map a custom-form token label -> the matching schema field key (for member doc fallback)
+  function fieldKeyForLabel(label) {
+    var hit = null;
+    (SCHEMA.sections || []).forEach(function (sec) {
+      (sec.fields || []).forEach(function (f) {
+        if (!hit && (f.label || '').trim() === label) hit = f.key || f.id || f.name || '';
+      });
+    });
+    return hit;
+  }
+
+  function currentGranularity() {
+    var el = document.querySelector('input[name=gran]:checked');
+    return el ? el.value : 'person';
+  }
+
+  // Build per-person recipient objects from RAW_RECIPIENTS, merging leaderboard rank by teamId.
+  function buildRecipients() {
+    var lbMap = {};
+    (LEADERBOARD || []).forEach(function (row) { if (row && row.teamId) lbMap[row.teamId] = row; });
+
+    var perPerson = (RAW_RECIPIENTS || []).map(function (r) {
+      var lb = lbMap[r.teamId] || {};
+      var rank = lb.rank || r.rank || 0;
+      var cn = r.chineseName || r.teamNameCN || '';
+      return {
+        teamId: r.teamId || '',
+        role: r.role || '',
+        nameCN: cn,
+        nameEN: r.englishName || r.teamNameEN || '',
+        email: r.email || '',
+        group: r.group || '',
+        status: r.status || '',
+        checkedIn: !!r.checkedIn,
+        rank: rank,
+        teamNameCN: r.teamNameCN || '',
+        teamNameEN: r.teamNameEN || '',
+        member: r.member || {},
+        customAnswers: r.customAnswers || {},
+        display: cn || r.teamNameCN || L('aeCrtNoName')
+      };
+    });
+
+    if (currentGranularity() === 'team') {
+      // dedupe to one entry per teamId — use the first member but show the team name as the CN name
+      var seen = {}, perTeam = [];
+      perPerson.forEach(function (r) {
+        if (seen[r.teamId]) return;
+        seen[r.teamId] = true;
+        var teamRec = Object.assign({}, r, {
+          nameCN: r.teamNameCN || r.nameCN || L('aeCrtNoName'),
+          nameEN: r.teamNameEN || r.nameEN || ''
+        });
+        teamRec.display = teamRec.nameCN;
+        perTeam.push(teamRec);
+      });
+      RECIPIENTS = perTeam;
+    } else {
+      RECIPIENTS = perPerson;
+    }
+  }
+
+  function resolveToken(tok, rec) {
+    switch (tok) {
+      case '{{中文姓名}}': return rec.nameCN || rec.display || '';
+      case '{{英文姓名}}': return rec.nameEN || '';
+      case '{{活動名稱}}': return (CONFIG && CONFIG.competitionName) || '';
+      case '{{組別}}': return rec.group || '';
+      case '{{報名編號}}': return rec.teamId || '';
+      case '{{名次}}': return rec.rank ? L('aeCrtRankNth').replace('{n}', rec.rank) : '';
+      case '{{獎項}}': return rec.rank && rec.rank <= 3 ? L('aeCrtRankNth').replace('{n}', rec.rank) : '';
+      case '{{日期}}': return (CONFIG && (CONFIG.competitionDate || CONFIG.deadline)) || new Date().toISOString().slice(0, 10);
+      case '{{QR}}': return '';
+      default: {
+        // custom form token: {{<label>}} -> team's customAnswers[label], fallback to member[fieldKey]
+        var label = tok.replace(/^\{\{/, '').replace(/\}\}$/, '');
+        var ca = rec.customAnswers || {};
+        if (ca[label] != null && ca[label] !== '') return String(ca[label]);
+        var key = fieldKeyForLabel(label);
+        var mem = rec.member || {};
+        if (key && mem[key] != null && mem[key] !== '') return String(mem[key]);
+        if (mem[label] != null && mem[label] !== '') return String(mem[label]);
+        return '';
+      }
+    }
+  }
+  function resolveText(value, rec) {
+    if (!value) return '';
+    return String(value).replace(/\{\{[^}]+\}\}/g, function (mm) { return resolveToken(mm, rec); });
+  }
+  function qrUrl(rec) {
+    var checkinUrl = 'https://regmaster-v3.web.app/?comp=' + encodeURIComponent(compId) + '&team=' + encodeURIComponent(rec.teamId);
+    return 'https://quickchart.io/qr?size=300&margin=1&text=' + encodeURIComponent(checkinUrl);
+  }
+
+  // ===========================================================================
+  // PRESETS (background painters + default field layout)
+  // ===========================================================================
+  function txtField(o) {
+    return Object.assign({ kind: 'text', x: 10, y: 40, w: 80, align: 'center', fontFamily: "'Noto Serif TC', serif", fontSizePct: 5, color: '#1a1a1a', weight: 'normal', bind: 'fixed', value: '' }, o);
+  }
+  var PRESETS = [
+    {
+      id: '__preset_classic', preset: 'classic', type: 'cert', name: L('aeCrtPresetClassic'), orientation: 'landscape',
+      bgPreset: 'classic', bgAssetId: '', bgColor: '#fffdf6',
+      fields: [
+        txtField({ y: 16, fontSizePct: 8, fontFamily: "'Noto Serif TC', serif", weight: 'bold', color: '#1a2b4a', bind: 'fixed', value: '獎狀' }),
+        txtField({ y: 40, fontSizePct: 7, fontFamily: "'Noto Serif TC', serif", weight: 'bold', color: '#11203c', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 56, fontSizePct: 4, color: '#3a4a66', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 78, fontSizePct: 3.2, color: '#6b7898', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_accent', preset: 'accent', type: 'cert', name: L('aeCrtPresetAccent'), orientation: 'landscape',
+      bgPreset: 'accent', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ x: 12, y: 18, w: 76, align: 'left', fontSizePct: 7, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#0b1c3d', bind: 'fixed', value: '證書' }),
+        txtField({ x: 12, y: 42, w: 76, align: 'left', fontSizePct: 6.5, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#3D6BFF', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ x: 12, y: 56, w: 76, align: 'left', fontSizePct: 3.6, color: '#3a4a66', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ x: 12, y: 80, w: 50, align: 'left', fontSizePct: 3, color: '#6b7898', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_minimal', preset: 'minimal', type: 'cert', name: L('aeCrtPresetMinimal'), orientation: 'landscape',
+      bgPreset: 'minimal', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ y: 24, fontSizePct: 5, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#222', bind: 'fixed', value: '證書' }),
+        txtField({ y: 44, fontSizePct: 6.5, fontFamily: "'Noto Sans TC', sans-serif", weight: 'bold', color: '#111', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 60, fontSizePct: 3.4, color: '#555', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 84, fontSizePct: 3, color: '#888', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_elegant', preset: 'elegant', type: 'cert', name: L('aeCrtPresetElegant'), orientation: 'landscape',
+      bgPreset: 'elegant', bgAssetId: '', bgColor: '#0e1430',
+      fields: [
+        txtField({ y: 18, fontSizePct: 5, fontFamily: "'Dancing Script', cursive", weight: 'bold', color: '#e7c878', bind: 'fixed', value: 'Certificate' }),
+        txtField({ y: 42, fontSizePct: 7, fontFamily: "'Noto Serif TC', serif", weight: 'bold', color: '#f8f3e6', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 58, fontSizePct: 3.6, color: '#cdbfa0', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 82, fontSizePct: 3, color: '#a59473', bind: 'token', value: '{{日期}}' })
+      ]
+    },
+    {
+      id: '__preset_badge', preset: 'badge', type: 'badge', name: L('aeCrtPresetBadge'), orientation: 'landscape',
+      bgPreset: 'badge', bgAssetId: '', bgColor: '#ffffff',
+      fields: [
+        txtField({ x: 6, y: 12, w: 60, align: 'left', fontSizePct: 6, fontFamily: "'Montserrat', sans-serif", weight: 'bold', color: '#0b1c3d', bind: 'token', value: '{{活動名稱}}' }),
+        txtField({ y: 42, w: 88, fontSizePct: 14, fontFamily: "'Noto Sans TC', sans-serif", weight: 'bold', color: '#111', bind: 'token', value: '{{中文姓名}}' }),
+        txtField({ y: 68, w: 88, fontSizePct: 6, color: '#3D6BFF', bind: 'token', value: '{{組別}}' }),
+        { kind: 'qr', x: 74, y: 66, w: 20, align: 'center' }
+      ]
+    }
+  ];
+
+  // ---- preset background painters (canvas) ----
+  function paintPresetBg(ctx, preset, W, H, baseColor) {
+    ctx.save();
+    if (preset === 'classic') {
+      ctx.fillStyle = baseColor || '#fffdf6'; ctx.fillRect(0, 0, W, H);
+      var pad = W * 0.04;
+      ctx.strokeStyle = '#b99a4a'; ctx.lineWidth = Math.max(2, W * 0.006);
+      ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+      ctx.strokeStyle = '#d9c488'; ctx.lineWidth = Math.max(1, W * 0.0025);
+      ctx.strokeRect(pad * 1.7, pad * 1.7, W - pad * 3.4, H - pad * 3.4);
+    } else if (preset === 'accent') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#3D6BFF'); g.addColorStop(1, '#1F3FB8');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W * 0.06, H);
+      ctx.fillStyle = '#eef2ff'; ctx.fillRect(W * 0.06, 0, W * 0.012, H);
+    } else if (preset === 'minimal') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#222'; ctx.lineWidth = Math.max(1, W * 0.002);
+      ctx.beginPath(); ctx.moveTo(W * 0.5 - W * 0.08, H * 0.74); ctx.lineTo(W * 0.5 + W * 0.08, H * 0.74); ctx.stroke();
+    } else if (preset === 'elegant') {
+      var ge = ctx.createLinearGradient(0, 0, W, H);
+      ge.addColorStop(0, '#0e1430'); ge.addColorStop(1, '#1b2452');
+      ctx.fillStyle = ge; ctx.fillRect(0, 0, W, H);
+      var pad2 = W * 0.05;
+      ctx.strokeStyle = '#c9a85f'; ctx.lineWidth = Math.max(1.5, W * 0.004);
+      ctx.strokeRect(pad2, pad2, W - pad2 * 2, H - pad2 * 2);
+      // corner flourishes
+      ctx.fillStyle = '#c9a85f';
+      [[pad2, pad2], [W - pad2, pad2], [pad2, H - pad2], [W - pad2, H - pad2]].forEach(function (p) {
+        ctx.beginPath(); ctx.arc(p[0], p[1], W * 0.008, 0, Math.PI * 2); ctx.fill();
+      });
+    } else if (preset === 'badge') {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      var gb = ctx.createLinearGradient(0, 0, W, 0);
+      gb.addColorStop(0, '#3D6BFF'); gb.addColorStop(1, '#7c5cff');
+      ctx.fillStyle = gb; ctx.fillRect(0, 0, W, H * 0.16);
+      ctx.fillStyle = gb; ctx.fillRect(0, H * 0.9, W, H * 0.1);
+    } else {
+      ctx.fillStyle = baseColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+    }
+    ctx.restore();
+  }
+
+  // ===========================================================================
+  // Asset loading (uploaded backgrounds / images)
+  // ===========================================================================
+  function loadAsset(assetId) {
+    if (!assetId) return Promise.resolve(null);
+    if (ASSET_CACHE[assetId]) return Promise.resolve(ASSET_CACHE[assetId]);
+    return callSafe('getCertAssetData', null, assetId).then(function (r) {
+      if (!r || !r.success || !r.dataUri) return null;
+      return new Promise(function (res) {
+        var img = new Image();
+        img.onload = function () { ASSET_CACHE[assetId] = img; res(img); };
+        img.onerror = function () { res(null); };
+        img.src = r.dataUri;
+      });
+    });
+  }
+  function loadUrlImage(url) {
+    return new Promise(function (res) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function () { res(img); };
+      img.onerror = function () { res(null); };
+      img.src = url;
+    });
+  }
+
+  // ===========================================================================
+  // CORE RENDER: draw a template for one recipient onto a canvas
+  // ===========================================================================
+  function renderToCanvas(canvas, tpl, rec, scale) {
+    scale = scale || 1;
+    var dims = canvasDims(tpl);
+    var W = dims.w * scale, H = dims.h * scale;
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    // 1) background
+    var bgP;
+    if (tpl.bgAssetId) {
+      bgP = loadAsset(tpl.bgAssetId).then(function (img) {
+        if (img) ctx.drawImage(img, 0, 0, W, H);
+        else { ctx.fillStyle = tpl.bgColor || '#fff'; ctx.fillRect(0, 0, W, H); }
+      });
+    } else if (tpl.bgPreset) {
+      paintPresetBg(ctx, tpl.bgPreset, W, H, tpl.bgColor);
+      bgP = Promise.resolve();
+    } else {
+      ctx.fillStyle = tpl.bgColor || '#ffffff'; ctx.fillRect(0, 0, W, H);
+      bgP = Promise.resolve();
+    }
+
+    // 2) fields (sequentially after bg)
+    return bgP.then(function () {
+      var seq = Promise.resolve();
+      (tpl.fields || []).forEach(function (f) {
+        seq = seq.then(function () { return drawField(ctx, f, rec, W, H); });
+      });
+      return seq;
+    });
+  }
+
+  function drawField(ctx, f, rec, W, H) {
+    var fx = (f.x / 100) * W, fy = (f.y / 100) * H, fw = ((f.w || 80) / 100) * W;
+    if (f.kind === 'text') {
+      var size = Math.max(6, (f.fontSizePct / 100) * H);
+      var weight = f.weight === 'bold' ? '700' : '400';
+      ctx.font = weight + ' ' + size + 'px ' + (f.fontFamily || "'Noto Sans TC', sans-serif");
+      ctx.fillStyle = f.color || '#000';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = f.align || 'center';
+      var tx = f.align === 'center' ? fx + fw / 2 : f.align === 'right' ? fx + fw : fx;
+      var text = f.bind === 'token' ? resolveText(f.value, rec) : (f.value || '');
+      // simple wrap within fw
+      var lines = wrapText(ctx, text, fw);
+      lines.forEach(function (ln, i) { ctx.fillText(ln, tx, fy + i * size * 1.2); });
+      return Promise.resolve();
+    }
+    if (f.kind === 'image') {
+      if (!f.assetId) return Promise.resolve();
+      return loadAsset(f.assetId).then(function (img) {
+        if (!img) return;
+        var ratio = img.height / img.width;
+        ctx.drawImage(img, fx, fy, fw, fw * ratio);
+      });
+    }
+    if (f.kind === 'qr') {
+      return loadUrlImage(qrUrl(rec)).then(function (img) {
+        if (img) ctx.drawImage(img, fx, fy, fw, fw);
+        else { ctx.strokeStyle = '#ccc'; ctx.strokeRect(fx, fy, fw, fw); }
+      });
+    }
+    return Promise.resolve();
+  }
+
+  function wrapText(ctx, text, maxW) {
+    text = String(text == null ? '' : text);
+    if (!text) return [''];
+    if (ctx.measureText(text).width <= maxW) return [text];
+    var lines = [], cur = '';
+    var chars = text.split('');
+    for (var i = 0; i < chars.length; i++) {
+      var test = cur + chars[i];
+      if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = chars[i]; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [text];
+  }
+
+  // ===========================================================================
+  // EDITOR
+  // ===========================================================================
+  function previewRec() {
+    var sel = $('previewRecipient');
+    var idx = sel && sel.value !== '' ? parseInt(sel.value, 10) : -1;
+    var rec = (idx >= 0 && RECIPIENTS[idx]) ? RECIPIENTS[idx] : null;
+    if (rec) return rec;
+    // sample fallback so preview shows something even with no data
+    return { teamId: 'T0000', nameCN: '王小明', nameEN: 'John Doe', group: 'A 組', status: '正取', rank: 1, display: '王小明', member: {}, customAnswers: {} };
+  }
+
+  var drawScheduled = false;
+  function drawEditor() {
+    if (!TEMPLATE) return;
+    drawScheduled = false;
+    var canvas = $('editCanvas');
+    var rec = previewRec();
+    ensureFonts().then(function () {
+      return renderToCanvas(canvas, TEMPLATE, rec, 1);
+    }).then(function () {
+      positionHitboxes();
+    });
+  }
+  function scheduleDraw() { if (!drawScheduled) { drawScheduled = true; requestAnimationFrame(drawEditor); } }
+
+  function positionHitboxes() {
+    var host = $('canvasHost');
+    var canvas = $('editCanvas');
+    // remove old
+    Array.prototype.slice.call(host.querySelectorAll('.fld-hit')).forEach(function (n) { n.remove(); });
+    if (!TEMPLATE) return;
+    var rect = canvas.getBoundingClientRect();
+    var sx = rect.width / canvas.width, sy = rect.height / canvas.height;
+    (TEMPLATE.fields || []).forEach(function (f, idx) {
+      var hit = document.createElement('div');
+      hit.className = 'fld-hit' + (SELECTED === idx ? ' sel' : '');
+      hit.style.left = (f.x / 100 * canvas.width * sx) + 'px';
+      hit.style.top = (f.y / 100 * canvas.height * sy) + 'px';
+      hit.style.width = ((f.w || 80) / 100 * canvas.width * sx) + 'px';
+      var hh = f.kind === 'qr' ? ((f.w || 20) / 100 * canvas.width * sx) : Math.max(18, (f.fontSizePct || 5) / 100 * canvas.height * sy * 1.3);
+      hit.style.height = hh + 'px';
+      hit.dataset.idx = idx;
+      enableDrag(hit, idx, sx, sy);
+      host.appendChild(hit);
+    });
+  }
+
+  function enableDrag(hit, idx, sx, sy) {
+    var canvas = $('editCanvas');
+    hit.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      SELECTED = idx; renderFieldList(); renderProps(); positionHitboxes();
+      var startX = e.clientX, startY = e.clientY;
+      var f = TEMPLATE.fields[idx];
+      var ox = f.x, oy = f.y;
+      function mv(ev) {
+        var dx = (ev.clientX - startX) / (canvas.width * sx) * 100;
+        var dy = (ev.clientY - startY) / (canvas.height * sy) * 100;
+        f.x = Math.max(0, Math.min(100, ox + dx));
+        f.y = Math.max(0, Math.min(100, oy + dy));
+        scheduleDraw();
+        renderProps();
+      }
+      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    });
+  }
+
+  function loadTemplate(tpl) {
+    TEMPLATE = tpl;
+    SELECTED = null;
+    $('tplNameIn').value = tpl.name || '';
+    Array.prototype.slice.call($('orientSeg').children).forEach(function (b) { b.classList.toggle('on', b.dataset.or === tpl.orientation); });
+    $('bgColorIn').value = tpl.bgColor || '#ffffff';
+    renderBgPresetSel();
+    renderFieldList();
+    renderProps();
+    scheduleDraw();
+  }
+
+  function renderBgPresetSel() {
+    var sel = $('bgPresetSel');
+    var opts = '<option value="">' + esc(L('aeCrtBgNone')) + '</option>';
+    [['classic','aeCrtPresetClassic'],['accent','aeCrtPresetAccent'],['minimal','aeCrtPresetMinimal'],['elegant','aeCrtPresetElegant'],['badge','aeCrtPresetBadge']].forEach(function (p) {
+      opts += '<option value="' + p[0] + '"' + (TEMPLATE && TEMPLATE.bgPreset === p[0] ? ' selected' : '') + '>' + esc(L(p[1])) + '</option>';
+    });
+    sel.innerHTML = opts;
+  }
+
+  function renderFieldList() {
+    var box = $('fieldList');
+    if (!TEMPLATE || !TEMPLATE.fields || !TEMPLATE.fields.length) {
+      box.innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">' + esc(L('aeCrtFieldsEmpty')) + '</p>';
+      return;
+    }
+    box.innerHTML = TEMPLATE.fields.map(function (f, i) {
+      var label = f.kind === 'text' ? (f.bind === 'token' ? f.value : (f.value || L('aeCrtFieldText'))) : (f.kind === 'qr' ? 'QR Code' : L('aeCrtFieldImage'));
+      var kindTag = f.kind === 'text' ? L('aeCrtFieldText') : f.kind === 'qr' ? L('aeCrtFieldQr') : L('aeCrtFieldImage');
+      return '<div class="fld-row' + (SELECTED === i ? ' sel' : '') + '" data-idx="' + i + '">' +
+        '<span class="tag">' + esc(kindTag) + '</span>' +
+        '<span class="ft">' + esc(label) + '</span>' +
+        '<span class="mini" data-act="up" data-idx="' + i + '" title="' + esc(L('aeCrtFieldUp')) + '">↑</span>' +
+        '<span class="mini" data-act="down" data-idx="' + i + '" title="' + esc(L('aeCrtFieldDown')) + '">↓</span>' +
+        '<span class="mini" data-act="del" data-idx="' + i + '" title="' + esc(L('aeCrtFieldDel')) + '">✕</span>' +
+      '</div>';
+    }).join('');
+    Array.prototype.slice.call(box.querySelectorAll('.fld-row')).forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        var act = e.target.getAttribute('data-act');
+        var idx = parseInt(e.target.getAttribute('data-idx') != null ? e.target.getAttribute('data-idx') : row.dataset.idx, 10);
+        if (act === 'up' && idx > 0) { swap(idx, idx - 1); SELECTED = idx - 1; }
+        else if (act === 'down' && idx < TEMPLATE.fields.length - 1) { swap(idx, idx + 1); SELECTED = idx + 1; }
+        else if (act === 'del') { TEMPLATE.fields.splice(idx, 1); SELECTED = null; }
+        else { SELECTED = parseInt(row.dataset.idx, 10); }
+        renderFieldList(); renderProps(); scheduleDraw();
+      });
+    });
+  }
+  function swap(a, b) { var t = TEMPLATE.fields[a]; TEMPLATE.fields[a] = TEMPLATE.fields[b]; TEMPLATE.fields[b] = t; }
+
+  function renderProps() {
+    var box = $('propPanel');
+    if (SELECTED == null || !TEMPLATE.fields[SELECTED]) {
+      box.innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">' + esc(L('aeCrtPropPickField')) + '</p>';
+      return;
+    }
+    var f = TEMPLATE.fields[SELECTED];
+    var html = '<div class="prop-grid">';
+    // position (all kinds)
+    html += '<div><label class="fld-lbl">' + esc(L('aeCrtPropPosX')) + '</label><input class="in" type="number" data-p="x" value="' + (Math.round(f.x * 10) / 10) + '"></div>';
+    html += '<div><label class="fld-lbl">' + esc(L('aeCrtPropPosY')) + '</label><input class="in" type="number" data-p="y" value="' + (Math.round(f.y * 10) / 10) + '"></div>';
+    html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropWidth')) + '</label><input class="in" type="number" data-p="w" value="' + (Math.round((f.w || 80) * 10) / 10) + '"></div>';
+
+    if (f.kind === 'text') {
+      // bind toggle
+      html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropBind')) + '</label><div class="seg" data-seg="bind">' +
+        '<button data-bind="token" class="' + (f.bind === 'token' ? 'on' : '') + '">' + esc(L('aeCrtPropBindToken')) + '</button>' +
+        '<button data-bind="fixed" class="' + (f.bind !== 'token' ? 'on' : '') + '">' + esc(L('aeCrtPropBindFixed')) + '</button></div></div>';
+      if (f.bind === 'token') {
+        html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropToken')) + '</label><select class="in" data-p="value">';
+        allTokens().forEach(function (t) { html += '<option value="' + esc(t.tok) + '"' + (f.value === t.tok ? ' selected' : '') + '>' + esc(t.label) + ' ' + esc(t.tok) + '</option>'; });
+        html += '</select></div>';
+      } else {
+        html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropFixedText')) + '</label><input class="in" data-p="value" value="' + esc(f.value || '') + '" placeholder="' + esc(L('aeCrtPropFixedPh')) + '"></div>';
+      }
+      // font
+      html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropFont')) + '</label><select class="in" data-p="fontFamily">';
+      FONTS.forEach(function (ff) { html += '<option value="' + esc(ff.css) + '"' + (f.fontFamily === ff.css ? ' selected' : '') + ' style="font-family:' + ff.css + '">' + esc(ff.name) + '</option>'; });
+      html += '</select></div>';
+      html += '<div><label class="fld-lbl">' + esc(L('aeCrtPropFontSize')) + '</label><input class="in" type="number" step="0.5" data-p="fontSizePct" value="' + (f.fontSizePct || 5) + '"></div>';
+      html += '<div><label class="fld-lbl">' + esc(L('aeCrtPropColor')) + '</label><input class="in" type="color" data-p="color" value="' + esc(f.color || '#000000') + '"></div>';
+      html += '<div class="chk-line full"><label class="chk-line"><input type="checkbox" data-p="weight"' + (f.weight === 'bold' ? ' checked' : '') + '> ' + esc(L('aeCrtPropBold')) + '</label></div>';
+      html += '<div class="full"><label class="fld-lbl">' + esc(L('aeCrtPropAlign')) + '</label><div class="seg" data-seg="align">' +
+        ['left','center','right'].map(function (a) { return '<button data-align="' + a + '" class="' + (f.align === a ? 'on' : '') + '">' + esc(L(a === 'left' ? 'aeCrtPropAlignLeft' : a === 'center' ? 'aeCrtPropAlignCenter' : 'aeCrtPropAlignRight')) + '</button>'; }).join('') +
+        '</div></div>';
+    } else if (f.kind === 'image') {
+      html += '<div class="full"><button class="cbtn sm" id="propImgUpload" style="width:100%">' + esc(L('aeCrtPropImageUpload')) + '</button></div>';
+      if (f.assetId) html += '<div class="full" style="font:500 11px/1.4 var(--f-mono); color:var(--muted)">asset: ' + esc(f.assetId) + '</div>';
+    } else if (f.kind === 'qr') {
+      html += '<div class="full" style="font:400 12px/1.5 var(--f-tc); color:var(--muted)">QR → check-in URL</div>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
+    wireProps(box, f);
+  }
+
+  function wireProps(box, f) {
+    box.querySelectorAll('[data-p]').forEach(function (el) {
+      var p = el.getAttribute('data-p');
+      var ev = (el.type === 'color' || el.tagName === 'SELECT') ? 'change' : 'input';
+      el.addEventListener(ev, function () {
+        if (p === 'weight') { f.weight = el.checked ? 'bold' : 'normal'; }
+        else if (el.type === 'number') { f[p] = parseFloat(el.value) || 0; }
+        else { f[p] = el.value; }
+        scheduleDraw(); renderFieldList();
+      });
+    });
+    box.querySelectorAll('[data-seg=bind] button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        f.bind = b.getAttribute('data-bind');
+        if (f.bind === 'token' && (!f.value || f.value.indexOf('{{') !== 0)) f.value = '{{中文姓名}}';
+        if (f.bind === 'fixed' && f.value && f.value.indexOf('{{') === 0) f.value = '';
+        renderProps(); scheduleDraw();
+      });
+    });
+    box.querySelectorAll('[data-seg=align] button').forEach(function (b) {
+      b.addEventListener('click', function () { f.align = b.getAttribute('data-align'); renderProps(); scheduleDraw(); });
+    });
+    var up = box.querySelector('#propImgUpload');
+    if (up) up.addEventListener('click', function () { uploadFieldImage(f); });
+  }
+
+  // ===========================================================================
+  // Add fields
+  // ===========================================================================
+  function addField(kind) {
+    if (!TEMPLATE) return;
+    var nf;
+    if (kind === 'text') nf = txtField({ y: 50, value: '', bind: 'fixed' });
+    else if (kind === 'image') nf = { kind: 'image', x: 38, y: 70, w: 24, align: 'center', assetId: '', imgKind: 'logo' };
+    else nf = { kind: 'qr', x: 78, y: 70, w: 18, align: 'center' };
+    TEMPLATE.fields = TEMPLATE.fields || [];
+    TEMPLATE.fields.push(nf);
+    SELECTED = TEMPLATE.fields.length - 1;
+    renderFieldList(); renderProps(); scheduleDraw();
+  }
+
+  // ===========================================================================
+  // Uploads (bg / field image)
+  // ===========================================================================
+  function fileToBase64(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { var s = String(r.result); res(s.slice(s.indexOf(',') + 1)); };
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+  function validImage(file) {
+    if (!file) return false;
+    if (file.type.indexOf('image/') !== 0) { uiToast(L('aeCrtBadImage'), 'err'); return false; }
+    if (file.size > 5 * 1024 * 1024) { uiToast(L('aeCrtFileTooBig'), 'err'); return false; }
+    return true;
+  }
+  function uploadBgImage(file) {
+    if (!validImage(file)) return;
+    uiToast(L('aeCrtBgUploading'), 'ok');
+    fileToBase64(file).then(function (b64) {
+      return call('uploadCertAsset', compId, b64, file.name, file.type, 'bg');
+    }).then(function (r) {
+      if (r && r.success && r.assetId) {
+        TEMPLATE.bgAssetId = r.assetId; TEMPLATE.bgPreset = '';
+        renderBgPresetSel(); scheduleDraw(); uiToast(L('aeCrtSaved'), 'ok');
+      } else uiToast(L('aeCrtUploadFail'), 'err');
+    }).catch(function () { uiToast(L('aeCrtUploadFail'), 'err'); });
+  }
+  function uploadFieldImage(f) {
+    var inp = $('fieldImgIn');
+    inp.value = '';
+    inp.onchange = function () {
+      var file = inp.files && inp.files[0];
+      if (!validImage(file)) return;
+      uiToast(L('aeCrtBgUploading'), 'ok');
+      var kind = f.imgKind === 'signature' ? 'signature' : 'logo';
+      fileToBase64(file).then(function (b64) {
+        return call('uploadCertAsset', compId, b64, file.name, file.type, kind);
+      }).then(function (r) {
+        if (r && r.success && r.assetId) { f.assetId = r.assetId; renderProps(); scheduleDraw(); uiToast(L('aeCrtSaved'), 'ok'); }
+        else uiToast(L('aeCrtUploadFail'), 'err');
+      }).catch(function () { uiToast(L('aeCrtUploadFail'), 'err'); });
+    };
+    inp.click();
+  }
+
+  // ===========================================================================
+  // Template list (presets + saved)
+  // ===========================================================================
+  function thumbCanvas(tpl) {
+    var c = document.createElement('canvas');
+    var rec = { teamId: 'T0000', nameCN: '王小明', nameEN: 'John Doe', group: 'A 組', rank: 1, display: '王小明' };
+    ensureFonts().then(function () { renderToCanvas(c, tpl, rec, 0.5); });
+    return c;
+  }
+  function renderPresetList() {
+    var box = $('presetList');
+    box.innerHTML = '';
+    PRESETS.forEach(function (p) {
+      box.appendChild(tplCardEl(p, true));
+    });
+  }
+  function renderSavedList() {
+    var box = $('savedList');
+    if (!SAVED.length) { box.innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc)">' + esc(L('aeCrtSavedEmpty')) + '</p>'; return; }
+    box.innerHTML = '';
+    SAVED.forEach(function (t) { box.appendChild(tplCardEl(t, false)); });
+  }
+  function tplCardEl(tpl, isPreset) {
+    var card = document.createElement('div');
+    card.className = 'tpl-card' + (tpl.type === 'badge' ? ' badge' : '');
+    var thumb = document.createElement('div'); thumb.className = 'tpl-thumb';
+    thumb.appendChild(thumbCanvas(tpl));
+    card.appendChild(thumb);
+    var nm = document.createElement('div'); nm.className = 'tpl-nm'; nm.textContent = tpl.name || L('aeCrtUntitled');
+    card.appendChild(nm);
+    var meta = document.createElement('div'); meta.className = 'tpl-meta';
+    meta.textContent = (tpl.type === 'badge' ? L('aeCrtTypeBadge') : L('aeCrtTypeCert')) + ' · ' + (tpl.orientation === 'portrait' ? L('aeCrtPortrait') : L('aeCrtLandscape'));
+    card.appendChild(meta);
+    var acts = document.createElement('div'); acts.className = 'tpl-acts';
+
+    var useBtn = document.createElement('button'); useBtn.className = 'cbtn sm'; useBtn.textContent = L('aeCrtUseEdit');
+    useBtn.addEventListener('click', function () {
+      var copy = JSON.parse(JSON.stringify(tpl));
+      if (isPreset) { delete copy.id; copy.name = tpl.name; }
+      loadTemplate(copy);
+    });
+    acts.appendChild(useBtn);
+
+    var dupBtn = document.createElement('button'); dupBtn.className = 'cbtn sm'; dupBtn.textContent = L('aeCrtDuplicate');
+    dupBtn.addEventListener('click', function () {
+      var copy = JSON.parse(JSON.stringify(tpl));
+      delete copy.id; copy.name = (tpl.name || L('aeCrtUntitled')) + L('aeCrtCopySuffix');
+      loadTemplate(copy);
+    });
+    acts.appendChild(dupBtn);
+
+    if (!isPreset) {
+      var delBtn = document.createElement('button'); delBtn.className = 'cbtn sm danger'; delBtn.textContent = L('aeCrtDelete');
+      delBtn.addEventListener('click', function () {
+        uiConfirm(L('aeCrtConfirmDelMsg'), { title: L('aeCrtConfirmDelTitle'), okText: L('aeCrtConfirmDelOk'), danger: true }).then(function (ok) {
+          if (!ok) return;
+          call('deleteCertTemplate', compId, tpl.id).then(function (r) {
+            if (r && r.success) { SAVED = SAVED.filter(function (x) { return x.id !== tpl.id; }); renderSavedList(); uiToast(L('aeCrtDeleted'), 'ok'); }
+            else uiToast(L('aeCrtDeleteFail'), 'err');
+          }).catch(function () { uiToast(L('aeCrtDeleteFail'), 'err'); });
+        });
+      });
+      acts.appendChild(delBtn);
+    }
+    card.appendChild(acts);
+    return card;
+  }
+
+  function saveTemplate() {
+    if (!TEMPLATE) { uiToast(L('aeCrtGenNoTemplate'), 'err'); return; }
+    var btn = $('saveTplBtn');
+    btn.disabled = true; btn.textContent = L('aeCrtSaving');
+    // strip preset-only internal id (those are not real saved IDs)
+    var payload = JSON.parse(JSON.stringify(TEMPLATE));
+    if (payload.id && String(payload.id).indexOf('__preset') === 0) delete payload.id;
+    delete payload.preset;
+    payload.name = payload.name || L('aeCrtUntitled');
+    call('saveCertTemplate', compId, payload).then(function (r) {
+      btn.disabled = false; btn.textContent = L('aeCrtSave');
+      if (r && r.success) {
+        if (r.id) TEMPLATE.id = r.id;
+        // refresh saved list
+        var existing = SAVED.filter(function (x) { return x.id === r.id; })[0];
+        var snapshot = JSON.parse(JSON.stringify(TEMPLATE)); snapshot.id = r.id;
+        if (existing) { SAVED = SAVED.map(function (x) { return x.id === r.id ? snapshot : x; }); }
+        else SAVED.push(snapshot);
+        renderSavedList();
+        uiToast(L('aeCrtSaved'), 'ok');
+      } else uiToast(L('aeCrtSaveFail'), 'err');
+    }).catch(function () { btn.disabled = false; btn.textContent = L('aeCrtSave'); uiToast(L('aeCrtSaveFail'), 'err'); });
+  }
+
+  // ===========================================================================
+  // Preview recipient / scope / manual selectors
+  // ===========================================================================
+  // Display label for a recipient, e.g. "陳小明（隊伍名）"
+  function recLabel(r) {
+    var nm = r.display || r.nameCN || r.teamId || '';
+    var team = r.teamNameCN || r.teamNameEN || '';
+    if (team && team !== nm) return nm + '（' + team + '）';
+    return nm + ' · ' + r.teamId;
+  }
+  function renderPreviewRecipientSel() {
+    var sel = $('previewRecipient');
+    if (!RECIPIENTS.length) { sel.innerHTML = '<option value="">' + esc(L('aeCrtPreviewNoRecipient')) + '</option>'; return; }
+    sel.innerHTML = RECIPIENTS.map(function (r, i) { return '<option value="' + i + '">' + esc(recLabel(r)) + '</option>'; }).join('');
+  }
+  function renderGroupSel() {
+    var groups = {};
+    RECIPIENTS.forEach(function (r) { if (r.group) groups[r.group] = true; });
+    var keys = Object.keys(groups);
+    $('groupSel').innerHTML = keys.map(function (g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('') || '<option value="">—</option>';
+  }
+  function renderManualList() {
+    var box = $('manualList');
+    box.innerHTML = RECIPIENTS.map(function (r, i) {
+      return '<label><input type="checkbox" class="manual-chk" value="' + i + '"> ' + esc(recLabel(r)) + '</label>';
+    }).join('') || '<p style="color:var(--muted); font:400 12px/1.4 var(--f-tc)">' + esc(L('aeCrtGenNoRecipients')) + '</p>';
+  }
+  function scope() { var el = document.querySelector('input[name=scope]:checked'); return el ? el.value : 'all'; }
+  function selectedRecipients() {
+    var s = scope();
+    if (s === 'group') { var g = $('groupSel').value; return RECIPIENTS.filter(function (r) { return r.group === g; }); }
+    if (s === 'confirmed') return RECIPIENTS.filter(function (r) { return r.status === '正取'; });
+    if (s === 'checkedin') return RECIPIENTS.filter(function (r) { return r.checkedIn; });
+    if (s === 'winners') return RECIPIENTS.filter(function (r) { return r.rank && r.rank <= 3; });
+    if (s === 'manual') {
+      var idxs = {};
+      Array.prototype.slice.call(document.querySelectorAll('.manual-chk:checked')).forEach(function (c) { idxs[c.value] = true; });
+      return RECIPIENTS.filter(function (r, i) { return idxs[String(i)]; });
+    }
+    return RECIPIENTS.slice();
+  }
+  function updateRecipCount() {
+    $('groupPick').classList.toggle('hidden', scope() !== 'group');
+    $('manualPick').classList.toggle('hidden', scope() !== 'manual');
+    $('recipCount').textContent = L('aeCrtRecipientCount').replace('{n}', selectedRecipients().length);
+  }
+  // Rebuild recipient list + dependent UI when granularity changes
+  function onGranularityChange() {
+    buildRecipients();
+    renderPreviewRecipientSel();
+    renderGroupSel();
+    renderManualList();
+    updateRecipCount();
+    scheduleDraw();
+  }
+
+  // ===========================================================================
+  // GENERATE / EXPORT
+  // ===========================================================================
+  function generate() {
+    if (!TEMPLATE) { uiToast(L('aeCrtGenNoTemplate'), 'err'); return; }
+    if (!window.jspdf || !window.jspdf.jsPDF) { uiToast(L('aeCrtLibLoadFail'), 'err'); return; }
+    var recs = selectedRecipients();
+    if (!recs.length) { uiToast(L('aeCrtGenNoRecipients'), 'err'); return; }
+    var ofmt = (document.querySelector('input[name=ofmt]:checked') || {}).value || 'pdf';
+    var btn = $('genBtn'); btn.disabled = true;
+    $('progWrap').classList.remove('hidden');
+
+    var dims = canvasDims(TEMPLATE);
+    var scale = 2.5;
+    var orient = TEMPLATE.orientation === 'portrait' ? 'p' : 'l';
+    var pdf = (ofmt === 'pdf') ? new window.jspdf.jsPDF({ orientation: orient, unit: 'px', format: [dims.w, dims.h] }) : null;
+    var zip = (ofmt === 'zip' && window.JSZip) ? new window.JSZip() : null;
+    if (ofmt === 'zip' && !zip) { uiToast(L('aeCrtLibLoadFail'), 'err'); btn.disabled = false; return; }
+
+    var tmp = document.createElement('canvas');
+    var i = 0, total = recs.length, first = true;
+
+    ensureFonts().then(function () {
+      function step() {
+        if (i >= total) return finish();
+        var rec = recs[i];
+        renderToCanvas(tmp, TEMPLATE, rec, scale).then(function () {
+          var imgData = tmp.toDataURL('image/jpeg', 0.92);
+          if (pdf) {
+            if (!first) pdf.addPage([dims.w, dims.h], orient);
+            first = false;
+            pdf.addImage(imgData, 'JPEG', 0, 0, dims.w, dims.h);
+          } else if (zip) {
+            var p2 = new window.jspdf.jsPDF({ orientation: orient, unit: 'px', format: [dims.w, dims.h] });
+            p2.addImage(imgData, 'JPEG', 0, 0, dims.w, dims.h);
+            var fname = safeName(rec.display || rec.teamId) + '_' + rec.teamId + '.pdf';
+            zip.file(fname, p2.output('blob'));
+          }
+          i++;
+          var pct = Math.round(i / total * 100);
+          $('progBar').style.width = pct + '%';
+          $('progTxt').textContent = L('aeCrtGenerating').replace('{done}', i).replace('{total}', total);
+          // yield to keep UI responsive every batch
+          if (i % 5 === 0) setTimeout(step, 0); else Promise.resolve().then(step);
+        }).catch(function (e) {
+          i++; Promise.resolve().then(step);
+        });
+      }
+      function finish() {
+        var base = safeName((TEMPLATE.name || 'certificates'));
+        if (pdf) { pdf.save(base + '.pdf'); afterDone(); }
+        else if (zip) { zip.generateAsync({ type: 'blob' }).then(function (blob) { downloadBlob(blob, base + '.zip'); afterDone(); }); }
+        else afterDone();
+      }
+      function afterDone() {
+        $('progTxt').textContent = L('aeCrtGenDone');
+        $('progBar').style.width = '100%';
+        btn.disabled = false;
+        uiToast(L('aeCrtGenDone'), 'ok');
+        setTimeout(function () { $('progWrap').classList.add('hidden'); $('progBar').style.width = '0%'; }, 2500);
+      }
+      step();
+    }).catch(function (e) {
+      btn.disabled = false;
+      uiToast(L('aeCrtGenFail').replace('{err}', (e && e.message) || e), 'err');
+    });
+  }
+  function safeName(s) { return String(s || 'file').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60); }
+  function downloadBlob(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  // ===========================================================================
+  // Wiring
+  // ===========================================================================
+  function wire() {
+    $('tplNameIn').addEventListener('input', function () { if (TEMPLATE) TEMPLATE.name = this.value; });
+    Array.prototype.slice.call($('orientSeg').children).forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!TEMPLATE) return;
+        TEMPLATE.orientation = b.dataset.or;
+        Array.prototype.slice.call($('orientSeg').children).forEach(function (x) { x.classList.toggle('on', x === b); });
+        scheduleDraw();
+      });
+    });
+    $('bgColorIn').addEventListener('input', function () { if (TEMPLATE) { TEMPLATE.bgColor = this.value; scheduleDraw(); } });
+    $('bgPresetSel').addEventListener('change', function () { if (!TEMPLATE) return; TEMPLATE.bgPreset = this.value; if (this.value) TEMPLATE.bgAssetId = ''; scheduleDraw(); });
+    $('bgUploadBtn').addEventListener('click', function () { $('bgFileIn').click(); });
+    $('bgFileIn').addEventListener('change', function () { if (this.files && this.files[0]) uploadBgImage(this.files[0]); this.value = ''; });
+
+    $('addTextBtn').addEventListener('click', function () { addField('text'); });
+    $('addImageBtn').addEventListener('click', function () { addField('image'); });
+    $('addQrBtn').addEventListener('click', function () { addField('qr'); });
+
+    $('newBlankBtn').addEventListener('click', function () {
+      loadTemplate({ type: 'cert', name: L('aeCrtUntitled'), orientation: 'landscape', bgPreset: '', bgAssetId: '', bgColor: '#ffffff', fields: [] });
+    });
+    $('newUploadBtn').addEventListener('click', function () {
+      loadTemplate({ type: 'cert', name: L('aeCrtUntitled'), orientation: 'landscape', bgPreset: '', bgAssetId: '', bgColor: '#ffffff', fields: [] });
+      $('bgFileIn').click();
+    });
+    $('backToListBtn').addEventListener('click', function () { window.scrollTo(0, 0); });
+    $('saveTplBtn').addEventListener('click', saveTemplate);
+    $('genBtn').addEventListener('click', generate);
+
+    Array.prototype.slice.call(document.querySelectorAll('input[name=scope]')).forEach(function (r) { r.addEventListener('change', updateRecipCount); });
+    Array.prototype.slice.call(document.querySelectorAll('input[name=gran]')).forEach(function (r) { r.addEventListener('change', onGranularityChange); });
+    $('previewRecipient').addEventListener('change', scheduleDraw);
+    $('groupSel').addEventListener('change', updateRecipCount);
+    $('manualList').addEventListener('change', updateRecipCount);
+    window.addEventListener('resize', function () { positionHitboxes(); });
+  }
+
+  // boot
+  wire();
+  load();
+  if (window.applyI18n) window.applyI18n(document.body);
+  updateRecipCount();
+})();
+</script>
+</body>
+</html>

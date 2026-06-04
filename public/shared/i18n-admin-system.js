@@ -116,7 +116,7 @@
     adSysFeatCheckin: 'QR 報到',
     adSysFeatWaitlist: '允許候補',
     adSysFeatCertificate: '名牌 / 證書',
-    adSysFeatCertNote: '（功能尚未製作，預設關閉）',
+    adSysFeatCertNote: '（證書 / 名牌設計器，預設 Pro / Team）',
     // ---------- accounts ----------
     adSysAcctTitle: '系統帳號',
     adSysAcctSub: '主辦方與系統管理員帳號',
@@ -524,7 +524,7 @@
     adSysFeatCheckin: 'QR check-in',
     adSysFeatWaitlist: 'Allow waitlist',
     adSysFeatCertificate: 'Badges / certificates',
-    adSysFeatCertNote: '(feature not built yet, off by default)',
+    adSysFeatCertNote: '(certificate / badge designer · default Pro / Team)',
     // ---------- accounts ----------
     adSysAcctTitle: 'System Accounts',
     adSysAcctSub: 'Organizer and system administrator accounts',

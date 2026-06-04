@@ -171,7 +171,7 @@
       // ----- shared admin shell (admin-nav.js) -----
       anBrandSubSystem: '系統管理員', anBrandSubOrg: '主辦後台', anRoleSystem: '系統管理員', anRoleOrg: '主辦方',
       anGrpOverview: '概覽', anDashboard: '儀表板', anAllEvents: '所有活動', anAi: 'AI 助理',
-      anGrpThisEvent: '本活動', anEvtOverview: '總覽', anEvtSettings: '設定', anEvtForm: '表單設計', anEvtReg: '報名管理', anEvtNotice: '通知', anEvtBilling: '帳務', anEvtScoring: '評分', anEvtCheckin: '報到',
+      anGrpThisEvent: '本活動', anEvtOverview: '總覽', anEvtSettings: '設定', anEvtForm: '表單設計', anEvtReg: '報名管理', anEvtNotice: '通知', anEvtBilling: '帳務', anEvtScoring: '評分', anEvtCheckin: '報到', anEvtCert: '證書 / 名牌',
       anGrpManage: '管理', anLicense: '方案與授權', anLogs: '操作紀錄', anSettings: '設定',
       anGrpSysadmin: '系統管理', anSysSettings: '系統設定', anAudit: '操作日誌',
       anUsageCur: '目前方案', anUsageFreeText: '免費方案', anUsageFreeHint: '免費方案 — 升級解鎖更多', anUpgrade: '升級方案 →', anLogout: '登出',
@@ -273,7 +273,7 @@
       // ----- shared admin shell (admin-nav.js) -----
       anBrandSubSystem: 'System Admin', anBrandSubOrg: 'Organizer Console', anRoleSystem: 'System Admin', anRoleOrg: 'Organizer',
       anGrpOverview: 'Overview', anDashboard: 'Dashboard', anAllEvents: 'All Events', anAi: 'AI Assistant',
-      anGrpThisEvent: 'This Event', anEvtOverview: 'Overview', anEvtSettings: 'Settings', anEvtForm: 'Form Builder', anEvtReg: 'Registrations', anEvtNotice: 'Notices', anEvtBilling: 'Billing', anEvtScoring: 'Scoring', anEvtCheckin: 'Check-in',
+      anGrpThisEvent: 'This Event', anEvtOverview: 'Overview', anEvtSettings: 'Settings', anEvtForm: 'Form Builder', anEvtReg: 'Registrations', anEvtNotice: 'Notices', anEvtBilling: 'Billing', anEvtScoring: 'Scoring', anEvtCheckin: 'Check-in', anEvtCert: 'Certificates / Badges',
       anGrpManage: 'Manage', anLicense: 'Plans & Licenses', anLogs: 'Activity Log', anSettings: 'Settings',
       anGrpSysadmin: 'System Admin', anSysSettings: 'System Settings', anAudit: 'Audit Log',
       anUsageCur: 'Current plan', anUsageFreeText: 'Free plan', anUsageFreeHint: 'Free plan — upgrade to unlock more', anUpgrade: 'Upgrade →', anLogout: 'Log out',
