@@ -14,7 +14,7 @@ const { FieldValue } = require("firebase-admin/firestore");
 const crypto = require("crypto");
 
 /* Speed up cold start: set region + concurrency globally */
-setGlobalOptions({ region: "us-central1", concurrency: 80 });
+setGlobalOptions({ region: "us-central1", concurrency: 80, maxInstances: 40 });
 
 // ===== Helpers =====
 function fmtNow() {
@@ -215,6 +215,19 @@ async function memberHasCapability(username, orgOwner, compId, capability) {
     return false;
   } catch (e) { return false; }
 }
+// Returns the member's role for an org/comp ("manager"|"staff"|"judge") or null.
+async function memberRoleFor(username, orgOwner, compId) {
+  try {
+    const snap = await db.collection("orgMembers").where("memberUsername", "==", username).get();
+    for (const d of snap.docs) {
+      const m = d.data();
+      if (m.orgOwner !== orgOwner || m.status !== "active") continue;
+      if (Array.isArray(m.scope) && m.scope.indexOf(compId) < 0) continue;
+      return m.role || null;
+    }
+    return null;
+  } catch (e) { return null; }
+}
 
 // ===== Competition-level auth: verifies activity ownership + member capability =====
 // Usage:  compAuthCallable(handler)              → capability defaults to "manage"
@@ -225,7 +238,9 @@ function compAuthCallable(capabilityOrHandler, maybeHandler) {
   const capability = (typeof capabilityOrHandler === "function") ? "manage" : (capabilityOrHandler || "manage");
   const handler = (typeof capabilityOrHandler === "function") ? capabilityOrHandler : maybeHandler;
   return authCallable(["system","competition"], async (data, request) => {
+    request.memberRoleName = "system"; // default; refined below for competition role
     if (request.authUser.role === "competition") {
+      request.memberRoleName = "owner";
       let compId = data.compId;
       if (!compId && data.teamId) {
         const tDoc = await db.collection("teams").doc(data.teamId).get();
@@ -236,9 +251,10 @@ function compAuthCallable(capabilityOrHandler, maybeHandler) {
         if (!compDoc.exists) throw new HttpsError("not-found", "活動不存在");
         const comp = compDoc.data();
         if (comp.creator !== request.authUser.username) {
-          const ok = await memberHasCapability(request.authUser.username, comp.creator, compId, capability);
-          if (!ok) throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
+          const role = await memberRoleFor(request.authUser.username, comp.creator, compId);
+          if ((ROLE_CAPS[role] || []).indexOf(capability) < 0) throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
           request.memberRole = true; // handler hint: caller is a member, not the owner
+          request.memberRoleName = role; // "manager" | "staff" | "judge"
         }
       }
     }
@@ -2551,7 +2567,13 @@ exports.getDashboardStats = compAuthCallable("view", async (data) => {
     hasWaitlist: cfg.allowWaitlist !== false, hasPayment: (cfg.paymentMethods || []).length > 0, hasGender };
 });
 
-exports.getAllTeams = compAuthCallable("view", async (data) => {
+exports.getAllTeams = compAuthCallable("view", async (data, request) => {
+  // Fairness (④.1): a judge with judgeSeeRegistrantInfo OFF only gets the minimal fields
+  // needed to identify a team for scoring — no member names / PII / custom answers.
+  if (!(await judgeInfoAllowed(request, data.compId))) {
+    const tSnap = await db.collection("teams").where("compId", "==", data.compId).get();
+    return tSnap.docs.map(d => { const t = d.data(); return { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
+  }
   const [snap, mSnap] = await Promise.all([
     db.collection("teams").where("compId", "==", data.compId).get(),
     db.collection("members").where("compId", "==", data.compId).get()
@@ -2707,10 +2729,14 @@ exports.sendTeamEmail = compAuthCallable(async (data, request) => {
   return { success: true, recipientCount: tos.length };
 });
 
-exports.getTeamDetail = compAuthCallable("view", async (data) => {
+exports.getTeamDetail = compAuthCallable("view", async (data, request) => {
   const doc = await db.collection("teams").doc(data.teamId).get();
   if (!doc.exists) return null;
   const t = doc.data();
+  // Fairness (④.1): judges without info access cannot open full registrant detail.
+  if (request.memberRoleName === "judge" && !(await judgeInfoAllowed(request, t.compId))) {
+    return { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "", _restricted: true };
+  }
   const { password: _, ...safeT } = t;
   const memSnap = await db.collection("members").where("teamId", "==", data.teamId).get();
   const students = [], teachers = [];
@@ -3986,9 +4012,11 @@ exports.uploadRegFile = callable(async (data) => {
     return { success: true, fileId, fileName: fileName || "file" };
   } catch (e) { return { success: false, message: "上傳失敗: " + e.message }; }
 });
-exports.getRegFileData = compAuthCallable("view", async (data) => {
+exports.getRegFileData = compAuthCallable("view", async (data, request) => {
   const { fileId, compId } = data;
   if (!fileId) return { success: false };
+  // Fairness (④.1): judges without info access cannot download registrant uploads.
+  if (request.memberRoleName === "judge" && !(await judgeInfoAllowed(request, compId))) return { success: false, message: "權限不足" };
   const doc = await db.collection("regFiles").doc(fileId).get();
   if (!doc.exists) return { success: false, message: "找不到檔案" };
   const d = doc.data();
@@ -6584,69 +6612,44 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
 // Legacy saveScore (single-judge) still works; we just add a new shape.
 
 exports.submitJudgeScore = compAuthCallable("scoring", async (data, request) => {
-  // Scoring is the gated feature (STARTER+). "multiJudge" (Pro+) is matrix/label-only
-  // for now — v3 has no separate judge accounts (compAuthCallable = owner only), so
-  // multiple judges per team cannot occur yet; gate it here when that ships.
   await requireFeature(request.authUser, "scoring");
-  const { compId, teamId, items, totalScore, comment } = data;
+  const { compId, teamId, cells, items, totalScore, comment } = data;
   if (!compId || !teamId) return { success: false, message: "缺少 compId / teamId" };
   const judgeId = request.authUser.username;
+  // Judges may only score teams in a panel they belong to (when panels are defined).
+  if (request.memberRoleName === "judge") {
+    const cDoc = await db.collection("competitions").doc(compId).get();
+    const panels = (cDoc.exists && cDoc.data().config && cDoc.data().config.scoringPanels) || [];
+    const myPanels = panels.filter(p => (p.judges || []).indexOf(judgeId) >= 0);
+    if (myPanels.length) { const allowed = new Set(); myPanels.forEach(p => (p.teams || []).forEach(t => allowed.add(t))); if (!allowed.has(teamId)) return { success: false, message: "此隊伍未指派給您評分" }; }
+  }
   const docId = compId + '_' + teamId + '_' + judgeId;
-  await db.collection("scores").doc(docId).set({
-    compId, teamId, judgeId,
-    items: Array.isArray(items) ? items.slice(0, 20).map(it => ({
-      key: String(it.key || '').slice(0, 40),
-      label: String(it.label || '').slice(0, 80),
-      score: parseFloat(it.score) || 0,
-      maxScore: parseFloat(it.maxScore) || 100,
-      weight: parseFloat(it.weight) || 1
-    })) : [],
-    totalScore: parseFloat(totalScore) || 0,
-    comment: String(comment || '').slice(0, 1000),
-    schemaVersion: 'v2',
-    createdAt: fmtNow(),
-    updatedAt: fmtNow()
-  }, { merge: true });
-  await auditLog(judgeId, "submitJudgeScore", teamId, "total " + totalScore);
+  const rec = { compId, teamId, judgeId, comment: String(comment || '').slice(0, 1000), updatedAt: fmtNow() };
+  if (cells && typeof cells === 'object') {
+    // New (v3): per-leaf record arrays — { leafId: [v1, v2, ...] }
+    const clean = {}; Object.keys(cells).slice(0, 300).forEach(k => { const arr = Array.isArray(cells[k]) ? cells[k] : [cells[k]]; clean[String(k).slice(0, 40)] = arr.slice(0, 20).map(x => parseFloat(x) || 0); });
+    rec.cells = clean; rec.schemaVersion = 'v3';
+  } else {
+    // Legacy (v2): items[] + totalScore
+    rec.items = Array.isArray(items) ? items.slice(0, 40).map(it => ({ key: String(it.key || '').slice(0, 40), label: String(it.label || '').slice(0, 80), score: parseFloat(it.score) || 0, maxScore: parseFloat(it.maxScore) || 100, weight: parseFloat(it.weight) || 1 })) : [];
+    rec.totalScore = parseFloat(totalScore) || 0; rec.schemaVersion = 'v2';
+  }
+  await db.collection("scores").doc(docId).set(rec, { merge: true });
+  await auditLog(judgeId, "submitJudgeScore", teamId, "");
   return { success: true };
 });
 
-exports.getLiveLeaderboard = compAuthCallable("scoring", async (data) => {
-  const { compId } = data;
-  const [tSnap, sSnap] = await Promise.all([
-    db.collection("teams").where("compId", "==", compId).get(),
-    db.collection("scores").where("compId", "==", compId).get()
-  ]);
-  const teamMap = {};
-  tSnap.docs.forEach(d => {
-    const t = d.data();
-    if (t.status === '已取消') return;
-    teamMap[t.teamId] = {
-      teamId: t.teamId,
-      teamNameCN: t.teamNameCN || '',
-      group: t.group || '',
-      status: t.status || '',
-      scores: [],         // per-judge scores
-      avg: 0,
-      judgeCount: 0
-    };
-  });
-  sSnap.docs.forEach(d => {
-    const s = d.data();
-    if (!teamMap[s.teamId]) return;
-    teamMap[s.teamId].scores.push({ judgeId: s.judgeId, total: s.totalScore || 0, items: s.items || [] });
-  });
-  // Average score across judges
-  const rows = Object.values(teamMap).map(t => {
-    if (t.scores.length > 0) {
-      t.judgeCount = t.scores.length;
-      t.avg = t.scores.reduce((a, b) => a + (b.total || 0), 0) / t.scores.length;
-    }
-    return t;
-  });
-  rows.sort((a, b) => b.avg - a.avg);
-  rows.forEach((r, i) => { r.rank = i + 1; });
-  return rows;
+// Live leaderboard — now powered by the full compute engine. Hidden from judges when the
+// organiser has judgeSeeLiveRanking off (fairness).
+exports.getLiveLeaderboard = compAuthCallable("scoring", async (data, request) => {
+  const compId = String(data.compId || "");
+  if (request.memberRoleName === "judge") {
+    const d = await db.collection("competitions").doc(compId).get();
+    if (!(d.exists && d.data().config && d.data().config.judgeSeeLiveRanking === true)) return { hidden: true, rows: [] };
+  }
+  const c = await computeScoring(compId);
+  const rows = c.results.slice().sort((a, b) => (a.rankOverall || 0) - (b.rankOverall || 0)).map(r => ({ teamId: r.teamId, teamNameCN: r.teamNameCN, group: r.group, avg: r.total, judgeCount: r.judgeCount, rank: r.rankOverall, rankInGroup: r.rankInGroup }));
+  return { rows };
 });
 
 // ===== Scoring rubric / panels / fairness config (Phase A) =====
@@ -6720,6 +6723,138 @@ exports.saveScoringConfig = compAuthCallable("manage", async (data, request) => 
   await ref.update({ config: cfg });
   await auditLog(request.authUser.username, "saveScoringConfig", compId, "");
   return { success: true };
+});
+
+// ===== Scoring compute engine (Phase C) — stats + t-distribution normalization =====
+function _erf(x) { const s = x < 0 ? -1 : 1; x = Math.abs(x); const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911; const t = 1 / (1 + p * x); const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x); return s * y; }
+function _normalCdf(z) { return 0.5 * (1 + _erf(z / Math.SQRT2)); }
+function _lgamma(z) { const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7]; if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - _lgamma(1 - z); z -= 1; let a = c[0]; const t = z + g + 0.5; for (let i = 1; i < g + 2; i++) a += c[i] / (z + i); return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(a); }
+function _betacf(a, b, x) { const FPMIN = 1e-30; let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap; if (Math.abs(d) < FPMIN) d = FPMIN; d = 1 / d; let h = d; for (let m = 1; m <= 200; m++) { const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2)); d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN; c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d; h *= d * c; aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2)); d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN; c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN; d = 1 / d; const del = d * c; h *= del; if (Math.abs(del - 1) < 1e-10) break; } return h; }
+function _betai(a, b, x) { if (x <= 0) return 0; if (x >= 1) return 1; const bt = Math.exp(_lgamma(a + b) - _lgamma(a) - _lgamma(b) + a * Math.log(x) + b * Math.log(1 - x)); return x < (a + 1) / (a + b + 2) ? bt * _betacf(a, b, x) / a : 1 - bt * _betacf(b, a, 1 - x) / b; }
+// Student-t CDF P(T<=t) for `df` degrees of freedom.
+function _studentTcdf(t, df) { const x = df / (df + t * t); const p = 0.5 * _betai(df / 2, 0.5, x); return t > 0 ? 1 - p : p; }
+function _mean(a) { return a.reduce((x, y) => x + y, 0) / a.length; }
+function _sampleStd(a) { if (a.length < 2) return 0; const m = _mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1)); }
+function _aggRecords(arr, mode) { if (!arr.length) return 0; if (mode === "max") return Math.max(...arr); if (mode === "min") return Math.min(...arr); if (mode === "last") return arr[arr.length - 1]; return _mean(arr); }
+function _aggJudges(arr, mode) { if (!arr.length) return 0; if (mode === "max") return Math.max(...arr); if (mode === "min") return Math.min(...arr); return _mean(arr); }
+// Normalize one team's leaf value to 0–100 against the distribution `vals` (within its panel).
+function _normalizeValue(v, vals, mode, max) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, v / max * 100)) : 0;
+  if (mode === "none") return pct;
+  if (mode === "linear") { const mn = Math.min(...vals), mx = Math.max(...vals); return mx === mn ? pct : (v - mn) / (mx - mn) * 100; }
+  // zscore / tdist → percentile×100
+  const m = _mean(vals), sd = _sampleStd(vals); if (sd === 0) return pct;
+  const z = (v - m) / sd;
+  const p = mode === "tdist" ? _studentTcdf(z, Math.max(1, vals.length - 1)) : _normalCdf(z);
+  return Math.max(0, Math.min(100, p * 100));
+}
+// Full scoring pipeline: per-leaf record-agg → judge-agg(+trim) within panel → normalize within
+// panel (tdist default, auto-fallback to linear when panel n<5) → weighted roll-up → rank.
+async function computeScoring(compId) {
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const cfg = (compDoc.exists ? compDoc.data().config : {}) || {};
+  const rubric = cfg.scoringRubric || { aggregateJudges: "avg", trimExtremes: false, nodes: [] };
+  const panels = Array.isArray(cfg.scoringPanels) ? cfg.scoringPanels : [];
+  const [tSnap, sSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("scores").where("compId", "==", compId).get()
+  ]);
+  const teams = {};
+  tSnap.docs.forEach(d => { const t = d.data(); if (t.status === "已取消") return; teams[t.teamId] = { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
+  const teamPanel = {};
+  panels.forEach(p => (p.teams || []).forEach(tid => { if (teams[tid]) teamPanel[tid] = "P:" + p.id; }));
+  Object.keys(teams).forEach(tid => { if (!teamPanel[tid]) teamPanel[tid] = "G:" + (teams[tid].group || ""); });
+  const leaves = []; (function walk(ns) { (ns || []).forEach(n => { if (n.children && n.children.length) walk(n.children); else leaves.push(n); }); })(rubric.nodes);
+  const leafById = {}; leaves.forEach(l => { leafById[l.id] = l; });
+  // per (team, leaf): collect each judge's record-aggregated value
+  const sbtl = {}, judgesByTeam = {};
+  sSnap.docs.forEach(d => {
+    const s = d.data(); const tid = s.teamId; if (!teams[tid]) return; const jid = s.judgeId || s.user || "?";
+    let cells = s.cells;
+    if (!cells && Array.isArray(s.items)) { cells = {}; s.items.forEach(it => { if (it && it.key != null) cells[it.key] = [Number(it.score) || 0]; }); }
+    cells = cells || {};
+    (judgesByTeam[tid] = judgesByTeam[tid] || new Set()).add(jid);
+    leaves.forEach(lf => {
+      const r = cells[lf.id]; if (r == null) return;
+      const arr = (Array.isArray(r) ? r : [r]).map(Number).filter(Number.isFinite); if (!arr.length) return;
+      ((sbtl[tid] = sbtl[tid] || {})[lf.id] = sbtl[tid][lf.id] || []).push(_aggRecords(arr, lf.aggregateRecords));
+    });
+  });
+  // consensus per (team, leaf): trim extremes then aggregate judges
+  const consensus = {};
+  Object.keys(teams).forEach(tid => { consensus[tid] = {}; leaves.forEach(lf => { let vals = (sbtl[tid] && sbtl[tid][lf.id]); if (!vals || !vals.length) return; vals = vals.slice().sort((a, b) => a - b); if (rubric.trimExtremes && vals.length >= 3) vals = vals.slice(1, -1); consensus[tid][lf.id] = _aggJudges(vals, rubric.aggregateJudges); }); });
+  // normalize each leaf within each panel
+  const norm = {}, leafStats = {};
+  leaves.forEach(lf => {
+    const byPanel = {};
+    Object.keys(teams).forEach(tid => { const v = consensus[tid] && consensus[tid][lf.id]; if (v == null) return; (byPanel[teamPanel[tid]] = byPanel[teamPanel[tid]] || []).push({ tid, v }); });
+    Object.keys(byPanel).forEach(pk => {
+      const list = byPanel[pk], vals = list.map(o => o.v), n = vals.length;
+      const mode = (lf.normalize === "tdist" || lf.normalize === "zscore") && n < 5 ? "linear" : (lf.normalize || "tdist");
+      (leafStats[lf.id] = leafStats[lf.id] || {})[pk] = { n, mean: n ? _mean(vals) : 0, std: _sampleStd(vals), min: n ? Math.min(...vals) : 0, max: n ? Math.max(...vals) : 0, modeUsed: mode };
+      list.forEach(o => { (norm[o.tid] = norm[o.tid] || {})[lf.id] = _normalizeValue(o.v, vals, mode, lf.max); });
+    });
+  });
+  function nodeScore(node, tid) { if (node.children && node.children.length) { let s = 0; node.children.forEach(c => { s += nodeScore(c, tid) * (Number(c.weightPct) || 0) / 100; }); return s; } const v = norm[tid] && norm[tid][node.id]; return v == null ? 0 : v; }
+  const results = Object.keys(teams).map(tid => {
+    let total = 0; rubric.nodes.forEach(n => { total += nodeScore(n, tid) * (Number(n.weightPct) || 0) / 100; });
+    const breakdown = rubric.nodes.map(n => ({ id: n.id, label: n.label, score: Math.round(nodeScore(n, tid) * 100) / 100, weightPct: n.weightPct }));
+    return Object.assign({}, teams[tid], { panelKey: teamPanel[tid], total: Math.round(total * 100) / 100, breakdown, judgeCount: (judgesByTeam[tid] ? judgesByTeam[tid].size : 0), judged: !!(judgesByTeam[tid] && judgesByTeam[tid].size) });
+  });
+  results.slice().sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankOverall = i + 1; });
+  const byG = {}; results.forEach(r => (byG[r.group] = byG[r.group] || []).push(r)); Object.values(byG).forEach(arr => arr.sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankInGroup = i + 1; }));
+  return { rubric: { aggregateJudges: rubric.aggregateJudges, trimExtremes: rubric.trimExtremes, nodes: rubric.nodes }, panels, leaves: leaves.map(l => ({ id: l.id, label: l.label, normalize: l.normalize, max: l.max })), leafStats, results };
+}
+
+// Whether a caller may see individual registrant info for this event (judges gated by toggle).
+async function judgeInfoAllowed(request, compId) {
+  if (request.memberRoleName !== "judge") return true;
+  const d = await db.collection("competitions").doc(String(compId || "")).get();
+  return !!(d.exists && d.data().config && d.data().config.judgeSeeRegistrantInfo === true);
+}
+
+// Combined scoring read API (one Cloud Function to keep the project under its CPU quota).
+// action: 'results' (manager ranked results + stats) | 'judgeContext' (judge console) | 'export'.
+exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
+  const compId = String(data.compId || "");
+  const action = String(data.action || "");
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const cfg = (compDoc.exists ? compDoc.data().config : {}) || {};
+  const role = request.memberRoleName, me = request.authUser.username;
+
+  if (action === "results") {
+    if (role === "judge" && cfg.judgeSeeLiveRanking !== true) return { hidden: true, results: [] };
+    return await computeScoring(compId);
+  }
+
+  if (action === "judgeContext") {
+    if (!compDoc.exists) return { ok: false };
+    const panels = Array.isArray(cfg.scoringPanels) ? cfg.scoringPanels : [];
+    const tSnap = await db.collection("teams").where("compId", "==", compId).get();
+    let teams = tSnap.docs.map(d => d.data()).filter(t => t.status !== "已取消");
+    if (role === "judge") {
+      const myPanels = panels.filter(p => (p.judges || []).indexOf(me) >= 0);
+      if (myPanels.length) { const allowed = new Set(); myPanels.forEach(p => (p.teams || []).forEach(t => allowed.add(t))); teams = teams.filter(t => allowed.has(t.teamId)); }
+    }
+    const seeInfo = role !== "judge" || cfg.judgeSeeRegistrantInfo === true;
+    const teamsOut = teams.map(t => seeInfo
+      ? { teamId: t.teamId, teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "", group: t.group || "", customAnswers: t.customAnswers || {} }
+      : { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "" });
+    const myScores = {};
+    const ssnap = await db.collection("scores").where("compId", "==", compId).get();
+    ssnap.docs.forEach(d => { const s = d.data(); if ((s.judgeId || s.user) === me && s.teamId) myScores[s.teamId] = { cells: s.cells || {}, comment: s.comment || "" }; });
+    return { ok: true, rubric: cfg.scoringRubric || { nodes: [] }, teams: teamsOut, myScores, seeInfo, canSeeRanking: role !== "judge" || cfg.judgeSeeLiveRanking === true };
+  }
+
+  if (action === "export") {
+    if (role === "judge") return { error: "forbidden" };
+    const computed = await computeScoring(compId);
+    const sSnap = await db.collection("scores").where("compId", "==", compId).get();
+    const raw = sSnap.docs.map(d => { const s = d.data(); return { teamId: s.teamId, judgeId: s.judgeId || s.user || "", cells: s.cells || null, items: s.items || null, totalScore: s.totalScore || null, comment: s.comment || "" }; });
+    return { leaves: computed.leaves, results: computed.results, raw };
+  }
+
+  return { error: "unknown action" };
 });
 
 // ---- Check-in extras (material distribution) ----

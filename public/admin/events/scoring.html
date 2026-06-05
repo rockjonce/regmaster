@@ -126,6 +126,58 @@
 .fr-toggle input:checked + .tk { background:var(--acc); }
 .fr-toggle input:checked + .tk::after { transform:translateX(18px); }
 
+/* ===== Phase C: results table ===== */
+.res-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.res-toolbar .fld { display:flex; align-items:center; gap:8px; }
+.res-toolbar .fld label { font:500 12px/1.3 var(--f-mono); color:var(--muted); }
+.res-toolbar .spacer { flex:1 1 auto; }
+.res-table { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; }
+.res-table th { font:600 11px/1.3 var(--f-mono); text-transform:uppercase; letter-spacing:.04em; color:var(--muted); text-align:left; padding:11px 14px; background:var(--surface-2); border-bottom:1px solid var(--line); }
+.res-table th.num, .res-table td.num { text-align:right; font-feature-settings:"tnum"; }
+.res-table td { padding:11px 14px; border-bottom:1px solid var(--line-2); font:500 13px/1.4 var(--f-tc); color:var(--ink); vertical-align:middle; }
+.res-table tbody tr.res-row { cursor:pointer; transition:.12s; }
+.res-table tbody tr.res-row:hover { background:var(--surface-2); }
+.res-table .res-rank { font:800 16px/1 var(--f-display); color:var(--muted); font-feature-settings:"tnum"; }
+.res-table tr.top-1 .res-rank { color:#D4A017; }
+.res-table tr.top-2 .res-rank { color:#9AA4BD; }
+.res-table tr.top-3 .res-rank { color:#CD7F32; }
+.res-table .res-tm { font:600 13.5px/1.3 var(--f-display); color:var(--ink); }
+.res-table .res-tid { font:500 10.5px/1.3 var(--f-mono); color:var(--muted); margin-top:2px; }
+.res-table .res-total { font:800 16px/1 var(--f-display); font-feature-settings:"tnum"; }
+.res-table tr.unjudged td { color:var(--muted); }
+.res-badge { display:inline-block; font:600 9.5px/1 var(--f-mono); padding:3px 7px; border-radius:5px; background:color-mix(in srgb, var(--bad-500,#dc2626) 14%, var(--surface)); color:var(--bad-500,#dc2626); }
+.res-bk { background:var(--surface-2); }
+.res-bk td { padding:14px 18px; }
+.res-bk-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:10px; }
+.res-bk-item { display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:8px 12px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); }
+.res-bk-item .bk-l { font:500 12.5px/1.3 var(--f-tc); color:var(--ink-2); }
+.res-bk-item .bk-w { font:500 10px/1 var(--f-mono); color:var(--muted); }
+.res-bk-item .bk-s { font:700 14px/1 var(--f-display); font-feature-settings:"tnum"; margin-left:auto; }
+
+/* ===== Phase D: statistics + box plot ===== */
+.st-section { margin-bottom:26px; }
+.st-section h3 { font:700 15px/1.2 var(--f-display); margin-bottom:12px; }
+.st-table { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; margin-bottom:18px; }
+.st-table th { font:600 11px/1.3 var(--f-mono); text-transform:uppercase; letter-spacing:.04em; color:var(--muted); text-align:right; padding:10px 14px; background:var(--surface-2); border-bottom:1px solid var(--line); }
+.st-table th:first-child, .st-table td:first-child { text-align:left; }
+.st-table td { padding:10px 14px; border-bottom:1px solid var(--line-2); font:500 13px/1.3 var(--f-mono); color:var(--ink); text-align:right; font-feature-settings:"tnum"; }
+.st-table td.gname { font:600 13px/1.3 var(--f-display); color:var(--ink); text-align:left; }
+.box-wrap { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:18px; margin-bottom:18px; }
+.box-svg { width:100%; height:auto; display:block; font-family:var(--f-mono); }
+.box-svg .bx-axis-line { stroke:var(--line); stroke-width:1; }
+.box-svg .bx-tick { fill:var(--muted); font-size:10px; }
+.box-svg .bx-glabel { fill:var(--ink-2); font-size:12px; font-family:var(--f-display); font-weight:600; }
+.box-svg .bx-whisker { stroke:var(--ink-3); stroke-width:1.5; }
+.box-svg .bx-cap { stroke:var(--ink-3); stroke-width:1.5; }
+.box-svg .bx-box { fill:color-mix(in srgb, var(--acc) 14%, var(--surface)); stroke:var(--acc); stroke-width:1.5; }
+.box-svg .bx-median { stroke:var(--acc); stroke-width:2.5; }
+.box-svg .bx-dot { fill:var(--ink); fill-opacity:.55; stroke:var(--surface); stroke-width:.5; }
+.box-legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:6px; font:500 11px/1.4 var(--f-mono); color:var(--muted); }
+.box-legend span { display:inline-flex; align-items:center; gap:6px; }
+.box-legend i { width:14px; height:10px; border-radius:2px; display:inline-block; }
+.export-row { display:flex; gap:12px; flex-wrap:wrap; }
+.hist-wrap { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:18px; margin-bottom:18px; }
+
 @media (max-width:768px){ .rb-leaf-fields { grid-template-columns:1fr 1fr; } .pn-grid { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -170,6 +222,8 @@
         <button data-tab="rubric" class="on" data-i18n="aeScoreTabRubric">評分量表</button>
         <button data-tab="panels" data-i18n="aeScoreTabPanels">評審組群 / 分派</button>
         <button data-tab="fairness" data-i18n="aeScoreTabFairness">公平性設定</button>
+        <button data-tab="results" data-i18n="aeScoreTabResults">結果排名</button>
+        <button data-tab="stats" data-i18n="aeScoreTabStats">統計分布</button>
       </div>
 
       <!-- Tab 1: rubric -->
@@ -220,6 +274,28 @@
           </div>
         </div>
       </div>
+
+      <!-- Tab 4: results (Phase C) -->
+      <div class="mc-panel" data-panel="results">
+        <div class="res-toolbar">
+          <div class="fld">
+            <label data-i18n="aeScoreResGroupFilter">組別檢視</label>
+            <select class="input select" id="resGroupSel" style="width:auto;min-width:160px"></select>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" id="resReload" data-i18n="aeScoreResReload">重新整理</button>
+        </div>
+        <div id="resBody"></div>
+      </div>
+
+      <!-- Tab 5: statistics (Phase D) -->
+      <div class="mc-panel" data-panel="stats">
+        <div class="export-row" style="margin-bottom:18px">
+          <button class="btn btn-ghost btn-sm" id="expCsvBtn" data-i18n="aeScoreExportCsv">匯出 CSV</button>
+          <button class="btn btn-primary btn-sm" id="expXlsxBtn" data-i18n="aeScoreExportXlsx">匯出 Excel</button>
+        </div>
+        <div id="statsBody"></div>
+      </div>
     </div>
 
     <div class="body-3" id="content" style="display:none">
@@ -261,110 +337,238 @@
   document.getElementById('meName').textContent = me.displayName || me.username;
   document.getElementById('judgeBadge').textContent = me.displayName || me.username;
 
-  // 4 default scoring criteria
-  var CRITERIA = [
-    { key: 'creativity', label: '創意', weight: 1, max: 25 },
-    { key: 'technical', label: '技術', weight: 1, max: 25 },
-    { key: 'presentation', label: '呈現', weight: 1, max: 25 },
-    { key: 'impact', label: '影響', weight: 1, max: 25 }
-  ];
+  // =========================================================================
+  // Phase B: rubric-driven judge scoring UI (non-managers).
+  // Uses scoringApi(compId,'judgeContext'). No hard-coded criteria.
+  // =========================================================================
+  var JCTX = null;          // { rubric, teams, myScores, seeInfo, canSeeRanking }
+  var JLEAVES = [];         // flattened leaf nodes in rubric order
+  var SELECTED_TEAM = null; // teamId
+  var TEAMS = [];           // assigned teams from judgeContext
+  var DONE = {};            // { teamId: true } locally-marked submitted
 
-  var SELECTED_TEAM = null;
-  var TEAMS = [];
-
-  function load() {
-    Promise.all([
-      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getRegistrationBundle(compId); }),
-      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getLiveLeaderboard(compId); })
-    ]).then(function (r) {
-      var bundle = r[0] || {}; var cfg = bundle.config || {};
-      TEAMS = r[1] || [];
-      document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
-      document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
-      document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('content').style.display = 'grid';
-      renderLeaderboard();
+  // walk rubric.nodes → flat array of leaves (a node with no children)
+  function flattenLeaves(nodes, out) {
+    out = out || [];
+    (nodes || []).forEach(function (n) {
+      if (n.children && n.children.length) flattenLeaves(n.children, out);
+      else out.push(n);
     });
+    return out;
   }
 
-  function renderLeaderboard() {
+  function load() {
+    google.script.run
+      .withSuccessHandler(function (ctx) {
+        document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+        document.getElementById('loadingState').style.display = 'none';
+        if (!ctx || !ctx.ok) {
+          document.getElementById('content').style.display = 'grid';
+          document.getElementById('leaderboard').innerHTML = '';
+          document.getElementById('centerC').innerHTML = '<div class="empty-cc"><span data-i18n="aeScoreNoScorePerm">無評分權限</span></div>';
+          window.applyI18n(document.getElementById('centerC'));
+          return;
+        }
+        JCTX = ctx;
+        JLEAVES = flattenLeaves((ctx.rubric && ctx.rubric.nodes) || []);
+        TEAMS = ctx.teams || [];
+        (TEAMS).forEach(function (t) {
+          var s = ctx.myScores && ctx.myScores[t.teamId];
+          if (s && s.cells && Object.keys(s.cells).length) DONE[t.teamId] = true;
+        });
+        document.getElementById('content').style.display = 'grid';
+        renderTeamList();
+        if (ctx.canSeeRanking) loadJudgeLeaderboard();
+        else hideLeaderboardCol();
+      })
+      .withFailureHandler(function () {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('content').style.display = 'grid';
+        document.getElementById('centerC').innerHTML = '<div class="empty-cc"><span data-i18n="aeScoreNoScorePerm">無評分權限</span></div>';
+        window.applyI18n(document.getElementById('centerC'));
+      })
+      .scoringApi(compId, 'judgeContext');
+  }
+
+  // when ranking is hidden, repurpose the left column into a plain team list
+  function hideLeaderboardCol() {
+    var h = document.querySelector('.left-c .lc-h h3');
+    if (h) h.innerHTML = '<span data-i18n="aeScoreTeamListTitle">評分隊伍</span>';
+    var pill = document.querySelector('.left-c .live-pill');
+    if (pill) pill.style.display = 'none';
+    window.applyI18n(document.querySelector('.left-c'));
+  }
+
+  // ranking visible → live leaderboard rows
+  function loadJudgeLeaderboard() {
+    google.script.run
+      .withSuccessHandler(function (r) {
+        var rows = (r && !r.hidden && r.rows) ? r.rows : null;
+        if (!rows) { hideLeaderboardCol(); return; }
+        var byId = {}; rows.forEach(function (x) { byId[x.teamId] = x; });
+        var lb = document.getElementById('leaderboard');
+        var sorted = rows.slice().sort(function (a, b) { return (a.rank || 999) - (b.rank || 999); });
+        lb.innerHTML = sorted.map(function (t) {
+          var topClass = t.rank === 1 ? 'top-1' : t.rank === 2 ? 'top-2' : t.rank === 3 ? 'top-3' : '';
+          return '<div class="lb-row ' + topClass + '" data-tid="' + escapeHtml(t.teamId) + '">' +
+            '<div class="rank">' + (t.rank || '—') + '</div>' +
+            '<div><div class="nm">' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</div><div class="meta">' + escapeHtml(t.group || '') + ' · ' + (t.judgeCount || 0) + window.L('aeScoreJudgeUnit') + '</div></div>' +
+            '<div class="pts">' + (t.avg != null ? Number(t.avg).toFixed(1) : '—') + '<small>/100</small></div>' +
+          '</div>';
+        }).join('');
+        lb.querySelectorAll('.lb-row').forEach(function (el) {
+          el.addEventListener('click', function () {
+            var t = TEAMS.find(function (x) { return x.teamId === el.dataset.tid; });
+            if (t) selectTeam(t.teamId);
+          });
+        });
+      })
+      .withFailureHandler(function () { hideLeaderboardCol(); })
+      .getLiveLeaderboard(compId);
+  }
+
+  // assigned team list (always rendered; doubles as the picker when ranking hidden)
+  function renderTeamList() {
     var lb = document.getElementById('leaderboard');
-    if (TEAMS.length === 0) {
+    if (!TEAMS.length) {
       lb.innerHTML = '<p style="text-align:center; padding:48px 14px; color:var(--muted)" data-i18n="aeScoreLeaderboardEmpty">尚無報名隊伍</p>';
       window.applyI18n(lb);
       return;
     }
-    lb.innerHTML = TEAMS.map(function (t) {
-      var topClass = t.rank === 1 ? 'top-1' : t.rank === 2 ? 'top-2' : t.rank === 3 ? 'top-3' : '';
-      return '<div class="lb-row ' + topClass + '" data-tid="' + escapeHtml(t.teamId) + '">' +
-        '<div class="rank">' + t.rank + '</div>' +
-        '<div><div class="nm">' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</div><div class="meta">' + escapeHtml(t.group || '') + ' · ' + t.judgeCount + window.L('aeScoreJudgeUnit') + '</div></div>' +
-        '<div class="pts">' + (t.avg ? t.avg.toFixed(1) : '—') + '<small>/100</small></div>' +
-      '</div>';
-    }).join('');
-    lb.querySelectorAll('.lb-row').forEach(function (el) {
-      el.addEventListener('click', function () {
-        var t = TEAMS.find(function (x) { return x.teamId === el.dataset.tid; });
-        if (t) selectTeam(t);
+    if (!JCTX.canSeeRanking) {
+      lb.innerHTML = TEAMS.map(function (t) {
+        var done = DONE[t.teamId];
+        return '<div class="lb-row" data-tid="' + escapeHtml(t.teamId) + '">' +
+          '<div class="rank" style="font-size:13px">' + (done ? '✓' : '·') + '</div>' +
+          '<div><div class="nm">' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.group || '') + '</div></div>' +
+          '<div class="pts" style="font-size:11px;color:var(--muted)">' + window.L(done ? 'aeScoreDone' : 'aeScorePending') + '</div>' +
+        '</div>';
+      }).join('');
+      lb.querySelectorAll('.lb-row').forEach(function (el) {
+        el.addEventListener('click', function () { selectTeam(el.dataset.tid); });
       });
-    });
+    }
   }
 
-  function selectTeam(t) {
-    SELECTED_TEAM = t;
-    document.querySelectorAll('.lb-row').forEach(function (x) { x.classList.toggle('on', x.dataset.tid === t.teamId); });
-    var myScore = (t.scores || []).find(function (s) { return s.judgeId === me.username; });
-    var items = myScore ? myScore.items : CRITERIA.map(function (c) { return Object.assign({}, c, { score: 0 }); });
+  function markTeamDone(teamId) {
+    DONE[teamId] = true;
+    var row = document.querySelector('.left-c .lb-row[data-tid="' + (window.CSS && CSS.escape ? CSS.escape(teamId) : teamId) + '"]');
+    // re-render the (non-ranking) list to reflect ✓; ranking list refreshes via reload
+    if (!JCTX.canSeeRanking) renderTeamList();
+    else loadJudgeLeaderboard();
+  }
+
+  // render the rubric tree as a nested scoring form for one team
+  function renderJudgeNode(n, depth) {
+    var isBranch = n.children && n.children.length > 0;
+    if (isBranch) {
+      var hdr = '<div class="rb-node branch" style="margin-bottom:10px"><div class="rb-row">' +
+        '<span class="rb-tag" data-i18n="aeScoreBranchTag">群組</span>' +
+        '<span style="font:600 14px/1.3 var(--f-display);color:var(--ink);flex:1">' + escapeHtml(n.label || '') + '</span>' +
+        '<span class="weight" style="font:500 10.5px/1 var(--f-mono);color:var(--muted)">' + window.L('aeScoreWeightLabel') + ' ' + (Number(n.weightPct) || 0) + '%</span>' +
+        '</div><div class="rb-children">' +
+        n.children.map(function (c) { return renderJudgeNode(c, depth + 1); }).join('') +
+        '</div></div>';
+      return hdr;
+    }
+    // leaf → label + records inputs (pre-filled)
+    var recs = Math.max(1, parseInt(n.records, 10) || 1);
+    var max = (n.max != null ? Number(n.max) : 100);
+    var pre = (JCTX.myScores && JCTX.myScores[SELECTED_TEAM] && JCTX.myScores[SELECTED_TEAM].cells && JCTX.myScores[SELECTED_TEAM].cells[n.id]) || [];
+    var inputs = '';
+    for (var i = 0; i < recs; i++) {
+      var val = (pre[i] != null ? pre[i] : '');
+      var lab = recs > 1 ? (window.L('aeScoreRecordNth').replace('{n}', (i + 1))) : '';
+      inputs += '<div class="fld" style="display:flex;flex-direction:column;gap:4px">' +
+        (recs > 1 ? '<label style="font:500 10.5px/1 var(--f-mono);color:var(--muted)">' + escapeHtml(lab) + '</label>' : '') +
+        '<input type="number" class="input" data-leaf="' + escapeHtml(n.id) + '" data-rec="' + i + '" min="0" max="' + max + '" step="0.1" value="' + escapeHtml(String(val)) + '" style="width:96px;text-align:center;font-feature-settings:\'tnum\'">' +
+        '</div>';
+    }
+    return '<div class="rb-node leaf" style="margin-bottom:10px"><div class="rb-row" style="align-items:flex-start">' +
+      '<span class="rb-tag" data-i18n="aeScoreLeafTag">評分項</span>' +
+      '<div style="flex:1 1 160px;min-width:120px">' +
+        '<div style="font:600 13.5px/1.3 var(--f-tc);color:var(--ink)">' + escapeHtml(n.label || '') + '</div>' +
+        '<div style="font:500 10.5px/1.3 var(--f-mono);color:var(--muted);margin-top:2px">' + window.L('aeScoreCriterionMaxPre') + max + ' · ' + window.L('aeScoreWeightLabel') + ' ' + (Number(n.weightPct) || 0) + '%</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto">' + inputs + '</div>' +
+      '</div></div>';
+  }
+
+  function selectTeam(teamId) {
+    var t = TEAMS.find(function (x) { return x.teamId === teamId; });
+    if (!t) return;
+    SELECTED_TEAM = teamId;
+    document.querySelectorAll('.lb-row').forEach(function (x) { x.classList.toggle('on', x.dataset.tid === teamId); });
+    var my = (JCTX.myScores && JCTX.myScores[teamId]) || {};
+
+    var infoHtml = '';
+    if (JCTX.seeInfo && t.customAnswers && Object.keys(t.customAnswers).length) {
+      var rows = Object.keys(t.customAnswers).map(function (k) {
+        var v = t.customAnswers[k];
+        if (v && typeof v === 'object') v = JSON.stringify(v);
+        return '<div class="res-bk-item"><span class="bk-l">' + escapeHtml(k) + '</span><span class="bk-s" style="font:500 13px/1.3 var(--f-tc)">' + escapeHtml(String(v == null ? '' : v)) + '</span></div>';
+      }).join('');
+      infoHtml = '<div class="comment-card" style="margin-bottom:18px"><label data-i18n="aeScoreRegInfoLabel">報名資料</label><div class="res-bk-grid">' + rows + '</div></div>';
+    }
+
+    var rubricHtml = JLEAVES.length
+      ? ((JCTX.rubric.nodes || []).map(function (n) { return renderJudgeNode(n, 1); }).join(''))
+      : '<div class="empty-cc"><span data-i18n="aeScoreNoRubric">尚未設定評分量表，請聯絡主辦方。</span></div>';
+
     document.getElementById('centerC').innerHTML =
       '<div class="cc-h">' +
         '<div class="av-l">' + escapeHtml((t.teamNameCN || '?').charAt(0)) + '</div>' +
         '<div><h2>' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</h2><p>' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.group || '') + '</p></div>' +
       '</div>' +
-      '<div class="score-grid">' +
-        items.map(function (c, i) {
-          return '<div class="score-card" data-key="' + escapeHtml(c.key) + '">' +
-            '<h4>' + escapeHtml(c.label) + ' <span class="weight">' + window.L('aeScoreCriterionMaxPre') + (c.maxScore || c.max || 25) + '</span></h4>' +
-            '<div class="input-row">' +
-              '<input type="number" data-score min="0" max="' + (c.maxScore || c.max || 25) + '" value="' + (c.score || 0) + '">' +
-              '<span class="max">/' + (c.maxScore || c.max || 25) + '</span>' +
-            '</div>' +
-          '</div>';
-        }).join('') +
-      '</div>' +
+      infoHtml +
+      '<div id="jRubric" style="margin-bottom:18px">' + rubricHtml + '</div>' +
+      '<div class="comment-card" style="margin-bottom:18px"><label data-i18n="aeScoreCommentLabel">評審評語（選填）</label><textarea id="commentInput" data-i18n-placeholder="aeScoreCommentPlaceholder" placeholder="可寫給選手的建議⋯">' + escapeHtml(my.comment || '') + '</textarea></div>' +
       '<div class="total-card">' +
-        '<div><div class="l" data-i18n="aeScoreTotalLabel">總分</div><div class="v"><span id="totalScore">0</span><em>/100</em></div></div>' +
+        '<div><div class="l" data-i18n="aeScoreSubmitHint">提交後主辦方會跨隊正規化計分</div></div>' +
         '<div class="actions"><button class="btn-primary-w" id="submitScoreBtn" data-i18n="aeScoreSubmitBtn">提交評分</button></div>' +
-      '</div>' +
-      '<div class="comment-card"><label data-i18n="aeScoreCommentLabel">評審評語（選填）</label><textarea id="commentInput" data-i18n-placeholder="aeScoreCommentPlaceholder" placeholder="可寫給選手的建議⋯">' + escapeHtml((myScore && myScore.comment) || '') + '</textarea></div>';
+      '</div>';
 
     window.applyI18n(document.getElementById('centerC'));
 
-    function calcTotal() {
-      var total = 0;
-      document.querySelectorAll('[data-score]').forEach(function (inp) { total += parseFloat(inp.value) || 0; });
-      document.getElementById('totalScore').textContent = total.toFixed(1);
-      return total;
-    }
-    document.querySelectorAll('[data-score]').forEach(function (inp) { inp.addEventListener('input', calcTotal); });
-    calcTotal();
-
-    document.getElementById('submitScoreBtn').addEventListener('click', function () {
-      var items = Array.from(document.querySelectorAll('.score-card')).map(function (card) {
-        var c = CRITERIA.find(function (x) { return x.key === card.dataset.key; }) || {};
-        return { key: card.dataset.key, label: c.label, score: parseFloat(card.querySelector('[data-score]').value) || 0, maxScore: c.max || 25, weight: c.weight || 1 };
+    var sbtn = document.getElementById('submitScoreBtn');
+    if (sbtn) sbtn.addEventListener('click', function () {
+      if (!JLEAVES.length) return;
+      // build cells = { [leafId]: [v1..vN] } for every leaf
+      var cells = {};
+      var bad = false;
+      JLEAVES.forEach(function (lf) {
+        var recs = Math.max(1, parseInt(lf.records, 10) || 1);
+        var arr = [];
+        for (var i = 0; i < recs; i++) {
+          var inp = document.querySelector('[data-leaf="' + (window.CSS && CSS.escape ? CSS.escape(lf.id) : lf.id) + '"][data-rec="' + i + '"]');
+          var v = inp ? parseFloat(inp.value) : NaN;
+          if (isNaN(v)) v = 0;
+          arr.push(v);
+        }
+        cells[lf.id] = arr;
       });
-      var total = calcTotal();
-      var comment = document.getElementById('commentInput').value;
+      var comment = (document.getElementById('commentInput') || {}).value || '';
       var btn = this; btn.disabled = true; btn.textContent = window.L('aeScoreSubmittingBtn');
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success) {
             btn.textContent = window.L('aeScoreSubmittedBtn');
-            setTimeout(function () { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); load(); }, 800);
-          } else { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); alert(window.L('aeScoreFailPre') + ((res && res.message) || '')); }
+            // keep my submitted values in context for re-edit pre-fill
+            JCTX.myScores = JCTX.myScores || {};
+            JCTX.myScores[teamId] = { cells: cells, comment: comment };
+            markTeamDone(teamId);
+            (window.uiToast || function (m) { alert(m); })(window.L('aeScoreSavedToast'), 'ok');
+            setTimeout(function () { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); }, 800);
+          } else {
+            btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn');
+            (window.uiAlert || function (m) { alert(m); })(window.L('aeScoreFailPre') + ((res && res.message) || ''));
+          }
         })
-        .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); alert(window.L('aeScoreFailPre') + (err && err.message)); })
-        .submitJudgeScore(compId, t.teamId, items, total, comment);
+        .withFailureHandler(function (err) {
+          btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn');
+          (window.uiAlert || function (m) { alert(m); })(window.L('aeScoreFailPre') + ((err && err.message) || ''));
+        })
+        .submitJudgeScore(compId, teamId, cells, null, null, comment);
     });
   }
 
@@ -681,10 +885,372 @@
     });
   }
 
+  // =========================================================================
+  // Phase C: results / ranking tab
+  // =========================================================================
+  var RESULTS = null;   // last scoringApi('results') payload
+  var RES_GROUP = '';   // '' = overall; otherwise a group name → rankInGroup
+
+  function loadResults() {
+    var body = document.getElementById('resBody');
+    body.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreLoading">載入評分資料⋯</span></div>';
+    window.applyI18n(body);
+    google.script.run
+      .withSuccessHandler(function (r) {
+        RESULTS = r || { results: [] };
+        renderResults();
+      })
+      .withFailureHandler(function () {
+        body.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreLoadFail">載入失敗</span></div>';
+        window.applyI18n(body);
+      })
+      .scoringApi(compId, 'results');
+  }
+
+  function resultGroups() {
+    var seen = {}, out = [];
+    (RESULTS.results || []).forEach(function (r) { var g = r.group || ''; if (g && !seen[g]) { seen[g] = 1; out.push(g); } });
+    return out;
+  }
+
+  function renderResults() {
+    var sel = document.getElementById('resGroupSel');
+    var groups = resultGroups();
+    sel.innerHTML = '<option value="" data-i18n="aeScoreResOverall">總排名</option>' +
+      groups.map(function (g) { return '<option value="' + escapeHtml(g) + '"' + (g === RES_GROUP ? ' selected' : '') + '>' + escapeHtml(g) + '</option>'; }).join('');
+    window.applyI18n(sel);
+
+    var body = document.getElementById('resBody');
+    var rows = (RESULTS.results || []).slice();
+    if (RES_GROUP) rows = rows.filter(function (r) { return (r.group || '') === RES_GROUP; });
+    // sort: judged first by chosen rank, unjudged last
+    var rankKey = RES_GROUP ? 'rankInGroup' : 'rankOverall';
+    rows.sort(function (a, b) {
+      if (a.judged !== b.judged) return a.judged ? -1 : 1;
+      return (a[rankKey] || 9999) - (b[rankKey] || 9999);
+    });
+    if (!rows.length) {
+      body.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreResEmpty">尚無評分結果。</span></div>';
+      window.applyI18n(body);
+      return;
+    }
+    var html = '<table class="res-table"><thead><tr>' +
+      '<th data-i18n="aeScoreResRank">名次</th>' +
+      '<th data-i18n="aeScoreResTeam">隊伍</th>' +
+      '<th data-i18n="aeScoreResGroup">組別</th>' +
+      '<th class="num" data-i18n="aeScoreResJudges">評審數</th>' +
+      '<th class="num" data-i18n="aeScoreResTotal">總分</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function (r, idx) {
+      var rk = RES_GROUP ? r.rankInGroup : r.rankOverall;
+      var topClass = (!RES_GROUP && r.judged) ? (rk === 1 ? 'top-1' : rk === 2 ? 'top-2' : rk === 3 ? 'top-3' : '') : '';
+      html += '<tr class="res-row ' + topClass + (r.judged ? '' : ' unjudged') + '" data-ridx="' + idx + '">' +
+        '<td><span class="res-rank">' + (r.judged ? (rk || '—') : '—') + '</span></td>' +
+        '<td><div class="res-tm">' + escapeHtml(r.teamNameCN || window.L('aeScoreNoTeamName')) + '</div><div class="res-tid">' + escapeHtml(r.teamId) + '</div></td>' +
+        '<td>' + escapeHtml(r.group || '') + (r.judged ? '' : ' <span class="res-badge" data-i18n="aeScoreResUnjudged">尚未評分</span>') + '</td>' +
+        '<td class="num">' + (r.judgeCount || 0) + '</td>' +
+        '<td class="num"><span class="res-total">' + (r.judged ? Number(r.total || 0).toFixed(1) : '—') + '</span></td>' +
+        '</tr>';
+      // hidden breakdown row
+      var bk = (r.breakdown || []).map(function (b) {
+        return '<div class="res-bk-item"><span><span class="bk-l">' + escapeHtml(b.label || '') + '</span> <span class="bk-w">' + (Number(b.weightPct) || 0) + '%</span></span><span class="bk-s">' + Number(b.score || 0).toFixed(1) + '</span></div>';
+      }).join('');
+      html += '<tr class="res-bk" data-bkidx="' + idx + '" style="display:none"><td colspan="5"><div class="res-bk-grid">' + (bk || '<span style="color:var(--muted)" data-i18n="aeScoreResNoBreakdown">無細項</span>') + '</div></td></tr>';
+    });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+    window.applyI18n(body);
+    body.querySelectorAll('tr.res-row').forEach(function (tr) {
+      tr.addEventListener('click', function () {
+        var bkr = body.querySelector('tr.res-bk[data-bkidx="' + tr.dataset.ridx + '"]');
+        if (bkr) bkr.style.display = (bkr.style.display === 'none' ? '' : 'none');
+      });
+    });
+  }
+
+  // =========================================================================
+  // Phase D: statistics + box plot + export
+  // =========================================================================
+  function quantile(sorted, q) {
+    // linear interpolation between closest ranks (same method as numpy default)
+    if (!sorted.length) return 0;
+    var pos = (sorted.length - 1) * q;
+    var base = Math.floor(pos), rest = pos - base;
+    if (sorted[base + 1] != null) return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+    return sorted[base];
+  }
+  function statsOf(vals) {
+    var n = vals.length;
+    if (!n) return { n: 0, mean: 0, std: 0, min: 0, max: 0, median: 0, q1: 0, q3: 0 };
+    var s = vals.slice().sort(function (a, b) { return a - b; });
+    var sum = 0; s.forEach(function (v) { sum += v; });
+    var mean = sum / n;
+    var varSum = 0; s.forEach(function (v) { varSum += (v - mean) * (v - mean); });
+    var std = Math.sqrt(varSum / n);
+    return {
+      n: n, mean: mean, std: std, min: s[0], max: s[n - 1],
+      median: quantile(s, 0.5), q1: quantile(s, 0.25), q3: quantile(s, 0.75)
+    };
+  }
+
+  function groupedTotals() {
+    // { group: [totals of judged teams] }, preserving insertion order
+    var map = {}, order = [];
+    (RESULTS.results || []).forEach(function (r) {
+      if (!r.judged) return;
+      var g = r.group || window.L('aeScoreNoGroup');
+      if (!map[g]) { map[g] = []; order.push(g); }
+      map[g].push(Number(r.total) || 0);
+    });
+    return { map: map, order: order };
+  }
+
+  function loadStats() {
+    var body = document.getElementById('statsBody');
+    body.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreLoading">載入評分資料⋯</span></div>';
+    window.applyI18n(body);
+    if (RESULTS) { renderStats(); return; }
+    google.script.run
+      .withSuccessHandler(function (r) { RESULTS = r || { results: [] }; renderStats(); })
+      .withFailureHandler(function () {
+        body.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreLoadFail">載入失敗</span></div>';
+        window.applyI18n(body);
+      })
+      .scoringApi(compId, 'results');
+  }
+
+  function renderStats() {
+    var body = document.getElementById('statsBody');
+    var grp = groupedTotals();
+    if (!grp.order.length) {
+      body.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreResEmpty">尚無評分結果。</span></div>';
+      window.applyI18n(body);
+      return;
+    }
+    // summary table
+    var tbl = '<div class="st-section"><h3 data-i18n="aeScoreStatsTableTitle">各組別分數摘要</h3>' +
+      '<table class="st-table"><thead><tr>' +
+      '<th data-i18n="aeScoreResGroup">組別</th>' +
+      '<th data-i18n="aeScoreStatN">n</th>' +
+      '<th data-i18n="aeScoreStatMean">平均</th>' +
+      '<th data-i18n="aeScoreStatStd">標準差</th>' +
+      '<th data-i18n="aeScoreStatMax">最高</th>' +
+      '<th data-i18n="aeScoreStatMin">最低</th>' +
+      '<th data-i18n="aeScoreStatMedian">中位數</th>' +
+      '</tr></thead><tbody>';
+    var statsByGroup = {};
+    grp.order.forEach(function (g) {
+      var st = statsOf(grp.map[g]); statsByGroup[g] = st;
+      tbl += '<tr><td class="gname">' + escapeHtml(g) + '</td>' +
+        '<td>' + st.n + '</td>' +
+        '<td>' + st.mean.toFixed(1) + '</td>' +
+        '<td>' + st.std.toFixed(1) + '</td>' +
+        '<td>' + st.max.toFixed(1) + '</td>' +
+        '<td>' + st.min.toFixed(1) + '</td>' +
+        '<td>' + st.median.toFixed(1) + '</td></tr>';
+    });
+    tbl += '</tbody></table></div>';
+
+    // box-and-whisker SVG
+    var boxSvg = '<div class="st-section"><h3 data-i18n="aeScoreBoxTitle">盒鬚圖（各組別總分分布）</h3>' +
+      '<div class="box-wrap">' + buildBoxSvg(grp, statsByGroup) + buildBoxLegend() + '</div></div>';
+
+    body.innerHTML = tbl + boxSvg;
+    window.applyI18n(body);
+  }
+
+  // map a 0–100 score to an x coordinate, given plot geometry
+  function buildBoxSvg(grp, statsByGroup) {
+    var padL = 130, padR = 24, padT = 16, rowH = 64, axisH = 28;
+    var plotW = 760, innerW = plotW - padL - padR;
+    var nG = grp.order.length;
+    var height = padT + nG * rowH + axisH;
+    var xOf = function (v) { return padL + (Math.max(0, Math.min(100, v)) / 100) * innerW; };
+
+    var svg = '<svg class="box-svg" viewBox="0 0 ' + plotW + ' ' + height + '" preserveAspectRatio="xMidYMid meet" role="img">';
+    // x axis gridlines + ticks (0,20,40,60,80,100)
+    for (var t = 0; t <= 100; t += 20) {
+      var x = xOf(t);
+      svg += '<line class="bx-axis-line" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + nG * rowH).toFixed(1) + '"></line>';
+      svg += '<text class="bx-tick" x="' + x.toFixed(1) + '" y="' + (padT + nG * rowH + 18) + '" text-anchor="middle">' + t + '</text>';
+    }
+    grp.order.forEach(function (g, gi) {
+      var st = statsByGroup[g];
+      var cy = padT + gi * rowH + rowH / 2;
+      var boxTop = cy - 14, boxBot = cy + 14, boxH = boxBot - boxTop;
+      var x1 = xOf(st.q1), x3 = xOf(st.q3), xmin = xOf(st.min), xmax = xOf(st.max), xmed = xOf(st.median);
+      // group label
+      svg += '<text class="bx-glabel" x="' + (padL - 12) + '" y="' + (cy + 4).toFixed(1) + '" text-anchor="end">' + escapeXml(g) + '</text>';
+      // whiskers (min..q1, q3..max) + caps
+      svg += '<line class="bx-whisker" x1="' + xmin.toFixed(1) + '" y1="' + cy.toFixed(1) + '" x2="' + x1.toFixed(1) + '" y2="' + cy.toFixed(1) + '"></line>';
+      svg += '<line class="bx-whisker" x1="' + x3.toFixed(1) + '" y1="' + cy.toFixed(1) + '" x2="' + xmax.toFixed(1) + '" y2="' + cy.toFixed(1) + '"></line>';
+      svg += '<line class="bx-cap" x1="' + xmin.toFixed(1) + '" y1="' + (cy - 8).toFixed(1) + '" x2="' + xmin.toFixed(1) + '" y2="' + (cy + 8).toFixed(1) + '"></line>';
+      svg += '<line class="bx-cap" x1="' + xmax.toFixed(1) + '" y1="' + (cy - 8).toFixed(1) + '" x2="' + xmax.toFixed(1) + '" y2="' + (cy + 8).toFixed(1) + '"></line>';
+      // box (q1..q3)
+      svg += '<rect class="bx-box" x="' + Math.min(x1, x3).toFixed(1) + '" y="' + boxTop.toFixed(1) + '" width="' + Math.max(1, Math.abs(x3 - x1)).toFixed(1) + '" height="' + boxH + '" rx="2"></rect>';
+      // median
+      svg += '<line class="bx-median" x1="' + xmed.toFixed(1) + '" y1="' + boxTop.toFixed(1) + '" x2="' + xmed.toFixed(1) + '" y2="' + boxBot.toFixed(1) + '"></line>';
+      // dots per team
+      grp.map[g].forEach(function (v) {
+        svg += '<circle class="bx-dot" cx="' + xOf(v).toFixed(1) + '" cy="' + (cy + 22).toFixed(1) + '" r="3"></circle>';
+      });
+    });
+    svg += '</svg>';
+    return svg;
+  }
+  function buildBoxLegend() {
+    return '<div class="box-legend">' +
+      '<span><i style="background:color-mix(in srgb, var(--acc) 14%, var(--surface));border:1.5px solid var(--acc)"></i><span data-i18n="aeScoreBoxLegendBox">盒：Q1–Q3</span></span>' +
+      '<span><i style="background:var(--acc);width:3px;height:12px"></i><span data-i18n="aeScoreBoxLegendMedian">中位數</span></span>' +
+      '<span><i style="background:var(--ink-3);height:2px"></i><span data-i18n="aeScoreBoxLegendWhisker">鬚：最小–最大</span></span>' +
+      '<span><i style="background:var(--ink);opacity:.55;width:8px;height:8px;border-radius:50%"></i><span data-i18n="aeScoreBoxLegendDot">隊伍</span></span>' +
+      '</div>';
+  }
+  function escapeXml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+
+  // ---- export (CSV + Excel via SheetJS lazy-load) ----
+  function fetchExport(cb) {
+    google.script.run
+      .withSuccessHandler(function (d) { cb(d || { leaves: [], results: [], raw: [] }); })
+      .withFailureHandler(function () { cb(null); })
+      .scoringApi(compId, 'export');
+  }
+  // aggregate one leaf's records array using the leaf's aggregateRecords rule
+  function aggRec(arr, rule) {
+    if (!arr || !arr.length) return '';
+    var nums = arr.map(Number);
+    if (rule === 'max') return Math.max.apply(null, nums);
+    if (rule === 'min') return Math.min.apply(null, nums);
+    if (rule === 'last') return nums[nums.length - 1];
+    var s = 0; nums.forEach(function (n) { s += n; }); return s / nums.length; // avg default
+  }
+  // build two tables for CSV/Excel from export payload
+  function buildExportTables(d) {
+    var leaves = d.leaves || [];      // [{id,label,normalize,max}]
+    // sheet 1: raw per (team, judge)
+    var rawHead = ['teamId', 'judgeId'].concat(leaves.map(function (l) { return l.label; })).concat(['totalScore', 'comment']);
+    var rawRows = (d.raw || []).map(function (row) {
+      var cells = row.cells || {};
+      var line = [row.teamId, row.judgeId];
+      leaves.forEach(function (l) {
+        var arr = cells[l.id];
+        // raw export: show record-aggregated value if array, else raw items value
+        var v = '';
+        if (Array.isArray(arr)) v = (arr.length ? aggRec(arr, 'avg') : '');
+        else if (row.items && row.items[l.id] != null) v = row.items[l.id];
+        line.push(v === '' ? '' : (typeof v === 'number' ? Math.round(v * 100) / 100 : v));
+      });
+      line.push(row.totalScore != null ? row.totalScore : '');
+      line.push(row.comment || '');
+      return line;
+    });
+
+    // sheet 2: final results with per-node breakdown
+    var results = d.results || [];
+    var nodeLabels = [];
+    if (results.length && results[0].breakdown) nodeLabels = results[0].breakdown.map(function (b) { return b.label; });
+    var resHead = ['rankOverall', 'rankInGroup', 'teamId', 'teamNameCN', 'group', 'judgeCount', 'total'].concat(nodeLabels);
+    var resRows = results.slice().sort(function (a, b) { return (a.rankOverall || 9999) - (b.rankOverall || 9999); }).map(function (r) {
+      var line = [r.rankOverall || '', r.rankInGroup || '', r.teamId, r.teamNameCN || '', r.group || '', r.judgeCount || 0, r.judged ? (Math.round((r.total || 0) * 10) / 10) : ''];
+      (r.breakdown || []).forEach(function (b) { line.push(Math.round((b.score || 0) * 10) / 10); });
+      return line;
+    });
+
+    return { rawHead: rawHead, rawRows: rawRows, resHead: resHead, resRows: resRows };
+  }
+
+  function csvCell(v) {
+    var s = (v == null ? '' : String(v));
+    if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function downloadBlob(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  function exportCsv() {
+    var btn = document.getElementById('expCsvBtn'); btn.disabled = true;
+    fetchExport(function (d) {
+      btn.disabled = false;
+      if (!d) { (window.uiToast || function (m) { alert(m); })(window.L('aeScoreExportFail'), 'err'); return; }
+      var t = buildExportTables(d);
+      var lines = [];
+      lines.push('# ' + window.L('aeScoreExportSheetRaw'));
+      lines.push(t.rawHead.map(csvCell).join(','));
+      t.rawRows.forEach(function (r) { lines.push(r.map(csvCell).join(',')); });
+      lines.push('');
+      lines.push('# ' + window.L('aeScoreExportSheetResults'));
+      lines.push(t.resHead.map(csvCell).join(','));
+      t.resRows.forEach(function (r) { lines.push(r.map(csvCell).join(',')); });
+      downloadBlob('﻿' + lines.join('\r\n'), 'scoring_' + compId + '.csv', 'text/csv;charset=utf-8;');
+      (window.uiToast || function (m) { alert(m); })(window.L('aeScoreExportDone'), 'ok');
+    });
+  }
+
+  var XLSX_LOADING = null;
+  function ensureSheetJS() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (XLSX_LOADING) return XLSX_LOADING;
+    XLSX_LOADING = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = function () { resolve(window.XLSX); };
+      s.onerror = function () { reject(new Error('xlsx load failed')); };
+      document.head.appendChild(s);
+    });
+    return XLSX_LOADING;
+  }
+
+  function exportXlsx() {
+    var btn = document.getElementById('expXlsxBtn'); btn.disabled = true;
+    fetchExport(function (d) {
+      if (!d) { btn.disabled = false; (window.uiToast || function (m) { alert(m); })(window.L('aeScoreExportFail'), 'err'); return; }
+      var t = buildExportTables(d);
+      ensureSheetJS().then(function (XLSX) {
+        btn.disabled = false;
+        var wb = XLSX.utils.book_new();
+        var ws1 = XLSX.utils.aoa_to_sheet([t.rawHead].concat(t.rawRows));
+        var ws2 = XLSX.utils.aoa_to_sheet([t.resHead].concat(t.resRows));
+        XLSX.utils.book_append_sheet(wb, ws1, window.L('aeScoreExportSheetRaw'));
+        XLSX.utils.book_append_sheet(wb, ws2, window.L('aeScoreExportSheetResults'));
+        XLSX.writeFile(wb, 'scoring_' + compId + '.xlsx');
+        (window.uiToast || function (m) { alert(m); })(window.L('aeScoreExportDone'), 'ok');
+      }).catch(function () {
+        btn.disabled = false;
+        // fall back to CSV
+        (window.uiToast || function (m) { alert(m); })(window.L('aeScoreXlsxFallback'), 'err');
+        var lines = [];
+        lines.push('# ' + window.L('aeScoreExportSheetRaw'));
+        lines.push(t.rawHead.map(csvCell).join(','));
+        t.rawRows.forEach(function (r) { lines.push(r.map(csvCell).join(',')); });
+        lines.push('');
+        lines.push('# ' + window.L('aeScoreExportSheetResults'));
+        lines.push(t.resHead.map(csvCell).join(','));
+        t.resRows.forEach(function (r) { lines.push(r.map(csvCell).join(',')); });
+        downloadBlob('﻿' + lines.join('\r\n'), 'scoring_' + compId + '.csv', 'text/csv;charset=utf-8;');
+      });
+    });
+  }
+
+  function wireResultsStats() {
+    document.getElementById('resGroupSel').addEventListener('change', function () { RES_GROUP = this.value; renderResults(); });
+    document.getElementById('resReload').addEventListener('click', function () { RESULTS = null; loadResults(); });
+    document.getElementById('expCsvBtn').addEventListener('click', exportCsv);
+    document.getElementById('expXlsxBtn').addEventListener('click', exportXlsx);
+  }
+
   // ---- tabs ----
+  var RES_LOADED = false, STATS_LOADED = false;
   function switchTab(name) {
     document.querySelectorAll('#mcTabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
     document.querySelectorAll('.mc-panel').forEach(function (p) { p.classList.toggle('on', p.dataset.panel === name); });
+    if (name === 'results' && !RES_LOADED) { RES_LOADED = true; loadResults(); }
+    if (name === 'stats') { if (!STATS_LOADED) { STATS_LOADED = true; loadStats(); } }
   }
   function wireTabs() {
     document.getElementById('mcTabs').addEventListener('click', function (e) {
@@ -723,7 +1289,7 @@
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('mcConsole').style.display = 'block';
 
-      wireTabs(); wireRubric(); wirePanels(); wireSave();
+      wireTabs(); wireRubric(); wirePanels(); wireSave(); wireResultsStats();
       renderRubric(); renderPanels(); renderFairness();
     });
   }

@@ -39,6 +39,16 @@
     // ----- submit feedback -----
     aeScoreFailPre: '失敗：',
 
+    // ----- Phase B: rubric-driven judge UI -----
+    aeScoreNoScorePerm: '無評分權限',
+    aeScoreTeamListTitle: '評分隊伍',
+    aeScoreDone: '已評分',
+    aeScorePending: '未評分',
+    aeScoreRecordNth: '第{n}次',
+    aeScoreRegInfoLabel: '報名資料',
+    aeScoreNoRubric: '尚未設定評分量表，請聯絡主辦方。',
+    aeScoreSubmitHint: '提交後主辦方會跨隊正規化計分',
+
     // ===== Manager console (Phase A) =====
     // ----- console shell / tabs -----
     aeScoreConsoleTitle: '評分設定',
@@ -96,7 +106,45 @@
     aeScoreAggJudgesMin: '最小',
     aeScoreTrimLabel: '去極值（跨評審先去最高 + 最低再合併）',
     aeScoreSeeRegInfoLabel: '評審可看到報名者個資',
-    aeScoreSeeRankingLabel: '評審可看到即時排名'
+    aeScoreSeeRankingLabel: '評審可看到即時排名',
+
+    // ===== Phase C: results / ranking tab =====
+    aeScoreTabResults: '結果排名',
+    aeScoreResGroupFilter: '組別檢視',
+    aeScoreResOverall: '總排名',
+    aeScoreResReload: '重新整理',
+    aeScoreResRank: '名次',
+    aeScoreResTeam: '隊伍',
+    aeScoreResGroup: '組別',
+    aeScoreResJudges: '評審數',
+    aeScoreResTotal: '總分',
+    aeScoreResUnjudged: '尚未評分',
+    aeScoreResEmpty: '尚無評分結果。',
+    aeScoreResNoBreakdown: '無細項',
+    aeScoreLoadFail: '載入失敗',
+
+    // ===== Phase D: statistics + box plot + export =====
+    aeScoreTabStats: '統計分布',
+    aeScoreStatsTableTitle: '各組別分數摘要',
+    aeScoreStatN: 'n',
+    aeScoreStatMean: '平均',
+    aeScoreStatStd: '標準差',
+    aeScoreStatMax: '最高',
+    aeScoreStatMin: '最低',
+    aeScoreStatMedian: '中位數',
+    aeScoreBoxTitle: '盒鬚圖（各組別總分分布）',
+    aeScoreBoxLegendBox: '盒：Q1–Q3',
+    aeScoreBoxLegendMedian: '中位數',
+    aeScoreBoxLegendWhisker: '鬚：最小–最大',
+    aeScoreBoxLegendDot: '隊伍',
+    aeScoreNoGroup: '（未分組）',
+    aeScoreExportCsv: '匯出 CSV',
+    aeScoreExportXlsx: '匯出 Excel',
+    aeScoreExportSheetRaw: '原始分(各評審)',
+    aeScoreExportSheetResults: '彙整結果',
+    aeScoreExportDone: '已開始下載',
+    aeScoreExportFail: '匯出失敗，請稍後再試。',
+    aeScoreXlsxFallback: 'Excel 套件載入失敗，已改用 CSV。'
   };
 
   var E = {
@@ -131,6 +179,16 @@
 
     // ----- submit feedback -----
     aeScoreFailPre: 'Failed: ',
+
+    // ----- Phase B: rubric-driven judge UI -----
+    aeScoreNoScorePerm: 'No scoring permission',
+    aeScoreTeamListTitle: 'Teams to score',
+    aeScoreDone: 'Scored',
+    aeScorePending: 'Pending',
+    aeScoreRecordNth: 'Record {n}',
+    aeScoreRegInfoLabel: 'Registration info',
+    aeScoreNoRubric: 'No rubric has been configured. Please contact the organizer.',
+    aeScoreSubmitHint: 'After you submit, the organizer normalizes scores across teams',
 
     // ===== Manager console (Phase A) =====
     // ----- console shell / tabs -----
@@ -189,7 +247,45 @@
     aeScoreAggJudgesMin: 'Minimum',
     aeScoreTrimLabel: 'Trim extremes (drop highest + lowest across judges before aggregating)',
     aeScoreSeeRegInfoLabel: 'Judges can see registrant personal info',
-    aeScoreSeeRankingLabel: 'Judges can see the live ranking'
+    aeScoreSeeRankingLabel: 'Judges can see the live ranking',
+
+    // ===== Phase C: results / ranking tab =====
+    aeScoreTabResults: 'Results',
+    aeScoreResGroupFilter: 'Group view',
+    aeScoreResOverall: 'Overall ranking',
+    aeScoreResReload: 'Refresh',
+    aeScoreResRank: 'Rank',
+    aeScoreResTeam: 'Team',
+    aeScoreResGroup: 'Group',
+    aeScoreResJudges: 'Judges',
+    aeScoreResTotal: 'Total',
+    aeScoreResUnjudged: 'Not yet scored',
+    aeScoreResEmpty: 'No results yet.',
+    aeScoreResNoBreakdown: 'No breakdown',
+    aeScoreLoadFail: 'Failed to load',
+
+    // ===== Phase D: statistics + box plot + export =====
+    aeScoreTabStats: 'Distribution',
+    aeScoreStatsTableTitle: 'Per-group score summary',
+    aeScoreStatN: 'n',
+    aeScoreStatMean: 'Mean',
+    aeScoreStatStd: 'Std. dev.',
+    aeScoreStatMax: 'Max',
+    aeScoreStatMin: 'Min',
+    aeScoreStatMedian: 'Median',
+    aeScoreBoxTitle: 'Box-and-whisker plot (total distribution per group)',
+    aeScoreBoxLegendBox: 'Box: Q1–Q3',
+    aeScoreBoxLegendMedian: 'Median',
+    aeScoreBoxLegendWhisker: 'Whisker: min–max',
+    aeScoreBoxLegendDot: 'Team',
+    aeScoreNoGroup: '(ungrouped)',
+    aeScoreExportCsv: 'Export CSV',
+    aeScoreExportXlsx: 'Export Excel',
+    aeScoreExportSheetRaw: 'Raw scores (per judge)',
+    aeScoreExportSheetResults: 'Final results',
+    aeScoreExportDone: 'Download started',
+    aeScoreExportFail: 'Export failed, please try again.',
+    aeScoreXlsxFallback: 'Excel library failed to load; exported CSV instead.'
   };
 
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });

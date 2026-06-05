@@ -262,8 +262,9 @@
     updateCampaign:["campaignId","payload"],
     deleteCampaign:["campaignId"],
     sendCampaignNow:["campaignId"],
-    submitJudgeScore:["compId","teamId","items","totalScore","comment"],
+    submitJudgeScore:["compId","teamId","cells","items","totalScore","comment"],
     getLiveLeaderboard:["compId"],
+    scoringApi:["compId","action"],
     checkInTeamV2:["teamId","extras"],
 
     // V3 Phase 7 additions
