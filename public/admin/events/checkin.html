@@ -15,6 +15,8 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Capture Leaflet now: shared/i18n.js later defines window.L (translation fn) and clobbers Leaflet's global. -->
+<script>window.LEAFLET = (typeof L !== 'undefined' && L && L.map) ? L : null;</script>
 <style>
 .body-3 { display:grid; grid-template-columns:320px 1fr 360px; min-height:calc(100vh - 60px); }
 #qrReader { width:100%; max-width:360px; border-radius:14px; overflow:hidden; margin-bottom:18px; }
@@ -329,6 +331,7 @@
   <button class="kioskExit" id="kioskExitBtn" data-i18n="aeChkKioskExit">結束報到機</button>
   <div class="kiosk-inner">
     <div id="kioskInput">
+      <div id="kioskEvent" style="font:700 19px/1.35 var(--f-display); color:#fbcd5b; margin-bottom:16px; opacity:.95"></div>
       <h1 data-i18n="aeChkKioskTitle">自助報到</h1>
       <div class="kprompt" data-i18n="aeChkKioskPrompt">請輸入報名編號</div>
       <div id="kioskReader" style="display:none"></div>
@@ -443,25 +446,26 @@
   });
 
   // ---- Geofence map picker (Leaflet + OpenStreetMap; no API key) ----
+  var LF = window.LEAFLET;  // private Leaflet ref (window.L is the i18n fn on this page)
   var geoMap = null, geoMarker = null, geoCircle = null;
   function curRadius() { return Math.max(20, parseInt($('setRadius').value, 10) || 200); }
   function placeGeo(lat, lng, recenter) {
     if (!geoMap || !isFinite(lat) || !isFinite(lng)) return;
     if (!geoMarker) {
-      geoMarker = L.marker([lat, lng], { draggable: true }).addTo(geoMap);
+      geoMarker = LF.marker([lat, lng], { draggable: true }).addTo(geoMap);
       geoMarker.on('dragend', function () { var p = geoMarker.getLatLng(); $('setLat').value = p.lat.toFixed(6); $('setLng').value = p.lng.toFixed(6); if (geoCircle) geoCircle.setLatLng(p); });
     } else { geoMarker.setLatLng([lat, lng]); }
-    if (!geoCircle) { geoCircle = L.circle([lat, lng], { radius: curRadius(), color: '#3D6BFF', fillColor: '#3D6BFF', fillOpacity: .12, weight: 1.5 }).addTo(geoMap); }
+    if (!geoCircle) { geoCircle = LF.circle([lat, lng], { radius: curRadius(), color: '#3D6BFF', fillColor: '#3D6BFF', fillOpacity: .12, weight: 1.5 }).addTo(geoMap); }
     else { geoCircle.setLatLng([lat, lng]); geoCircle.setRadius(curRadius()); }
     if (recenter) geoMap.setView([lat, lng], Math.max(geoMap.getZoom(), 16));
   }
   function initGeoMap() {
-    if (typeof L === 'undefined') return;
+    if (!LF || !LF.map) return;
     if (!geoMap) {
       var lat = parseFloat($('setLat').value), lng = parseFloat($('setLng').value);
       var hasPt = isFinite(lat) && isFinite(lng) && (lat || lng);
-      geoMap = L.map('geoMap').setView(hasPt ? [lat, lng] : [23.7, 121.0], hasPt ? 16 : 7);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(geoMap);
+      geoMap = LF.map('geoMap').setView(hasPt ? [lat, lng] : [23.7, 121.0], hasPt ? 16 : 7);
+      LF.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(geoMap);
       geoMap.on('click', function (e) { $('setLat').value = e.latlng.lat.toFixed(6); $('setLng').value = e.latlng.lng.toFixed(6); placeGeo(e.latlng.lat, e.latlng.lng, false); });
       if (hasPt) placeGeo(lat, lng, true);
     }
@@ -702,6 +706,7 @@
   $('kioskLaunchBtn').addEventListener('click', startKiosk);
   function startKiosk() {
     kioskActive = true;
+    var ev = $('kioskEvent'); if (ev) ev.textContent = (CONFIG && CONFIG.competitionName) || '';
     $('kioskScreen').classList.add('on');
     document.querySelector('.admin').style.display = 'none';   // hide admin chrome
     showKioskInput();
