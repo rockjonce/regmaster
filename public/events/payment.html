@@ -455,7 +455,9 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         .withFailureHandler(function () {
           if (attempts < 30) setTimeout(tick, 3000);
         })
-        .getRegPaymentStatus(orderId);
+        // C-9: first 2 ticks just read status (give the webhook a moment); afterwards actively
+        // reconcile with PayUNI so a missed/late notification still captures the payment.
+        [(attempts <= 2) ? 'getRegPaymentStatus' : 'reconcileRegPayment'](orderId);
     }
     tick();
   }

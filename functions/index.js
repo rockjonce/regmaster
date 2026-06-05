@@ -4457,6 +4457,161 @@ function payuniHash(encStr, key, iv) {
   return crypto.createHash("sha256").update(key + encStr + iv).digest("hex").toUpperCase();
 }
 
+// C-9: actively query PayUNI for an order's TRUE status (二次查詢) — defense-in-depth on the
+// notify webhook + a recovery path if a notification is ever missed. Returns
+// { verdict:'paid'|'notpaid'|'unknown', tradeNo }. NEVER throws and is fail-open: any error,
+// missing record, pending, or unparseable response → 'unknown' so a real payment is never blocked.
+async function payuniInquiry(orderId, creds) {
+  try {
+    if (!orderId || !creds || !creds.merID || !creds.key || !creds.iv) return { verdict: "unknown", tradeNo: "" };
+    const enc = payuniEncrypt({ MerID: creds.merID, MerTradeNo: orderId, Timestamp: Math.floor(Date.now() / 1000) }, creds.key, creds.iv);
+    const hash = payuniHash(enc, creds.key, creds.iv);
+    const prefix = creds.mode === "t" ? "https://sandbox-" : "https://";
+    const resp = await fetch(prefix + "api.payuni.com.tw/api/trade/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ MerID: creds.merID, Version: "1.0", EncryptInfo: enc, HashInfo: hash })
+    });
+    if (!resp.ok) return { verdict: "unknown", tradeNo: "" };
+    const json = await resp.json().catch(() => null);
+    if (!json) return { verdict: "unknown", tradeNo: "" };
+    let rec = {};
+    if (json.EncryptInfo) { try { rec = payuniDecrypt(json.EncryptInfo, creds.key, creds.iv); } catch (e) { return { verdict: "unknown", tradeNo: "" }; } }
+    const tradeNo = rec.TradeNo || "";
+    const tradeStatus = (rec.TradeStatus != null) ? String(rec.TradeStatus) : "";
+    // PayUNI 整合金流：TradeStatus "1" = 交易成功。只有明確的 "1" 才算已付款（最保守，絕不誤判）。
+    if (tradeStatus === "1") return { verdict: "paid", tradeNo };
+    // 明確的終態失敗碼才視為未付款（供 webhook 記錄矛盾用，不阻擋）。其餘（待付款/查無/無法解析）一律 unknown。
+    if (tradeStatus === "2" || tradeStatus === "3" || tradeStatus === "9") return { verdict: "notpaid", tradeNo };
+    return { verdict: "unknown", tradeNo };
+  } catch (e) { return { verdict: "unknown", tradeNo: "" }; }
+}
+
+// Activation logic for a PLAN/licence order — single source of truth shared by the webhook
+// (exports.payuniNotify) and the reconcile callable. Idempotent: no-op if already paid.
+async function activatePlanOrderPaid(orderRef, order, orderId, tradeNo) {
+  if (order.status === "paid") return false;
+  /* Create licenses. Tier purchases are bound + activated to the buyer
+     immediately (no manual code entry); legacy items stay unactivated. */
+  const codes = [];
+  const codeDetails = [];
+  const mkCode = () => "RM-" + [1,2,3,4].map(() => {
+    const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from({ length: 4 }, () => c[crypto.randomInt(c.length)]).join("");
+  }).join("-");
+  for (const item of (order.items || [])) {
+    const code = mkCode();
+    if (item.type === "tier") {
+      const years = parseInt(item.years, 10) || 1;
+      const exp = new Date(); exp.setFullYear(exp.getFullYear() + years);
+      await db.collection("licenses").doc(code).set({
+        code, type: "subscription", tier: item.tier, years,
+        status: "已啟用", activatedBy: order.username, activatedAt: fmtNow(),
+        expiresAt: exp.toISOString(), createdAt: fmtNow(),
+        orderId, purchasedBy: order.username
+      });
+      codes.push(code);
+      codeDetails.push({ code, type: "tier", desc: tierLabel(item.tier) + " " + years + " 年（已綁定）" });
+    } else {
+      const licType = item.type === "count" ? "count" : "subscription";
+      await db.collection("licenses").doc(code).set({
+        code, type: licType, status: "未啟用",
+        maxCount: item.type === "count" ? item.qty : 0, usedCount: 0,
+        years: item.type === "subscription" ? item.qty : 0,
+        durationMonths: item.type === "subscription" ? item.qty * 12 : 0,
+        createdAt: fmtNow(), activatedBy: "", activatedAt: "",
+        orderId, purchasedBy: order.username
+      });
+      codes.push(code);
+      codeDetails.push({ code, type: licType, desc: item.type === "count" ? item.qty + " 次" : item.qty + " 年" });
+    }
+  }
+  await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: tradeNo || "", licenseCodes: codes });
+
+  /* Use coupon */
+  if (order.couponCode) {
+    const cSnap = await db.collection("coupons").where("code", "==", order.couponCode).limit(1).get();
+    if (!cSnap.empty) await cSnap.docs[0].ref.update({ usedCount: FieldValue.increment(1) });
+  }
+
+  /* Send email to purchaser */
+  if (order.username) {
+    const userSnap = await db.collection("accounts").where("username", "==", order.username).limit(1).get();
+    if (!userSnap.empty) {
+      const userEmail = (userSnap.docs[0].data().email) || "";
+      if (userEmail) {
+        const anyTier = codeDetails.some(d => d.type === "tier");
+        let codesHtml = codeDetails.map(d =>
+          `<div style="background:#E8F0F8;padding:14px 18px;border-radius:10px;margin:8px 0;font-family:monospace;font-size:18px;font-weight:700;color:#0A437A;letter-spacing:1px;text-align:center">${d.code}<br><span style="font-size:13px;font-weight:400;color:#475569">${d.type === "tier" ? d.desc : (d.type === "count" ? "次數授權 " + d.desc : "訂閱授權 " + d.desc)}</span></div>`
+        ).join("");
+        const emailHtml = `
+          <div style="font-family:'Noto Sans TC',sans-serif;max-width:540px;margin:0 auto">
+            <div style="background:linear-gradient(135deg,#062845,#0A437A);padding:24px;border-radius:14px 14px 0 0;text-align:center">
+              <h1 style="color:#fff;font-size:22px;margin:0">🎉 購買成功！</h1>
+              <p style="color:rgba(255,255,255,.6);font-size:13px;margin:4px 0 0">RegMaster 授權碼已產生</p>
+            </div>
+            <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px">
+              <p style="font-size:15px;color:#1e293b">感謝您的購買！以下是您的訂單明細：</p>
+              ${codesHtml}
+              <p style="font-size:14px;color:#475569;margin-top:16px">${anyTier
+                ? '您的方案已自動啟用，登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 即可使用（上方代碼供您留存）。'
+                : '請登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「方案與授權」輸入上述代碼即可啟用。'}</p>
+              <p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">訂單編號：${orderId}<br>付款金額：NT$${order.total}</p>
+            </div>
+          </div>`;
+        await db.collection("mail").add({
+          to: [userEmail],
+          message: { subject: "🎉 [RegMaster] 授權碼購買成功通知 — 訂單 " + orderId, html: emailHtml, text: "您的授權碼：" + codes.join(", ") }
+        });
+      }
+    }
+  }
+  await auditLog("system", "payment_success", orderId, codes.join(","));
+  return true;
+}
+
+// Activation logic for a REGISTRATION-fee payment — shared by the webhook (payuniRegNotify)
+// and the reconcile callable. Idempotent: no-op if already paid.
+async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo) {
+  if (order.status === "paid") return false;
+  await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: tradeNo || "" });
+  /* Auto-confirm team payment */
+  await db.collection("teams").doc(order.teamId).update({
+    paymentStatus: "已確認 (線上付款) " + fmtNow(),
+    paymentMethod: "onlinePayment",
+    regPaymentId: orderId
+  });
+  /* Item 10: consume the discount code now that payment succeeded */
+  if (order.discountCode) {
+    try { await db.collection("discountCodes").doc(compId + "_" + order.discountCode).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
+  }
+  await auditLog("system", "線上付款成功", order.teamId, "PAYUNi " + orderId);
+
+  /* Send confirmation email */
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compCfg = compDoc.exists ? (compDoc.data().config || {}) : {};
+  if (compCfg.autoEmailNotification !== false) {
+    const memSnap = await db.collection("members").where("teamId", "==", order.teamId).get();
+    const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
+    if (emails.length) {
+      await db.collection("mail").add({
+        to: emails,
+        message: {
+          subject: `[RegMaster] 付款成功通知 - ${compCfg.competitionName || ""}`,
+          html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px">
+            <h2 style="color:#065f46">✅ 付款成功！</h2>
+            <p>您的報名編號 <b>${order.teamId}</b> 已完成線上付款。</p>
+            <p>活動：${compCfg.competitionName || ""}</p>
+            <p>金額：NT$${order.amount}</p>
+            <p style="color:#475569;font-size:13px;margin-top:20px">此為系統自動通知，請勿直接回覆。</p></div>`,
+          text: `付款成功！報名編號 ${order.teamId}，金額 NT$${order.amount}`
+        }
+      });
+    }
+  }
+  return true;
+}
+
 // --- Sales Config ---
 exports.getSalesConfig = authCallable(["system","competition"], async (data, request) => {
   const doc = await db.collection("config").doc("sales").get();
@@ -4702,82 +4857,13 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
     const order = orderDoc.data();
     
     if (tradeStatus === "SUCCESS" && order.status !== "paid") {
-      /* Create licenses. Tier purchases are bound + activated to the buyer
-         immediately (no manual code entry); legacy items stay unactivated. */
-      const codes = [];
-      const codeDetails = [];
-      const mkCode = () => "RM-" + [1,2,3,4].map(() => {
-        const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        return Array.from({ length: 4 }, () => c[crypto.randomInt(c.length)]).join("");
-      }).join("-");
-      for (const item of (order.items || [])) {
-        const code = mkCode();
-        if (item.type === "tier") {
-          const years = parseInt(item.years, 10) || 1;
-          const exp = new Date(); exp.setFullYear(exp.getFullYear() + years);
-          await db.collection("licenses").doc(code).set({
-            code, type: "subscription", tier: item.tier, years,
-            status: "已啟用", activatedBy: order.username, activatedAt: fmtNow(),
-            expiresAt: exp.toISOString(), createdAt: fmtNow(),
-            orderId, purchasedBy: order.username
-          });
-          codes.push(code);
-          codeDetails.push({ code, type: "tier", desc: tierLabel(item.tier) + " " + years + " 年（已綁定）" });
-        } else {
-          const licType = item.type === "count" ? "count" : "subscription";
-          await db.collection("licenses").doc(code).set({
-            code, type: licType, status: "未啟用",
-            maxCount: item.type === "count" ? item.qty : 0, usedCount: 0,
-            years: item.type === "subscription" ? item.qty : 0,
-            durationMonths: item.type === "subscription" ? item.qty * 12 : 0,
-            createdAt: fmtNow(), activatedBy: "", activatedAt: "",
-            orderId, purchasedBy: order.username
-          });
-          codes.push(code);
-          codeDetails.push({ code, type: licType, desc: item.type === "count" ? item.qty + " 次" : item.qty + " 年" });
-        }
-      }
-      await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: info.TradeNo || "", licenseCodes: codes });
-      
-      /* Use coupon */
-      if (order.couponCode) {
-        const cSnap = await db.collection("coupons").where("code", "==", order.couponCode).limit(1).get();
-        if (!cSnap.empty) await cSnap.docs[0].ref.update({ usedCount: FieldValue.increment(1) });
-      }
-      
-      /* Send email to purchaser */
-      if (order.username) {
-        const userSnap = await db.collection("accounts").where("username", "==", order.username).limit(1).get();
-        if (!userSnap.empty) {
-          const userEmail = (userSnap.docs[0].data().email) || "";
-          if (userEmail) {
-            const anyTier = codeDetails.some(d => d.type === "tier");
-            let codesHtml = codeDetails.map(d =>
-              `<div style="background:#E8F0F8;padding:14px 18px;border-radius:10px;margin:8px 0;font-family:monospace;font-size:18px;font-weight:700;color:#0A437A;letter-spacing:1px;text-align:center">${d.code}<br><span style="font-size:13px;font-weight:400;color:#475569">${d.type === "tier" ? d.desc : (d.type === "count" ? "次數授權 " + d.desc : "訂閱授權 " + d.desc)}</span></div>`
-            ).join("");
-            const emailHtml = `
-              <div style="font-family:'Noto Sans TC',sans-serif;max-width:540px;margin:0 auto">
-                <div style="background:linear-gradient(135deg,#062845,#0A437A);padding:24px;border-radius:14px 14px 0 0;text-align:center">
-                  <h1 style="color:#fff;font-size:22px;margin:0">🎉 購買成功！</h1>
-                  <p style="color:rgba(255,255,255,.6);font-size:13px;margin:4px 0 0">RegMaster 授權碼已產生</p>
-                </div>
-                <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px">
-                  <p style="font-size:15px;color:#1e293b">感謝您的購買！以下是您的訂單明細：</p>
-                  ${codesHtml}
-                  <p style="font-size:14px;color:#475569;margin-top:16px">${anyTier
-                    ? '您的方案已自動啟用，登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 即可使用（上方代碼供您留存）。'
-                    : '請登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「方案與授權」輸入上述代碼即可啟用。'}</p>
-                  <p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">訂單編號：${orderId}<br>付款金額：NT$${order.total}</p>
-                </div>
-              </div>`;
-            await db.collection("mail").add({
-              to: [userEmail],
-              message: { subject: "🎉 [RegMaster] 授權碼購買成功通知 — 訂單 " + orderId, html: emailHtml, text: "您的授權碼：" + codes.join(", ") }
-            });
-          }
-        }
-      }
-      await auditLog("system", "payment_success", orderId, codes.join(","));
+      // C-9: advisory 二次查詢 — NEVER blocks a real payment (the notify is already
+      // AES-GCM-authenticated); only flags a contradiction on the order for manual review.
+      try {
+        const _inq = await payuniInquiry(orderId, { merID: sales.payuniMerID, key: sales.payuniHashKey, iv: sales.payuniHashIV, mode: sales.payuniMode });
+        if (_inq.verdict === "notpaid") { console.error("[C-9] PayUNI inquiry contradicts SUCCESS notify (plan order)", orderId); await orderRef.update({ inquiryMismatch: true }).catch(() => {}); }
+      } catch (e) {}
+      await activatePlanOrderPaid(orderRef, order, orderId, info.TradeNo);
     }
     res.status(200).send("OK");
   } catch (e) {
@@ -4793,6 +4879,61 @@ exports.getOrderStatus = callable(async (data) => {
   if (!doc.exists) return { status: "unknown" };
   const o = doc.data();
   return { status: o.status || "pending", licenseCodes: o.licenseCodes || [], total: o.total || 0 };
+});
+
+// C-9 recovery: actively confirm a PLAN/licence order with PayUNI (二次查詢) and self-heal if a
+// notify was missed. Safe to expose publicly — it only ever activates when PayUNI itself returns
+// 'paid' (cannot be abused to fake a payment), and is idempotent. Frontends may poll this.
+exports.reconcilePlanOrder = callable(async (data) => {
+  const orderId = String((data && data.orderId) || "");
+  if (!orderId) return { success: false, status: "unknown" };
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderDoc = await orderRef.get();
+  if (!orderDoc.exists) return { success: false, status: "unknown" };
+  const order = orderDoc.data();
+  if (order.status === "paid") return { success: true, status: "paid", licenseCodes: order.licenseCodes || [] };
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const sales = salesDoc.exists ? salesDoc.data() : {};
+  if (!sales.payuniHashKey || !sales.payuniHashIV) return { success: true, status: order.status || "pending" };
+  const inq = await payuniInquiry(orderId, { merID: sales.payuniMerID, key: sales.payuniHashKey, iv: sales.payuniHashIV, mode: sales.payuniMode });
+  if (inq.verdict === "paid") {
+    await activatePlanOrderPaid(orderRef, order, orderId, inq.tradeNo);
+    const fresh = await orderRef.get();
+    return { success: true, status: "paid", licenseCodes: (fresh.exists && fresh.data().licenseCodes) || [] };
+  }
+  return { success: true, status: order.status || "pending", inquiry: inq.verdict };
+});
+
+// C-9 recovery: actively confirm a REGISTRATION-fee payment with PayUNI and self-heal if a notify
+// was missed — so a registrant's payment is captured even when the webhook never arrived. Public +
+// idempotent; only activates on a PayUNI-confirmed 'paid'. Tries system keys, then the activity's keys.
+exports.reconcileRegPayment = callable(async (data) => {
+  const orderId = String((data && data.orderId) || "");
+  if (!orderId) return { success: false, status: "unknown" };
+  const orderRef = db.collection("regPayments").doc(orderId);
+  const orderDoc = await orderRef.get();
+  if (!orderDoc.exists) return { success: false, status: "unknown" };
+  const order = orderDoc.data();
+  if (order.status === "paid") return { success: true, status: "paid" };
+  const compId = order.compId || "";
+  // Candidate credentials: system-level sales keys first, then the activity's own keys.
+  const creds = [];
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const sales = salesDoc.exists ? salesDoc.data() : {};
+  if (sales.payuniHashKey && sales.payuniHashIV) creds.push({ merID: sales.payuniMerID, key: sales.payuniHashKey, iv: sales.payuniHashIV, mode: sales.payuniMode });
+  if (compId) {
+    const cDoc = await db.collection("competitions").doc(compId).get();
+    const cfg = cDoc.exists ? (cDoc.data().config || {}) : {};
+    if (cfg.payuniHashKey && cfg.payuniHashIV) creds.push({ merID: cfg.payuniMerID, key: cfg.payuniHashKey, iv: cfg.payuniHashIV, mode: cfg.payuniMode });
+  }
+  for (const cr of creds) {
+    const inq = await payuniInquiry(orderId, cr);
+    if (inq.verdict === "paid") {
+      await activateRegPaymentPaid(orderRef, order, orderId, compId, inq.tradeNo);
+      return { success: true, status: "paid" };
+    }
+  }
+  return { success: true, status: order.status || "pending" };
 });
 
 // ===== Production Reset: Clear all data except config + system admin =====
@@ -5058,41 +5199,13 @@ exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async
     const compId = matched.compId || order.compId;
 
     if (tradeStatus === "SUCCESS" && order.status !== "paid") {
-      await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: info.TradeNo || "" });
-      /* Auto-confirm team payment */
-      await db.collection("teams").doc(order.teamId).update({
-        paymentStatus: "已確認 (線上付款) " + fmtNow(),
-        paymentMethod: "onlinePayment",
-        regPaymentId: orderId
-      });
-      /* Item 10: consume the discount code now that payment succeeded */
-      if (order.discountCode) {
-        try { await db.collection("discountCodes").doc(compId + "_" + order.discountCode).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
-      }
-      await auditLog("system", "線上付款成功", order.teamId, "PAYUNi " + orderId);
-
-      /* Send confirmation email */
-      const compDoc = await db.collection("competitions").doc(compId).get();
-      const compCfg = compDoc.exists ? (compDoc.data().config || {}) : {};
-      if (compCfg.autoEmailNotification !== false) {
-        const memSnap = await db.collection("members").where("teamId", "==", order.teamId).get();
-        const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
-        if (emails.length) {
-          await db.collection("mail").add({
-            to: emails,
-            message: {
-              subject: `[RegMaster] 付款成功通知 - ${compCfg.competitionName || ""}`,
-              html: `<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px">
-                <h2 style="color:#065f46">✅ 付款成功！</h2>
-                <p>您的報名編號 <b>${order.teamId}</b> 已完成線上付款。</p>
-                <p>活動：${compCfg.competitionName || ""}</p>
-                <p>金額：NT$${order.amount}</p>
-                <p style="color:#475569;font-size:13px;margin-top:20px">此為系統自動通知，請勿直接回覆。</p></div>`,
-              text: `付款成功！報名編號 ${order.teamId}，金額 NT$${order.amount}`
-            }
-          });
-        }
-      }
+      // C-9: advisory 二次查詢 — NEVER blocks a real payment; only flags a contradiction.
+      try {
+        const _c = matched.cfg || {};
+        const _inq = await payuniInquiry(orderId, { merID: _c.payuniMerID, key: _c.payuniHashKey, iv: _c.payuniHashIV, mode: _c.payuniMode });
+        if (_inq.verdict === "notpaid") { console.error("[C-9] PayUNI inquiry contradicts SUCCESS notify (reg payment)", orderId); await orderRef.update({ inquiryMismatch: true }).catch(() => {}); }
+      } catch (e) {}
+      await activateRegPaymentPaid(orderRef, order, orderId, compId, info.TradeNo);
     }
     res.status(200).send("OK");
   } catch (e) {

@@ -186,6 +186,8 @@
     getTeamFileData:["teamId"],
     uploadRegFile:["compId","base64Data","fileName","mimeType"],
     getRegFileData:["fileId","compId"],
+    reconcilePlanOrder:["orderId"],
+    reconcileRegPayment:["orderId"],
     analyzePosterColors:["compId","posterUrl"],
     analyzeRulesWithAI:["compId"],
     aiConvertInlineHTML:["compId","htmlContent","fieldName"],
