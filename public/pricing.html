@@ -108,6 +108,12 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 
 .theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; }
 .theme-toggle:hover { background: var(--surface-3); }
+/* feature comparison tooltip */
+.tip { position:relative; display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; margin-left:5px; border-radius:50%; border:1px solid var(--line); color:var(--muted); font:600 10px/1 var(--f-mono); cursor:help; vertical-align:middle; }
+.tip:hover { border-color:var(--acc); color:var(--acc); }
+.tip .tipbox { position:absolute; bottom:150%; left:50%; transform:translateX(-50%); width:248px; max-width:60vw; background:#1e293b; color:#fff; padding:9px 12px; border-radius:8px; font:400 12px/1.55 var(--f-tc); text-align:left; white-space:normal; opacity:0; visibility:hidden; transition:.15s; z-index:30; box-shadow:0 8px 24px rgba(0,0,0,.22); }
+.tip .tipbox::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:#1e293b; }
+.tip:hover .tipbox { opacity:1; visibility:visible; }
 </style>
 </head>
 <body>
@@ -368,7 +374,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
         numRow(L('prRowCap'), function(p){ return _lim(p.maxCapacity); })+
         numRow(L('prRowPayFee'), function(p){ return (Number(p.feePct)||0)+'%'; })+
         '<tr class="section-row"><td colspan="5">'+L('prCmpFeat')+'</td></tr>'+
-        PFEAT.map(function(ff){ return '<tr><td>'+L(ff[1])+'</td>'+TS.map(function(t){ return cell(t,ff[0]); }).join('')+'</tr>'; }).join('');
+        PFEAT.map(function(ff){ var tipK = ff[0]==='scoring' ? 'prTipScoring' : ff[0]==='multiJudge' ? 'prTipMulti' : ''; var tip = tipK ? ' <span class="tip">i<span class="tipbox">'+L(tipK)+'</span></span>' : ''; return '<tr><td>'+L(ff[1])+tip+'</td>'+TS.map(function(t){ return cell(t,ff[0]); }).join('')+'</tr>'; }).join('');
     }
   }
   if (window.google && google.script && google.script.run) {

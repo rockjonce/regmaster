@@ -103,7 +103,7 @@
       bentoFormH3: '拖放式表單設計器', bentoFormP: '16 種欄位類型 · 條件邏輯 · 多階段 · 中英雙語',
       formName: '姓名', formSchool: '學校 / 機構', formDiet: '飲食習慣',
       bentoStatH3: '即時統計儀表板', bentoStatP: '報名趨勢、組別分布、來源追蹤 —— 不再等到結束才知道發生什麼事。',
-      bentoPayH3: '金流串接', bentoPayP: '信用卡、ATM、超商代碼、LINE Pay —— 一鍵啟用。',
+      bentoPayH3: '金流串接', bentoPayP: '信用卡、ATM 轉帳 —— 一鍵啟用（其他付款方式依 PayUNI 商店設定）。',
       bentoEmailH3: '批次 Email / 證書', bentoEmailP: '變數套版、AI 擬稿，500 封一次寄。',
       bentoQrH3: 'QR Code 報到', bentoQrP: '手機掃一下，到場狀態自動同步。',
       // ----- dashboard mock -----
@@ -148,6 +148,8 @@
       btnUseFree: '開始使用', btnUpStarter: '升級 Starter', btnUpPro: '升級 Pro →', btnChooseTeam: '選擇 Team →',
       // ----- plan-card features / unit templates ({n} = number) -----
       pfPayment: '線上金流收款', pfCsv: '匯出報表', pfScoring: '評分', pfMultiJudge: '多評審評分 + 團隊成員權限', pfCampaigns: '公告群發',
+      prTipScoring: '評分：由主辦或工作人員為每隊輸入一份成績（覆寫式），適合單一評審或小組統一登錄。',
+      prTipMulti: '多評審評分：每位評審各自登入、獨立對同一隊伍打分，系統自動彙整各評審分數、計算平均並產生即時排行榜；可搭配「團隊成員權限」邀請多個評審角色帳號。',
       pfCheckin: 'QR 報到', pfWaitlist: '允許候補', pfEventAi: '活動 AI 助理', pfAdminAi: '主辦後台 AI 助理', pfCert: '名牌 / 證書',
       tActive: '<b>{n}</b> 個進行中活動', tReg: '每活動 <b>{n}</b> 筆報名', tFee: '金流手續費 <b>{n}%</b>', uUnlimited: '無限',
       // ----- faq -----
@@ -205,7 +207,7 @@
       bentoFormH3: 'Drag-and-drop form builder', bentoFormP: '16 field types · conditional logic · multi-step · bilingual',
       formName: 'Name', formSchool: 'School / Org', formDiet: 'Dietary',
       bentoStatH3: 'Real-time analytics dashboard', bentoStatP: 'Registration trends, group breakdowns, source tracking — no more waiting until it\'s over to see what happened.',
-      bentoPayH3: 'Built-in payments', bentoPayP: 'Credit card, ATM, convenience-store code, LINE Pay — enable in one click.',
+      bentoPayH3: 'Built-in payments', bentoPayP: 'Credit card and ATM transfer — enable in one click (other methods depend on your PayUNI merchant settings).',
       bentoEmailH3: 'Bulk email & certificates', bentoEmailP: 'Merge fields, AI-drafted copy, 500 sent in one go.',
       bentoQrH3: 'QR code check-in', bentoQrP: 'One scan on a phone and attendance syncs automatically.',
       // ----- dashboard mock -----
@@ -250,6 +252,8 @@
       btnUseFree: 'Get started', btnUpStarter: 'Upgrade to Starter', btnUpPro: 'Upgrade to Pro →', btnChooseTeam: 'Choose Team →',
       // ----- plan-card features / unit templates ({n} = number) -----
       pfPayment: 'Online payments', pfCsv: 'Report export', pfScoring: 'Scoring', pfMultiJudge: 'Multi-judge + team member roles', pfCampaigns: 'Broadcast notices',
+      prTipScoring: 'Scoring: the organizer or staff enters one score per team (overwrite-style) — ideal when a single judge or panel records final scores together.',
+      prTipMulti: 'Multi-judge scoring: each judge signs in and scores the same team independently; the system aggregates all judges\' scores, computes the average and produces a live leaderboard. Pairs with team member roles so you can invite multiple judge accounts.',
       pfCheckin: 'QR check-in', pfWaitlist: 'Waitlist', pfEventAi: 'Event AI assistant', pfAdminAi: 'Organizer-console AI', pfCert: 'Badges & certificates',
       tActive: '<b>{n}</b> active events', tReg: '<b>{n}</b> registrations per event', tFee: '<b>{n}%</b> transaction fee', uUnlimited: 'Unlimited',
       // ----- faq -----
