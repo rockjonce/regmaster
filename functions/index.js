@@ -6649,6 +6649,79 @@ exports.getLiveLeaderboard = compAuthCallable("scoring", async (data) => {
   return rows;
 });
 
+// ===== Scoring rubric / panels / fairness config (Phase A) =====
+function _clampN(v, lo, hi, d) { const n = Number(v); if (!Number.isFinite(n)) return d; return Math.min(hi, Math.max(lo, n)); }
+// Recursively sanitize a rubric node. Max 3 levels (主項→細項→子細項). A node with children
+// is a branch; a node without is a leaf (carries max / records / aggregateRecords / normalize).
+function sanitizeRubricNode(n, depth) {
+  if (!n || typeof n !== "object" || depth > 3) return null;
+  const out = {
+    id: (String(n.id || "").slice(0, 40)) || ("n" + crypto.randomBytes(4).toString("hex")),
+    label: String(n.label || "").slice(0, 80),
+    weightPct: _clampN(n.weightPct, 0, 100, 0)
+  };
+  const kids = (Array.isArray(n.children) && depth < 3)
+    ? n.children.map(c => sanitizeRubricNode(c, depth + 1)).filter(Boolean) : [];
+  if (kids.length) {
+    out.children = kids;
+  } else {
+    out.max = _clampN(n.max, 0, 1e6, 100) || 100;
+    out.records = Math.min(20, Math.max(1, parseInt(n.records, 10) || 1));
+    out.aggregateRecords = ["avg", "max", "min", "last"].indexOf(n.aggregateRecords) >= 0 ? n.aggregateRecords : "avg";
+    // Default leaf normalization is Student-t (fairest); compute engine auto-falls back to
+    // linear (raw/max×100) when a panel has too few teams (n<5).
+    out.normalize = ["none", "linear", "zscore", "tdist"].indexOf(n.normalize) >= 0 ? n.normalize : "tdist";
+  }
+  return out;
+}
+// Each sibling group's weightPct must sum to 100 (±0.5). Returns an error string or "".
+function validateRubricWeights(nodes, path) {
+  if (!Array.isArray(nodes) || !nodes.length) return "";
+  const sum = nodes.reduce((a, b) => a + (Number(b.weightPct) || 0), 0);
+  if (Math.abs(sum - 100) > 0.5) return (path || "最上層") + " 的權重加總為 " + sum + "%，需等於 100%";
+  for (const n of nodes) {
+    if (n.children && n.children.length) {
+      const e = validateRubricWeights(n.children, (path ? path + " › " : "") + (n.label || n.id));
+      if (e) return e;
+    }
+  }
+  return "";
+}
+function sanitizePanels(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.slice(0, 100).map(p => ({
+    id: (String((p && p.id) || "").slice(0, 40)) || ("p" + crypto.randomBytes(4).toString("hex")),
+    label: String((p && p.label) || "").slice(0, 60),
+    group: String((p && p.group) || "").slice(0, 80),
+    judges: Array.isArray(p && p.judges) ? p.judges.slice(0, 100).map(x => String(x).slice(0, 60)) : [],
+    teams: Array.isArray(p && p.teams) ? p.teams.slice(0, 5000).map(x => String(x).slice(0, 40)) : []
+  }));
+}
+
+// Manager-authored scoring configuration (rubric + panels + fairness toggles), stored in
+// competitions/{compId}.config. Read back via getCompetitionConfig.
+exports.saveScoringConfig = compAuthCallable("manage", async (data, request) => {
+  const compId = String(data.compId || "");
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "找不到活動" };
+  const nodes = Array.isArray(data.nodes) ? data.nodes.map(n => sanitizeRubricNode(n, 1)).filter(Boolean) : [];
+  const wErr = validateRubricWeights(nodes, "");
+  if (wErr) return { success: false, message: "權重驗證失敗：" + wErr };
+  const cfg = doc.data().config || {};
+  cfg.scoringRubric = {
+    aggregateJudges: ["avg", "max", "min"].indexOf(data.aggregateJudges) >= 0 ? data.aggregateJudges : "avg",
+    trimExtremes: data.trimExtremes === true,
+    nodes
+  };
+  cfg.scoringPanels = sanitizePanels(data.scoringPanels);
+  cfg.judgeSeeRegistrantInfo = data.judgeSeeRegistrantInfo === true;
+  cfg.judgeSeeLiveRanking = data.judgeSeeLiveRanking === true;
+  await ref.update({ config: cfg });
+  await auditLog(request.authUser.username, "saveScoringConfig", compId, "");
+  return { success: true };
+});
+
 // ---- Check-in extras (material distribution) ----
 // Extends the existing checkInTeam to accept extras (meal/shirt/gift) without
 // breaking older clients. This is a backward-compatible signature extension.

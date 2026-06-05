@@ -142,6 +142,7 @@
     createCompetition:["name","category","eventType","creator"],
     getCompetitionConfig:["compId"],
     saveCompetitionConfig:["compId","config"],
+    saveScoringConfig:["compId","aggregateJudges","trimExtremes","nodes","scoringPanels","judgeSeeRegistrantInfo","judgeSeeLiveRanking"],
     setRegistrationOpen:["compId","isOpen"],
     deleteCompetition:["compId"],
     getRegistrationBundle:["compId"],

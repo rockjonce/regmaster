@@ -62,6 +62,71 @@
 
 .empty-cc { text-align:center; padding:80px 32px; color:var(--muted); }
 @media (max-width:768px){ .body-3 { grid-template-columns:1fr; min-height:0; } .score-grid { grid-template-columns:1fr; } }
+
+/* ===== Manager console (Phase A) ===== */
+.mc-wrap { max-width:1080px; margin:0 auto; padding:24px 28px; }
+.mc-head { display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+.mc-head h2 { font:700 20px/1.2 var(--f-display); margin-bottom:4px; }
+.mc-head p { font:500 12.5px/1.5 var(--f-mono); color:var(--muted); margin:0; }
+.mc-head .spacer { flex:1 1 auto; }
+.mc-tabs { margin-bottom:18px; }
+.mc-panel { display:none; }
+.mc-panel.on { display:block; }
+.mc-hint { display:flex; gap:10px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r); font:400 12.5px/1.6 var(--f-tc); color:var(--ink-2); margin-bottom:16px; }
+.mc-hint svg { width:18px; height:18px; flex-shrink:0; color:var(--muted); margin-top:1px; }
+
+/* rubric tree */
+.rb-node { border:1px solid var(--line); border-radius:var(--r); background:var(--surface); margin-bottom:10px; }
+.rb-node.branch { border-left:3px solid var(--acc); }
+.rb-node.leaf { border-left:3px solid var(--ok-500); }
+.rb-row { display:flex; align-items:center; gap:8px; padding:10px 12px; flex-wrap:wrap; }
+.rb-tag { font:600 9.5px/1 var(--f-mono); text-transform:uppercase; letter-spacing:.04em; padding:3px 7px; border-radius:5px; background:var(--surface-2); color:var(--muted); }
+.rb-node.branch .rb-tag { background:color-mix(in srgb, var(--acc) 14%, var(--surface)); color:var(--acc); }
+.rb-node.leaf .rb-tag { background:color-mix(in srgb, var(--ok-500) 14%, var(--surface)); color:var(--ok-500); }
+.rb-row input.rb-label { flex:1 1 160px; min-width:120px; padding:8px 10px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); font:500 13.5px/1.3 var(--f-tc); color:var(--ink); }
+.rb-row input.rb-weight { width:78px; padding:8px 10px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); font:600 13.5px/1.3 var(--f-mono); text-align:center; color:var(--ink); }
+.rb-row input:focus { outline:0; border-color:var(--acc); box-shadow:var(--ring); }
+.rb-row .rb-actions { display:flex; gap:6px; margin-left:auto; }
+.rb-leaf-fields { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:0 12px 12px 12px; }
+.rb-leaf-fields .fld { display:flex; flex-direction:column; gap:4px; }
+.rb-leaf-fields .fld label { font:500 11px/1.2 var(--f-mono); color:var(--muted); }
+.rb-leaf-fields .fld input, .rb-leaf-fields .fld select { padding:7px 9px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); font:500 13px/1.3 var(--f-tc); color:var(--ink); }
+.rb-leaf-fields .fld input:focus, .rb-leaf-fields .fld select:focus { outline:0; border-color:var(--acc); box-shadow:var(--ring); }
+.rb-children { padding:0 12px 4px 22px; }
+.rb-sum { font:600 11px/1 var(--f-mono); padding:3px 9px; border-radius:5px; }
+.rb-sum.ok { background:color-mix(in srgb, var(--ok-500) 16%, var(--surface)); color:var(--ok-500); }
+.rb-sum.bad { background:color-mix(in srgb, var(--bad-500,#dc2626) 16%, var(--surface)); color:var(--bad-500,#dc2626); }
+.rb-group-foot { display:flex; align-items:center; gap:10px; margin:6px 0 16px 0; }
+.rb-node.invalid { border-color:var(--bad-500,#dc2626); box-shadow:0 0 0 2px color-mix(in srgb, var(--bad-500,#dc2626) 18%, transparent); }
+
+/* panels */
+.pn-card { border:1px solid var(--line); border-radius:var(--r-lg); background:var(--surface); padding:16px; margin-bottom:14px; }
+.pn-card .pn-top { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+.pn-card .pn-top input { flex:1; padding:9px 12px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); font:600 14px/1.3 var(--f-tc); color:var(--ink); }
+.pn-card .pn-top input:focus { outline:0; border-color:var(--acc); box-shadow:var(--ring); }
+.pn-grid { display:grid; grid-template-columns:200px 1fr 1fr; gap:14px; }
+.pn-grid .fld label { display:block; font:500 12px/1.4 var(--f-tc); color:var(--ink-2); margin-bottom:6px; }
+.pn-grid select.input { padding:9px 12px; }
+.pn-checks { border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface-2); max-height:170px; overflow-y:auto; padding:6px; }
+.pn-check { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:var(--r-sm); cursor:pointer; font:500 12.5px/1.3 var(--f-tc); color:var(--ink-2); }
+.pn-check:hover { background:var(--surface); }
+.pn-check input { width:15px; height:15px; flex-shrink:0; accent-color:var(--acc); }
+.pn-check small { color:var(--muted); font:400 11px/1 var(--f-mono); margin-left:auto; }
+.pn-empty { padding:14px; color:var(--muted); font:400 12.5px/1.5 var(--f-tc); text-align:center; }
+
+/* fairness toggles */
+.fr-list { display:flex; flex-direction:column; gap:14px; max-width:620px; }
+.fr-row { display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); }
+.fr-row .fr-l { flex:1; font:500 13.5px/1.4 var(--f-tc); color:var(--ink); }
+.fr-row select.input { width:auto; min-width:120px; }
+.fr-toggle { position:relative; width:42px; height:24px; flex-shrink:0; }
+.fr-toggle input { position:absolute; opacity:0; width:0; height:0; }
+.fr-toggle .tk { position:absolute; inset:0; background:var(--line); border-radius:999px; transition:.18s; cursor:pointer; }
+.fr-toggle .tk::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; background:#fff; border-radius:50%; transition:.18s; box-shadow:var(--sh-sm); }
+.fr-toggle input:checked + .tk { background:var(--acc); }
+.fr-toggle input:checked + .tk::after { transform:translateX(18px); }
+
+@media (max-width:768px){ .rb-leaf-fields { grid-template-columns:1fr 1fr; } .pn-grid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -90,6 +155,73 @@
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
     <div id="loadingState" class="loading-c" data-i18n="aeScoreLoading">載入評分資料⋯</div>
+
+    <!-- Manager console (Phase A) — shown only for owner/manager -->
+    <div class="mc-wrap" id="mcConsole" style="display:none">
+      <div class="mc-head">
+        <div>
+          <h2 data-i18n="aeScoreConsoleTitle">評分設定</h2>
+          <p data-i18n="aeScoreConsoleSub">設定評分量表、評審分派與公平性規則</p>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="mcSaveBtn" data-i18n="aeScoreSaveBtn">儲存設定</button>
+      </div>
+      <div class="seg mc-tabs" id="mcTabs">
+        <button data-tab="rubric" class="on" data-i18n="aeScoreTabRubric">評分量表</button>
+        <button data-tab="panels" data-i18n="aeScoreTabPanels">評審組群 / 分派</button>
+        <button data-tab="fairness" data-i18n="aeScoreTabFairness">公平性設定</button>
+      </div>
+
+      <!-- Tab 1: rubric -->
+      <div class="mc-panel on" data-panel="rubric">
+        <div class="mc-hint">
+          <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <span data-i18n="aeScoreRubricHint">建立評分項目樹（最多三層：主項 → 細項 → 子細項）。同一層級的權重總和須為 100%。</span>
+        </div>
+        <div id="rbTree"></div>
+        <div class="rb-group-foot" id="rbRootFoot">
+          <button class="btn btn-ghost btn-sm" id="rbAddRoot" data-i18n="aeScoreAddRoot">＋ 新增主項目</button>
+          <span class="rb-sum" id="rbRootSum"></span>
+        </div>
+      </div>
+
+      <!-- Tab 2: panels -->
+      <div class="mc-panel" data-panel="panels">
+        <div class="mc-hint">
+          <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <span data-i18n="aeScorePanelsHint">未建立組群時，整個報名組別視為一個組群、所有被分派評審評全組；正規化與去極值以「組群內隊伍」為分布範圍。</span>
+        </div>
+        <div id="pnList"></div>
+        <button class="btn btn-ghost btn-sm" id="pnAdd" data-i18n="aeScoreAddPanel">＋ 新增組群</button>
+      </div>
+
+      <!-- Tab 3: fairness -->
+      <div class="mc-panel" data-panel="fairness">
+        <div class="fr-list">
+          <div class="fr-row">
+            <span class="fr-l" data-i18n="aeScoreAggJudgesLabel">跨評審合併方式</span>
+            <select class="input select" id="frAggJudges">
+              <option value="avg" data-i18n="aeScoreAggJudgesAvg">平均</option>
+              <option value="max" data-i18n="aeScoreAggJudgesMax">最大</option>
+              <option value="min" data-i18n="aeScoreAggJudgesMin">最小</option>
+            </select>
+          </div>
+          <div class="fr-row">
+            <span class="fr-l" data-i18n="aeScoreTrimLabel">去極值（跨評審先去最高 + 最低再合併）</span>
+            <label class="fr-toggle"><input type="checkbox" id="frTrim"><span class="tk"></span></label>
+          </div>
+          <div class="fr-row">
+            <span class="fr-l" data-i18n="aeScoreSeeRegInfoLabel">評審可看到報名者個資</span>
+            <label class="fr-toggle"><input type="checkbox" id="frSeeReg"><span class="tk"></span></label>
+          </div>
+          <div class="fr-row">
+            <span class="fr-l" data-i18n="aeScoreSeeRankingLabel">評審可看到即時排名</span>
+            <label class="fr-toggle"><input type="checkbox" id="frSeeRank"><span class="tk"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="body-3" id="content" style="display:none">
       <aside class="left-c">
         <div class="lc-h">
@@ -235,7 +367,385 @@
         .submitJudgeScore(compId, t.teamId, items, total, comment);
     });
   }
-  load();
+
+  // =========================================================================
+  // Manager console (Phase A): rubric editor, panels, fairness.
+  // Activated only when getMyEventRole → owner/manager. Does NOT touch the
+  // judge flow above (CRITERIA / submitJudgeScore / leaderboard).
+  // =========================================================================
+  var NORM_OPTS = [
+    ['none', 'aeScoreNormNone'], ['linear', 'aeScoreNormLinear'],
+    ['zscore', 'aeScoreNormZscore'], ['tdist', 'aeScoreNormTdist']
+  ];
+  var AGGREC_OPTS = [
+    ['avg', 'aeScoreAggRecAvg'], ['max', 'aeScoreAggRecMax'],
+    ['min', 'aeScoreAggRecMin'], ['last', 'aeScoreAggRecLast']
+  ];
+  var uid = 0;
+  function newId() { return 'n' + (Date.now().toString(36)) + '_' + (++uid); }
+
+  // ---- working state (UI tree mirrors the data model + a UI-only id) ----
+  var RUBRIC = [];          // tree of UI nodes
+  var PANELS = [];          // [{id,label,group,judges:[],teams:[]}]
+  var ORG_MEMBERS = [];     // judge-eligible members
+  var ALL_TEAMS = [];       // [{teamId,teamNameCN,group}]
+  var FAIRNESS = { aggregateJudges: 'avg', trimExtremes: false, judgeSeeRegistrantInfo: false, judgeSeeLiveRanking: false };
+
+  function makeLeaf() {
+    return { _id: newId(), label: '', weightPct: 0, max: 100, records: 1, aggregateRecords: 'avg', normalize: 'tdist', children: [] };
+  }
+  function nodeFromData(d) {
+    var n = { _id: newId(), label: d.label || '', weightPct: Number(d.weightPct) || 0, children: [] };
+    if (Array.isArray(d.children) && d.children.length) {
+      n.children = d.children.map(nodeFromData);
+    } else {
+      n.max = (d.max != null ? Number(d.max) : 100);
+      n.records = Math.max(1, parseInt(d.records, 10) || 1);
+      n.aggregateRecords = d.aggregateRecords || 'avg';
+      n.normalize = d.normalize || 'tdist';
+      n.children = [];
+    }
+    return n;
+  }
+  // strip UI-only fields → clean data-model node
+  function nodeToData(n) {
+    if (n.children && n.children.length) {
+      return { label: n.label, weightPct: Number(n.weightPct) || 0, children: n.children.map(nodeToData) };
+    }
+    return {
+      label: n.label, weightPct: Number(n.weightPct) || 0,
+      max: Number(n.max) || 0, records: Math.max(1, parseInt(n.records, 10) || 1),
+      aggregateRecords: n.aggregateRecords || 'avg', normalize: n.normalize || 'none'
+    };
+  }
+  function findNode(list, id) {
+    for (var i = 0; i < list.length; i++) {
+      if (list[i]._id === id) return { parent: list, idx: i, node: list[i] };
+      if (list[i].children && list[i].children.length) {
+        var r = findNode(list[i].children, id); if (r) return r;
+      }
+    }
+    return null;
+  }
+  function depthOf(list, id, d) {
+    d = d || 1;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i]._id === id) return d;
+      if (list[i].children && list[i].children.length) {
+        var r = depthOf(list[i].children, id, d + 1); if (r) return r;
+      }
+    }
+    return 0;
+  }
+
+  function opts(list, sel) {
+    return list.map(function (o) {
+      return '<option value="' + o[0] + '"' + (o[0] === sel ? ' selected' : '') + ' data-i18n="' + o[1] + '">' + escapeHtml(window.L(o[1])) + '</option>';
+    }).join('');
+  }
+
+  // group sum badge: returns {sum, ok}
+  function groupSum(list) {
+    var s = 0; list.forEach(function (n) { s += Number(n.weightPct) || 0; });
+    return { sum: Math.round(s * 100) / 100, ok: Math.abs(s - 100) <= 0.5 };
+  }
+  function sumBadge(list) {
+    var g = groupSum(list);
+    return '<span class="rb-sum ' + (g.ok ? 'ok' : 'bad') + '">' + window.L('aeScoreSumLabel') + ' ' + g.sum + '%</span>';
+  }
+
+  function renderNode(n, depth) {
+    var isBranch = n.children && n.children.length > 0;
+    var canAddChild = depth < 3;
+    var h = '<div class="rb-node ' + (isBranch ? 'branch' : 'leaf') + '" data-id="' + n._id + '">';
+    h += '<div class="rb-row">';
+    h += '<span class="rb-tag">' + escapeHtml(window.L(isBranch ? 'aeScoreBranchTag' : 'aeScoreLeafTag')) + '</span>';
+    h += '<input class="rb-label" data-f="label" value="' + escapeHtml(n.label) + '" data-i18n-placeholder="aeScoreLabelPh" placeholder="' + escapeHtml(window.L('aeScoreLabelPh')) + '">';
+    h += '<input class="rb-weight" type="number" min="0" max="100" step="0.1" data-f="weightPct" value="' + (Number(n.weightPct) || 0) + '" title="' + escapeHtml(window.L('aeScoreWeightLabel')) + '">';
+    h += '<div class="rb-actions">';
+    if (canAddChild) h += '<button class="btn btn-ghost btn-sm" data-act="addChild" data-i18n="aeScoreAddChild">＋ 子項目</button>';
+    h += '<button class="btn btn-quiet btn-sm" data-act="del" data-i18n="aeScoreNodeDelete">刪除</button>';
+    h += '</div></div>';
+    if (!isBranch) {
+      h += '<div class="rb-leaf-fields">';
+      h += '<div class="fld"><label data-i18n="aeScoreMaxLabel">滿分</label><input type="number" min="0" step="0.1" data-f="max" value="' + (Number(n.max) || 0) + '"></div>';
+      h += '<div class="fld"><label data-i18n="aeScoreRecordsLabel">可量測次數</label><input type="number" min="1" step="1" data-f="records" value="' + (Math.max(1, parseInt(n.records, 10) || 1)) + '"></div>';
+      h += '<div class="fld"><label data-i18n="aeScoreAggRecLabel">多次取值</label><select data-f="aggregateRecords">' + opts(AGGREC_OPTS, n.aggregateRecords) + '</select></div>';
+      h += '<div class="fld"><label data-i18n="aeScoreNormLabel">正規化</label><select data-f="normalize">' + opts(NORM_OPTS, n.normalize) + '</select></div>';
+      h += '</div>';
+    } else {
+      h += '<div class="rb-children">';
+      n.children.forEach(function (c) { h += renderNode(c, depth + 1); });
+      h += '<div class="rb-group-foot">';
+      h += '<button class="btn btn-ghost btn-sm" data-act="addSibling" data-i18n="aeScoreAddChild">＋ 子項目</button>';
+      h += sumBadge(n.children);
+      h += '</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  function renderRubric() {
+    var tree = document.getElementById('rbTree');
+    if (!RUBRIC.length) {
+      tree.innerHTML = '<div class="mc-hint" style="justify-content:center"><span data-i18n="aeScoreRubricEmpty">尚未建立任何評分項目。點「新增主項目」開始。</span></div>';
+    } else {
+      tree.innerHTML = RUBRIC.map(function (n) { return renderNode(n, 1); }).join('');
+    }
+    var rs = document.getElementById('rbRootSum');
+    if (rs) { var g = groupSum(RUBRIC); rs.className = 'rb-sum ' + (g.ok ? 'ok' : 'bad'); rs.textContent = RUBRIC.length ? (window.L('aeScoreSumLabel') + ' ' + g.sum + '%') : ''; }
+    window.applyI18n(document.getElementById('mcConsole'));
+  }
+
+  // event delegation for the rubric tree
+  function wireRubric() {
+    var tree = document.getElementById('rbTree');
+    tree.addEventListener('input', function (e) {
+      var nodeEl = e.target.closest('.rb-node'); if (!nodeEl) return;
+      var f = e.target.getAttribute('data-f'); if (!f) return;
+      var r = findNode(RUBRIC, nodeEl.dataset.id); if (!r) return;
+      var v = e.target.value;
+      if (f === 'weightPct' || f === 'max') r.node[f] = parseFloat(v) || 0;
+      else if (f === 'records') r.node[f] = Math.max(1, parseInt(v, 10) || 1);
+      else r.node[f] = v;
+      if (f === 'weightPct') refreshSums();
+    });
+    tree.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]'); if (!btn) return;
+      var nodeEl = btn.closest('.rb-node'); if (!nodeEl) return;
+      var act = btn.getAttribute('data-act');
+      var r = findNode(RUBRIC, nodeEl.dataset.id); if (!r) return;
+      if (act === 'addChild') {
+        // converting a leaf to a branch: drop leaf fields, add first child
+        r.node.children = r.node.children || [];
+        r.node.children.push(makeLeaf());
+        renderRubric();
+      } else if (act === 'addSibling') {
+        r.node.children.push(makeLeaf());
+        renderRubric();
+      } else if (act === 'del') {
+        r.parent.splice(r.idx, 1);
+        renderRubric();
+      }
+    });
+    document.getElementById('rbAddRoot').addEventListener('click', function () {
+      RUBRIC.push(makeLeaf()); renderRubric();
+    });
+  }
+
+  // live-refresh only the sum badges + invalid highlight (no full re-render)
+  function refreshSums() {
+    // root foot
+    var rootSum = document.getElementById('rbRootSum');
+    if (rootSum) { var g = groupSum(RUBRIC); rootSum.className = 'rb-sum ' + (g.ok ? 'ok' : 'bad'); rootSum.textContent = window.L('aeScoreSumLabel') + ' ' + g.sum + '%'; }
+    // each branch's child-group foot
+    document.querySelectorAll('#rbTree .rb-node.branch').forEach(function (el) {
+      var r = findNode(RUBRIC, el.dataset.id); if (!r) return;
+      var foot = el.querySelector(':scope > .rb-children > .rb-group-foot > .rb-sum');
+      if (foot) { var g2 = groupSum(r.node.children); foot.className = 'rb-sum ' + (g2.ok ? 'ok' : 'bad'); foot.textContent = window.L('aeScoreSumLabel') + ' ' + g2.sum + '%'; }
+    });
+  }
+
+  // recursive front-end weight check (each sibling group sums to 100 ±0.5)
+  function rubricWeightsValid(list) {
+    if (!list.length) return true;
+    if (!groupSum(list).ok) return false;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].children && list[i].children.length && !rubricWeightsValid(list[i].children)) return false;
+    }
+    return true;
+  }
+  function markInvalidGroups() {
+    // highlight the root sum + any branch whose own child-group is invalid
+    var rs = document.getElementById('rbRootSum');
+    if (rs && !groupSum(RUBRIC).ok) rs.classList.add('bad');
+    document.querySelectorAll('#rbTree .rb-node.branch').forEach(function (el) {
+      var r = findNode(RUBRIC, el.dataset.id);
+      el.classList.toggle('invalid', !!(r && !groupSum(r.node.children).ok));
+    });
+  }
+
+  // ---- panels ----
+  function distinctGroups() {
+    var seen = {}, out = [];
+    ALL_TEAMS.forEach(function (t) { var g = t.group || ''; if (g && !seen[g]) { seen[g] = 1; out.push(g); } });
+    return out;
+  }
+  function renderPanels() {
+    var wrap = document.getElementById('pnList');
+    if (!PANELS.length) {
+      wrap.innerHTML = '<div class="pn-empty" data-i18n="aeScorePanelsEmpty">尚未建立評審組群。</div>';
+      window.applyI18n(wrap); return;
+    }
+    var groups = distinctGroups();
+    wrap.innerHTML = PANELS.map(function (p) {
+      var teamsInGroup = ALL_TEAMS.filter(function (t) { return !p.group || (t.group || '') === p.group; });
+      var groupOpts = '<option value="" data-i18n="aeScorePanelGroupAny">（不指定）</option>' + groups.map(function (g) {
+        return '<option value="' + escapeHtml(g) + '"' + (g === p.group ? ' selected' : '') + '>' + escapeHtml(g) + '</option>';
+      }).join('');
+      var judgeChecks = ORG_MEMBERS.length ? ORG_MEMBERS.map(function (m) {
+        var name = m.displayName || m.memberUsername || m.memberEmail || '';
+        var on = (p.judges || []).indexOf(m.memberUsername) >= 0;
+        return '<label class="pn-check"><input type="checkbox" data-judge="' + escapeHtml(m.memberUsername) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(name) + '</span><small>' + escapeHtml(m.memberUsername || '') + '</small></label>';
+      }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoJudges">尚無可指派的評審成員。</div>';
+      var teamChecks = teamsInGroup.length ? teamsInGroup.map(function (t) {
+        var on = (p.teams || []).indexOf(t.teamId) >= 0;
+        return '<label class="pn-check"><input type="checkbox" data-team="' + escapeHtml(t.teamId) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(t.teamNameCN || t.teamId) + '</span><small>' + escapeHtml(t.teamId) + '</small></label>';
+      }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoTeams">此組別尚無隊伍。</div>';
+      return '<div class="pn-card" data-pid="' + escapeHtml(p.id) + '">' +
+        '<div class="pn-top"><input data-pf="label" value="' + escapeHtml(p.label || '') + '" data-i18n-placeholder="aeScorePanelLabelPh" placeholder="' + escapeHtml(window.L('aeScorePanelLabelPh')) + '">' +
+          '<button class="btn btn-quiet btn-sm" data-pact="del" data-i18n="aeScorePanelDelete">刪除組群</button></div>' +
+        '<div class="pn-grid">' +
+          '<div class="fld"><label data-i18n="aeScorePanelGroupLabel">報名組別</label><select class="input select" data-pf="group">' + groupOpts + '</select></div>' +
+          '<div class="fld"><label data-i18n="aeScorePanelJudgesLabel">評審</label><div class="pn-checks">' + judgeChecks + '</div></div>' +
+          '<div class="fld"><label data-i18n="aeScorePanelTeamsLabel">負責隊伍</label><div class="pn-checks">' + teamChecks + '</div></div>' +
+        '</div></div>';
+    }).join('');
+    window.applyI18n(wrap);
+  }
+  function wirePanels() {
+    var wrap = document.getElementById('pnList');
+    wrap.addEventListener('input', function (e) {
+      var card = e.target.closest('.pn-card'); if (!card) return;
+      var p = PANELS.find(function (x) { return x.id === card.dataset.pid; }); if (!p) return;
+      var pf = e.target.getAttribute('data-pf');
+      if (pf === 'label') p.label = e.target.value;
+      else if (pf === 'group') { p.group = e.target.value; renderPanels(); }
+    });
+    wrap.addEventListener('change', function (e) {
+      var card = e.target.closest('.pn-card'); if (!card) return;
+      var p = PANELS.find(function (x) { return x.id === card.dataset.pid; }); if (!p) return;
+      if (e.target.hasAttribute('data-judge')) {
+        var ju = e.target.getAttribute('data-judge'); p.judges = p.judges || [];
+        var i = p.judges.indexOf(ju);
+        if (e.target.checked && i < 0) p.judges.push(ju); else if (!e.target.checked && i >= 0) p.judges.splice(i, 1);
+      } else if (e.target.hasAttribute('data-team')) {
+        var ti = e.target.getAttribute('data-team'); p.teams = p.teams || [];
+        var j = p.teams.indexOf(ti);
+        if (e.target.checked && j < 0) p.teams.push(ti); else if (!e.target.checked && j >= 0) p.teams.splice(j, 1);
+      }
+    });
+    wrap.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-pact]'); if (!btn) return;
+      var card = btn.closest('.pn-card'); if (!card) return;
+      if (btn.getAttribute('data-pact') === 'del') {
+        PANELS = PANELS.filter(function (x) { return x.id !== card.dataset.pid; });
+        renderPanels();
+      }
+    });
+    document.getElementById('pnAdd').addEventListener('click', function () {
+      PANELS.push({ id: newId(), label: '', group: '', judges: [], teams: [] });
+      renderPanels();
+    });
+  }
+
+  // ---- fairness ----
+  function renderFairness() {
+    document.getElementById('frAggJudges').value = FAIRNESS.aggregateJudges || 'avg';
+    document.getElementById('frTrim').checked = !!FAIRNESS.trimExtremes;
+    document.getElementById('frSeeReg').checked = !!FAIRNESS.judgeSeeRegistrantInfo;
+    document.getElementById('frSeeRank').checked = !!FAIRNESS.judgeSeeLiveRanking;
+  }
+  function readFairness() {
+    FAIRNESS.aggregateJudges = document.getElementById('frAggJudges').value || 'avg';
+    FAIRNESS.trimExtremes = document.getElementById('frTrim').checked;
+    FAIRNESS.judgeSeeRegistrantInfo = document.getElementById('frSeeReg').checked;
+    FAIRNESS.judgeSeeLiveRanking = document.getElementById('frSeeRank').checked;
+  }
+
+  // ---- save ----
+  function wireSave() {
+    document.getElementById('mcSaveBtn').addEventListener('click', function () {
+      if (!rubricWeightsValid(RUBRIC)) {
+        markInvalidGroups();
+        (window.uiToast || function (m) { alert(m); })(window.L('aeScoreWeightBlock'), 'err');
+        // jump to rubric tab so the user sees the highlight
+        switchTab('rubric');
+        return;
+      }
+      readFairness();
+      var nodes = RUBRIC.map(nodeToData);
+      var btn = this; btn.disabled = true; var orig = btn.textContent; btn.textContent = window.L('aeScoreSavingBtn');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          btn.disabled = false; btn.textContent = orig;
+          if (res && res.success) { (window.uiToast || function (m) { alert(m); })(window.L('aeScoreSavedToast'), 'ok'); }
+          else { var msg = (res && res.message) || ''; (window.uiAlert || function (m) { alert(m); })(window.L('aeScoreSaveFail') + msg); }
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false; btn.textContent = orig;
+          (window.uiAlert || function (m) { alert(m); })(window.L('aeScoreSaveFail') + ((err && err.message) || ''));
+        })
+        .saveScoringConfig(compId, FAIRNESS.aggregateJudges, FAIRNESS.trimExtremes, nodes, PANELS, FAIRNESS.judgeSeeRegistrantInfo, FAIRNESS.judgeSeeLiveRanking);
+    });
+  }
+
+  // ---- tabs ----
+  function switchTab(name) {
+    document.querySelectorAll('#mcTabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
+    document.querySelectorAll('.mc-panel').forEach(function (p) { p.classList.toggle('on', p.dataset.panel === name); });
+  }
+  function wireTabs() {
+    document.getElementById('mcTabs').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-tab]'); if (b) switchTab(b.dataset.tab);
+    });
+  }
+
+  function loadConsole() {
+    document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+    Promise.all([
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getCompetitionConfig(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getAllTeams(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({ members: [] }); }).listOrgMembers(); })
+    ]).then(function (r) {
+      var cfg = r[0] || {};
+      ALL_TEAMS = Array.isArray(r[1]) ? r[1] : (r[1] && r[1].teams) || [];
+      var mem = r[2];
+      var members = Array.isArray(mem) ? mem : (mem && mem.members) || [];
+      // only active members with a username can be assigned as judges
+      ORG_MEMBERS = members.filter(function (m) { return m && m.memberUsername && (m.status == null || m.status === 'active'); });
+
+      document.getElementById('crumbHub').textContent = cfg.competitionName || cfg.name || compId;
+
+      var rubric = cfg.scoringRubric || {};
+      RUBRIC = Array.isArray(rubric.nodes) ? rubric.nodes.map(nodeFromData) : [];
+      PANELS = Array.isArray(cfg.scoringPanels) ? cfg.scoringPanels.map(function (p) {
+        return { id: p.id || newId(), label: p.label || '', group: p.group || '', judges: Array.isArray(p.judges) ? p.judges.slice() : [], teams: Array.isArray(p.teams) ? p.teams.slice() : [] };
+      }) : [];
+      FAIRNESS = {
+        aggregateJudges: rubric.aggregateJudges || 'avg',
+        trimExtremes: !!rubric.trimExtremes,
+        judgeSeeRegistrantInfo: !!cfg.judgeSeeRegistrantInfo,
+        judgeSeeLiveRanking: !!cfg.judgeSeeLiveRanking
+      };
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('mcConsole').style.display = 'block';
+
+      wireTabs(); wireRubric(); wirePanels(); wireSave();
+      renderRubric(); renderPanels(); renderFairness();
+    });
+  }
+
+  // =========================================================================
+  // Role-aware bootstrap
+  // =========================================================================
+  google.script.run
+    .withSuccessHandler(function (res) {
+      var role = res && res.role;
+      if (role === 'owner' || role === 'manager' || role == null) {
+        // owner (role null for system / creator returns 'owner') & manager → console.
+        // Note: getMyEventRole returns 'owner' for creators/system; null means no
+        // membership — those users wouldn't reach this page, but treat as judge.
+        if (role === 'owner' || role === 'manager') loadConsole();
+        else load();
+      } else {
+        load();
+      }
+    })
+    .withFailureHandler(function () { load(); })
+    .getMyEventRole(compId);
 })();
 </script>
 </body>
