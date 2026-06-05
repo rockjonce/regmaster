@@ -33,6 +33,18 @@ function toDayKey(s) {
 function hashPwd(p) {
   return crypto.createHash("sha256").update(p).digest("hex");
 }
+// C-1: password hashing upgraded to bcrypt (salted, cost 12). Legacy salt-less SHA-256
+// hashes (`passwordHash`) are still accepted on login and lazily re-hashed to bcrypt
+// (`passwordBcrypt`) on the next successful sign-in, so no account is locked out.
+const bcrypt = require("bcryptjs");
+function hashPwdBcrypt(p) { return bcrypt.hashSync(String(p == null ? "" : p), 12); }
+// Verify `plain` against an account doc. Prefers bcrypt; falls back to legacy sha256 and
+// flags `upgrade:true` so the caller can migrate that account on the spot.
+function verifyPwd(plain, acct) {
+  if (acct && acct.passwordBcrypt) return { ok: bcrypt.compareSync(String(plain == null ? "" : plain), acct.passwordBcrypt), upgrade: false };
+  if (acct && acct.passwordHash)   return { ok: acct.passwordHash === hashPwd(plain), upgrade: true };
+  return { ok: false, upgrade: false };
+}
 function generateId(prefix) {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let r = "";
@@ -283,7 +295,9 @@ exports.loginAccount = callable(async (data) => {
   // Check lock
   if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil))
     return { success: false, message: "帳號鎖定中，請稍後再試" };
-  if (acct.passwordHash === hashPwd(password)) {
+  const _v = verifyPwd(password, acct);
+  if (_v.ok) {
+    if (_v.upgrade) { try { await doc.ref.update({ passwordBcrypt: hashPwdBcrypt(password), passwordHash: "" }); } catch (e) {} }
     if (acct.totpEnabled && acct.totpSecret) {
       // Password correct but 2FA is on — do NOT issue a session yet.
       await doc.ref.update({ loginFails: 0, lockedUntil: "" });
@@ -403,7 +417,7 @@ exports.linkGoogleAccount = authCallable(["system", "competition"], async (data,
 exports.getLinkedProviders = authCallable(["system", "competition"], async (data, request) => {
   const a = request.authUser;
   return {
-    hasPassword: !!a.passwordHash,
+    hasPassword: !!(a.passwordHash || a.passwordBcrypt),
     google: { linked: !!a.googleSub, email: a.googleEmail || "" },
     line: { linked: !!a.lineUserId, name: a.lineDisplayName || "" }
   };
@@ -415,7 +429,7 @@ exports.unlinkProvider = authCallable(["system", "competition"], async (data, re
   const snap = await db.collection("accounts").where("username", "==", request.authUser.username).limit(1).get();
   if (snap.empty) return { success: false, message: "帳號不存在" };
   const acct = snap.docs[0].data();
-  const hasPassword = !!acct.passwordHash;
+  const hasPassword = !!(acct.passwordHash || acct.passwordBcrypt);
   const hasGoogle = !!acct.googleSub, hasLine = !!acct.lineUserId;
   const remaining = (hasPassword ? 1 : 0) +
     (provider !== "google" && hasGoogle ? 1 : 0) +
@@ -524,7 +538,9 @@ exports.loginVerifyTotp = callable(async (data) => {
   const doc = snap.docs[0];
   const acct = doc.data();
   if (acct.lockedUntil && new Date() < new Date(acct.lockedUntil)) return { success: false, message: "帳號鎖定中，請稍後再試" };
-  if (acct.passwordHash !== hashPwd(password)) return { success: false, message: "密碼錯誤" };
+  const _v = verifyPwd(password, acct);
+  if (!_v.ok) return { success: false, message: "密碼錯誤" };
+  if (_v.upgrade) { try { await doc.ref.update({ passwordBcrypt: hashPwdBcrypt(password), passwordHash: "" }); } catch (e) {} }
   if (!acct.totpEnabled || !acct.totpSecret) {
     // 2FA not actually on — issue session normally.
     const st0 = generateSessionToken();
@@ -596,7 +612,7 @@ exports.listAccounts = authCallable(["system"], async (data) => {
       phone: a.phone || "",                     // 【新增】：確保回傳 電話
       emailVerified: a.emailVerified || false,  // 【新增】：確保回傳 驗證狀態
       // 登入方式綁定狀態
-      hasPassword: !!a.passwordHash,
+      hasPassword: !!(a.passwordHash || a.passwordBcrypt),
       hasGoogle: !!a.googleSub,
       googleEmail: a.googleEmail || "",
       hasLine: !!a.lineUserId,
@@ -616,7 +632,7 @@ exports.createAccount = authCallable(["system"], async (data) => {
   // Admin-created accounts are trusted, so mark the email verified (also lets
   // Google Sign-In match this account by email).
   await db.collection("accounts").add({
-    username, passwordHash: hashPwd(password), role, displayName: displayName || username,
+    username, passwordBcrypt: hashPwdBcrypt(password), passwordHash: "", role, displayName: displayName || username,
     email: cleanEmail, emailVerified: !!cleanEmail,
     createdAt: fmtNow(), loginFails: 0, lockedUntil: ""
   });
@@ -642,9 +658,9 @@ exports.changePassword = authCallable(["system","competition"], async (data, req
   const snap = await db.collection("accounts").where("username", "==", username).limit(1).get();
   if (snap.empty) return { success: false, message: "帳號不存在" };
   const doc = snap.docs[0];
-  if (doc.data().passwordHash !== hashPwd(oldPassword)) return { success: false, message: "舊密碼錯誤" };
+  if (!verifyPwd(oldPassword, doc.data()).ok) return { success: false, message: "舊密碼錯誤" };
   const newToken = generateSessionToken();
-  await doc.ref.update({ passwordHash: hashPwd(newPassword), sessionToken: newToken });
+  await doc.ref.update({ passwordBcrypt: hashPwdBcrypt(newPassword), passwordHash: "", sessionToken: newToken });
   await auditLog(request.authUser.username, "修改密碼", username, "");
   return { success: true, sessionToken: newToken };
 });
@@ -1764,7 +1780,7 @@ exports.resetAdminPassword = callable(async (data) => {
   if (Date.now() - lastReset < 900000) return { success: false, message: "請等待 15 分鐘後再試" };
   
   const newPwd = generatePassword();
-  await doc.ref.update({ passwordHash: hashPwd(newPwd), lastPasswordReset: Date.now() });
+  await doc.ref.update({ passwordBcrypt: hashPwdBcrypt(newPwd), passwordHash: "", lastPasswordReset: Date.now() });
   
   const htmlBody = `
     <div style="font-family:sans-serif;padding:20px;border:1px solid #e2e8f0;border-radius:10px;max-width:500px;margin:0 auto;">
