@@ -659,6 +659,9 @@ exports.changePassword = authCallable(["system","competition"], async (data, req
   if (snap.empty) return { success: false, message: "帳號不存在" };
   const doc = snap.docs[0];
   if (!verifyPwd(oldPassword, doc.data()).ok) return { success: false, message: "舊密碼錯誤" };
+  // M-13: enforce new-password rules server-side (clients may bypass front-end checks).
+  if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 30) return { success: false, message: "新密碼長度須為 6–30 字元" };
+  if (/\s/.test(newPassword)) return { success: false, message: "新密碼不可包含空白字元" };
   const newToken = generateSessionToken();
   await doc.ref.update({ passwordBcrypt: hashPwdBcrypt(newPassword), passwordHash: "", sessionToken: newToken });
   await auditLog(request.authUser.username, "修改密碼", username, "");
@@ -1764,41 +1767,86 @@ exports.requestAccount = callable(async (data) => {
 });
 
 // ===== 新增：忘記密碼與重置 =====
+// C-7a: account password reset now emails a one-time RESET LINK (no plaintext password is ever
+// sent). Keeps the 15-min cooldown + anti-enumeration. The link lands on /reset-account.html,
+// which consumes the token via resetAccountPassword and sets a bcrypt hash.
 exports.resetAdminPassword = callable(async (data) => {
-  const { email } = data;
+  const email = String((data && data.email) || "").trim();
   if (!email) return { success: false, message: "請輸入 Email" };
-  const genericMsg = "若此 Email 已註冊，新密碼將寄送至信箱";
-  
-  const snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
-  if (snap.empty) return { success: true, message: genericMsg }; // Don't reveal account existence
-  
+  const genericMsg = "若此 Email 已註冊，密碼重設連結將寄送至信箱";
+
+  let snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
+  if (snap.empty) snap = await db.collection("accounts").where("email", "==", email.toLowerCase()).limit(1).get();
+  if (snap.empty) return { success: true, message: genericMsg }; // anti-enumeration
+
   const doc = snap.docs[0];
   const user = doc.data();
-  
-  // Rate limit: 15 min cooldown per account
-  const lastReset = user.lastPasswordReset || 0;
-  if (Date.now() - lastReset < 900000) return { success: false, message: "請等待 15 分鐘後再試" };
-  
-  const newPwd = generatePassword();
-  await doc.ref.update({ passwordBcrypt: hashPwdBcrypt(newPwd), passwordHash: "", lastPasswordReset: Date.now() });
-  
-  const htmlBody = `
-    <div style="font-family:sans-serif;padding:20px;border:1px solid #e2e8f0;border-radius:10px;max-width:500px;margin:0 auto;">
-      <h2 style="color:#0A437A;">🔐 RegMaster 密碼重置通知</h2>
-      <p>您好 <b>${user.displayName || user.username}</b>，</p>
-      <p>您的密碼已重置，新密碼為：</p>
-      <div style="background:#FFF7ED;padding:15px;border-radius:8px;font-size:24px;font-weight:900;color:#F49121;text-align:center;letter-spacing:2px;margin:20px 0;">
-        ${newPwd}
-      </div>
-      <p style="color:#ef4444;font-size:14px;">請使用此新密碼登入，並建議您登入後盡快前往修改密碼。</p>
-    </div>
-  `;
-  
-  await db.collection("mail").add({
-    to: [email],
-    message: { subject: "[RegMaster] 系統密碼重置通知", html: htmlBody, text: `新密碼為: ${newPwd}` }
+
+  // Rate limit: 15 min cooldown per account. Return the generic message (not an error) so the
+  // cooldown can't be used to probe which emails are registered.
+  if (Date.now() - (user.lastPasswordReset || 0) < 900000) return { success: true, message: genericMsg };
+  await doc.ref.update({ lastPasswordReset: Date.now() });
+
+  // Invalidate any prior unused tokens, then issue a fresh one-time token (60-min TTL).
+  const oldSnap = await db.collection("accountPwdResets").where("username", "==", user.username).where("used", "==", false).get();
+  if (oldSnap.size) { const b = db.batch(); oldSnap.docs.forEach(d => b.update(d.ref, { used: true, invalidatedAt: fmtNow() })); await b.commit(); }
+  const token = generateSessionToken();
+  await db.collection("accountPwdResets").doc(token).set({
+    username: user.username, used: false, expiresAt: Date.now() + 60 * 60 * 1000, createdAt: fmtNow()
   });
+  const link = EMAIL_HOST + "/reset-account.html?token=" + token;
+  const html = emailWrap("重設您的 RegMaster 密碼", `
+    <p>您好 <b>${escMail(user.displayName || user.username)}</b>，</p>
+    <p>我們收到您（或他人）為此帳號申請的密碼重設。請點擊以下按鈕設定新密碼，連結將於 <b>60 分鐘</b>後失效：</p>
+    <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:22px auto"><tr>
+      <td style="background-color:#0A437A;padding:13px 28px;border-radius:8px;text-align:center">
+        <a href="${link}" target="_blank" style="color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;font-family:'Segoe UI',Arial,sans-serif">設定新密碼</a>
+      </td>
+    </tr></table>
+    <p style="font-size:12px;color:#94a3b8;word-break:break-all">若按鈕無法點擊，請複製此連結至瀏覽器開啟：<br>${link}</p>
+    <p style="font-size:13px;color:#64748b;margin-top:16px">若您並未提出此申請，可忽略本信，您的密碼不會被變更。</p>`);
+  await queueMail([user.email || email], "[RegMaster] 密碼重設連結", html);
   return { success: true, message: genericMsg };
+});
+
+// Validate an account reset token (for reset-account.html on load).
+exports.verifyAccountResetToken = callable(async (data) => {
+  const token = String((data && data.token) || "").trim();
+  if (!token) return { valid: false, message: "連結無效" };
+  const doc = await db.collection("accountPwdResets").doc(token).get();
+  if (!doc.exists) return { valid: false, message: "連結無效或不存在" };
+  const r = doc.data();
+  if (r.used) return { valid: false, message: "此連結已使用過，請重新申請" };
+  if (!r.expiresAt || r.expiresAt < Date.now()) return { valid: false, message: "連結已過期，請重新申請" };
+  return { valid: true };
+});
+
+// Consume an account reset token and set a new (bcrypt) password. One-time use; also clears the
+// existing session token so any active sessions are signed out.
+exports.resetAccountPassword = callable(async (data) => {
+  const token = String((data && data.token) || "").trim();
+  const newPassword = String((data && data.newPassword) || "");
+  if (!token) return { success: false, message: "連結無效" };
+  if (newPassword.length < 6 || newPassword.length > 30) return { success: false, message: "密碼長度須為 6–30 字元" };
+  if (/\s/.test(newPassword)) return { success: false, message: "密碼不可包含空白字元" };
+  const ref = db.collection("accountPwdResets").doc(token);
+  const pre = await ref.get();
+  if (!pre.exists) return { success: false, message: "連結無效或不存在" };
+  const accSnap = await db.collection("accounts").where("username", "==", pre.data().username).limit(1).get();
+  if (accSnap.empty) return { success: false, message: "帳號不存在" };
+  const accRef = accSnap.docs[0].ref;
+  const result = await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return { success: false, message: "連結無效或不存在" };
+    const r = doc.data();
+    if (r.used) return { success: false, message: "此連結已使用過，請重新申請" };
+    if (!r.expiresAt || r.expiresAt < Date.now()) return { success: false, message: "連結已過期，請重新申請" };
+    tx.update(accRef, { passwordBcrypt: hashPwdBcrypt(newPassword), passwordHash: "", sessionToken: "" });
+    tx.update(ref, { used: true, usedAt: fmtNow() });
+    return { success: true, username: r.username };
+  });
+  if (result.success) await auditLog(result.username, "重設密碼", result.username, "via reset-link");
+  return result.success ? { success: true, message: "密碼已更新，請使用新密碼登入。" } : result;
 });
 
 // ===== 新增：系統管理員寄發單獨信件給活動管理員 =====
@@ -2008,6 +2056,11 @@ exports.requestTeamPasswordReset = callable(async (data) => {
   const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
   // 失效任何此報名先前未使用的 token，避免堆積
   const oldSnap = await db.collection("teamPwdResets").where("teamId", "==", teamId).where("used", "==", false).get();
+  // C-7b: 10-min per-teamId cooldown to prevent reset-email bombing. A token's create time is
+  // (expiresAt - 60min); if one was issued within the last 10 min, silently skip re-sending and
+  // still return the generic message (so account/registration existence isn't revealed).
+  const _RESET_TTL = 60 * 60 * 1000;
+  if (oldSnap.docs.some(d => ((d.data().expiresAt || 0) - _RESET_TTL) > (Date.now() - 10 * 60 * 1000))) return generic;
   const batch = db.batch();
   oldSnap.docs.forEach(d => batch.update(d.ref, { used: true, invalidatedAt: fmtNow() }));
   if (oldSnap.size) await batch.commit();

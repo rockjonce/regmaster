@@ -209,6 +209,8 @@
     requestAccount:["username","password","displayName","email","phone","intendedPlan","eulaAgreed"],
     verifyAccount:["username","otp"],
     resetAdminPassword:["email"],
+    verifyAccountResetToken:["token"],
+    resetAccountPassword:["token","newPassword"],
     sendSystemEmail:["targetEmail","subject","content","user"],
     migrateTeamCounts:[],
     migrateViewCounts:[],
