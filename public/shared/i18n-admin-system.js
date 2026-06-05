@@ -56,6 +56,7 @@
     adSysStatNormal: '正常',
     adSysStatUnverified: '未驗證',
     adSysRoleOrg: '主辦方',
+    adSysRoleOwner: '擁有者', adSysRoleManager: '管理者', adSysRoleStaff: '工作人員', adSysRoleJudge: '評審',
     adSysLoadFail: '載入失敗',
     // ---------- params: PayUni ----------
     adSysPayuniTitle: 'PayUni 金流',
@@ -464,6 +465,7 @@
     adSysStatNormal: 'Normal',
     adSysStatUnverified: 'Unverified',
     adSysRoleOrg: 'Organizer',
+    adSysRoleOwner: 'Owner', adSysRoleManager: 'Manager', adSysRoleStaff: 'Staff', adSysRoleJudge: 'Judge',
     adSysLoadFail: 'Load failed',
     // ---------- params: PayUni ----------
     adSysPayuniTitle: 'PayUni Payments',

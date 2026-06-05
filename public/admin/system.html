@@ -745,7 +745,20 @@ body { background:var(--bg); }
       b.innerHTML = list.map(function (a) {
         var locked = a.lockedUntil && new Date() < new Date(a.lockedUntil);
         var stat = locked ? '<span class="pill err">' + window.L('adSysAcctLocked') + '</span>' : a.emailVerified ? '<span class="pill ok">' + window.L('adSysAcctNormal') + '</span>' : '<span class="pill warn">' + window.L('adSysAcctUnverified') + '</span>';
-        var roleTag = a.role === 'system' ? '<span class="pill sys">SYSTEM</span>' : '<span class="pill role">' + window.L('adSysRoleOrg') + '</span>';
+        var roleTag;
+        if (a.role === 'system') {
+          roleTag = '<span class="pill sys">SYSTEM</span>';
+        } else {
+          // #4: show the org permission after the 主辦方 pill — 擁有者 and/or sub-roles.
+          var subs = [];
+          if (a.ownsEvents || !(a.memberships && a.memberships.length)) subs.push(window.L('adSysRoleOwner'));
+          (a.memberships || []).forEach(function (m) {
+            subs.push(m.role === 'manager' ? window.L('adSysRoleManager') : m.role === 'staff' ? window.L('adSysRoleStaff') : m.role === 'judge' ? window.L('adSysRoleJudge') : m.role);
+          });
+          subs = subs.filter(function (v, i) { return v && subs.indexOf(v) === i; });
+          roleTag = '<span class="pill role">' + window.L('adSysRoleOrg') + '</span>' +
+            subs.map(function (s) { return ' <span class="pill" style="background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)">' + esc(s) + '</span>'; }).join('');
+        }
         var del = a.username === 'admin' ? '' : '<button class="icon-btn danger" data-del="' + esc(a.username) + '">' + window.L('adSysAcctDelete') + '</button>';
         return '<tr><td><b>' + esc(a.username) + '</b></td><td>' + esc(a.displayName || '') + '</td><td>' + roleTag + '</td><td class="muted">' + esc(a.email || '') + '</td><td>' + provBadges(a) + '</td><td>' + stat + '</td><td style="text-align:right">' + del + '</td></tr>';
       }).join('');

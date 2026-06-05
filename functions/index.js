@@ -629,6 +629,24 @@ exports.listAccounts = authCallable(["system"], async (data) => {
       lineDisplayName: a.lineDisplayName || ""
     });
   });
+  // #4: annotate each organizer account with its org permission — whether it owns its own org
+  // (擁有者) and/or is an active sub-member (manager/staff/judge) of another owner's org.
+  const [compSnap, memSnap] = await Promise.all([
+    db.collection("competitions").get(),
+    db.collection("orgMembers").get()
+  ]);
+  const owners = new Set();
+  compSnap.docs.forEach(d => { const c = d.data().creator; if (c) owners.add(c); });
+  const memMap = {};
+  memSnap.docs.forEach(d => {
+    const m = d.data();
+    if (m.status !== "active") return;
+    (memMap[m.memberUsername] = memMap[m.memberUsername] || []).push({ orgOwner: m.orgOwner || "", role: m.role || "" });
+  });
+  list.forEach(a => {
+    a.ownsEvents = owners.has(a.username);
+    a.memberships = memMap[a.username] || [];
+  });
   return list;
 });
 
