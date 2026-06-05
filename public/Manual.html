@@ -34,7 +34,7 @@
   "description": "RegMaster 線上活動報名系統的主辦方完整操作指南，涵蓋活動建立、報名表單、收費與 PayUNI 金流、報名管理、帳務與平台代收轉付、公告、評分、QR 報到與 AI 助理。",
   "inLanguage": ["zh-Hant","en"],
   "datePublished": "2026-05-30",
-  "dateModified": "2026-05-30",
+  "dateModified": "2026-06-05",
   "author": { "@type": "Organization", "name": "Kuang-Tien International Co., Ltd. 廣天國際有限公司" },
   "publisher": { "@type": "Organization", "name": "RegMaster", "logo": { "@type": "ImageObject", "url": "https://regmaster-v3.web.app/favicon.png" } },
   "about": { "@type": "SoftwareApplication", "name": "RegMaster", "applicationCategory": "BusinessApplication", "operatingSystem": "Web" }
@@ -55,6 +55,22 @@
   ]
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "如何在 RegMaster 設定評分量表與評審",
+  "description": "建立多層評分量表、分派評審並用公平管線得到排名的六個步驟（多評審評分為 Pro／Team 方案）。",
+  "step": [
+    { "@type": "HowToStep", "position": 1, "name": "建立量表", "text": "在評分頁開啟量表編輯器，建立三層樹狀量表：主項目→細項→子細項。" },
+    { "@type": "HowToStep", "position": 2, "name": "設權重與正規化", "text": "為每一層設定權重%（同層需加總 100%，系統即時驗證），並為葉項目設定滿分、可記錄次數、多次取值方式與正規化方式（預設 t 分布）。" },
+    { "@type": "HowToStep", "position": 3, "name": "建立評審組群與分派", "text": "建立評審組群，指定報名組別、該組評審與負責隊伍；未建組群時整個報名組別視為一個組群。" },
+    { "@type": "HowToStep", "position": 4, "name": "設定公平性開關", "text": "設定跨評審合併方式、去極值，以及是否讓評審看到報名者個資與即時排名（兩者預設關閉）。" },
+    { "@type": "HowToStep", "position": 5, "name": "評審評分", "text": "評審登入後依量表評分，只看到被指派的隊伍；可記錄次數的項目有 N 格輸入。" },
+    { "@type": "HowToStep", "position": 6, "name": "查看結果與統計", "text": "在結果頁切換總排名／分組排名、展開逐項拆解，查看各組統計與盒鬚圖，並匯出 Excel 或 CSV。" }
+  ]
+}
+</script>
 <script type="application/ld+json" id="faq-jsonld">
 {
   "@context": "https://schema.org",
@@ -63,7 +79,22 @@
     { "@type": "Question", "name": "報名上限存檔後數字會不見嗎？", "acceptedAnswer": { "@type": "Answer", "text": "不會。報名上限（maxTeams）會被正確保存；在多梯次模式下，上限為各梯次名額的加總，需於「場次/梯次」區塊調整各梯次。" } },
     { "@type": "Question", "name": "銀行轉帳的款項會被平台代收嗎？", "acceptedAnswer": { "@type": "Answer", "text": "不會。銀行/ATM 轉帳由報名者直接匯入主辦方帳戶，不經平台、不計入平台代收轉付。只有 PayUNI 線上付款由平台代收，扣除手續費後再依週期匯款給主辦方。" } },
     { "@type": "Question", "name": "快速銀行對帳要輸入幾碼？", "acceptedAnswer": { "@type": "Answer", "text": "輸入銀行帳號末 5 碼，系統會自動把帳號末碼相符且尚未確認的隊伍標記為已確認。" } },
-    { "@type": "Question", "name": "平台多久匯款一次給主辦方？", "acceptedAnswer": { "@type": "Answer", "text": "依平台轉帳週期：每週（每週四）或每月（每月 5 日，遇假日順延至下個工作日）。主辦方可在「帳務 → 平台代收轉付」看到下次預計匯款日。" } }
+    { "@type": "Question", "name": "平台多久匯款一次給主辦方？", "acceptedAnswer": { "@type": "Answer", "text": "依平台轉帳週期：每週（每週四）或每月（每月 5 日，遇假日順延至下個工作日）。主辦方可在「帳務 → 平台代收轉付」看到下次預計匯款日。" } },
+    { "@type": "Question", "name": "評審看得到其他隊伍的分數或排名嗎？", "acceptedAnswer": { "@type": "Answer", "text": "預設看不到。評分頁有兩個公平性開關「評審可看到即時排名」與「評審可看到報名者個資」，皆預設關閉；關閉時評審只看到被指派的隊伍與代稱，看不到即時排名與報名者個資，可避免分數互相錨定。" } },
+    { "@type": "Question", "name": "自助報到怎麼防止有人在家裡先報到？", "acceptedAnswer": { "@type": "Answer", "text": "自助報到一定要在設定的開放時間窗內才能進行；另可選擇開啟 GPS 地理柵欄（在內嵌 OpenStreetMap 地圖上點選會場、設半徑，免金鑰），限制只能在會場附近報到。由於室內 GPS 可能飄移，工作人員手動報到永遠可作為後援。" } },
+    { "@type": "Question", "name": "證書可以發給指導老師（感謝狀）嗎？", "acceptedAnswer": { "@type": "Answer", "text": "可以。證書／名牌設計器（Pro／Team）匯出時對象範圍可選「僅指導者」，並在文字欄位使用 {{稱謂}} token 帶出老師職稱，即可批次產出感謝狀。" } },
+    { "@type": "Question", "name": "不同評審或不同評審組給分寬嚴不同，系統怎麼公平？", "acceptedAnswer": { "@type": "Answer", "text": "系統採公平管線：多次量測先依設定取值，組群內先去極值並跨評審合併，再依分布在組群內正規化到 0–100（預設 t 分布，隊伍少於 5 支自動退回線性），接著依權重由葉項目彙整到總分，最後同一報名組別跨組群一起排名，藉此抵消不同評審與評審組的寬嚴差異。" } },
+    { "@type": "Question", "name": "報名者可以自己下載證書嗎？", "acceptedAnswer": { "@type": "Answer", "text": "可以。主辦方可在證書／名牌設計器開放報名者自助下載，並可設定「限已報到者」才能下載；報名者於會員中心（我的報名）即可自行下載 PDF。" } }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "RegMaster", "item": "https://regmaster-v3.web.app/" },
+    { "@type": "ListItem", "position": 2, "name": "主辦方操作手冊 / Organiser Manual", "item": "https://regmaster-v3.web.app/Manual.html" }
   ]
 }
 </script>
@@ -193,12 +224,95 @@
 .m-ui .mtbl td{padding:6px 9px;border-bottom:1px solid var(--line-2);color:var(--ink-2)}
 .m-ui .cap{font:400 11.5px/1.5 var(--f-tc);color:var(--muted);text-align:center;padding:6px 12px 2px}
 
+/* ── illustration extensions (annotated mock screens) ── */
+.m-ui .callout{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--acc);color:#fff;font:800 10px/1 var(--f-mono);flex-shrink:0;vertical-align:middle}
+.m-ui .callout.ok{background:var(--ok-500)}
+.m-ui .callout.wrn{background:var(--warn-500)}
+.m-ui-cols{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}
+.m-ui-cols .pane{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 10px;min-width:0}
+.m-ui-cols .pane>.ph{font:700 10px/1.3 var(--f-mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:5px}
+.m-canvas{position:relative;background:var(--surface);border:1px dashed var(--line);border-radius:8px;min-height:120px;padding:8px;background-image:radial-gradient(var(--line-2) 1px,transparent 1px);background-size:13px 13px}
+.m-canvas .ph{position:absolute;border:1px solid var(--acc);border-radius:5px;background:rgba(61,107,255,.06);font:600 10.5px/1.3 var(--f-tc);color:var(--ink-2);padding:4px 7px}
+.m-canvas .ph .hdl{position:absolute;right:-4px;bottom:-4px;width:8px;height:8px;border:1.5px solid var(--acc);background:#fff;border-radius:2px}
+.m-leg{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px;font:400 11.5px/1.5 var(--f-tc);color:var(--ink-3)}
+.m-leg .li{display:flex;align-items:flex-start;gap:6px;min-width:140px;flex:1}
+.m-ui .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin:2px 0}
+.m-ui .seg span{padding:4px 9px;font:600 10.5px/1 var(--f-tc);color:var(--muted);border-right:1px solid var(--line)}
+.m-ui .seg span:last-child{border-right:0}
+.m-ui .seg span.on{background:var(--ink);color:#fff}
+.m-ui .chk{display:inline-grid;place-items:center;width:15px;height:15px;border:1px solid var(--line);border-radius:4px;font:800 9px/1 var(--f-mono);color:#fff;vertical-align:middle}
+.m-ui .chk.on{background:var(--ok-500);border-color:var(--ok-500)}
+.m-tree{margin:4px 0;font:400 12px/1.6 var(--f-tc);color:var(--ink-2)}
+.m-tree .lv1{font-weight:700;color:var(--ink)}
+.m-tree .lv2{padding-left:16px}
+.m-tree .lv3{padding-left:32px;color:var(--ink-3)}
+.m-tree .w{font:600 10.5px/1 var(--f-mono);color:var(--acc);background:var(--acc-soft);border-radius:5px;padding:2px 6px;margin-left:6px}
+
 .m-foot{text-align:center;padding:22px 0 0;margin-top:8px;border-top:1px solid var(--line);font:400 11.5px/1.7 var(--f-tc);color:var(--muted)}
 .m-foot b{color:var(--ink-2)}
 
 /* language visibility — only HIDE the inactive language so the active one keeps its natural display */
 body[data-lang="zh"] .en{display:none !important}
 body[data-lang="en"] .zh{display:none !important}
+
+/* ── search / filter bar (sticky) ── */
+.m-search{position:sticky;top:0;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:18px;box-shadow:var(--sh-sm)}
+.m-search .sbox{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;padding:9px 12px}
+.m-search .sbox svg{width:17px;height:17px;color:var(--muted);flex-shrink:0}
+.m-search input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:500 14px/1.4 var(--f-tc);outline:none}
+.m-search input::placeholder{color:var(--muted)}
+.m-search .sclear{border:0;background:transparent;color:var(--muted);font:700 13px/1 var(--f-display);cursor:pointer;padding:4px 6px;border-radius:6px;display:none}
+.m-search .sclear:hover{color:var(--ink);background:var(--surface-3)}
+.m-search.has-q .sclear{display:inline-block}
+.m-search .stools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;flex-wrap:wrap}
+.m-search .scount{font:600 12px/1.4 var(--f-mono);color:var(--ink-3)}
+.m-search .scount b{color:var(--acc)}
+.m-search .sbtns{display:inline-flex;gap:6px}
+.m-search .sbtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:700 12px/1 var(--f-display);padding:7px 12px;border-radius:8px;cursor:pointer;transition:.15s}
+.m-search .sbtn:hover{border-color:var(--ink-3);color:var(--ink)}
+.m-search .sbtn svg{width:13px;height:13px}
+.m-noresults{display:none;background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:30px 22px;margin-bottom:18px;text-align:center;color:var(--ink-3);font:500 14px/1.6 var(--f-tc)}
+.m-noresults.show{display:block}
+.m-noresults .nrt{font:700 15px/1.4 var(--f-display);color:var(--ink-2);margin-bottom:4px}
+.m-sec.hidden,.m-toc.hidden{display:none}
+mark.m-hit{background:var(--warn-100);color:var(--warn-700);border-radius:3px;padding:0 1px}
+
+/* ── collapsible sections ── */
+.m-sec>h2{cursor:pointer;user-select:none}
+.m-sec>h2 .chev{margin-left:auto;width:20px;height:20px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.m-sec.collapsed>h2 .chev{transform:rotate(-90deg)}
+.m-sec>.m-body{overflow:hidden;transition:opacity .15s}
+.m-sec.collapsed>.m-body{display:none}
+.m-sec>h2:hover .chev{color:var(--ink-2)}
+
+/* ── scroll-spy TOC active link ── */
+.m-toc a.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+.m-toc a.active svg{color:#fff}
+
+/* ── troubleshooter / quick problem finder ── */
+.m-ts .lead{margin-bottom:14px}
+.m-ts-filter{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px;padding:8px 11px;margin:0 0 12px}
+.m-ts-filter svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
+.m-ts-filter input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:500 13px/1.4 var(--f-tc);outline:none}
+.m-ts-list{display:flex;flex-direction:column;gap:8px}
+.m-q{border:1px solid var(--line);border-radius:11px;background:var(--surface);overflow:hidden}
+.m-q.hidden{display:none}
+.m-q .qh{display:flex;align-items:center;gap:9px;padding:12px 14px;cursor:pointer;font:700 13.5px/1.45 var(--f-display);color:var(--ink);background:none;border:0;width:100%;text-align:left}
+.m-q .qh:hover{background:var(--surface-2)}
+.m-q .qh .qi{display:grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--acc-soft);color:var(--acc);font:800 12px/1 var(--f-mono);flex-shrink:0}
+.m-q .qh .qt{flex:1;min-width:0}
+.m-q .qh .qchev{width:16px;height:16px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.m-q.open .qh .qchev{transform:rotate(180deg)}
+.m-q .qa{display:none;padding:0 14px 13px 45px;font:400 13px/1.65 var(--f-tc);color:var(--ink-2)}
+.m-q.open .qa{display:block}
+.m-q .qa .goto{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:5px 11px;background:var(--ink);color:#fff;border-radius:8px;font:700 12px/1 var(--f-display);text-decoration:none;border:0}
+.m-q .qa .goto:hover{background:var(--acc);border-bottom:0}
+.m-q .qa .goto svg{width:13px;height:13px}
+.m-ts-contact{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:9px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink-2);font:700 13px/1 var(--f-display);text-decoration:none;transition:.15s}
+.m-ts-contact:hover{border-color:var(--acc);color:var(--acc)}
+.m-ts-contact svg{width:15px;height:15px}
+.m-ts-none{display:none;padding:14px;text-align:center;color:var(--muted);font:500 13px/1.5 var(--f-tc)}
+.m-ts-none.show{display:block}
 
 @media (max-width:640px){
   .m-wrap{padding:18px 13px 64px}
@@ -207,6 +321,8 @@ body[data-lang="en"] .zh{display:none !important}
   .m-sec{padding:20px 17px}
   .m-sec>h2{font-size:18px}
   .m-ui .body{padding:12px}
+  .m-search{position:static}
+  .m-q .qa{padding-left:14px}
 }
 </style>
 </head>
@@ -232,14 +348,48 @@ body[data-lang="en"] .zh{display:none !important}
     <span class="ver">RegMaster v3 · 2026</span>
   </header>
 
+  <!-- search / filter bar -->
+  <div class="m-search" id="m-search">
+    <div class="sbox">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="m-search-input" autocomplete="off"
+             data-ph-zh="搜尋手冊…（功能、問題、關鍵字）" data-ph-en="Search the manual…"
+             placeholder="搜尋手冊…（功能、問題、關鍵字）"
+             aria-label="搜尋手冊 / Search the manual">
+      <button type="button" class="sclear" id="m-search-clear" aria-label="清除 / Clear"><span class="zh">清除</span><span class="en">Clear</span></button>
+    </div>
+    <div class="stools">
+      <span class="scount" id="m-search-count" aria-live="polite"></span>
+      <span class="sbtns">
+        <button type="button" class="sbtn" id="m-expand-all">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 9l5 5 5-5M7 4l5 5 5-5"/></svg>
+          <span class="zh">全部展開</span><span class="en">Expand all</span>
+        </button>
+        <button type="button" class="sbtn" id="m-collapse-all">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 15l-5-5-5 5M17 20l-5-5-5 5"/></svg>
+          <span class="zh">全部收合</span><span class="en">Collapse all</span>
+        </button>
+      </span>
+    </div>
+  </div>
+
+  <!-- no-results state -->
+  <div class="m-noresults" id="m-noresults">
+    <div class="nrt"><span class="zh">找不到相關內容</span><span class="en">No matches</span></div>
+    <div><span class="zh">試試其他關鍵字，或</span><span class="en">Try another keyword, or </span><a href="#" id="m-noresults-clear" style="color:var(--acc)"><span class="zh">清除搜尋</span><span class="en">clear the search</span></a>。</div>
+  </div>
+
   <!-- TOC -->
   <nav class="m-toc">
     <h2 class="zh">📑 目錄</h2>
     <h2 class="en">📑 Table of Contents</h2>
     <div class="m-toc-grid zh">
       <a href="#s-intro">開始使用</a>
+      <a href="#s-troubleshoot">問題快速定位</a>
       <a href="#s-plan">方案與授權</a>
       <a href="#s-account">帳戶設定</a>
+      <a href="#s-roles"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.9M9 20H4v-2a4 4 0 013-3.9m6-1a4 4 0 10-4-4 4 4 0 004 4z"/></svg>團隊成員權限</a>
+      <a href="#s-eula"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M9 14l2 2 4-4"/></svg>服務條款簽署</a>
       <a href="#s-dashboard">主辦儀表板</a>
       <a href="#s-events">活動列表與總覽</a>
       <a href="#s-settings">活動設定詳解</a>
@@ -249,6 +399,7 @@ body[data-lang="en"] .zh{display:none !important}
       <a href="#s-billing">帳務與代收轉付</a>
       <a href="#s-announce">公告與 EDM</a>
       <a href="#s-score">評分</a>
+      <a href="#s-cert"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.5L7 22l5-3 5 3-1.2-8.5"/></svg>證書 / 名牌</a>
       <a href="#s-checkin">QR 報到</a>
       <a href="#s-ai">AI 助理</a>
       <a href="#s-registrant">報名者端體驗</a>
@@ -256,8 +407,11 @@ body[data-lang="en"] .zh{display:none !important}
     </div>
     <div class="m-toc-grid en">
       <a href="#s-intro">Getting Started</a>
+      <a href="#s-troubleshoot">Quick Problem Finder</a>
       <a href="#s-plan">Plans & License</a>
       <a href="#s-account">Account Settings</a>
+      <a href="#s-roles"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.9M9 20H4v-2a4 4 0 013-3.9m6-1a4 4 0 10-4-4 4 4 0 004 4z"/></svg>Team Roles</a>
+      <a href="#s-eula"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M9 14l2 2 4-4"/></svg>Terms & EULA</a>
       <a href="#s-dashboard">Dashboard</a>
       <a href="#s-events">Events & Hub</a>
       <a href="#s-settings">Activity Settings</a>
@@ -267,6 +421,7 @@ body[data-lang="en"] .zh{display:none !important}
       <a href="#s-billing">Billing & Payouts</a>
       <a href="#s-announce">Announcements & EDM</a>
       <a href="#s-score">Scoring</a>
+      <a href="#s-cert"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.5L7 22l5-3 5 3-1.2-8.5"/></svg>Certs / Badges</a>
       <a href="#s-checkin">QR Check-In</a>
       <a href="#s-ai">AI Assistant</a>
       <a href="#s-registrant">Registrant Experience</a>
@@ -294,6 +449,77 @@ body[data-lang="en"] .zh{display:none !important}
     <div class="m-feat"><span class="fi"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20"/></svg></span><div class="fb"><h4 class="zh">線上金流與帳務透明</h4><h4 class="en">Online payments & transparent billing</h4><p class="zh">支援 PayUNI 線上付款與銀行轉帳；平台代收的款項扣手續費後依週期匯給您，明細一筆一筆看得到。</p><p class="en">Supports PayUNI online payment and bank transfer; platform-collected funds (minus fees) are wired to you on a cycle, with every order itemised.</p></div></div>
   </section>
 
+  <!-- ============ Quick Problem Finder / 問題快速定位 ============ -->
+  <section class="m-sec m-ts" id="s-troubleshoot">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><span class="zh">問題快速定位</span><span class="en">Quick Problem Finder</span></h2>
+    <p class="lead zh">遇到狀況？挑一個最接近的問題，點開看簡短解答，再「前往章節」看完整說明。也可用上方搜尋框過濾。</p>
+    <p class="lead en">Hit a snag? Pick the closest question for a short answer, then "Go to section" for the full guide. You can also filter with the search box above.</p>
+
+    <div class="m-ts-filter">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="m-ts-input" autocomplete="off"
+             data-ph-zh="篩選問題…" data-ph-en="Filter questions…"
+             placeholder="篩選問題…" aria-label="篩選問題 / Filter questions">
+    </div>
+
+    <div class="m-ts-list" id="m-ts-list">
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">自助報到的地圖沒有顯示？</span><span class="en">The self check-in map isn't showing?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">地圖只在開啟「啟用現場範圍限制（地理柵欄）」時才會出現。請先在自助報到設定打開該開關，再重整頁面；若仍空白，多半是被其他指令碼蓋掉，重整即可恢復。</span><span class="en">The map only appears when "On-site geofence" is enabled. Turn that toggle on in kiosk settings, then refresh the page; if still blank it's usually a script clash that a refresh clears.</span><br><a class="goto" href="#s-checkin"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「QR 報到」</span><span class="en">Go to QR Check-In</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">不想讓評審看到別隊分數或即時排名？</span><span class="en">Don't want judges to see other teams' scores or the ranking?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">到評分頁的「公平性設定」，把「評審可看到即時排名」維持關閉（預設關）。關閉時評審只看到被指派的隊伍，看不到即時排名，可避免分數互相錨定。</span><span class="en">In Scoring → Fairness settings, keep "Judge sees ranking" off (it's off by default). When off, judges see only assigned teams and no live ranking, preventing score anchoring.</span><br><a class="goto" href="#s-score"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「評分」</span><span class="en">Go to Scoring</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">不同評審或評審組給分寬嚴不同，怎麼公平？</span><span class="en">Judges or panels grade with different harshness — how is it fair?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">系統採公平管線：組群內先去極值並跨評審合併，再依分布在組群內正規化到 0–100（預設 t 分布，隊伍少於 5 支自動退回線性），最後同一報名組別跨組群一起排名，抵消寬嚴差異。</span><span class="en">A fairness pipeline trims extremes and merges judges within a panel, then normalises to 0–100 by distribution per panel (t-distribution by default, falling back to linear under 5 teams), and finally ranks across panels in the same group — cancelling out harshness differences.</span><br><a class="goto" href="#s-score"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「評分」</span><span class="en">Go to Scoring</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">報名上限存檔後不見了？</span><span class="en">The capacity disappeared after saving?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">上限會正確保留。多梯次模式下，總上限是各梯次名額的加總（唯讀），要調整請到「設定 → 基本資訊」的「場次／梯次」區塊改各梯次名額。</span><span class="en">It does persist. In multi-session mode the total is the read-only sum of per-session caps — adjust each session in Settings → Basics → Sessions.</span><br><a class="goto" href="#s-settings"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「活動設定」</span><span class="en">Go to Activity Settings</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">收到銀行轉帳，要怎麼快速對帳？</span><span class="en">Got a bank transfer — how do I reconcile quickly?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">到「帳務 → 報名費」的「快速銀行對帳」，輸入收到匯款的銀行帳號末 5 碼按「執行對帳」，系統會把末碼相符且尚未確認的隊伍自動標記為已確認。（需先在收費設定啟用銀行轉帳。）</span><span class="en">In Payments → Fees → Quick bank reconciliation, enter the last 5 digits of the remitter's account and click Reconcile; matching unconfirmed teams are auto-confirmed. (Enable bank transfer in Fees first.)</span><br><a class="goto" href="#s-billing"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「帳務」</span><span class="en">Go to Billing</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">平台多久撥款給我一次？</span><span class="en">How often does the platform pay me out?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">依轉帳週期：每週（每週四）或每月（每月 5 日，遇假日順延）。只有 PayUNI 線上付款由平台代收並扣手續費後匯給你；下次匯款日可在「帳務 → 平台代收轉付」查看。</span><span class="en">On a cycle: weekly (Thursdays) or monthly (5th, rolling forward on weekends). Only PayUNI is collected and paid out after fees; see the next date in Payments → Platform payouts.</span><br><a class="goto" href="#s-billing"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「帳務」</span><span class="en">Go to Billing</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">報名者怎麼自己下載證書？</span><span class="en">How do registrants download their own certificate?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">在「證書／名牌設計器」開啟「報名者自助下載」（可設限已報到者）。報名者於會員中心（我的報名）即可自行下載 PDF。</span><span class="en">In the Certificate / Badge designer, turn on "self-service download" (optionally restricted to checked-in registrants). They download the PDF from the member centre (My Registrations).</span><br><a class="goto" href="#s-cert"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「證書 / 名牌」</span><span class="en">Go to Certs / Badges</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">想邀請同事一起管理活動？</span><span class="en">Want to invite colleagues to co-manage?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">到「設定 → 成員與權限」點「＋ 邀請成員」，輸入 Email、選角色（管理者／工作人員／評審）與範圍。此功能為 Pro／Team 方案專屬。</span><span class="en">In Settings → Members & Permissions click "＋ Invite member", enter the email and pick a role (Manager / Staff / Judge) and scope. This is a Pro / Team feature.</span><br><a class="goto" href="#s-roles"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「團隊成員權限」</span><span class="en">Go to Team Roles</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">要發感謝狀給指導老師？</span><span class="en">Need thank-you certs for coaches?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">在證書／名牌設計器，匯出對象範圍選「僅指導者」，並在文字欄位使用 <code>{{稱謂}}</code> token 帶出老師職稱，即可批次產出感謝狀。</span><span class="en">In the designer, set the export scope to "coaches only" and use the <code>{{稱謂}}</code> (title) token in a text field to print each coach's honorific — then batch-produce.</span><br><a class="goto" href="#s-cert"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「證書 / 名牌」</span><span class="en">Go to Certs / Badges</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">報到時要逐人點名、記錄實到人數？</span><span class="en">Need per-member roll call and an attendance count?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">每隊一組 QR，身分核對面板會列出成員名冊；逐位勾選後系統記錄「實到／應到」人數，按「確認報到」完成。</span><span class="en">Each team has one QR; the identity panel lists the roster. Tick each member and the system records a "present / expected" count, then click Confirm.</span><br><a class="goto" href="#s-checkin"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「QR 報到」</span><span class="en">Go to QR Check-In</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">自助報到怎麼防止有人在家先報到？</span><span class="en">How do I stop people checking in from home?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">三道關卡：開放時間窗（必備）＋ GPS 地理柵欄（可選，免金鑰地圖點選會場設半徑）＋ 報到機解鎖 PIN。室內 GPS 可能飄移，工作人員手動報到永遠是後援。</span><span class="en">Three gates: a time window (required) + a GPS geofence (optional, pick the venue on a key-free map with a radius) + a kiosk unlock PIN. Indoor GPS can drift, so staff manual check-in is always the fallback.</span><br><a class="goto" href="#s-checkin"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「QR 報到」</span><span class="en">Go to QR Check-In</span></a></div>
+      </div>
+      <div class="m-q">
+        <button type="button" class="qh"><span class="qi">?</span><span class="qt"><span class="zh">忘記隊伍密碼或帳號密碼怎麼辦？</span><span class="en">Forgot a team password or account password?</span></span><svg class="qchev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="qa"><span class="zh">報名者：報名成功時的確認信中有報名編號與登入密碼，可於會員中心（我的報名）登入查詢。主辦帳號：在「設定 → 安全與登入」變更密碼；遺失時請循登入頁的重設流程或聯絡客服。</span><span class="en">Registrants: the confirmation email holds the team code and password; log in at the member centre (My Registrations). Organiser account: change it under Settings → Security & Login; if lost, use the login-page reset flow or contact support.</span><br><a class="goto" href="#s-account"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="zh">前往「帳戶設定」</span><span class="en">Go to Account Settings</span></a></div>
+      </div>
+    </div>
+    <div class="m-ts-none" id="m-ts-none"><span class="zh">沒有符合的問題，試試上方搜尋或聯絡客服。</span><span class="en">No matching question — try the search above or contact support.</span></div>
+
+    <a class="m-ts-contact" href="/contact.html?topic=support">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="zh">回報問題 / 聯絡客服</span><span class="en">Report an issue / Contact support</span>
+    </a>
+  </section>
+
   <!-- ============ 2. Plans & License ============ -->
   <section class="m-sec" id="s-plan">
     <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></span><span class="zh">方案與授權</span><span class="en">Plans & License</span></h2>
@@ -309,9 +535,10 @@ body[data-lang="en"] .zh{display:none !important}
       <tr><th class="zh">方案</th><th class="en">Tier</th><th class="zh">適合</th><th class="en">For</th><th class="zh">重點功能</th><th class="en">Key features</th></tr>
       <tr><td>Free</td><td class="zh">小型活動入門</td><td class="en">Small events</td><td class="zh">基本報名表、活動管理、Email 通知</td><td class="en">Basic form, event management, email notifications</td></tr>
       <tr><td>Starter</td><td class="zh">單一活動主辦</td><td class="en">Single event</td><td class="zh">進階報名表、金流整合、匯出報表</td><td class="en">Advanced form, payment integration, report export</td></tr>
-      <tr><td>Pro</td><td class="zh">完整功能</td><td class="en">Full features</td><td class="zh">AI 助理、多評審評分、名牌/證書、公告群發</td><td class="en">AI assistant, multi-judge scoring, badges/certs, EDM</td></tr>
+      <tr><td>Pro</td><td class="zh">完整功能</td><td class="en">Full features</td><td class="zh">AI 助理、<strong>多評審評分＋團隊成員權限</strong>、<strong>證書 / 名牌設計器</strong>、公告群發</td><td class="en">AI assistant, <strong>multi-judge scoring + team roles</strong>, <strong>certificate / badge designer</strong>, EDM</td></tr>
       <tr><td>Team</td><td class="zh">大型機構</td><td class="en">Large orgs</td><td class="zh">全部 Pro 功能、專屬支援、SLA、優先客服</td><td class="en">All Pro features, dedicated support, SLA, priority service</td></tr>
     </table>
+    <div class="m-note"><span class="zh"><b>Pro / Team 專屬：</b><strong>多評審評分</strong>與<strong>團隊成員權限</strong>綁為同一項功能，<strong>證書 / 名牌設計器</strong>亦為 Pro 以上才有。Starter 提供基本評分；Free / Starter 無法邀請子帳號成員。</span><span class="en"><b>Pro / Team only:</b> <strong>multi-judge scoring</strong> and <strong>team roles</strong> are bundled as one capability, and the <strong>certificate / badge designer</strong> also requires Pro+. Starter offers basic scoring; Free / Starter cannot invite sub-account members.</span></div>
     <div class="m-note"><span class="zh"><b>PayUNI 金流手續費依方案而定：</b>每張方案卡都會標示「報名者線上付款扣除的手續費 %」，<strong>銀行轉帳免收</strong>。費率由平台設定，可能因方案不同而異。</span><span class="en"><b>PayUNI fee depends on tier:</b> each plan card shows the % deducted from a registrant's online payment. <strong>Bank transfer is free.</strong> Rates are set by the platform and vary by tier.</span></div>
 
     <h3 class="zh">啟用授權碼</h3><h3 class="en">Activate a license code</h3>
@@ -362,6 +589,76 @@ body[data-lang="en"] .zh{display:none !important}
     <h3 class="zh">⑤ 登入裝置 / 帳戶</h3><h3 class="en">⑤ Devices / Account</h3>
     <p class="zh"><strong>登入裝置</strong>分頁列出目前登入中的瀏覽器與裝置，當前裝置標示「當前裝置」。<strong>帳戶</strong>分頁可<span class="btnchip gho">立即登出</span>，或在危險區域<span class="btnchip dgr">刪除帳戶</span>（永久且無法復原）。</p>
     <p class="en">The <strong>Devices</strong> tab lists active sessions (your current one is tagged). The <strong>Account</strong> tab lets you <span class="btnchip gho">Log out now</span> or, in the danger zone, <span class="btnchip dgr">Delete account</span> (permanent, irreversible).</p>
+  </section>
+
+  <!-- ============ Team Roles & Permissions ============ -->
+  <section class="m-sec" id="s-roles">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-3-3.9M9 20H4v-2a4 4 0 013-3.9m6-1a4 4 0 10-4-4 4 4 0 004 4z"/></svg></span><span class="zh">團隊成員權限</span><span class="en">Team Roles & Permissions</span></h2>
+    <p class="lead zh">邀請同事以子帳號協助管理活動，並用角色精確控制每個人能做什麼。此功能與「多評審評分」綁為同一項，<strong>預設只有 Pro / Team 方案才有</strong>。</p>
+    <p class="lead en">Invite colleagues as sub-account members to help run your events, and use roles to control exactly what each person can do. Bundled with "multi-judge scoring", this is <strong>available on the Pro / Team plans only</strong> by default.</p>
+
+    <h3 class="zh">邀請成員</h3><h3 class="en">Invite a member</h3>
+    <div class="m-steps">
+      <div class="m-step"><span class="n"></span><span class="c zh">進入「設定 →（成員與權限）」，點 <span class="btnchip pri">＋ 邀請成員</span>。</span><span class="c en">Go to Settings → (Members &amp; Permissions) and click <span class="btnchip pri">＋ Invite member</span>.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">輸入對方 <strong>Email</strong>、選擇 <strong>角色</strong>（管理者／工作人員／評審），再選 <strong>範圍</strong>：整個組織，或指定某些活動。</span><span class="c en">Enter their <strong>email</strong>, pick a <strong>role</strong> (Manager / Staff / Judge), then choose a <strong>scope</strong>: the whole organisation, or specific events.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">系統寄出<strong>邀請信</strong>；對方接受後即成為成員，列在成員表中。</span><span class="c en">An <strong>invitation email</strong> is sent; once accepted, they become a member and appear in the members table.</span></div>
+      <div class="m-step"><span class="n"></span><span class="c zh">可隨時<strong>調整角色／範圍</strong>或 <span class="btnchip dgr">移除成員</span>；變更立即生效。</span><span class="c en">You can <strong>change a role/scope</strong> or <span class="btnchip dgr">remove a member</span> at any time; changes take effect immediately.</span></div>
+    </div>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">設定 · 成員與權限 / Settings · Members &amp; Permissions</span></div>
+      <div class="body">
+        <div class="row" style="justify-content:flex-end"><span class="btnchip pri">＋ <span class="zh">邀請成員</span><span class="en">Invite member</span></span></div>
+        <table class="mtbl" style="margin-top:6px">
+          <tr><th><span class="callout">1</span> <span class="zh">成員</span><span class="en">Member</span></th><th><span class="callout">2</span> <span class="zh">角色</span><span class="en">Role</span></th><th><span class="callout">3</span> <span class="zh">範圍</span><span class="en">Scope</span></th><th></th></tr>
+          <tr><td>amy@org.tw</td><td><span class="tg on zh">管理者</span><span class="tg on en">Manager</span></td><td class="zh">整個組織</td><td class="en">Whole org</td><td><span class="btnchip gho" style="font-size:10px">✎</span></td></tr>
+          <tr><td>ben@org.tw</td><td><span class="tg off zh">工作人員</span><span class="tg off en">Staff</span></td><td class="zh">2026 春季賽</td><td class="en">2026 Spring</td><td><span class="btnchip gho" style="font-size:10px">✎</span></td></tr>
+          <tr><td>judge@org.tw</td><td><span class="tg off zh">評審</span><span class="tg off en">Judge</span></td><td class="zh">2026 春季賽</td><td class="en">2026 Spring</td><td><span class="btnchip gho" style="font-size:10px">✎</span></td></tr>
+        </table>
+      </div>
+      <div class="cap zh">▲ ① 受邀的 Email ② 角色決定能力範圍 ③ 範圍可為整個組織或指定活動；✎ 可隨時調整或移除。</div>
+      <div class="cap en">▲ ① the invited email ② role sets capabilities ③ scope can be the whole org or specific events; ✎ edit or remove anytime.</div>
+    </div>
+
+    <h3 class="zh">角色與能力</h3><h3 class="en">Roles &amp; capabilities</h3>
+    <table class="m-tbl">
+      <tr><th class="zh">角色</th><th class="en">Role</th><th class="zh">檢視</th><th class="en">View</th><th class="zh">報到</th><th class="en">Check-in</th><th class="zh">評分</th><th class="en">Score</th><th class="zh">管理</th><th class="en">Manage</th></tr>
+      <tr><td class="zh"><strong>擁有者</strong></td><td class="en"><strong>Owner</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td class="zh"><strong>管理者</strong></td><td class="en"><strong>Manager</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td class="zh">✓ 設定/表單/帳務</td><td class="en">✓ settings/form/billing</td></tr>
+      <tr><td class="zh"><strong>工作人員</strong></td><td class="en"><strong>Staff</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td class="zh"><strong>評審</strong></td><td class="en"><strong>Judge</strong></td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr>
+    </table>
+    <div class="m-note"><span class="zh"><b>評審受公平性開關限制：</b>評審雖可評分，但會受評分頁兩個開關約束——可被設定成<strong>看不到報名者個資</strong>與<strong>看不到即時排名</strong>（詳見「評分」章節）。</span><span class="en"><b>Judges are bound by fairness toggles:</b> a Judge can score but is subject to the two Scoring toggles — they can be set so they <strong>cannot see registrant personal data</strong> or the <strong>live ranking</strong> (see the Scoring chapter).</span></div>
+    <div class="m-ok"><span class="zh"><b>擁有者權限永遠保留：</b>建立活動的本人（擁有者）一律擁有全部權限，成員權限為「附加」，不會取代擁有者。</span><span class="en"><b>The Owner always keeps full rights:</b> the account that created the event (the Owner) always has every permission; member roles are <strong>additive</strong> and never replace the Owner.</span></div>
+  </section>
+
+  <!-- ============ Terms / EULA ============ -->
+  <section class="m-sec" id="s-eula">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M9 14l2 2 4-4"/></svg></span><span class="zh">服務條款 / EULA 簽署</span><span class="en">Terms of Service / EULA</span></h2>
+    <p class="lead zh">RegMaster 在註冊與報名時都會記錄使用者對服務條款 / 終端使用者授權合約（EULA）的同意，作為合規與爭議時的稽核軌跡。</p>
+    <p class="lead en">RegMaster records each user's acceptance of the Terms of Service / End-User Licence Agreement (EULA) at both sign-up and registration, serving as a compliance and dispute audit trail.</p>
+
+    <h3 class="zh">主辦方註冊時</h3><h3 class="en">When an organiser registers</h3>
+    <p class="zh">註冊主辦帳號時須<strong>勾選同意服務條款 / EULA</strong>。系統採<strong>點按即同意（click-wrap）</strong>，並記錄同意的<strong>版本、時間與 IP</strong>。您可日後在「設定」查看自己的同意紀錄。</p>
+    <p class="en">Creating an organiser account requires <strong>ticking acceptance of the Terms / EULA</strong>. This is a <strong>click-wrap</strong> consent, and the system records the accepted <strong>version, timestamp and IP</strong>. You can review your own consent record later under Settings.</p>
+
+    <h3 class="zh">報名者報名時</h3><h3 class="en">When a registrant submits</h3>
+    <p class="zh">報名者送出報名時也會看到<strong>同意聲明</strong>；送出即視為同意，系統會把該次同意的<strong>版本／時間／IP</strong>一併存進那筆報名。</p>
+    <p class="en">A registrant also sees a <strong>consent statement</strong> at submission; submitting counts as acceptance, and the <strong>version / time / IP</strong> are stored with that registration.</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">同意紀錄 / Consent record</span></div>
+      <div class="body">
+        <div class="uicard">
+          <div class="row" style="justify-content:space-between"><b style="font:700 12px/1.4 var(--f-display)"><span class="zh">服務條款 / EULA</span><span class="en">Terms / EULA</span></b><span class="tg on"><span class="zh">✓ 已同意</span><span class="en">✓ Accepted</span></span></div>
+          <div class="fieldrow"><span class="lbl"><span class="callout">1</span> <span class="zh">版本</span><span class="en">Version</span></span><span class="field">v2026-05</span><span class="lbl"><span class="callout">2</span> <span class="zh">時間</span><span class="en">Time</span></span><span class="field">2026-06-01 10:24</span></div>
+          <div class="fieldrow"><span class="lbl"><span class="callout">3</span> IP</span><span class="field">203.0.113.42</span></div>
+        </div>
+      </div>
+      <div class="cap zh">▲ 每筆同意記錄 ① 版本 ② 時間 ③ IP；主辦看自己的，報名者的存於各報名。</div>
+      <div class="cap en">▲ Each consent stores ① version ② timestamp ③ IP; organisers see their own, registrants' are stored per registration.</div>
+    </div>
+    <div class="m-note"><span class="zh"><b>用途：</b>滿足合規要求，並在發生爭議時作為「對方確實已同意當時條款」的佐證。</span><span class="en"><b>Why it matters:</b> it satisfies compliance requirements and serves as proof that the party agreed to the terms in force at that time during a dispute.</span></div>
   </section>
 
   <!-- ============ 4. Dashboard ============ -->
@@ -630,26 +927,208 @@ body[data-lang="en"] .zh{display:none !important}
   <!-- ============ 12. Scoring ============ -->
   <section class="m-sec" id="s-score">
     <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM5 4H3v2a3 3 0 003 3M19 4h2v2a3 3 0 01-3 3"/></svg></span><span class="zh">評分</span><span class="en">Scoring</span></h2>
-    <p class="lead zh">給競賽型活動的評審計分工具（Pro 以上方案）。左側是<strong>即時排行榜</strong>，中央是<strong>計分表</strong>。</p>
-    <p class="lead en">A judging tool for competitions (Pro+). The left shows a <strong>live leaderboard</strong>; the centre is the <strong>score sheet</strong>.</p>
-    <div class="m-steps">
-      <div class="m-step"><span class="n"></span><span class="c zh">在左側排行榜點選一支隊伍。</span><span class="c en">Pick a team from the leaderboard on the left.</span></div>
-      <div class="m-step"><span class="n"></span><span class="c zh">在四個面向輸入分數（創意／技術／呈現／影響，各 0–25），系統即時加總「總分／100」。</span><span class="c en">Enter scores in four criteria (creativity / technical / presentation / impact, 0–25 each); the total /100 updates live.</span></div>
-      <div class="m-step"><span class="n"></span><span class="c zh">可填寫<strong>評審評語</strong>（選填），按 <span class="btnchip pri">提交評分</span>。</span><span class="c en">Optionally add <strong>judge comments</strong>, then click <span class="btnchip pri">Submit score</span>.</span></div>
-      <div class="m-step"><span class="n"></span><span class="c zh">排行榜即時更新（多位評審各自計分，取平均排名；前三名以金／銀／銅標示）。</span><span class="c en">The leaderboard updates instantly (multiple judges score independently; ranked by average; top 3 in gold/silver/bronze).</span></div>
+    <p class="lead zh">給競賽型活動的完整評分系統：可自訂多層量表、分派多位評審分組評分，並用一套公平管線把不同評審、不同組群的分數正規化後排名。<strong>多評審評分為 Pro / Team；基本評分 Starter 以上即有</strong>。</p>
+    <p class="lead en">A complete scoring system for competitions: build a multi-level rubric, assign multiple judges into panels, and use a fairness pipeline to normalise and rank scores across judges and panels. <strong>Multi-judge scoring is Pro / Team; basic scoring is available from Starter up</strong>.</p>
+
+    <h3 class="zh">① 評分量表編輯器（管理者）</h3><h3 class="en">① Rubric editor (manager)</h3>
+    <p class="zh">建立<strong>三層樹狀量表</strong>：主項目 → 細項 → 子細項。<strong>每一層的權重 % 需加總 100%</strong>，系統即時驗證（未滿/超過會標紅）。</p>
+    <p class="en">Build a <strong>three-level tree rubric</strong>: main item → sub-item → sub-sub-item. <strong>Weights at each level must sum to 100%</strong>, validated live (under/over is flagged red).</p>
+    <p class="zh"><strong>葉項目</strong>可設定：滿分、可記錄<strong>次數 N</strong>（如風洞量測 2 次）、多次取值方式（平均／最大／最小／最後一次）、正規化方式（無＝原始/滿分×100、線性、標準分數 z、<strong>t 分布（預設）</strong>）。</p>
+    <p class="en">Each <strong>leaf item</strong> can set: max score, a recordable <strong>count N</strong> (e.g. 2 wind-tunnel measurements), how multiple takes are combined (average / max / min / last), and the normalisation (none = raw/max×100, linear, z-score, <strong>t-distribution (default)</strong>).</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">評分量表編輯器 / Rubric editor</span></div>
+      <div class="body">
+        <div class="m-tree">
+          <div class="lv1"><span class="callout">1</span> <span class="zh">主項目：技術</span><span class="en">Main: Technical</span> <span class="w">60%</span></div>
+          <div class="lv2"><span class="zh">細項：穩定度</span><span class="en">Sub: Stability</span> <span class="w">50%</span></div>
+          <div class="lv3"><span class="zh">子細項：風洞量測</span><span class="en">Leaf: Wind-tunnel</span> <span class="w">100%</span> · <span class="callout">2</span> <span class="zh">N=2 取平均 · t 分布</span><span class="en">N=2 avg · t-dist</span></div>
+          <div class="lv2"><span class="zh">細項：完成度</span><span class="en">Sub: Completion</span> <span class="w">50%</span></div>
+          <div class="lv1"><span class="zh">主項目：創意</span><span class="en">Main: Creativity</span> <span class="w">40%</span></div>
+        </div>
+        <div class="m-warn" style="margin:8px 0 0"><span class="callout wrn">3</span> <span class="zh">同層權重合計必須 = 100%（目前 60+40 = 100 ✓）</span><span class="en">Weights per level must sum to 100% (now 60+40 = 100 ✓)</span></div>
+      </div>
+      <div class="cap zh">▲ ① 三層樹狀量表與各層權重 ② 葉項目設次數/取值/正規化 ③ 系統即時驗證同層權重合計。</div>
+      <div class="cap en">▲ ① three-level tree with per-level weights ② leaves set count/combine/normalisation ③ live validation of per-level weight sums.</div>
     </div>
+
+    <h3 class="zh">② 評審組群 / 分派</h3><h3 class="en">② Judge panels / assignment</h3>
+    <p class="zh">建立<strong>評審組群（panel）</strong>，指定一個或多個<strong>報名組別</strong>、<strong>該組評審</strong>與<strong>負責隊伍</strong>。<strong>未建組群時</strong>＝整個報名組別視為一個組群、所有被指派的評審評全組。</p>
+    <p class="en">Create <strong>judge panels</strong>, each tied to one or more <strong>registration groups</strong>, its <strong>judges</strong> and the <strong>teams it scores</strong>. <strong>If no panel is set</strong>, each registration group is treated as a single panel and all assigned judges score the whole group.</p>
+
+    <h3 class="zh">③ 公平性設定</h3><h3 class="en">③ Fairness settings</h3>
+    <table class="m-tbl">
+      <tr><th class="zh">設定</th><th class="en">Setting</th><th class="zh">說明</th><th class="en">Effect</th></tr>
+      <tr><td class="zh">跨評審合併</td><td class="en">Combine judges</td><td class="zh">同一隊多位評審分數如何合併：平均／最大／最小</td><td class="en">How a team's scores from several judges are merged: average / max / min</td></tr>
+      <tr><td class="zh">去極值</td><td class="en">Trim extremes</td><td class="zh">開關；開啟＝去掉最高與最低各一筆再合併</td><td class="en">Toggle; on = drop the highest and lowest before combining</td></tr>
+      <tr><td class="zh">評審看到個資</td><td class="en">Judge sees PII</td><td class="zh"><span class="tg off">預設關</span> 關閉時評審只看到隊伍代稱，看不到報名者個資</td><td class="en"><span class="tg off">Off by default</span> when off, judges see only an alias, not registrant PII</td></tr>
+      <tr><td class="zh">評審看到即時排名</td><td class="en">Judge sees ranking</td><td class="zh"><span class="tg off">預設關</span> 關閉可避免分數互相錨定</td><td class="en"><span class="tg off">Off by default</span> off prevents anchoring between judges</td></tr>
+    </table>
+
+    <h3 class="zh">④ 評審評分介面</h3><h3 class="en">④ Judge scoring screen</h3>
+    <p class="zh">介面<strong>依量表自動渲染</strong>；可記錄次數的項目會出現 <strong>N 格輸入</strong>。評審只看到<strong>被指派的隊伍</strong>；是否能看到個資與排名依上方公平性開關而定。可附評語後 <span class="btnchip pri">提交評分</span>。</p>
+    <p class="en">The screen is <strong>rendered from the rubric</strong>; items with a count show <strong>N input cells</strong>. A judge sees only <strong>assigned teams</strong>; visibility of PII and ranking follows the fairness toggles. Add a comment, then <span class="btnchip pri">Submit score</span>.</p>
+
+    <h3 class="zh">⑤ 計算方式（公平管線）</h3><h3 class="en">⑤ How it's computed (fairness pipeline)</h3>
+    <div class="m-flow">
+      <span class="box acc zh">① 多次量測依設定取值</span><span class="box acc en">① combine takes</span><span class="arr">→</span>
+      <span class="box zh">② 組群內 去極值＋跨評審合併</span><span class="box en">② trim + merge judges (in panel)</span><span class="arr">→</span>
+      <span class="box wrn zh">③ 組群內正規化 0–100（t 分布）</span><span class="box wrn en">③ normalise 0–100 (t-dist)</span><span class="arr">→</span>
+      <span class="box zh">④ 依權重 葉→細→主→總分</span><span class="box en">④ weight leaf→sub→main→total</span><span class="arr">→</span>
+      <span class="box ok zh">⑤ 同報名組別跨組群一起排名</span><span class="box ok en">⑤ rank across panels in same group</span>
+    </div>
+    <div class="m-note"><span class="zh"><b>小樣本保護：</b>第 ③ 步在組群內依分布正規化到 0–100；當<strong>隊伍少於 5 支</strong>時自動退回<strong>線性正規化</strong>，避免 t 分布在小樣本下失真。</span><span class="en"><b>Small-sample guard:</b> step ③ normalises to 0–100 within a panel by distribution; when a panel has <strong>fewer than 5 teams</strong> it automatically falls back to <strong>linear</strong> normalisation to avoid t-distribution distortion.</span></div>
+
+    <h3 class="zh">結果排名與統計</h3><h3 class="en">Results, ranking &amp; stats</h3>
+    <ul>
+      <li class="zh"><strong>結果排名：</strong>可切換<strong>總排名 / 分組排名</strong>，並展開每隊的<strong>逐項分數拆解</strong>。</li>
+      <li class="en"><strong>Ranking:</strong> switch between <strong>overall / per-group</strong> ranking and expand each team's <strong>item-by-item breakdown</strong>.</li>
+      <li class="zh"><strong>統計分布（管理者專用）：</strong>各組<strong>摘要</strong>（n／平均／標準差／最高／最低／中位數）＋<strong>盒鬚圖</strong>。</li>
+      <li class="en"><strong>Stats (manager-only):</strong> per-group <strong>summary</strong> (n / mean / SD / max / min / median) plus a <strong>box-and-whisker plot</strong>.</li>
+      <li class="zh"><strong>匯出：</strong><strong>Excel</strong>（兩工作表：各評審原始分＋彙整結果）與 <strong>CSV</strong>。</li>
+      <li class="en"><strong>Export:</strong> <strong>Excel</strong> (two sheets: raw scores per judge + aggregated results) and <strong>CSV</strong>.</li>
+    </ul>
+  </section>
+
+  <!-- ============ Certificate & Badge Designer ============ -->
+  <section class="m-sec" id="s-cert">
+    <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.5L7 22l5-3 5 3-1.2-8.5"/></svg></span><span class="zh">證書 / 名牌設計器</span><span class="en">Certificate &amp; Badge Designer</span></h2>
+    <p class="lead zh">自己設計並整批產出證書、獎狀、名牌（Pro / Team 方案）。入口在<strong>活動 →「證書 / 名牌」</strong>。採三欄式設計器，欄位可直接拖曳定位與拉伸。</p>
+    <p class="lead en">Design and batch-produce certificates, awards and name badges yourself (Pro / Team). Open it from <strong>Event → "Certificate / Badge"</strong>. The three-column designer lets you drag and resize fields directly.</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">證書 / 名牌設計器 / Certificate &amp; Badge Designer</span></div>
+      <div class="body">
+        <div class="m-ui-cols">
+          <div class="pane">
+            <p class="ph"><span class="callout">1</span> <span class="zh">我的範本</span><span class="en">My templates</span></p>
+            <div class="uicard" style="padding:7px 9px;margin:4px 0"><span class="zh">完賽證書</span><span class="en">Finisher cert</span></div>
+            <div class="uicard" style="padding:7px 9px;margin:4px 0"><span class="zh">指導感謝狀</span><span class="en">Coach thanks</span></div>
+            <span class="btnchip gho" style="font-size:10px">＋ <span class="zh">套用內建範本</span><span class="en">From built-in</span></span>
+            <span class="btnchip gho" style="font-size:10px">＋ <span class="zh">空白</span><span class="en">Blank</span></span>
+            <span class="btnchip gho" style="font-size:10px">＋ <span class="zh">上傳背景</span><span class="en">Upload bg</span></span>
+          </div>
+          <div class="pane">
+            <p class="ph"><span class="callout">2</span> <span class="zh">畫布</span><span class="en">Canvas</span></p>
+            <div class="m-canvas">
+              <div class="ph" style="top:12px;left:18px">{{活動名稱}}</div>
+              <div class="ph" style="top:46px;left:30px;font-size:13px">{{中文姓名}}<span class="hdl"></span></div>
+              <div class="ph" style="bottom:14px;left:18px">{{日期}}</div>
+              <div class="ph" style="bottom:14px;right:14px">QR<span class="hdl"></span></div>
+            </div>
+          </div>
+          <div class="pane">
+            <p class="ph"><span class="callout">3</span> <span class="zh">屬性</span><span class="en">Properties</span></p>
+            <div class="fieldrow"><span class="lbl zh">類型</span><span class="lbl en">Type</span><span class="field"><span class="zh">文字 ▾</span><span class="en">Text ▾</span></span></div>
+            <div class="fieldrow"><span class="lbl zh">字體</span><span class="lbl en">Font</span><span class="field">Cinzel ▾</span></div>
+            <div class="fieldrow"><span class="lbl zh">內容</span><span class="lbl en">Value</span><span class="field">{{中文姓名}}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap zh">▲ ① 左＝我的範本（＋內建/空白/上傳背景） ② 中＝畫布，拖曳定位、右下角控制點拉伸 ③ 右＝屬性（類型/字體/內容）。</div>
+      <div class="cap en">▲ ① left = my templates (+ built-in / blank / upload bg) ② centre = canvas, drag to place, resize via the bottom-right handle ③ right = properties (type / font / value).</div>
+    </div>
+
+    <h3 class="zh">加入欄位</h3><h3 class="en">Add fields</h3>
+    <p class="zh">在畫布加入 <strong>文字 / 圖片（簽名）/ QR</strong> 三種欄位，可直接<strong>拖曳定位</strong>，並用<strong>右下角控制點拉伸大小</strong>。</p>
+    <p class="en">Add <strong>text / image (signature) / QR</strong> fields to the canvas; <strong>drag to position</strong> and <strong>resize via the bottom-right handle</strong>.</p>
+
+    <h3 class="zh">背景與字體</h3><h3 class="en">Background &amp; fonts</h3>
+    <p class="zh">背景可選<strong>內建底圖、純色，或上傳背景圖</strong>；可上傳<strong>主辦 logo 與簽名圖</strong>。提供多款中英文字體（含<strong>楷體、Cinzel、Cormorant、Great Vibes</strong> 等）。</p>
+    <p class="en">Background can be a <strong>built-in design, solid colour, or an uploaded image</strong>; you can upload your <strong>organiser logo and signature</strong>. Many CJK/Latin fonts are offered (incl. <strong>Kai, Cinzel, Cormorant, Great Vibes</strong>).</p>
+
+    <h3 class="zh">文字內容：資料 token 或固定文字</h3><h3 class="en">Text content: data tokens or fixed text</h3>
+    <p class="zh">文字欄位有兩種來源：</p>
+    <p class="en">A text field has two sources:</p>
+    <ul>
+      <li class="zh"><strong>① 綁定報名表單資料的 token</strong>，如 <code>{{中文姓名}}</code>、<code>{{隊名}}</code>、<code>{{組別}}</code>、<code>{{報名編號}}</code>、<code>{{活動名稱}}</code>、<code>{{日期}}</code>、<code>{{稱謂}}</code>，以及表單的<strong>自訂欄位</strong>；輸出時逐人代入。</li>
+      <li class="en"><strong>① Tokens bound to form data</strong>, e.g. <code>{{中文姓名}}</code> (name), <code>{{隊名}}</code> (team), <code>{{組別}}</code> (group), <code>{{報名編號}}</code> (code), <code>{{活動名稱}}</code> (event), <code>{{日期}}</code> (date), <code>{{稱謂}}</code> (title), plus your form's <strong>custom fields</strong>; substituted per person at export.</li>
+      <li class="zh"><strong>② 固定文字</strong>：所有人一樣的字句（如「茲證明參與…」）。</li>
+      <li class="en"><strong>② Fixed text</strong>: the same wording for everyone (e.g. "This certifies…").</li>
+    </ul>
+
+    <h3 class="zh">QR 欄位內容</h3><h3 class="en">QR field content</h3>
+    <p class="zh">QR 欄位可選內容：<strong>報到核對（預設）</strong>＝純報名編號，可現場掃碼報到／<strong>活動頁面</strong>／<strong>該隊報名資料</strong>／<strong>報名頁</strong>。</p>
+    <p class="en">A QR field can encode: <strong>check-in match (default)</strong> = the registration code, scannable on-site to check in / the <strong>event page</strong> / that <strong>team's registration</strong> / the <strong>registration page</strong>.</p>
+
+    <h3 class="zh">匯出</h3><h3 class="en">Export</h3>
+    <ul>
+      <li class="zh"><strong>對象範圍：</strong>全部／指定組別／僅正取／僅已報到／得獎者／僅學員／僅指導者／手動勾選。</li>
+      <li class="en"><strong>Scope:</strong> all / specific group / accepted only / checked-in only / winners / students only / coaches only / manual selection.</li>
+      <li class="zh"><strong>粒度：</strong>每人一張或每隊一張。</li>
+      <li class="en"><strong>Granularity:</strong> one per person or one per team.</li>
+      <li class="zh"><strong>輸出：</strong>整批輸出 <strong>PDF</strong>；多張會自動打包成 <strong>ZIP</strong>。</li>
+      <li class="en"><strong>Output:</strong> batch <strong>PDF</strong>; multiple pages are auto-packed into a <strong>ZIP</strong>.</li>
+    </ul>
+
+    <h3 class="zh">開放報名者自助下載</h3><h3 class="en">Self-service download for registrants</h3>
+    <p class="zh">可開放讓報名者<strong>自行下載</strong>，並可設「<strong>限已報到者</strong>」才能下載。報名者於<strong>會員中心（我的報名）</strong>即可自行下載 PDF。</p>
+    <p class="en">You can let registrants <strong>download their own</strong>, optionally restricted to <strong>checked-in registrants</strong>. They download the PDF from the <strong>member centre (My Registrations)</strong>.</p>
+
+    <div class="m-note"><span class="zh"><b>給指導者的感謝狀：</b>指導者也可製作（如感謝狀）——匯出對象選「<strong>僅指導者</strong>」，並在文字使用 <code>{{稱謂}}</code> token 帶出老師職稱。</span><span class="en"><b>Coach thank-you certs:</b> coaches can have certificates too — set the export scope to <strong>coaches only</strong> and use the <code>{{稱謂}}</code> (title) token to print their honorific.</span></div>
+    <div class="m-note"><span class="zh"><b>提示：</b>離開設計器若未存會提示；預覽時可選一位<strong>真實報名者</strong>套入 token 預覽實際效果。</span><span class="en"><b>Tips:</b> leaving with unsaved changes prompts you; for preview you can pick a <strong>real registrant</strong> to see tokens filled with actual data.</span></div>
   </section>
 
   <!-- ============ 13. QR Check-In ============ -->
   <section class="m-sec" id="s-checkin">
     <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v7M14 20h7"/></svg></span><span class="zh">QR 報到</span><span class="en">QR Check-In</span></h2>
-    <p class="lead zh">活動當天用的報到系統（三欄：即時統計／掃描區／報到紀錄）。掃描區採深色介面，適合現場使用。</p>
-    <p class="lead en">An event-day check-in system (three columns: live stats / scanner / history). The scanner uses a dark theme for on-site use.</p>
-    <div class="m-steps">
-      <div class="m-step"><span class="n"></span><span class="c zh">按 <span class="btnchip pri">📷 開啟相機掃描</span> 用手機/電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</span><span class="c en">Click <span class="btnchip pri">📷 Open camera</span> to scan a registrant's QR code; the code auto-fills and checks in (allow camera access).</span></div>
-      <div class="m-step"><span class="n"></span><span class="c zh">或在輸入框手動輸入報名編號（例 <code>T4F000</code>）按 <span class="btnchip pri">確認報到 →</span>。</span><span class="c en">Or type the team code (e.g. <code>T4F000</code>) and click <span class="btnchip pri">Confirm →</span>.</span></div>
-      <div class="m-step"><span class="n"></span><span class="c zh">成功顯示綠色「✓ 報到成功」，左側統計（已報到／未報到／報到率）即時更新，右側列出最近報到紀錄。</span><span class="c en">A green "✓ Checked in" appears; left stats (checked-in / not / rate) update live and the right panel logs recent check-ins.</span></div>
+    <p class="lead zh">活動當天用的報到系統，支援工作人員報到、自助報到機，並可逐人點名。掃碼或搜尋後會先做身分核對，再確認報到。</p>
+    <p class="lead en">An event-day check-in system supporting staff check-in, a self-service kiosk, and per-member roll call. After a scan or search it shows an identity panel, then you confirm the check-in.</p>
+
+    <h3 class="zh">三種報到入口</h3><h3 class="en">Three ways to find a team</h3>
+    <ul>
+      <li class="zh"><strong>① 掃 QR</strong>：用手機/電腦相機掃描報名 QR Code（需允許相機權限）。</li>
+      <li class="en"><strong>① Scan QR</strong>: use a phone/computer camera to scan the registration QR code (allow camera access).</li>
+      <li class="zh"><strong>② 手動輸入報名編號</strong>（例 <code>T4F000</code>）。</li>
+      <li class="en"><strong>② Type the registration code</strong> (e.g. <code>T4F000</code>).</li>
+      <li class="zh"><strong>③ 名單搜尋</strong>：以姓名／報名編號／隊名即時搜尋。</li>
+      <li class="en"><strong>③ Search the list</strong>: live search by name / code / team name.</li>
+    </ul>
+
+    <h3 class="zh">身分核對面板</h3><h3 class="en">Identity verification panel</h3>
+    <p class="zh">掃碼或搜尋後，<strong>先顯示身分核對面板</strong>再報到：隊名、組別、報名狀態、<strong>繳費狀態</strong>（未確認會醒目顯示）、特殊註記，以及<strong>成員名冊</strong>（姓名／生日／身分證或護照）。</p>
+    <p class="en">After a scan or search, an <strong>identity panel appears first</strong>: team name, group, registration status, <strong>payment status</strong> (unconfirmed is highlighted), special notes, and the <strong>member roster</strong> (name / birthday / national ID or passport).</p>
+
+    <div class="m-ui">
+      <div class="bar"><i></i><i></i><i></i><span class="t">報到 · 身分核對 / Check-in · Verify</span></div>
+      <div class="body">
+        <div class="uicard">
+          <div class="row" style="justify-content:space-between"><b style="font:700 12px/1.4 var(--f-display)"><span class="callout">1</span> <span class="zh">飛天小隊</span><span class="en">Sky Team</span> · <span class="zh">高中組</span><span class="en">Senior</span></b><span class="tg off"><span class="callout wrn">2</span> <span class="zh">繳費未確認</span><span class="en">Unpaid</span></span></div>
+          <p class="ph" style="font:700 10px/1.3 var(--f-mono);text-transform:uppercase;color:var(--muted);margin:8px 0 4px"><span class="callout">3</span> <span class="zh">成員名冊 — 逐人點名</span><span class="en">Roster — roll call</span></p>
+          <table class="mtbl">
+            <tr><td><span class="chk on">✓</span> <span class="zh">王小明</span><span class="en">Wang</span></td><td class="zh">2009-03-11</td><td class="en">2009-03-11</td></tr>
+            <tr><td><span class="chk"></span> <span class="zh">李小華</span><span class="en">Lee</span></td><td class="zh">缺席</td><td class="en">absent</td></tr>
+          </table>
+          <div class="row" style="justify-content:space-between;margin-top:6px"><span class="zh" style="font:600 11px/1 var(--f-mono);color:var(--ink-3)">實到 1 / 應到 2</span><span class="en" style="font:600 11px/1 var(--f-mono);color:var(--ink-3)">Present 1 / 2</span><span class="btnchip ok">✓ <span class="zh">確認報到</span><span class="en">Confirm</span></span></div>
+        </div>
+      </div>
+      <div class="cap zh">▲ ① 隊名/組別/狀態 ② 繳費未確認醒目提示 ③ 成員名冊逐人勾選，記錄「實到/應到」。</div>
+      <div class="cap en">▲ ① team/group/status ② unpaid is highlighted ③ tick each member to record "present / expected".</div>
     </div>
+
+    <h3 class="zh">一隊一 QR + 成員點名</h3><h3 class="en">One QR per team + roll call</h3>
+    <p class="zh">每隊一組 QR；名冊中每位成員可<strong>勾選</strong>（預設全到）。取消缺席者後，系統記錄<strong>逐人實到</strong>與「<strong>實到／應到</strong>」人數，按 <span class="btnchip ok">確認報到</span> 完成。</p>
+    <p class="en">Each team has one QR; every member in the roster can be <strong>ticked</strong> (all present by default). Untick absentees and the system records <strong>per-person attendance</strong> and a "<strong>present / expected</strong>" count; click <span class="btnchip ok">Confirm</span> to finish.</p>
+
+    <h3 class="zh">自助報到機（kiosk）</h3><h3 class="en">Self-service kiosk</h3>
+    <p class="zh">可架在電腦或 iPad 上的<strong>全螢幕獨立畫面</strong>（頂部顯示活動名稱）。報名者自行<strong>輸入報名編號或掃碼</strong>報到，成功後自動換下一位。畫面<strong>鎖定後需輸入 PIN 才能離開</strong>，避免被亂動。</p>
+    <p class="en">A <strong>full-screen standalone view</strong> for a computer or iPad (the event name shows at the top). Registrants <strong>type their code or scan</strong> to check in; it auto-advances to the next person. The screen is <strong>locked and needs a PIN to exit</strong>, so it can't be tampered with.</p>
+
+    <h3 class="zh">自助報到設定（管理者）</h3><h3 class="en">Kiosk settings (manager)</h3>
+    <ul>
+      <li class="zh"><strong>啟用自助報到</strong>。</li>
+      <li class="en"><strong>Enable self-service check-in</strong>.</li>
+      <li class="zh"><strong>開放時間窗</strong>：只在指定時段內可自助報到。</li>
+      <li class="en"><strong>Time window</strong>: self check-in only works within a set time range.</li>
+      <li class="zh"><strong>現場範圍限制（地理柵欄）</strong>：在內嵌地圖上<strong>點選或搜尋會場</strong>並設半徑；採 <strong>OpenStreetMap，免金鑰</strong>。</li>
+      <li class="en"><strong>On-site geofence</strong>: <strong>click or search the venue</strong> on an embedded map and set a radius; uses <strong>OpenStreetMap, no API key</strong>.</li>
+      <li class="zh"><strong>報到機解鎖 PIN</strong>：離開鎖定畫面所需的密碼。</li>
+      <li class="en"><strong>Kiosk unlock PIN</strong>: the code needed to leave the locked screen.</li>
+    </ul>
+
+    <h3 class="zh">防作弊</h3><h3 class="en">Anti-cheat</h3>
+    <div class="m-flow"><span class="box zh">時間窗（必備）</span><span class="box en">Time window (required)</span><span class="arr">+</span><span class="box acc zh">GPS 地理柵欄（可選）</span><span class="box acc en">GPS geofence (optional)</span><span class="arr">+</span><span class="box ok zh">工作人員手動報到後援</span><span class="box ok en">Staff manual fallback</span></div>
+    <div class="m-warn"><span class="zh"><b>GPS 室內可能飄移：</b>因室內定位常不準，<strong>工作人員手動報到永遠可用</strong>作為後援；地理柵欄為輔助，不應作為唯一關卡。</span><span class="en"><b>Indoor GPS can drift:</b> indoor positioning is often inaccurate, so <strong>staff manual check-in is always available</strong> as a fallback; the geofence is a supplement, not the only gate.</span></div>
   </section>
 
   <!-- ============ 14. AI Assistant ============ -->
@@ -728,6 +1207,9 @@ body[data-lang="en"] .zh{display:none !important}
 
 <script>
 (function(){
+  var sections = [].slice.call(document.querySelectorAll('.m-sec'));
+
+  /* ---- language toggle (preserved) ---- */
   function switchLang(l){
     document.body.dataset.lang = l;
     try{ localStorage.setItem('rm_manual_lang', l); }catch(e){}
@@ -735,21 +1217,200 @@ body[data-lang="en"] .zh{display:none !important}
     document.querySelectorAll('.m-langseg button').forEach(function(b){
       b.classList.toggle('active', b.dataset.l === l);
     });
+    updatePlaceholders(l);
+    // re-run search & troubleshoot filters in the new language
+    if(typeof runSearch === 'function') runSearch();
+    if(typeof runTsFilter === 'function') runTsFilter();
   }
   window.switchLang = switchLang;
-  // restore saved preference
+
+  function curLang(){ return document.body.dataset.lang === 'en' ? 'en' : 'zh'; }
+
+  function updatePlaceholders(l){
+    var lang = (l === 'en') ? 'en' : 'zh';
+    document.querySelectorAll('input[data-ph-zh]').forEach(function(inp){
+      inp.placeholder = inp.getAttribute('data-ph-' + lang) || inp.placeholder;
+    });
+  }
+
+  /* ---- collapsible sections: wrap each section body in .m-body + add chevron ---- */
+  var chevSvg = '<svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+  sections.forEach(function(sec){
+    var h2 = sec.querySelector(':scope > h2');
+    if(!h2) return;
+    // move everything after the h2 into a .m-body wrapper
+    var body = document.createElement('div');
+    body.className = 'm-body';
+    var n = h2.nextSibling;
+    while(n){
+      var next = n.nextSibling;
+      body.appendChild(n);
+      n = next;
+    }
+    sec.appendChild(body);
+    // chevron + a11y
+    h2.insertAdjacentHTML('beforeend', chevSvg);
+    h2.setAttribute('role','button');
+    h2.setAttribute('tabindex','0');
+    h2.setAttribute('aria-expanded','true');
+    function toggle(){
+      var collapsed = sec.classList.toggle('collapsed');
+      h2.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+    h2.addEventListener('click', toggle);
+    h2.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+    });
+  });
+
+  function expandSection(sec){
+    if(sec && sec.classList.contains('collapsed')){
+      sec.classList.remove('collapsed');
+      var h2 = sec.querySelector(':scope > h2');
+      if(h2) h2.setAttribute('aria-expanded','true');
+    }
+  }
+  function setAllCollapsed(collapsed){
+    sections.forEach(function(sec){
+      sec.classList.toggle('collapsed', collapsed);
+      var h2 = sec.querySelector(':scope > h2');
+      if(h2) h2.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    });
+  }
+  var expandBtn = document.getElementById('m-expand-all');
+  var collapseBtn = document.getElementById('m-collapse-all');
+  if(expandBtn) expandBtn.addEventListener('click', function(){ setAllCollapsed(false); });
+  if(collapseBtn) collapseBtn.addEventListener('click', function(){ setAllCollapsed(true); });
+
+  /* ---- smooth-scroll for any in-page anchor (TOC + finder "go to") ---- */
+  function gotoAnchor(href, e){
+    var el = href && href.charAt(0) === '#' && document.querySelector(href);
+    if(el){
+      if(e) e.preventDefault();
+      expandSection(el);
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }
+  document.querySelectorAll('.m-toc a, .m-q .goto').forEach(function(a){
+    a.addEventListener('click', function(e){ gotoAnchor(a.getAttribute('href'), e); });
+  });
+
+  /* ---- live search / filter over sections ---- */
+  var searchBox = document.getElementById('m-search');
+  var searchInput = document.getElementById('m-search-input');
+  var searchClear = document.getElementById('m-search-clear');
+  var searchCount = document.getElementById('m-search-count');
+  var noResults = document.getElementById('m-noresults');
+  var noResultsClear = document.getElementById('m-noresults-clear');
+  var tocNav = document.querySelector('.m-toc');
+
+  function activeText(el){
+    // text of elements belonging to the current language (skip the inactive language)
+    var lang = curLang();
+    var other = lang === 'zh' ? 'en' : 'zh';
+    var clone = el.cloneNode(true);
+    clone.querySelectorAll('.' + other).forEach(function(n){ n.parentNode.removeChild(n); });
+    return (clone.textContent || '').toLowerCase();
+  }
+
+  function runSearch(){
+    if(!searchInput) return;
+    var q = (searchInput.value || '').trim().toLowerCase();
+    searchBox.classList.toggle('has-q', !!q);
+    if(!q){
+      // restore everything
+      sections.forEach(function(sec){ sec.classList.remove('hidden'); });
+      if(tocNav) tocNav.classList.remove('hidden');
+      if(noResults) noResults.classList.remove('show');
+      if(searchCount) searchCount.textContent = '';
+      return;
+    }
+    var matches = 0;
+    sections.forEach(function(sec){
+      var hit = activeText(sec).indexOf(q) !== -1;
+      sec.classList.toggle('hidden', !hit);
+      if(hit){ matches++; expandSection(sec); }
+    });
+    // hide the TOC while actively filtering to keep focus on results
+    if(tocNav) tocNav.classList.add('hidden');
+    if(searchCount){
+      searchCount.innerHTML = (curLang() === 'zh')
+        ? ('找到 <b>' + matches + '</b> 個章節')
+        : ('<b>' + matches + '</b> section(s) found');
+    }
+    if(noResults) noResults.classList.toggle('show', matches === 0);
+  }
+
+  function clearSearch(){
+    if(searchInput) searchInput.value = '';
+    runSearch();
+    if(searchInput) searchInput.focus();
+  }
+
+  if(searchInput) searchInput.addEventListener('input', runSearch);
+  if(searchClear) searchClear.addEventListener('click', clearSearch);
+  if(noResultsClear) noResultsClear.addEventListener('click', function(e){ e.preventDefault(); clearSearch(); });
+
+  /* ---- troubleshooter accordion + own filter ---- */
+  var tsList = document.getElementById('m-ts-list');
+  var tsInput = document.getElementById('m-ts-input');
+  var tsNone = document.getElementById('m-ts-none');
+  var qItems = tsList ? [].slice.call(tsList.querySelectorAll('.m-q')) : [];
+
+  qItems.forEach(function(q){
+    var head = q.querySelector('.qh');
+    if(head) head.addEventListener('click', function(){ q.classList.toggle('open'); });
+  });
+
+  function runTsFilter(){
+    if(!tsInput) return;
+    var q = (tsInput.value || '').trim().toLowerCase();
+    var shown = 0;
+    qItems.forEach(function(item){
+      var hit = !q || activeText(item).indexOf(q) !== -1;
+      item.classList.toggle('hidden', !hit);
+      if(hit){ shown++; if(q) item.classList.add('open'); }
+    });
+    if(tsNone) tsNone.classList.toggle('show', shown === 0);
+  }
+  if(tsInput) tsInput.addEventListener('input', runTsFilter);
+
+  /* ---- scroll-spy: highlight active TOC link ---- */
+  var tocLinks = [].slice.call(document.querySelectorAll('.m-toc a'));
+  function tocLinksFor(id){
+    return tocLinks.filter(function(a){ return a.getAttribute('href') === '#' + id; });
+  }
+  function setActive(id){
+    tocLinks.forEach(function(a){
+      a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+    });
+  }
+  if('IntersectionObserver' in window){
+    var visible = {};
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting) visible[en.target.id] = en.intersectionRatio;
+        else delete visible[en.target.id];
+      });
+      // pick the section nearest the top that is visible
+      var best = null, bestTop = Infinity;
+      sections.forEach(function(sec){
+        if(visible[sec.id] != null){
+          var t = sec.getBoundingClientRect().top;
+          if(t < bestTop){ bestTop = t; best = sec.id; }
+        }
+      });
+      if(best) setActive(best);
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: [0, 0.1, 0.5, 1] });
+    sections.forEach(function(sec){ if(sec.id) obs.observe(sec); });
+  }
+
+  /* ---- init ---- */
   try{
     var saved = localStorage.getItem('rm_manual_lang');
     if(saved === 'en' || saved === 'zh') switchLang(saved);
-  }catch(e){}
-  // smooth-scroll for TOC anchors
-  document.querySelectorAll('.m-toc a').forEach(function(a){
-    a.addEventListener('click', function(e){
-      var id = a.getAttribute('href');
-      var el = id && document.querySelector(id);
-      if(el){ e.preventDefault(); el.scrollIntoView({behavior:'smooth', block:'start'}); }
-    });
-  });
+    else updatePlaceholders(curLang());
+  }catch(e){ updatePlaceholders(curLang()); }
 })();
 </script>
 </body>
