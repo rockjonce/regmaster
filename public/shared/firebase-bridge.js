@@ -265,7 +265,10 @@
     submitJudgeScore:["compId","teamId","cells","items","totalScore","comment"],
     getLiveLeaderboard:["compId"],
     scoringApi:["compId","action"],
-    checkInTeamV2:["teamId","extras"],
+    checkInTeamV2:["teamId","extras","attendedMembers","attendedCount"],
+    checkinSearch:["compId","query"],
+    saveCheckinConfig:["compId","selfCheckin"],
+    selfCheckIn:["compId","teamId","lat","lng"],
 
     // V3 Phase 7 additions
     listConversations:["compId"],

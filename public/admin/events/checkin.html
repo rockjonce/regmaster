@@ -53,6 +53,95 @@
 .hist-row .nm { font:600 13px/1.3 var(--f-display); }
 .hist-row .meta { font:500 11px/1.4 var(--f-mono); color:var(--muted); }
 @media (max-width:768px){ .body-3 { grid-template-columns:1fr; min-height:0; } }
+
+/* === mode tabs === */
+.mode-bar { padding:14px 20px 0; }
+.mode-bar .seg { flex-wrap:wrap; }
+.mode-pane { display:none; }
+.mode-pane.on { display:block; }
+
+/* === search section === */
+.search-wrap { padding:20px; max-width:760px; margin:0 auto; }
+.search-cmd { margin-bottom:14px; max-width:none; }
+.search-meta { font:500 12px/1 var(--f-mono); color:var(--muted); margin-bottom:10px; }
+.res-row { display:flex; gap:12px; align-items:center; width:100%; text-align:left; padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); margin-bottom:8px; cursor:pointer; transition:all .12s var(--easing); }
+.res-row:hover { border-color:var(--ink-3); box-shadow:var(--sh-sm); }
+.res-row .rid { font:700 13px/1 var(--f-mono); color:var(--ink); background:var(--surface-2); border:1px solid var(--line-2); padding:6px 9px; border-radius:var(--r-sm); flex-shrink:0; }
+.res-row .rbody { flex:1; min-width:0; }
+.res-row .rnm { font:600 14px/1.3 var(--f-display); color:var(--ink); }
+.res-row .rmeta { font:500 12px/1.4 var(--f-mono); color:var(--muted); margin-top:2px; }
+
+/* === identity panel (modal) === */
+.id-bg { position:fixed; inset:0; z-index:60000; background:rgba(10,20,40,.5); display:none; align-items:flex-start; justify-content:center; padding:28px 16px; overflow-y:auto; }
+.id-bg.on { display:flex; }
+.id-card { background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:var(--r-lg); width:100%; max-width:560px; box-shadow:0 18px 60px rgba(10,20,40,.3); overflow:hidden; }
+.id-h { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:20px 22px 14px; border-bottom:1px solid var(--line-2); }
+.id-h .ttl { font:700 19px/1.25 var(--f-display); }
+.id-h .sub { font:500 12px/1.4 var(--f-mono); color:var(--muted); margin-top:4px; }
+.id-x { width:32px; height:32px; border-radius:var(--r-sm); display:grid; place-items:center; color:var(--muted); cursor:pointer; flex-shrink:0; }
+.id-x:hover { background:var(--surface-2); color:var(--ink); }
+.id-b { padding:18px 22px; }
+.id-meta { display:flex; flex-wrap:wrap; gap:8px 16px; margin-bottom:14px; }
+.id-meta .mi { font:500 13px/1.4 var(--f-tc); color:var(--ink-2); }
+.id-meta .mi b { color:var(--ink); }
+.id-note { padding:10px 12px; border-radius:var(--r); background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.25); color:var(--warn-700); font:500 13px/1.5 var(--f-tc); margin-bottom:14px; }
+.id-roster-h { display:flex; align-items:baseline; justify-content:space-between; margin:6px 0 4px; }
+.id-roster-h .lh { font:600 13px/1 var(--f-tc); color:var(--ink); }
+.id-roster-h .cnt { font:700 14px/1 var(--f-mono); color:var(--ink); }
+.id-roster-h .cnt em { font-style:normal; color:var(--muted); font-weight:500; }
+.id-roster-hint { font:400 12px/1.5 var(--f-tc); color:var(--muted); margin-bottom:8px; }
+.id-mrow { display:flex; gap:12px; align-items:center; padding:11px 12px; border:1px solid var(--line-2); border-radius:var(--r); margin-bottom:6px; cursor:pointer; transition:background .12s; }
+.id-mrow:hover { background:var(--surface-2); }
+.id-mrow input[type=checkbox] { width:20px; height:20px; flex-shrink:0; accent-color:var(--ok-600); cursor:pointer; }
+.id-mrow .mbody { flex:1; min-width:0; }
+.id-mrow .mname { font:600 14px/1.3 var(--f-tc); color:var(--ink); }
+.id-mrow .mmeta { font:500 11.5px/1.4 var(--f-mono); color:var(--muted); margin-top:2px; }
+.id-mrow.off { opacity:.5; }
+.id-mrow.off .mname { text-decoration:line-through; }
+.id-f { display:flex; gap:10px; justify-content:flex-end; padding:16px 22px; border-top:1px solid var(--line-2); }
+.pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font:600 11px/1.5 var(--f-mono); letter-spacing:.02em; }
+.pill-ok { background:rgba(16,185,129,.1); color:var(--ok-700); border:1px solid rgba(16,185,129,.2); }
+.pill-warn { background:rgba(245,158,11,.12); color:var(--warn-700); border:1px solid rgba(245,158,11,.25); }
+.pill-muted { background:var(--surface-2); color:var(--ink-3); border:1px solid var(--line); }
+
+/* === manager settings === */
+.set-wrap { padding:20px; max-width:680px; margin:0 auto; }
+.set-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 0; border-bottom:1px solid var(--line-2); }
+.set-row:last-child { border-bottom:0; }
+.set-row .sl { font:600 14px/1.3 var(--f-tc); color:var(--ink); }
+.set-row .sl small { display:block; font:400 12px/1.4 var(--f-tc); color:var(--muted); margin-top:3px; font-weight:400; }
+.set-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:560px){ .set-grid { grid-template-columns:1fr; } }
+.lbl { display:block; font:500 12px/1.3 var(--f-tc); color:var(--ink-2); margin-bottom:5px; }
+.fld { width:100%; padding:10px 12px; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:var(--r); font:400 14px/1.4 var(--f-tc); box-sizing:border-box; }
+.fld:focus { outline:0; border-color:var(--acc); box-shadow:var(--ring); }
+
+/* === kiosk full-window === */
+#kioskScreen { position:fixed; inset:0; z-index:70000; background:radial-gradient(circle at 50% 0%, #11203f 0%, #0a0e1c 60%); color:#fff; display:none; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; }
+#kioskScreen.on { display:flex; }
+.kioskExit { position:fixed; top:16px; right:16px; z-index:1; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); color:rgba(255,255,255,.7); padding:8px 14px; border-radius:9px; font:600 12px/1 var(--f-tc); cursor:pointer; }
+.kioskExit:hover { background:rgba(255,255,255,.16); color:#fff; }
+.kiosk-inner { width:100%; max-width:540px; }
+.kiosk-inner h1 { font:800 34px/1.15 var(--f-display); letter-spacing:-.02em; margin-bottom:8px; }
+.kiosk-inner .kprompt { font:500 17px/1.4 var(--f-tc); color:rgba(255,255,255,.7); margin-bottom:28px; }
+#kioskIdInput { width:100%; padding:22px; background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.18); border-radius:16px; color:#fff; font:800 32px/1 var(--f-mono); letter-spacing:.08em; text-align:center; box-sizing:border-box; }
+#kioskIdInput::placeholder { color:rgba(255,255,255,.28); letter-spacing:0; font:500 20px/1 var(--f-tc); }
+#kioskIdInput:focus { outline:0; border-color:#fbcd5b; box-shadow:0 0 0 4px rgba(251,205,91,.18); }
+.kiosk-btn { width:100%; padding:20px; margin-top:16px; background:#fbcd5b; color:#3D2410; border-radius:14px; font:800 19px/1 var(--f-tc); cursor:pointer; border:0; }
+.kiosk-btn.ghost { background:rgba(255,255,255,.1); color:#fff; font-size:15px; padding:14px; }
+#kioskReader { width:100%; max-width:340px; margin:0 auto 16px; border-radius:14px; overflow:hidden; }
+.kiosk-result { display:none; }
+.kiosk-result.on { display:block; }
+.kiosk-result .big { font:800 44px/1.1 var(--f-display); margin-bottom:14px; }
+.kiosk-result.ok .big { color:#6ee7b7; }
+.kiosk-result.err .big { color:#fca5a5; }
+.kiosk-result .kteam { font:700 26px/1.2 var(--f-display); margin-bottom:6px; }
+.kiosk-result .kgrp { font:500 17px/1 var(--f-mono); color:rgba(255,255,255,.6); margin-bottom:24px; }
+.kiosk-result .kmsg { font:500 18px/1.5 var(--f-tc); color:rgba(255,255,255,.85); margin-bottom:24px; }
+#kioskLock { position:fixed; inset:0; z-index:71000; background:rgba(10,14,28,.92); display:none; flex-direction:column; align-items:center; justify-content:center; gap:18px; color:#fff; text-align:center; padding:32px; }
+#kioskLock.on { display:flex; }
+#kioskLock h2 { font:800 26px/1.2 var(--f-display); }
+#kioskLock p { font:500 15px/1.5 var(--f-tc); color:rgba(255,255,255,.7); max-width:360px; }
 </style>
 </head>
 <body>
@@ -81,32 +170,177 @@
       <div class="actions"><div class="me-h"><div class="av-c" id="meAv">—</div><span id="meName">—</span></div></div>
     </header>
     <div id="loadingState" class="loading-c" data-i18n="aeChkLoading">載入報到面板⋯</div>
-    <div class="body-3" id="content" style="display:none">
-      <aside class="left-c">
-        <h4 style="font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px" data-i18n="aeChkStatsTitle">即時統計</h4>
-        <div class="kpi-c featured"><div class="l" data-i18n="aeChkCheckedIn">已報到</div><div class="v" id="checkedInV">0</div><div class="progress"><div id="checkedInBar" style="width:0%"></div></div></div>
-        <div class="kpi-c std"><div class="l" data-i18n="aeChkNotCheckedIn">未報到</div><div class="v" id="notCheckedV">0</div></div>
-        <div class="kpi-c std"><div class="l" data-i18n="aeChkRate">報到率</div><div class="v" id="rateV">0<em>%</em></div></div>
-      </aside>
-      <section class="scanner-c">
-        <header class="sc-h"><h2 data-i18n="aeChkScannerHead">📷 QR / 編號報到</h2></header>
-        <div class="scan-area">
-          <div id="qrReader" style="display:none"></div>
-          <div class="manual-input-card" id="inputCard">
-            <h3 data-i18n="aeChkInputTitle">掃描 QR 或輸入編號</h3>
-            <input id="teamIdInput" placeholder="例：T4F000" data-i18n-placeholder="aeChkInputPh" maxlength="20" autofocus>
-            <button class="btn-scan" id="checkInBtn" data-i18n="aeChkConfirmBtn">確認報到 →</button>
-            <button class="btn-scan" id="scanToggleBtn" style="background:rgba(255,255,255,.12); color:#fff; margin-top:8px" data-i18n="aeChkOpenCamera">📷 開啟相機掃描</button>
-            <div class="help" data-i18n="aeChkHelp">用手機 / 電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</div>
+
+    <!-- Judge (no check-in capability) -->
+    <div id="noPermState" style="display:none; max-width:540px; margin:48px auto; padding:0 20px">
+      <div class="card card-pad">
+        <h2 style="font:700 20px/1.3 var(--f-display); margin-bottom:10px" data-i18n="aeChkNoPermTitle">無報到權限</h2>
+        <p style="font:400 14px/1.6 var(--f-tc); color:var(--ink-2)" data-i18n="aeChkNoPermBody">您目前的角色（評審）無法執行報到作業。</p>
+      </div>
+    </div>
+
+    <div id="content" style="display:none">
+      <div class="mode-bar">
+        <div class="seg" id="modeSeg" role="tablist">
+          <button type="button" class="on" data-mode="scan" data-i18n="aeChkModeScan">掃描 QR</button>
+          <button type="button" data-mode="search" data-i18n="aeChkModeSearch">名單搜尋</button>
+          <button type="button" data-mode="kiosk" data-i18n="aeChkModeKiosk">自助報到機</button>
+          <button type="button" data-mode="settings" id="settingsTab" style="display:none" data-i18n="aeChkModeSettings">自助報到設定</button>
+        </div>
+      </div>
+
+      <!-- ===== SCAN MODE (existing scanner + manual entry, kept) ===== -->
+      <div class="mode-pane on" id="pane-scan">
+        <div class="body-3">
+          <aside class="left-c">
+            <h4 style="font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:14px" data-i18n="aeChkStatsTitle">即時統計</h4>
+            <div class="kpi-c featured"><div class="l" data-i18n="aeChkCheckedIn">已報到</div><div class="v" id="checkedInV">0</div><div class="progress"><div id="checkedInBar" style="width:0%"></div></div></div>
+            <div class="kpi-c std"><div class="l" data-i18n="aeChkNotCheckedIn">未報到</div><div class="v" id="notCheckedV">0</div></div>
+            <div class="kpi-c std"><div class="l" data-i18n="aeChkRate">報到率</div><div class="v" id="rateV">0<em>%</em></div></div>
+          </aside>
+          <section class="scanner-c">
+            <header class="sc-h"><h2 data-i18n="aeChkScannerHead">📷 QR / 編號報到</h2></header>
+            <div class="scan-area">
+              <div id="qrReader" style="display:none"></div>
+              <div class="manual-input-card" id="inputCard">
+                <h3 data-i18n="aeChkInputTitle">掃描 QR 或輸入編號</h3>
+                <input id="teamIdInput" placeholder="例：T4F000" data-i18n-placeholder="aeChkInputPh" maxlength="20" autofocus>
+                <button class="btn-scan" id="checkInBtn" data-i18n="aeChkConfirmBtn">確認報到 →</button>
+                <button class="btn-scan" id="scanToggleBtn" style="background:rgba(255,255,255,.12); color:#fff; margin-top:8px" data-i18n="aeChkOpenCamera">📷 開啟相機掃描</button>
+                <div class="help" data-i18n="aeChkHelp">用手機 / 電腦相機掃描報名 QR Code，編號會自動填入並完成報到（需允許相機權限）。</div>
+              </div>
+            </div>
+          </section>
+          <aside class="history-c">
+            <h4 data-i18n="aeChkHistoryTitle">最近報到紀錄</h4>
+            <div id="historyList"><p style="text-align:center; color:var(--muted); padding:24px 0" data-i18n="aeChkHistoryEmpty">尚無紀錄</p></div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ===== SEARCH MODE ===== -->
+      <div class="mode-pane" id="pane-search">
+        <div class="search-wrap">
+          <h2 style="font:700 20px/1.3 var(--f-display); margin-bottom:4px" data-i18n="aeChkSearchHead">名單搜尋報到</h2>
+          <p style="font:400 13px/1.6 var(--f-tc); color:var(--muted); margin-bottom:16px" data-i18n="aeChkSearchHint">QR 掃描失敗時，可在此查找並報到。</p>
+          <div class="cmd search-cmd">
+            <svg class="ic" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input id="searchInput" placeholder="搜尋 報名編號 / 隊名 / 成員姓名⋯" data-i18n-placeholder="aeChkSearchPh">
+          </div>
+          <div class="search-meta" id="searchMeta"></div>
+          <div id="searchResults"></div>
+        </div>
+      </div>
+
+      <!-- ===== KIOSK LAUNCH MODE ===== -->
+      <div class="mode-pane" id="pane-kiosk">
+        <div class="set-wrap" style="text-align:center; padding-top:48px">
+          <h2 style="font:700 22px/1.3 var(--f-display); margin-bottom:8px" data-i18n="aeChkModeKiosk">自助報到機</h2>
+          <p style="font:400 14px/1.6 var(--f-tc); color:var(--muted); margin-bottom:24px; max-width:460px; margin-left:auto; margin-right:auto" data-i18n="aeChkSetHint">設定後，參賽者可於現場使用自助報到機完成報到。</p>
+          <button class="btn btn-accent btn-xl" id="kioskLaunchBtn" data-i18n="aeChkKioskStart">啟動自助報到機</button>
+        </div>
+      </div>
+
+      <!-- ===== MANAGER SETTINGS MODE ===== -->
+      <div class="mode-pane" id="pane-settings">
+        <div class="set-wrap">
+          <div class="card card-pad">
+            <h2 style="font:700 20px/1.3 var(--f-display); margin-bottom:4px" data-i18n="aeChkSetHead">自助報到設定</h2>
+            <p style="font:400 13px/1.6 var(--f-tc); color:var(--muted); margin-bottom:8px" data-i18n="aeChkSetHint">設定後，參賽者可於現場使用自助報到機完成報到。</p>
+            <div class="set-row">
+              <div class="sl" data-i18n="aeChkSetEnable">啟用自助報到</div>
+              <div class="toggle" id="setEnable" role="switch" tabindex="0"></div>
+            </div>
+            <div class="set-row" style="display:block">
+              <div class="sl" style="margin-bottom:10px" data-i18n="aeChkSetWindow">開放時間窗</div>
+              <div class="set-grid">
+                <div><label class="lbl" data-i18n="aeChkSetWindowStart">開始時間</label><input type="datetime-local" class="fld" id="setStart"></div>
+                <div><label class="lbl" data-i18n="aeChkSetWindowEnd">結束時間</label><input type="datetime-local" class="fld" id="setEnd"></div>
+              </div>
+            </div>
+            <div class="set-row">
+              <div class="sl" data-i18n="aeChkSetGeoEnable">啟用現場範圍限制</div>
+              <div class="toggle" id="setGeoEnable" role="switch" tabindex="0"></div>
+            </div>
+            <div class="set-row" style="display:block" id="geoFields">
+              <div class="sl" style="margin-bottom:10px" data-i18n="aeChkSetGeo">地理柵欄</div>
+              <div class="set-grid">
+                <div><label class="lbl" data-i18n="aeChkSetLat">緯度</label><input type="number" step="any" class="fld" id="setLat"></div>
+                <div><label class="lbl" data-i18n="aeChkSetLng">經度</label><input type="number" step="any" class="fld" id="setLng"></div>
+                <div><label class="lbl" data-i18n="aeChkSetRadius">半徑（公尺）</label><input type="number" step="1" min="0" class="fld" id="setRadius"></div>
+                <div style="display:flex; align-items:flex-end"><button class="btn btn-ghost btn-block" id="setUseLocBtn" data-i18n="aeChkSetUseLoc">使用目前位置</button></div>
+              </div>
+            </div>
+            <div class="set-row" style="display:block">
+              <label class="lbl" data-i18n="aeChkSetPin">報到機解鎖 PIN</label>
+              <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" class="fld" id="setPin" placeholder="4–8 位數字" data-i18n-placeholder="aeChkSetPinPh" style="max-width:200px">
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:18px">
+              <button class="btn btn-primary btn-lg" id="setSaveBtn" data-i18n="aeChkSetSave">儲存設定</button>
+            </div>
           </div>
         </div>
-      </section>
-      <aside class="history-c">
-        <h4 data-i18n="aeChkHistoryTitle">最近報到紀錄</h4>
-        <div id="historyList"><p style="text-align:center; color:var(--muted); padding:24px 0" data-i18n="aeChkHistoryEmpty">尚無紀錄</p></div>
-      </aside>
+      </div>
     </div>
   </main>
+</div>
+
+<!-- ===== IDENTITY-VERIFICATION PANEL ===== -->
+<div class="id-bg" id="idPanel">
+  <div class="id-card" role="dialog" aria-modal="true">
+    <div class="id-h">
+      <div>
+        <div class="ttl" id="idTeamName">—</div>
+        <div class="sub"><span id="idTeamId">—</span> · <span data-i18n="aeChkIdGroup">組別</span>: <span id="idGroup">—</span></div>
+      </div>
+      <div class="id-x" id="idClose" aria-label="close">✕</div>
+    </div>
+    <div class="id-b">
+      <div class="id-meta">
+        <span class="mi"><b data-i18n="aeChkIdRegStatus">報名狀態</b>: <span id="idRegStatus" class="pill pill-muted">—</span></span>
+        <span class="mi"><b data-i18n="aeChkIdPayStatus">繳費狀態</b>: <span id="idPayStatus" class="pill pill-muted">—</span></span>
+      </div>
+      <div class="id-note" id="idNote" style="display:none"></div>
+      <div id="idAlready" class="pill pill-ok" style="display:none; margin-bottom:14px"></div>
+      <div class="id-roster-h">
+        <span class="lh" data-i18n="aeChkIdRoster">出席名單核對</span>
+        <span class="cnt"><span data-i18n="aeChkIdActual">實到</span> <span id="idActual">0</span><em>/<span id="idExpected">0</span></em></span>
+      </div>
+      <div class="id-roster-hint" data-i18n="aeChkIdRosterHint">預設全到，請取消未到場成員的勾選。</div>
+      <div id="idRoster"></div>
+    </div>
+    <div class="id-f">
+      <button class="btn btn-ghost" id="idCancel" data-i18n="aeChkIdCancel">取消</button>
+      <button class="btn btn-accent" id="idConfirm" data-i18n="aeChkIdConfirm">確認報到</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== KIOSK FULL-WINDOW SCREEN ===== -->
+<div id="kioskScreen">
+  <button class="kioskExit" id="kioskExitBtn" data-i18n="aeChkKioskExit">結束報到機</button>
+  <div class="kiosk-inner">
+    <div id="kioskInput">
+      <h1 data-i18n="aeChkKioskTitle">自助報到</h1>
+      <div class="kprompt" data-i18n="aeChkKioskPrompt">請輸入報名編號</div>
+      <div id="kioskReader" style="display:none"></div>
+      <input id="kioskIdInput" placeholder="報名編號" data-i18n-placeholder="aeChkKioskPh" maxlength="20" autocomplete="off">
+      <button class="kiosk-btn" id="kioskSubmitBtn" data-i18n="aeChkKioskSubmit">報到</button>
+      <button class="kiosk-btn ghost" id="kioskScanBtn" data-i18n="aeChkKioskScan">改用掃描 QR</button>
+    </div>
+    <div class="kiosk-result" id="kioskResult">
+      <div class="big" id="kioskResultBig">✓</div>
+      <div class="kteam" id="kioskResultTeam"></div>
+      <div class="kgrp" id="kioskResultGrp"></div>
+      <div class="kmsg" id="kioskResultMsg"></div>
+      <button class="kiosk-btn" id="kioskNextBtn" data-i18n="aeChkKioskNext">下一位</button>
+    </div>
+  </div>
+</div>
+<div id="kioskLock">
+  <h2 data-i18n="aeChkKioskLockedTitle">自助報到機已鎖定</h2>
+  <p data-i18n="aeChkKioskLockedBody">點擊下方按鈕繼續報到。</p>
+  <button class="kiosk-btn" style="max-width:280px" id="kioskResumeBtn" data-i18n="aeChkKioskResume">繼續報到</button>
 </div>
 <script src="/shared/app-state.js"></script>
 <script src="/shared/i18n.js"></script>
@@ -121,82 +355,218 @@
   var m = location.pathname.match(/\/admin\/events\/([^/]+)\/checkin/);
   if (m) compId = decodeURIComponent(m[1]); if (!compId) compId = new URLSearchParams(location.search).get('id') || '';
   if (!compId) { alert(window.L('aeChkNoCompId')); location.href = '/admin/events/'; return; }
+  function L(k){ return window.L(k); }
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, type){ if (window.uiToast) window.uiToast(msg, type); else alert(msg); }
   ['hubLink','editLink','annLink','paymentsLink','scoringLink'].forEach(function (id) {
-    var el = document.getElementById(id);
+    var el = $(id);
     var suffix = { hubLink: '', editLink: '/edit', annLink: '/announcements', paymentsLink: '/payments', scoringLink: '/scoring' }[id];
     if (el) el.href = '/admin/events/' + encodeURIComponent(compId) + suffix;
   });
-  document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
-  document.getElementById('orgName').textContent = me.displayName || me.username;
-  document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
-  document.getElementById('meName').textContent = me.displayName || me.username;
+  $('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  $('orgName').textContent = me.displayName || me.username;
+  $('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
+  $('meName').textContent = me.displayName || me.username;
 
-  var TEAMS = [], HISTORY = [];
+  var TEAMS = [], CONFIG = {}, ROLE = null;
 
+  // ---------------------------------------------------------------------------
+  // Boot: resolve role, then load teams + config.
+  // ---------------------------------------------------------------------------
   function load() {
     Promise.all([
-      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getRegistrationBundle(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getMyEventRole(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getCompetitionConfig(compId); }),
       new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getAllTeams(compId); })
     ]).then(function (r) {
-      var bundle = r[0] || {}; var cfg = bundle.config || {};
-      TEAMS = r[1] || [];
-      document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
-      document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
-      document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('content').style.display = 'grid';
+      ROLE = (r[0] && r[0].role) || null;        // null = owner
+      CONFIG = r[1] || {};
+      TEAMS = r[2] || [];
+      $('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
+      $('crumbHub').textContent = CONFIG.competitionName || compId;
+      $('loadingState').style.display = 'none';
+
+      // Judge → no check-in capability.
+      if (ROLE === 'judge') { $('noPermState').style.display = 'block'; return; }
+
+      $('content').style.display = 'block';
+      var canManage = (ROLE === null || ROLE === 'owner' || ROLE === 'manager');
+      if (canManage) $('settingsTab').style.display = '';
       updateStats();
       renderHistory();
+      if (canManage) loadSettings();
     });
   }
   function updateStats() {
     var active = TEAMS.filter(function (t) { return t.status !== '已取消'; });
     var checkedIn = active.filter(function (t) { return t.checkedIn || t.checkInTime; });
     var pct = active.length > 0 ? Math.round(checkedIn.length / active.length * 100) : 0;
-    document.getElementById('checkedInV').textContent = checkedIn.length;
-    document.getElementById('notCheckedV').textContent = active.length - checkedIn.length;
-    document.getElementById('rateV').innerHTML = pct + '<em>%</em>';
-    document.getElementById('checkedInBar').style.width = pct + '%';
+    $('checkedInV').textContent = checkedIn.length;
+    $('notCheckedV').textContent = active.length - checkedIn.length;
+    $('rateV').innerHTML = pct + '<em>%</em>';
+    $('checkedInBar').style.width = pct + '%';
   }
   function renderHistory() {
     var recent = TEAMS.filter(function (t) { return t.checkInTime; }).sort(function (a, b) { return (b.checkInTime || '').localeCompare(a.checkInTime || ''); }).slice(0, 10);
-    var list = document.getElementById('historyList');
-    if (recent.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 0">' + escapeHtml(window.L('aeChkHistoryEmpty')) + '</p>'; return; }
+    var list = $('historyList');
+    if (recent.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 0">' + escapeHtml(L('aeChkHistoryEmpty')) + '</p>'; return; }
     list.innerHTML = recent.map(function (t) {
-      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || window.L('aeChkNoName')) + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
+      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || L('aeChkNoName')) + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
     }).join('');
   }
-  function showResult(success, msg) {
-    var card = document.getElementById('inputCard');
-    card.classList.toggle('success', success);
-    card.classList.toggle('error', !success);
-    var orig = card.innerHTML;
-    card.innerHTML = '<h3 style="text-align:center">' + escapeHtml(success ? window.L('aeChkResultOk') : window.L('aeChkResultFail')) + '</h3>' + '<p style="text-align:center; color:rgba(255,255,255,.7); margin:18px 0">' + escapeHtml(msg) + '</p>' + '<button class="btn-scan" id="contBtn">' + escapeHtml(window.L('aeChkContinue')) + '</button>';
-    document.getElementById('contBtn').addEventListener('click', function () {
-      card.innerHTML = orig;
-      card.classList.remove('success', 'error');
-      if (window.applyI18n) window.applyI18n(card);
-      // Re-wire
-      wireCheckin();
-    });
+  function markCheckedInLocal(teamId, time) {
+    for (var i = 0; i < TEAMS.length; i++) if (TEAMS[i].teamId === teamId) { TEAMS[i].checkedIn = true; if (time) TEAMS[i].checkInTime = time; }
   }
+
+  // ---------------------------------------------------------------------------
+  // Mode tabs.
+  // ---------------------------------------------------------------------------
+  document.querySelectorAll('#modeSeg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var mode = b.getAttribute('data-mode');
+      document.querySelectorAll('#modeSeg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      document.querySelectorAll('.mode-pane').forEach(function (p) { p.classList.toggle('on', p.id === 'pane-' + mode); });
+      if (mode === 'scan') { var ti = $('teamIdInput'); if (ti) ti.focus(); }
+      else { stopScan(); }
+      if (mode === 'search') { $('searchInput').focus(); if (!searchInited) { searchInited = true; doSearch(''); } }
+    });
+  });
+
+  // ===========================================================================
+  // IDENTITY-VERIFICATION PANEL (shared by scan / manual / search)
+  // ===========================================================================
+  var currentTeam = null;
+  function roleLabel(r){ return r === '教練' ? L('aeChkIdRoleCoach') : (r === '學生' ? L('aeChkIdRoleStudent') : (r || '')); }
+  function memberIdLine(mem) {
+    if (mem.idNumber) return mem.idNumber;
+    if (mem.passport) return (mem.nationality ? mem.nationality + ' ' : '') + mem.passport;
+    return L('aeChkIdNoId');
+  }
+  function updateActualCount() {
+    var n = document.querySelectorAll('#idRoster input[type=checkbox]:checked').length;
+    $('idActual').textContent = n;
+  }
+  // `team` may be a partial row (search) or full Team; we fetch the full record
+  // via checkinSearch(teamId) to guarantee roster + paymentStatus are present.
+  function openIdentityPanel(team) {
+    currentTeam = team;
+    $('idTeamName').textContent = team.teamNameCN || L('aeChkNoName');
+    $('idTeamId').textContent = team.teamId || '';
+    $('idGroup').textContent = team.group || '—';
+
+    var reg = team.status || '—';
+    var regEl = $('idRegStatus'); regEl.textContent = (window.LS ? window.LS(reg) : reg);
+    regEl.className = 'pill ' + (reg.indexOf('已取消') >= 0 ? 'pill-warn' : 'pill-muted');
+
+    var pay = team.paymentStatus || '—';
+    var payEl = $('idPayStatus'); payEl.textContent = (window.LS ? window.LS(pay) : pay);
+    var payOk = pay.indexOf('已確認') >= 0;
+    payEl.className = 'pill ' + (payOk ? 'pill-ok' : 'pill-warn');
+
+    var noteEl = $('idNote');
+    if (team.note) { noteEl.style.display = 'block'; noteEl.textContent = L('aeChkIdNote') + '：' + team.note; }
+    else noteEl.style.display = 'none';
+
+    var already = $('idAlready');
+    if (team.checkedIn || team.checkInTime) { already.style.display = 'inline-flex'; already.textContent = '✓ ' + L('aeChkIdAlready').replace('{time}', team.checkInTime || ''); $('idConfirm').textContent = L('aeChkIdResubmit'); }
+    else { already.style.display = 'none'; $('idConfirm').textContent = L('aeChkIdConfirm'); }
+
+    var members = team.members || [];
+    var expected = (team.expectedCount != null) ? team.expectedCount : members.length;
+    $('idExpected').textContent = expected;
+    var roster = $('idRoster');
+    if (!members.length) {
+      roster.innerHTML = '<p style="font:400 13px/1.5 var(--f-tc); color:var(--muted); padding:8px 0">' + escapeHtml(L('aeChkIdNoMembers')) + '</p>';
+    } else {
+      // Default-checked = present. If team already checked in with an attendedMembers
+      // list, restore that selection so re-submits are accurate.
+      var prev = team.attendedMembers || null;
+      roster.innerHTML = members.map(function (mem) {
+        var checked = prev ? (prev.indexOf(mem.id) >= 0) : true;
+        return '<label class="id-mrow' + (checked ? '' : ' off') + '">' +
+          '<input type="checkbox" data-mid="' + escapeHtml(mem.id) + '"' + (checked ? ' checked' : '') + '>' +
+          '<span class="mbody"><span class="mname">' + escapeHtml(mem.name || mem.englishName || '') + '</span>' +
+          '<span class="mmeta">' + escapeHtml(roleLabel(mem.role)) + ' · ' + escapeHtml(mem.birthday || '') + ' · ' + escapeHtml(memberIdLine(mem)) + '</span></span></label>';
+      }).join('');
+      roster.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+        cb.addEventListener('change', function () { cb.closest('.id-mrow').classList.toggle('off', !cb.checked); updateActualCount(); });
+      });
+    }
+    updateActualCount();
+    $('idPanel').classList.add('on');
+  }
+  // Always fetch the full Team record (roster, paymentStatus) before opening.
+  function openByTeamId(teamId, fallbackRow) {
+    teamId = String(teamId || '').trim().toUpperCase();
+    if (!teamId) return;
+    google.script.run.withSuccessHandler(function (res) {
+      var rows = (res && res.rows) || [];
+      var full = null;
+      for (var i = 0; i < rows.length; i++) if (String(rows[i].teamId).toUpperCase() === teamId) { full = rows[i]; break; }
+      if (full) openIdentityPanel(full);
+      else if (fallbackRow) openIdentityPanel(fallbackRow);
+      else toast(L('aeChkUnknownErr'), 'err');
+    }).withFailureHandler(function () {
+      if (fallbackRow) openIdentityPanel(fallbackRow); else toast(L('aeChkNetworkErr'), 'err');
+    }).checkinSearch(compId, teamId);
+  }
+  function closeIdentity() { $('idPanel').classList.remove('on'); currentTeam = null; }
+  $('idClose').addEventListener('click', closeIdentity);
+  $('idCancel').addEventListener('click', closeIdentity);
+  $('idPanel').addEventListener('click', function (e) { if (e.target === $('idPanel')) closeIdentity(); });
+  $('idConfirm').addEventListener('click', function () {
+    if (!currentTeam) return;
+    var checked = [];
+    document.querySelectorAll('#idRoster input[type=checkbox]:checked').forEach(function (cb) { checked.push(cb.getAttribute('data-mid')); });
+    var btn = $('idConfirm'); var orig = btn.textContent; btn.disabled = true; btn.textContent = L('aeChkIdSubmitting');
+    var teamId = currentTeam.teamId;
+    // Roster check-in: extras=null, attendedMembers=[present ids]; backend sets count.
+    google.script.run.withSuccessHandler(function (res) {
+      btn.disabled = false; btn.textContent = orig;
+      if (res && res.success) {
+        toast(L('aeChkIdDoneToast').replace('{name}', res.teamNameCN || currentTeam.teamNameCN || teamId), 'ok');
+        markCheckedInLocal(teamId, new Date().toISOString().slice(0, 16).replace('T', ' '));
+        updateStats(); renderHistory();
+        refreshSearchRow(teamId);
+        closeIdentity();
+        load();
+      } else {
+        toast((res && res.message) || L('aeChkUnknownErr'), 'err');
+      }
+    }).withFailureHandler(function (err) {
+      btn.disabled = false; btn.textContent = orig;
+      toast((err && err.message) || L('aeChkNetworkErr'), 'err');
+    }).checkInTeamV2(teamId, null, checked);
+  });
+
+  // ===========================================================================
+  // SCAN MODE — existing manual entry + html5-qrcode scanner (KEPT),
+  // now routed into the identity panel instead of instant check-in.
+  // ===========================================================================
   function wireCheckin() {
-    document.getElementById('teamIdInput').focus();
-    document.getElementById('checkInBtn').addEventListener('click', doCheckIn);
-    document.getElementById('teamIdInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doCheckIn(); });
-    var st = document.getElementById('scanToggleBtn');
+    $('teamIdInput').focus();
+    $('checkInBtn').addEventListener('click', doManualOpen);
+    $('teamIdInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doManualOpen(); });
+    var st = $('scanToggleBtn');
     if (st) st.addEventListener('click', function () { scanning ? stopScan() : startScan(); });
+  }
+  function doManualOpen() {
+    var tid = $('teamIdInput').value.trim().toUpperCase();
+    if (!tid) return;
+    openByTeamId(tid);
+    $('teamIdInput').value = '';
   }
 
   // ---- Camera QR scanning (html5-qrcode) ----
   var html5Qr = null, scanning = false;
   function updateScanBtn() {
-    var b = document.getElementById('scanToggleBtn');
-    if (b) b.textContent = scanning ? window.L('aeChkStopScan') : window.L('aeChkOpenCamera');
+    var b = $('scanToggleBtn');
+    if (b) b.textContent = scanning ? L('aeChkStopScan') : L('aeChkOpenCamera');
   }
   function startScan() {
-    if (typeof Html5Qrcode === 'undefined') { alert(window.L('aeChkScanLoadFail')); return; }
-    var reader = document.getElementById('qrReader');
+    if (typeof Html5Qrcode === 'undefined') { alert(L('aeChkScanLoadFail')); return; }
+    var reader = $('qrReader');
     reader.style.display = 'block';
     if (!html5Qr) html5Qr = new Html5Qrcode('qrReader');
     html5Qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 240 },
@@ -206,44 +576,234 @@
         var mm = tid.match(/[A-Z]\w{5,}/i);   // tolerate a URL wrapper
         tid = (mm ? mm[0] : tid).toUpperCase();
         stopScan();
-        var inp = document.getElementById('teamIdInput');
-        if (inp) inp.value = tid;
-        doCheckIn();
+        openByTeamId(tid);   // route into identity panel
       },
       function () { /* per-frame decode errors: ignore */ }
     ).then(function () { scanning = true; updateScanBtn(); })
      .catch(function (e) {
        reader.style.display = 'none';
-       alert(window.L('aeChkCameraFail').replace('{err}', (e && e.message) || e));
+       alert(L('aeChkCameraFail').replace('{err}', (e && e.message) || e));
      });
   }
   function stopScan() {
-    var reader = document.getElementById('qrReader');
+    var reader = $('qrReader');
     if (html5Qr && scanning) {
       html5Qr.stop().then(function () { scanning = false; if (reader) reader.style.display = 'none'; updateScanBtn(); }).catch(function () { scanning = false; if (reader) reader.style.display = 'none'; updateScanBtn(); });
     } else if (reader) { reader.style.display = 'none'; }
   }
-  function doCheckIn() {
-    var tid = document.getElementById('teamIdInput').value.trim().toUpperCase();
-    if (!tid) return;
-    var btn = document.getElementById('checkInBtn');
-    btn.disabled = true; btn.textContent = window.L('aeChkProcessing');
-    google.script.run
-      .withSuccessHandler(function (res) {
-        btn.disabled = false; btn.textContent = window.L('aeChkConfirmBtn');
-        if (res && res.success) {
-          showResult(true, window.L('aeChkSuccessMsg').replace('{tid}', tid).replace('{name}', res.teamNameCN || ''));
-          load();
-        } else {
-          showResult(false, (res && res.message) || window.L('aeChkUnknownErr'));
-        }
-      })
-      .withFailureHandler(function (err) {
-        btn.disabled = false; btn.textContent = window.L('aeChkConfirmBtn');
-        showResult(false, (err && err.message) || window.L('aeChkNetworkErr'));
-      })
-      .checkInTeamV2(tid, { meal: true });  // For Phase 6 we default meal=true; full picker in Phase 9
+
+  // ===========================================================================
+  // SEARCH MODE — checkinSearch(compId, query) fallback for QR failures.
+  // ===========================================================================
+  var searchInited = false, searchTimer = null, lastResults = [];
+  $('searchInput').addEventListener('input', function () {
+    clearTimeout(searchTimer);
+    var q = $('searchInput').value.trim();
+    searchTimer = setTimeout(function () { doSearch(q); }, 280);
+  });
+  function doSearch(query) {
+    $('searchMeta').textContent = L('aeChkSearching');
+    google.script.run.withSuccessHandler(function (res) {
+      lastResults = (res && res.rows) || [];
+      renderSearch(lastResults, query);
+    }).withFailureHandler(function () {
+      $('searchMeta').textContent = L('aeChkNetworkErr');
+      $('searchResults').innerHTML = '';
+    }).checkinSearch(compId, query || '');
   }
+  function renderSearch(rows, query) {
+    var meta = $('searchMeta');
+    var out = $('searchResults');
+    if (!rows.length) { meta.textContent = ''; out.innerHTML = '<p style="text-align:center; color:var(--muted); padding:28px 0; font:400 14px/1.5 var(--f-tc)">' + escapeHtml(L('aeChkSearchEmpty')) + '</p>'; return; }
+    meta.textContent = (!query ? L('aeChkSearchAll') + ' · ' : '') + L('aeChkSearchCount').replace('{n}', rows.length);
+    out.innerHTML = rows.map(function (t, i) {
+      var done = (t.checkedIn || t.checkInTime);
+      var exp = (t.expectedCount != null) ? t.expectedCount : ((t.members && t.members.length) || 0);
+      return '<button type="button" class="res-row" data-i="' + i + '">' +
+        '<span class="rid">' + escapeHtml(t.teamId) + '</span>' +
+        '<span class="rbody"><span class="rnm">' + escapeHtml(t.teamNameCN || L('aeChkNoName')) + '</span>' +
+        '<span class="rmeta">' + escapeHtml(t.group || '') + ' · ' + escapeHtml(L('aeChkColExpected')) + ' ' + exp + '</span></span>' +
+        (done ? '<span class="pill pill-ok">✓ ' + escapeHtml(L('aeChkBadgeDone')) + '</span>' : '') + '</button>';
+    }).join('');
+    out.querySelectorAll('.res-row').forEach(function (el) {
+      el.addEventListener('click', function () { var row = lastResults[+el.getAttribute('data-i')]; if (row) openIdentityPanel(row); });
+    });
+  }
+  function refreshSearchRow(teamId) {
+    if (!lastResults.length) return;
+    for (var i = 0; i < lastResults.length; i++) if (lastResults[i].teamId === teamId) lastResults[i].checkedIn = true;
+    renderSearch(lastResults, $('searchInput').value.trim());
+  }
+
+  // ===========================================================================
+  // KIOSK (self check-in) — runs full-window; calls PUBLIC selfCheckIn.
+  // NOTE: Browsers cannot fully prevent OS-level app/tab switching; the lock
+  // below is best-effort (re-show lock on fullscreen exit / visibility change).
+  // ===========================================================================
+  var kioskActive = false, kioskQr = null, kioskScanning = false, kioskResetTimer = null;
+  function selfCfg(){ return (CONFIG && CONFIG.selfCheckin) || {}; }
+  function enterFullscreen() { var el = document.documentElement; var fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen; if (fn) { try { fn.call(el); } catch (e) {} } }
+  function exitFullscreen() { var fn = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen; if (fn && (document.fullscreenElement || document.webkitFullscreenElement)) { try { fn.call(document); } catch (e) {} } }
+  $('kioskLaunchBtn').addEventListener('click', startKiosk);
+  function startKiosk() {
+    kioskActive = true;
+    $('kioskScreen').classList.add('on');
+    document.querySelector('.admin').style.display = 'none';   // hide admin chrome
+    showKioskInput();
+    enterFullscreen();
+    setTimeout(function () { $('kioskIdInput').focus(); }, 100);
+  }
+  function showKioskInput() {
+    clearTimeout(kioskResetTimer);
+    $('kioskResult').classList.remove('on', 'ok', 'err');
+    $('kioskInput').style.display = 'block';
+    $('kioskIdInput').value = '';
+    setTimeout(function () { if (kioskActive) $('kioskIdInput').focus(); }, 50);
+  }
+  function kioskShowResult(ok, opts) {
+    opts = opts || {};
+    stopKioskScan();
+    $('kioskInput').style.display = 'none';
+    var box = $('kioskResult'); box.classList.add('on'); box.classList.toggle('ok', ok); box.classList.toggle('err', !ok);
+    $('kioskResultBig').textContent = ok ? '✓' : '✕';
+    $('kioskResultTeam').textContent = opts.team || '';
+    $('kioskResultGrp').textContent = opts.group || '';
+    $('kioskResultMsg').textContent = opts.msg || '';
+    var delay = ok ? 4000 : 4500;
+    kioskResetTimer = setTimeout(function () { if (kioskActive) showKioskInput(); }, delay);
+  }
+  function kioskSubmit() {
+    var tid = $('kioskIdInput').value.trim().toUpperCase();
+    if (!tid) { toast(L('aeChkKioskEmptyId'), 'err'); return; }
+    var geo = selfCfg().geofence || {};
+    if (geo.enabled && navigator.geolocation) {
+      $('kioskResultMsg');
+      $('kioskSubmitBtn').textContent = L('aeChkKioskLocating');
+      navigator.geolocation.getCurrentPosition(
+        function (pos) { $('kioskSubmitBtn').textContent = L('aeChkKioskSubmit'); doSelfCheckIn(tid, pos.coords.latitude, pos.coords.longitude); },
+        function () { $('kioskSubmitBtn').textContent = L('aeChkKioskSubmit'); kioskShowResult(false, { msg: L('aeChkKioskGeoFail') }); },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      );
+    } else {
+      doSelfCheckIn(tid, null, null);
+    }
+  }
+  function doSelfCheckIn(tid, lat, lng) {
+    google.script.run.withSuccessHandler(function (res) {
+      if (res && res.success) {
+        kioskShowResult(true, { team: res.teamNameCN || tid, group: res.group || '', msg: res.alreadyCheckedIn ? L('aeChkKioskAlready') : L('aeChkKioskWelcome') });
+      } else {
+        kioskShowResult(false, { msg: (res && res.message) || L('aeChkUnknownErr') });
+      }
+    }).withFailureHandler(function (err) {
+      kioskShowResult(false, { msg: (err && err.message) || L('aeChkNetworkErr') });
+    }).selfCheckIn(compId, tid, lat, lng);
+  }
+  $('kioskSubmitBtn').addEventListener('click', kioskSubmit);
+  $('kioskIdInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') kioskSubmit(); });
+  $('kioskNextBtn').addEventListener('click', showKioskInput);
+  $('kioskScanBtn').addEventListener('click', function () { kioskScanning ? stopKioskScan() : startKioskScan(); });
+  function startKioskScan() {
+    if (typeof Html5Qrcode === 'undefined') { alert(L('aeChkScanLoadFail')); return; }
+    var reader = $('kioskReader'); reader.style.display = 'block';
+    if (!kioskQr) kioskQr = new Html5Qrcode('kioskReader');
+    kioskQr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 },
+      function (decoded) {
+        var tid = String(decoded || '').trim(); var mm = tid.match(/[A-Z]\w{5,}/i); tid = (mm ? mm[0] : tid).toUpperCase();
+        $('kioskIdInput').value = tid; stopKioskScan(); kioskSubmit();
+      }, function () {}
+    ).then(function () { kioskScanning = true; $('kioskScanBtn').textContent = L('aeChkKioskScanStop'); })
+     .catch(function (e) { reader.style.display = 'none'; alert(L('aeChkCameraFail').replace('{err}', (e && e.message) || e)); });
+  }
+  function stopKioskScan() {
+    var reader = $('kioskReader');
+    if (kioskQr && kioskScanning) { kioskQr.stop().then(function () { kioskScanning = false; if (reader) reader.style.display = 'none'; $('kioskScanBtn').textContent = L('aeChkKioskScan'); }).catch(function () { kioskScanning = false; if (reader) reader.style.display = 'none'; $('kioskScanBtn').textContent = L('aeChkKioskScan'); }); }
+    else if (reader) reader.style.display = 'none';
+  }
+  // ---- Kiosk lock (anti-tamper, best-effort) ----
+  function showKioskLock() { if (kioskActive) $('kioskLock').classList.add('on'); }
+  function hideKioskLock() { $('kioskLock').classList.remove('on'); }
+  $('kioskResumeBtn').addEventListener('click', function () { hideKioskLock(); enterFullscreen(); setTimeout(function () { $('kioskIdInput').focus(); }, 100); });
+  document.addEventListener('fullscreenchange', function () { if (kioskActive && !document.fullscreenElement) showKioskLock(); });
+  document.addEventListener('webkitfullscreenchange', function () { if (kioskActive && !document.webkitFullscreenElement) showKioskLock(); });
+  document.addEventListener('visibilitychange', function () { if (kioskActive && document.visibilityState === 'visible') { /* regained focus: ensure not bypassed */ if (!document.fullscreenElement && !document.webkitFullscreenElement) showKioskLock(); } });
+  $('kioskExitBtn').addEventListener('click', function () {
+    var pin = (selfCfg().kioskPin || '').toString();
+    if (!pin) { exitKiosk(); return; }
+    window.uiPrompt(L('aeChkKioskExitPinMsg'), '', { title: L('aeChkKioskExitPinTitle'), placeholder: L('aeChkKioskExitPinPh'), inputType: 'password' }).then(function (val) {
+      if (val == null) return;
+      if (String(val).trim() === pin) exitKiosk();
+      else toast(L('aeChkKioskExitWrong'), 'err');
+    });
+  });
+  function exitKiosk() {
+    kioskActive = false;
+    stopKioskScan();
+    hideKioskLock();
+    $('kioskScreen').classList.remove('on');
+    document.querySelector('.admin').style.display = '';
+    exitFullscreen();
+    load();
+  }
+
+  // ===========================================================================
+  // MANAGER SETTINGS — getCompetitionConfig / saveCheckinConfig.
+  // ===========================================================================
+  function bindToggle(el) { el.addEventListener('click', function () { el.classList.toggle('on'); syncGeoFields(); }); el.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); el.classList.toggle('on'); syncGeoFields(); } }); }
+  bindToggle($('setEnable')); bindToggle($('setGeoEnable'));
+  function syncGeoFields() { $('geoFields').style.opacity = $('setGeoEnable').classList.contains('on') ? '1' : '.5'; }
+  function toLocalInput(v) {
+    if (!v) return '';
+    var d = new Date(v); if (isNaN(d.getTime())) return (typeof v === 'string' && v.length >= 16) ? v.slice(0, 16) : '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function loadSettings() {
+    var s = selfCfg();
+    $('setEnable').classList.toggle('on', !!s.enabled);
+    $('setStart').value = toLocalInput(s.windowStart);
+    $('setEnd').value = toLocalInput(s.windowEnd);
+    var g = s.geofence || {};
+    $('setGeoEnable').classList.toggle('on', !!g.enabled);
+    if (g.lat != null) $('setLat').value = g.lat;
+    if (g.lng != null) $('setLng').value = g.lng;
+    if (g.radiusM != null) $('setRadius').value = g.radiusM;
+    $('setPin').value = s.kioskPin || '';
+    syncGeoFields();
+  }
+  $('setUseLocBtn').addEventListener('click', function () {
+    if (!navigator.geolocation) { toast(L('aeChkSetLocFail'), 'err'); return; }
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      $('setLat').value = pos.coords.latitude.toFixed(6);
+      $('setLng').value = pos.coords.longitude.toFixed(6);
+      toast(L('aeChkSetLocOk'), 'ok');
+    }, function () { toast(L('aeChkSetLocFail'), 'err'); }, { enableHighAccuracy: true, timeout: 8000 });
+  });
+  $('setPin').addEventListener('input', function () { $('setPin').value = $('setPin').value.replace(/\D/g, ''); });
+  $('setSaveBtn').addEventListener('click', function () {
+    var selfCheckin = {
+      enabled: $('setEnable').classList.contains('on'),
+      windowStart: $('setStart').value || '',
+      windowEnd: $('setEnd').value || '',
+      geofence: {
+        enabled: $('setGeoEnable').classList.contains('on'),
+        lat: parseFloat($('setLat').value) || 0,
+        lng: parseFloat($('setLng').value) || 0,
+        radiusM: parseInt($('setRadius').value, 10) || 0
+      },
+      kioskPin: ($('setPin').value || '').replace(/\D/g, '')
+    };
+    var btn = $('setSaveBtn'); var orig = btn.textContent; btn.disabled = true; btn.textContent = L('aeChkSetSaving');
+    google.script.run.withSuccessHandler(function (res) {
+      btn.disabled = false; btn.textContent = orig;
+      if (res && res.success) { CONFIG.selfCheckin = selfCheckin; toast((res.message) || L('aeChkSetSaved'), 'ok'); }
+      else toast((res && res.message) || L('aeChkSetSaveFail'), 'err');
+    }).withFailureHandler(function (err) {
+      btn.disabled = false; btn.textContent = orig;
+      toast((err && err.message) || L('aeChkSetSaveFail'), 'err');
+    }).saveCheckinConfig(compId, selfCheckin);
+  });
+
   wireCheckin();
   load();
 })();

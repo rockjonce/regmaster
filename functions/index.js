@@ -6865,7 +6865,7 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
 // callable that records extras separately so the legacy field stays clean.
 exports.checkInTeamV2 = compAuthCallable("checkin", async (data, request) => {
   await requireFeature(request.authUser, "checkin");
-  const { teamId, extras } = data;
+  const { teamId, extras, attendedMembers, attendedCount } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists) return { success: false, message: "找不到隊伍" };
   const t = tDoc.data();
@@ -6874,6 +6874,13 @@ exports.checkInTeamV2 = compAuthCallable("checkin", async (data, request) => {
     checkInTime: fmtNow(),
     checkInBy: request.authUser.username
   };
+  // Per-member attendance (one-QR-per-team + roster checklist). attendedMembers = member doc IDs present.
+  if (Array.isArray(attendedMembers)) {
+    update.attendedMembers = attendedMembers.slice(0, 200).map(x => String(x).slice(0, 64));
+    update.attendedCount = update.attendedMembers.length;
+  } else if (attendedCount != null) {
+    update.attendedCount = Math.max(0, parseInt(attendedCount, 10) || 0);
+  }
   if (extras && typeof extras === 'object') {
     update.checkInExtras = {
       meal: !!extras.meal,
@@ -6885,6 +6892,97 @@ exports.checkInTeamV2 = compAuthCallable("checkin", async (data, request) => {
   await tDoc.ref.update(update);
   await auditLog(request.authUser.username, "checkInTeamV2", teamId, "");
   return { success: true, teamId, teamNameCN: t.teamNameCN || '', group: t.group || '' };
+});
+
+// ===== Check-in: roster search + identity panel data (staff) =====
+// Search teams by 報名編號 / 隊名 / 成員姓名; returns identity-verification data + roster.
+exports.checkinSearch = compAuthCallable("checkin", async (data) => {
+  const compId = String(data.compId || "");
+  const q = String(data.query || "").trim().toLowerCase();
+  const [tSnap, mSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("members").where("compId", "==", compId).get()
+  ]);
+  const membersByTeam = {};
+  mSnap.docs.forEach(d => { const m = d.data(); (membersByTeam[m.teamId] = membersByTeam[m.teamId] || []).push({ id: d.id, name: m.chineseName || m.englishName || "", englishName: m.englishName || "", birthday: m.birthday || "", idNumber: m.idNumber || "", passport: m.passport || "", nationality: m.nationality || "", role: m.role || "", seq: m.seq || 0 }); });
+  const rows = [];
+  tSnap.docs.forEach(d => {
+    const t = d.data(); if (t.status === "已取消") return;
+    const members = (membersByTeam[t.teamId] || []).sort((a, b) => (a.seq || 0) - (b.seq || 0));
+    if (q) {
+      const hay = [t.teamId, t.teamNameCN, t.teamNameEN, t.remitterName, ...members.map(m => m.name + m.englishName)].join(" ").toLowerCase();
+      if (hay.indexOf(q) < 0) return;
+    }
+    rows.push({
+      teamId: t.teamId, teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "", group: t.group || "",
+      status: t.status || "", paymentStatus: t.paymentStatus || "", note: t.note || "",
+      checkedIn: !!t.checkedIn, checkInTime: t.checkInTime || "", attendedCount: t.attendedCount != null ? t.attendedCount : null,
+      attendedMembers: Array.isArray(t.attendedMembers) ? t.attendedMembers : null,
+      expectedCount: members.length, members
+    });
+  });
+  rows.sort((a, b) => (a.teamNameCN || a.teamId).localeCompare(b.teamNameCN || b.teamId, "zh-Hant"));
+  return { rows: rows.slice(0, 200), total: rows.length };
+});
+
+// Manager: self-check-in / kiosk configuration, stored in config.selfCheckin.
+exports.saveCheckinConfig = compAuthCallable("manage", async (data, request) => {
+  const compId = String(data.compId || "");
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get(); if (!doc.exists) return { success: false, message: "找不到活動" };
+  const sc = data.selfCheckin || {};
+  const cfg = doc.data().config || {};
+  cfg.selfCheckin = {
+    enabled: sc.enabled === true,
+    windowStart: String(sc.windowStart || "").slice(0, 40),   // ISO datetime-local string
+    windowEnd: String(sc.windowEnd || "").slice(0, 40),
+    geofence: {
+      enabled: !!(sc.geofence && sc.geofence.enabled),
+      lat: sc.geofence && Number.isFinite(Number(sc.geofence.lat)) ? Number(sc.geofence.lat) : null,
+      lng: sc.geofence && Number.isFinite(Number(sc.geofence.lng)) ? Number(sc.geofence.lng) : null,
+      radiusM: sc.geofence && Number.isFinite(Number(sc.geofence.radiusM)) ? Math.max(20, Math.min(20000, Number(sc.geofence.radiusM))) : 200
+    },
+    kioskPin: String(sc.kioskPin || "").replace(/\D/g, "").slice(0, 8)
+  };
+  await ref.update({ config: cfg });
+  await auditLog(request.authUser.username, "saveCheckinConfig", compId, "");
+  return { success: true };
+});
+
+function _haversineM(lat1, lng1, lat2, lng2) {
+  const R = 6371000, toR = x => x * Math.PI / 180;
+  const dLat = toR(lat2 - lat1), dLng = toR(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toR(lat1)) * Math.cos(toR(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Public: registrant self check-in (kiosk or personal device). Enforces enable + time window +
+// optional GPS geofence server-side. Identity = teamId (same as the QR). Marks whole team present.
+exports.selfCheckIn = callable(async (data) => {
+  const compId = String(data.compId || ""), teamId = String(data.teamId || "").trim().toUpperCase();
+  if (!teamId) return { success: false, message: "請輸入報名編號" };
+  const cDoc = await db.collection("competitions").doc(compId).get();
+  const sc = (cDoc.exists && cDoc.data().config && cDoc.data().config.selfCheckin) || {};
+  if (sc.enabled !== true) return { success: false, message: "自助報到未開放" };
+  const now = Date.now();
+  if (sc.windowStart && now < new Date(sc.windowStart).getTime()) return { success: false, message: "自助報到尚未開始" };
+  if (sc.windowEnd && now > new Date(sc.windowEnd).getTime()) return { success: false, message: "自助報到已結束" };
+  if (sc.geofence && sc.geofence.enabled) {
+    const lat = Number(data.lat), lng = Number(data.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return { success: false, message: "需要定位權限才能自助報到", reason: "geo" };
+    if (sc.geofence.lat != null && sc.geofence.lng != null) {
+      const dist = _haversineM(lat, lng, sc.geofence.lat, sc.geofence.lng);
+      if (dist > (sc.geofence.radiusM || 200)) return { success: false, message: "您不在活動現場範圍內", reason: "geo" };
+    }
+  }
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "查無此報名編號" };
+  const t = tDoc.data();
+  if (t.status === "已取消") return { success: false, message: "此報名已取消" };
+  const mSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  await tDoc.ref.update({ checkedIn: true, checkInTime: fmtNow(), checkInBy: "self", attendedCount: mSnap.size, attendedMembers: mSnap.docs.map(d => d.id) });
+  await auditLog("self", "selfCheckIn", teamId, "");
+  return { success: true, teamNameCN: t.teamNameCN || "", group: t.group || "", alreadyCheckedIn: !!t.checkedIn };
 });
 
 // =============================================================================
