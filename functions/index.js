@@ -36,13 +36,13 @@ function hashPwd(p) {
 function generateId(prefix) {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let r = "";
-  for (let i = 0; i < 6; i++) r += c[Math.floor(Math.random() * c.length)];
+  for (let i = 0; i < 6; i++) r += c[crypto.randomInt(c.length)];
   return (prefix || "X") + r;
 }
 function generatePassword() {
   const c = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   let r = "";
-  for (let i = 0; i < 8; i++) r += c[Math.floor(Math.random() * c.length)];
+  for (let i = 0; i < 8; i++) r += c[crypto.randomInt(c.length)];
   return r;
 }
 // Legal-document versions for click-wrap e-signing (EULA / Terms acceptance audit trail).
@@ -129,7 +129,11 @@ function emailWrap(title, bodyHtml, footerExtra) {
 function callable(handler) {
   return onCall({ cors: true }, async (request) => {
     try { return await handler(request.data || {}, request); }
-    catch (e) { throw new HttpsError("internal", e.message); }
+    catch (e) {
+      if (e instanceof HttpsError) throw e;       // intentional, user-facing errors pass through
+      console.error(e);                            // C-3: log full detail server-side only
+      throw new HttpsError("internal", "系統發生錯誤，請稍後再試");
+    }
   });
 }
 
@@ -169,7 +173,8 @@ function authCallable(roles, handler) {
       return await handler(cleanData, { ...request, authUser: acct });
     } catch (e) {
       if (e instanceof HttpsError) throw e;
-      throw new HttpsError("internal", e.message);
+      console.error(e);                            // C-3: log full detail server-side only
+      throw new HttpsError("internal", "系統發生錯誤，請稍後再試");
     }
   });
 }
@@ -1713,7 +1718,7 @@ exports.requestAccount = callable(async (data) => {
   if (!existEmail.empty) return { success: false, message: "此 Email 已被註冊過" };
 
   // 產生 6 位數 OTP 驗證碼
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = crypto.randomInt(100000, 1000000).toString();
 
   // 寫入暫存區 (15分鐘後過期)
   await db.collection("accountRequests").doc(username).set({
@@ -1843,7 +1848,7 @@ exports.verifyAccount = callable(async (data, request) => {
   let code = "RM";
   for (let i = 0; i < 4; i++) {
     code += "-";
-    for (let j = 0; j < 4; j++) code += c[Math.floor(Math.random() * c.length)];
+    for (let j = 0; j < 4; j++) code += c[crypto.randomInt(c.length)];
   }
 
   const isTrial = intendedPlan === "trial" || intendedPlan === "starter" || intendedPlan === "pro";
@@ -3069,7 +3074,7 @@ exports.createLicense = authCallable(["system"], async (data) => {
   let code = "RM";
   for (let i = 0; i < 4; i++) {
     code += "-";
-    for (let j = 0; j < 4; j++) code += c[Math.floor(Math.random() * c.length)];
+    for (let j = 0; j < 4; j++) code += c[crypto.randomInt(c.length)];
   }
   await db.collection("licenses").doc(code).set({
     code, type: "subscription", tier, years,
@@ -3865,8 +3870,12 @@ exports.uploadRegFile = callable(async (data) => {
   const { compId, base64Data, fileName, mimeType } = data;
   if (!base64Data) return { success: false, message: "缺少檔案" };
   if (base64Data.length > 8000000) return { success: false, message: "檔案過大（上限約 5MB）" };
+  // C-5 hardening: uploads must target a real activity (blocks junk uploads / quota abuse).
+  const compDoc = await db.collection("competitions").doc(String(compId || "")).get();
+  if (!compDoc.exists) return { success: false, message: "活動不存在" };
   try {
-    const fileId = "RF" + Date.now() + Math.floor(Math.random() * 1000);
+    // C-2: non-guessable file id (was Date.now()+Math.random — enumerable, fed the C-6 IDOR).
+    const fileId = "RF" + crypto.randomBytes(12).toString("hex");
     const CHUNK = 800000;
     const total = Math.ceil(base64Data.length / CHUNK);
     await db.collection("regFiles").doc(fileId).set({
@@ -3880,12 +3889,18 @@ exports.uploadRegFile = callable(async (data) => {
     return { success: true, fileId, fileName: fileName || "file" };
   } catch (e) { return { success: false, message: "上傳失敗: " + e.message }; }
 });
-exports.getRegFileData = callable(async (data) => {
-  const { fileId } = data;
+exports.getRegFileData = compAuthCallable("view", async (data) => {
+  const { fileId, compId } = data;
   if (!fileId) return { success: false };
   const doc = await db.collection("regFiles").doc(fileId).get();
   if (!doc.exists) return { success: false, message: "找不到檔案" };
   const d = doc.data();
+  // C-6 IDOR guard: the file must belong to the activity the caller was authorised for.
+  // compAuthCallable already verified the caller owns / has view on `compId` (system bypasses);
+  // here we ensure the requested file actually belongs to that same activity.
+  if (!compId || (d.compId || "") !== compId) {
+    throw new HttpsError("permission-denied", "權限不足");
+  }
   let b64 = d.data || "";
   for (let i = 1; i < (d.totalChunks || 1); i++) {
     const c = await db.collection("regFiles").doc(fileId + "_chunk" + i).get();
@@ -4355,7 +4370,7 @@ exports.duplicateCompetition = compAuthCallable(async (data, request) => {
   const srcData = src.data();
   const cfg = JSON.parse(JSON.stringify(srcData.config || {}));
   cfg.isOpen = false;
-  const newId = "C" + Date.now() + Math.floor(Math.random() * 1000);
+  const newId = "C" + Date.now() + crypto.randomInt(1000);
   await db.collection("competitions").doc(newId).set({
     name: newName || ((srcData.name || "") + " (副本)"),
     category: srcData.category || "", config: cfg,
@@ -4620,7 +4635,7 @@ exports.createPayuniOrder = callable(async (data) => {
   const total = afterDiscount + tax;
   if (total < 1) return { success: false, message: "金額不正確" };
   
-  const orderId = "RM" + Date.now() + Math.floor(Math.random() * 100);
+  const orderId = "RM" + Date.now() + crypto.randomInt(100);
   await db.collection("orders").doc(orderId).set({
     orderId, username, items: orderItems, subtotal, couponCode: couponCode || "", couponDiscount,
     taxRate: sales.taxRate || 5, tax, total, status: "pending", createdAt: fmtNow(), paidAt: ""
@@ -4677,7 +4692,7 @@ exports.payuniNotify = onRequest({ cors: true, region: "us-central1" }, async (r
       const codeDetails = [];
       const mkCode = () => "RM-" + [1,2,3,4].map(() => {
         const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        return Array.from({ length: 4 }, () => c[Math.floor(Math.random() * c.length)]).join("");
+        return Array.from({ length: 4 }, () => c[crypto.randomInt(c.length)]).join("");
       }).join("-");
       for (const item of (order.items || [])) {
         const code = mkCode();
@@ -4940,7 +4955,7 @@ exports.createRegistrationPayment = callable(async (data) => {
   }
   if (fee < 1) return { success: false, message: "報名費金額不正確" };
 
-  const orderId = "RG" + Date.now() + Math.floor(Math.random() * 100);
+  const orderId = "RG" + Date.now() + crypto.randomInt(100);
   await db.collection("regPayments").doc(orderId).set({
     orderId, compId, teamId, amount: fee,
     base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount, discountCode: q.codeValid ? q.code : "",

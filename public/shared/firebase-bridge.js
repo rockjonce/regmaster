@@ -185,7 +185,7 @@
     uploadTeamFile:["compId","teamId","base64Data","fileName"],
     getTeamFileData:["teamId"],
     uploadRegFile:["compId","base64Data","fileName","mimeType"],
-    getRegFileData:["fileId"],
+    getRegFileData:["fileId","compId"],
     analyzePosterColors:["compId","posterUrl"],
     analyzeRulesWithAI:["compId"],
     aiConvertInlineHTML:["compId","htmlContent","fieldName"],

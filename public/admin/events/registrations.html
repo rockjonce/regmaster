@@ -897,7 +897,7 @@
             openFilePreview(fileName, dataUri, res.mimeType || '');
           })
           .withFailureHandler(function (e) { a.innerHTML = origText; uiAlert(window.L('aeRegFileLoadFail') + (e && e.message)); })
-          .getRegFileData(fileId);
+          .getRegFileData(fileId, compId);
       });
     });
   }
