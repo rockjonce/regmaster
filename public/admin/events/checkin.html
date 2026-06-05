@@ -13,6 +13,8 @@
 <script src="/shared/firebase-bridge.js"></script>
 <script src="/shared/ui-dialog.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 .body-3 { display:grid; grid-template-columns:320px 1fr 360px; min-height:calc(100vh - 60px); }
 #qrReader { width:100%; max-width:360px; border-radius:14px; overflow:hidden; margin-bottom:18px; }
@@ -270,6 +272,12 @@
                 <div><label class="lbl" data-i18n="aeChkSetRadius">半徑（公尺）</label><input type="number" step="1" min="0" class="fld" id="setRadius"></div>
                 <div style="display:flex; align-items:flex-end"><button class="btn btn-ghost btn-block" id="setUseLocBtn" data-i18n="aeChkSetUseLoc">使用目前位置</button></div>
               </div>
+              <div style="display:flex; gap:8px; margin-top:12px">
+                <input type="text" class="fld" id="geoSearch" data-i18n-placeholder="aeChkSetGeoSearchPh" placeholder="搜尋會場地址或地名…" style="flex:1">
+                <button class="btn btn-ghost" id="geoSearchBtn" type="button" data-i18n="aeChkSetGeoSearchBtn">搜尋</button>
+              </div>
+              <div id="geoMap" style="height:300px; margin-top:10px; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--surface-2)"></div>
+              <p style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:6px" data-i18n="aeChkSetGeoMapHint">在地圖上點選或拖曳標記即可設定會場位置；圓圈為報到允許範圍（半徑）。地圖資料 © OpenStreetMap。</p>
             </div>
             <div class="set-row" style="display:block">
               <label class="lbl" data-i18n="aeChkSetPin">報到機解鎖 PIN</label>
@@ -430,8 +438,53 @@
       if (mode === 'scan') { var ti = $('teamIdInput'); if (ti) ti.focus(); }
       else { stopScan(); }
       if (mode === 'search') { $('searchInput').focus(); if (!searchInited) { searchInited = true; doSearch(''); } }
+      if (mode === 'settings') { setTimeout(initGeoMap, 60); }
     });
   });
+
+  // ---- Geofence map picker (Leaflet + OpenStreetMap; no API key) ----
+  var geoMap = null, geoMarker = null, geoCircle = null;
+  function curRadius() { return Math.max(20, parseInt($('setRadius').value, 10) || 200); }
+  function placeGeo(lat, lng, recenter) {
+    if (!geoMap || !isFinite(lat) || !isFinite(lng)) return;
+    if (!geoMarker) {
+      geoMarker = L.marker([lat, lng], { draggable: true }).addTo(geoMap);
+      geoMarker.on('dragend', function () { var p = geoMarker.getLatLng(); $('setLat').value = p.lat.toFixed(6); $('setLng').value = p.lng.toFixed(6); if (geoCircle) geoCircle.setLatLng(p); });
+    } else { geoMarker.setLatLng([lat, lng]); }
+    if (!geoCircle) { geoCircle = L.circle([lat, lng], { radius: curRadius(), color: '#3D6BFF', fillColor: '#3D6BFF', fillOpacity: .12, weight: 1.5 }).addTo(geoMap); }
+    else { geoCircle.setLatLng([lat, lng]); geoCircle.setRadius(curRadius()); }
+    if (recenter) geoMap.setView([lat, lng], Math.max(geoMap.getZoom(), 16));
+  }
+  function initGeoMap() {
+    if (typeof L === 'undefined') return;
+    if (!geoMap) {
+      var lat = parseFloat($('setLat').value), lng = parseFloat($('setLng').value);
+      var hasPt = isFinite(lat) && isFinite(lng) && (lat || lng);
+      geoMap = L.map('geoMap').setView(hasPt ? [lat, lng] : [23.7, 121.0], hasPt ? 16 : 7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(geoMap);
+      geoMap.on('click', function (e) { $('setLat').value = e.latlng.lat.toFixed(6); $('setLng').value = e.latlng.lng.toFixed(6); placeGeo(e.latlng.lat, e.latlng.lng, false); });
+      if (hasPt) placeGeo(lat, lng, true);
+    }
+    setTimeout(function () { if (geoMap) geoMap.invalidateSize(); }, 80);
+  }
+  function syncGeoFromInputs() { var lat = parseFloat($('setLat').value), lng = parseFloat($('setLng').value); if (isFinite(lat) && isFinite(lng)) placeGeo(lat, lng, false); else if (geoCircle) geoCircle.setRadius(curRadius()); }
+  ['setLat', 'setLng', 'setRadius'].forEach(function (id) { $(id).addEventListener('input', syncGeoFromInputs); });
+  function geoSearch() {
+    var q = ($('geoSearch').value || '').trim(); if (!q) return;
+    var btn = $('geoSearchBtn'); var o = btn.textContent; btn.disabled = true; btn.textContent = '…';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q))
+      .then(function (r) { return r.json(); })
+      .then(function (a) {
+        btn.disabled = false; btn.textContent = o;
+        if (!a || !a.length) { toast(L('aeChkSetGeoNoResult'), 'err'); return; }
+        var lat = parseFloat(a[0].lat), lng = parseFloat(a[0].lon);
+        $('setLat').value = lat.toFixed(6); $('setLng').value = lng.toFixed(6);
+        initGeoMap(); placeGeo(lat, lng, true);
+      })
+      .catch(function () { btn.disabled = false; btn.textContent = o; toast(L('aeChkSetGeoNoResult'), 'err'); });
+  }
+  $('geoSearchBtn').addEventListener('click', geoSearch);
+  $('geoSearch').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); geoSearch(); } });
 
   // ===========================================================================
   // IDENTITY-VERIFICATION PANEL (shared by scan / manual / search)
@@ -776,6 +829,7 @@
     navigator.geolocation.getCurrentPosition(function (pos) {
       $('setLat').value = pos.coords.latitude.toFixed(6);
       $('setLng').value = pos.coords.longitude.toFixed(6);
+      initGeoMap(); placeGeo(pos.coords.latitude, pos.coords.longitude, true);
       toast(L('aeChkSetLocOk'), 'ok');
     }, function () { toast(L('aeChkSetLocFail'), 'err'); }, { enableHighAccuracy: true, timeout: 8000 });
   });
