@@ -452,7 +452,9 @@ async function lineExchangeAndVerify(code, redirectUri) {
   const cfgDoc = await db.collection("config").doc("line").get();
   const secret = cfgDoc.exists ? (cfgDoc.data().channelSecret || "") : "";
   if (!secret) throw new Error("LINE 尚未設定");
-  const redir = redirectUri || LINE_REDIRECT;
+  // V-17: only honour known redirect URIs (defense-in-depth; LINE also validates server-side).
+  const ALLOWED_REDIRECTS = [LINE_REDIRECT, "https://regmaster-pro.web.app/line-callback.html"];
+  const redir = (redirectUri && ALLOWED_REDIRECTS.indexOf(redirectUri) >= 0) ? redirectUri : LINE_REDIRECT;
   // 1) Exchange the authorization code for tokens
   const tokRes = await fetch("https://api.line.me/oauth2/v2.1/token", {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -547,7 +549,15 @@ exports.loginVerifyTotp = callable(async (data) => {
     await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken: st0 });
     return { success: true, username: acct.username, role: acct.role, displayName: acct.displayName, sessionToken: st0 };
   }
-  if (!totpVerify(acct.totpSecret, code)) return { success: false, message: "驗證碼錯誤或已過期" };
+  if (!totpVerify(acct.totpSecret, code)) {
+    // Count failed 2FA attempts toward the same 5-strike / 15-min lockout as password failures,
+    // so the second factor can't be brute-forced after a correct password.
+    const fails = (acct.loginFails || 0) + 1;
+    const upd = { loginFails: fails };
+    if (fails >= 5) upd.lockedUntil = new Date(Date.now() + 900000).toISOString();
+    await doc.ref.update(upd);
+    return { success: false, message: "驗證碼錯誤或已過期" };
+  }
   const sessionToken = generateSessionToken();
   await doc.ref.update({ loginFails: 0, lockedUntil: "", sessionToken });
   await auditLog(acct.username, "登入(2FA)", "", "");
@@ -4062,6 +4072,20 @@ exports.analyzeRulesWithAI = compAuthCallable(async (data) => {
 });
 
 
+// V-21: block SSRF to internal/metadata endpoints when fetching an external poster URL.
+function isSafeFetchUrl(u) {
+  try {
+    const url = new URL(u);
+    if (url.protocol !== "https:") return false;
+    const h = url.hostname.toLowerCase();
+    if (h === "localhost" || h === "metadata.google.internal" || h === "169.254.169.254") return false;
+    if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return false;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
+    if (h.endsWith(".internal") || h.endsWith(".local")) return false;
+    return true;
+  } catch (e) { return false; }
+}
+
 exports.analyzePosterColors = compAuthCallable(async (data) => {
   const { compId, posterUrl } = data;
   
@@ -4094,6 +4118,7 @@ exports.analyzePosterColors = compAuthCallable(async (data) => {
     
     // Fallback: regular URL download
     if (!base64Data && posterUrl && posterUrl.startsWith("http")) {
+      if (!isSafeFetchUrl(posterUrl)) return { success: false, message: "海報網址不被允許（僅接受 https 公開網址）" };
       const imgResp = await fetch(posterUrl);
       if (!imgResp.ok) return { success: false, message: "無法下載海報圖片" };
       const arrayBuffer = await imgResp.arrayBuffer();
@@ -4434,6 +4459,18 @@ exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
 exports.duplicateCompetition = compAuthCallable(async (data, request) => {
   const { compId, newName } = data;
   const creator = request.authUser.username;
+  // V-12: enforce the plan's max-active-events limit on duplication too (previously only
+  // checked in createCompetition, so 複製活動 could bypass the quota).
+  if (request.authUser.role !== "system") {
+    const tier = await getEffectiveTier(creator);
+    const lim = await planLimits(tier);
+    if (lim.maxActiveEvents !== Infinity) {
+      const existing = await db.collection("competitions").where("creator", "==", creator).get();
+      if (existing.size >= lim.maxActiveEvents) {
+        return { success: false, message: "您的方案（" + tierLabel(tier) + "）最多可建立 " + lim.maxActiveEvents + " 個活動，目前已有 " + existing.size + " 個。請升級方案或刪除舊活動。" };
+      }
+    }
+  }
   const src = await db.collection("competitions").doc(compId).get();
   if (!src.exists) return { success: false, message: "not found" };
   const srcData = src.data();
@@ -5615,7 +5652,7 @@ exports.getRegPaymentStatus = callable(async (data) => {
 });
 
 // ===== Scheduled Tasks (converted to callable — trigger via Cloud Scheduler HTTP or manually) =====
-exports.checkDeadlines = callable(async () => {
+exports.checkDeadlines = authCallable(["system"], async () => {
   const snap = await db.collection("competitions").get();
   const now = new Date();
   for (const doc of snap.docs) {
@@ -5635,7 +5672,7 @@ exports.checkDeadlines = callable(async () => {
   return { success: true };
 });
 
-exports.checkLicenseExpirations = callable(async () => {
+exports.checkLicenseExpirations = authCallable(["system"], async () => {
   const snap = await db.collection("licenses").where("status", "==", "已啟用").where("type", "==", "subscription").get();
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -5805,10 +5842,12 @@ exports.listOrders = authCallable(["system"], async (data) => {
   return results;
 });
 
-exports.logVisit = callable(async (data) => {
-  const { ip, country, city, device, page, compId } = data;
+exports.logVisit = callable(async (data, request) => {
+  const { country, city, device, page, compId } = data;
   const today = new Date().toISOString().substring(0, 10);
-  const safeIP = (ip || "").substring(0, 45);
+  // V-16: derive IP server-side (was trusting client-supplied `data.ip`, which let visitor
+  // analytics + the per-IP dedup/rate-limit be spoofed).
+  const safeIP = (clientIp(request) || "").substring(0, 45);
   const safePage = (page || "/").substring(0, 200);
   // Dedup: same IP + page + date only records once
   if (safeIP) {
@@ -7492,6 +7531,25 @@ exports.listCertTemplates = compAuthCallable("manage", async (data) => {
   return { templates, enabled: await eventHasFeature(compId, "certificate") };
 });
 
+// V-25: defensively normalise each certificate field before persisting — keep only scalar props,
+// cap string lengths, clamp positional/size numbers. (Render is canvas-based, not innerHTML, so
+// this is hardening against malformed/oversized payloads rather than an XSS fix.)
+function sanitizeCertField(f) {
+  if (!f || typeof f !== "object") return null;
+  const out = {};
+  for (const k of Object.keys(f)) {
+    let v = f[k];
+    if (typeof v === "number") { v = Number.isFinite(v) ? v : 0; }
+    else if (typeof v === "string") { v = v.slice(0, 1000); }
+    else if (typeof v === "boolean" || v === null) { /* keep */ }
+    else { continue; } // drop nested objects/arrays/functions — fields use only scalars
+    out[k] = v;
+  }
+  ["x", "y", "w", "h"].forEach(k => { if (typeof out[k] === "number") out[k] = Math.min(1000, Math.max(-1000, out[k])); });
+  if (typeof out.fontSizePct === "number") out.fontSizePct = Math.min(200, Math.max(0.1, out.fontSizePct));
+  return out;
+}
+
 exports.saveCertTemplate = compAuthCallable("manage", async (data, request) => {
   const compId = String(data.compId || "");
   if (!(await eventHasFeature(compId, "certificate"))) return { success: false, message: "證書功能為 Pro / Team 方案" };
@@ -7503,7 +7561,7 @@ exports.saveCertTemplate = compAuthCallable("manage", async (data, request) => {
     orientation: String(t.orientation || "landscape"),
     size: t.size || null,
     bgAssetId: String(t.bgAssetId || ""), bgPreset: String(t.bgPreset || ""), bgColor: String(t.bgColor || ""),
-    fields: Array.isArray(t.fields) ? t.fields.slice(0, 60) : [],
+    fields: Array.isArray(t.fields) ? t.fields.slice(0, 60).map(sanitizeCertField).filter(Boolean) : [],
     // Self-service: when enabled, registrants can download this template from 我的報名 (my.html).
     selfServe: t.selfServe === true,
     selfServeRequireCheckin: t.selfServeRequireCheckin === true,
