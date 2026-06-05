@@ -465,7 +465,9 @@
       geoMap.on('click', function (e) { $('setLat').value = e.latlng.lat.toFixed(6); $('setLng').value = e.latlng.lng.toFixed(6); placeGeo(e.latlng.lat, e.latlng.lng, false); });
       if (hasPt) placeGeo(lat, lng, true);
     }
-    setTimeout(function () { if (geoMap) geoMap.invalidateSize(); }, 80);
+    // Re-measure several times — the container is only correctly sized once the settings
+    // pane becomes visible, so a single invalidateSize() often fires too early (grey map).
+    [60, 250, 600, 1200].forEach(function (ms) { setTimeout(function () { if (geoMap) geoMap.invalidateSize(); }, ms); });
   }
   function syncGeoFromInputs() { var lat = parseFloat($('setLat').value), lng = parseFloat($('setLng').value); if (isFinite(lat) && isFinite(lng)) placeGeo(lat, lng, false); else if (geoCircle) geoCircle.setRadius(curRadius()); }
   ['setLat', 'setLng', 'setRadius'].forEach(function (id) { $(id).addEventListener('input', syncGeoFromInputs); });
@@ -802,9 +804,36 @@
   // ===========================================================================
   // MANAGER SETTINGS — getCompetitionConfig / saveCheckinConfig.
   // ===========================================================================
-  function bindToggle(el) { el.addEventListener('click', function () { el.classList.toggle('on'); syncGeoFields(); }); el.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); el.classList.toggle('on'); syncGeoFields(); } }); }
-  bindToggle($('setEnable')); bindToggle($('setGeoEnable'));
-  function syncGeoFields() { $('geoFields').style.opacity = $('setGeoEnable').classList.contains('on') ? '1' : '.5'; }
+  function setFieldDisabled(el, dis) {
+    if (!el) return;
+    if (el.classList && el.classList.contains('toggle')) { el.style.pointerEvents = dis ? 'none' : ''; el.style.opacity = dis ? '.45' : ''; }
+    else { el.disabled = dis; }
+  }
+  // Gating: 啟用自助報到 OFF locks everything below; 啟用現場範圍限制 OFF locks the geo fields/map.
+  function syncSettingsLocks() {
+    var selfOn = $('setEnable').classList.contains('on');
+    var geoOn = selfOn && $('setGeoEnable').classList.contains('on');
+    ['setStart', 'setEnd', 'setPin'].forEach(function (id) { setFieldDisabled($(id), !selfOn); });
+    setFieldDisabled($('setGeoEnable'), !selfOn);
+    ['setLat', 'setLng', 'setRadius', 'setUseLocBtn', 'geoSearch', 'geoSearchBtn'].forEach(function (id) { setFieldDisabled($(id), !geoOn); });
+    var gm = $('geoMap'); if (gm) { gm.style.pointerEvents = geoOn ? '' : 'none'; gm.style.opacity = geoOn ? '1' : '.45'; }
+    $('geoFields').style.opacity = geoOn ? '1' : '.5';
+    // dim every settings row except the master 啟用自助報到 row (first .set-row)
+    var rows = document.querySelectorAll('#pane-settings .set-row');
+    rows.forEach(function (r, i) { if (i > 0) r.style.opacity = selfOn ? '1' : '.5'; });
+  }
+  function bindToggle(el, onChange) {
+    function t() { el.classList.toggle('on'); if (onChange) onChange(); }
+    el.addEventListener('click', t);
+    el.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); t(); } });
+  }
+  bindToggle($('setEnable'), syncSettingsLocks);
+  bindToggle($('setGeoEnable'), function () {
+    // can't enable the geofence while self check-in is off
+    if (!$('setEnable').classList.contains('on')) { $('setGeoEnable').classList.remove('on'); return; }
+    syncSettingsLocks();
+    if ($('setGeoEnable').classList.contains('on')) initGeoMap();
+  });
   function toLocalInput(v) {
     if (!v) return '';
     var d = new Date(v); if (isNaN(d.getTime())) return (typeof v === 'string' && v.length >= 16) ? v.slice(0, 16) : '';
@@ -822,7 +851,7 @@
     if (g.lng != null) $('setLng').value = g.lng;
     if (g.radiusM != null) $('setRadius').value = g.radiusM;
     $('setPin').value = s.kioskPin || '';
-    syncGeoFields();
+    syncSettingsLocks();
   }
   $('setUseLocBtn').addEventListener('click', function () {
     if (!navigator.geolocation) { toast(L('aeChkSetLocFail'), 'err'); return; }
