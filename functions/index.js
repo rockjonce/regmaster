@@ -3487,7 +3487,24 @@ exports.consumeLicense = authCallable(["system","competition"], async (data, req
 });
 
 // ===== AI (Gemini) =====
-exports.askCompetitionAI = callable(async (data) => {
+// P1-4: best-effort sliding-window rate limit (Firestore). Fail-open on infra error so a
+// transient DB hiccup never blocks legitimate users.
+async function checkRateLimit(key, limit, windowMs) {
+  const ref = db.collection("rateLimits").doc(String(key).slice(0, 128));
+  try {
+    return await db.runTransaction(async (tx) => {
+      const d = await tx.get(ref);
+      const now = Date.now();
+      let count = 0, windowStart = now;
+      if (d.exists) { const v = d.data(); if (now - (v.windowStart || 0) < windowMs) { count = v.count || 0; windowStart = v.windowStart || now; } }
+      if (count >= limit) return { ok: false };
+      tx.set(ref, { count: count + 1, windowStart, updatedAt: now });
+      return { ok: true };
+    });
+  } catch (e) { return { ok: true }; }
+}
+
+exports.askCompetitionAI = callable(async (data, request) => {
   const { compId, question } = data;
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { answer: "找不到競賽" };
@@ -3504,6 +3521,11 @@ exports.askCompetitionAI = callable(async (data) => {
       return { answer: "此活動未開放 AI 助理。", disabled: true };
     }
   }
+  // P1-4: throttle the unauthenticated AI endpoint (wallet-DoS protection) before any Gemini call.
+  const _ip = clientIp(request) || "?";
+  const _ipOk = await checkRateLimit("aiq_ip_" + _ip, 12, 60000);          // 12 / min / IP
+  const _cdOk = await checkRateLimit("aiq_cd_" + compId, 400, 24 * 3600000); // 400 / day / event
+  if (!_ipOk.ok || !_cdOk.ok) return { answer: "AI 助理使用過於頻繁，請稍後再試。", rateLimited: true };
   const rules = comp.rulesText || "";
   const desc = cfg.description || "";
   const keyInfo = await getNextGeminiKey();

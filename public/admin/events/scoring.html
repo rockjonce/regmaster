@@ -1202,6 +1202,8 @@
     XLSX_LOADING = new Promise(function (resolve, reject) {
       var s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.integrity = 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';  // SRI (P1-2)
+      s.crossOrigin = 'anonymous';
       s.onload = function () { resolve(window.XLSX); };
       s.onerror = function () { reject(new Error('xlsx load failed')); };
       document.head.appendChild(s);
