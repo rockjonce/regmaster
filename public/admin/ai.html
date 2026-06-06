@@ -425,47 +425,45 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
   document.getElementById('sendBtn').addEventListener('click', function () {
     var text = inp.value.trim();
     if (!text) return;
+    inp.value = ''; inp.style.height = 'auto';
+    this.disabled = true;
+    // OPTIMISTIC: show the user's message + typing indicator IMMEDIATELY (works for both an
+    // existing conversation and a brand-new one) so the send always feels instant.
+    MESSAGES.push({ role: 'user', content: text, createdAt: new Date().toISOString() });
+    MESSAGES.push({ role: 'ai', content: L('adAiThinking'), createdAt: new Date().toISOString(), _typing: true });
+    renderMessages();
     if (!SELECTED) {
-      // Auto-create a conversation first
-      google.script.run.withSuccessHandler(function (res) {
-        if (res && res.success) {
-          loadConvs();
-          selectConv(res.id);
-          setTimeout(function () { sendIt(res.id, text); }, 300);
-        }
-      }).createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', text.slice(0, 50));
+      // New conversation — create it, then run AI (UI already shows the message + dots).
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) { SELECTED = { id: res.id }; loadConvs(); runAI(res.id, text); }
+          else { stopTyping(L('adAiCreateFail')); }
+        })
+        .withFailureHandler(function () { stopTyping(L('adAiCreateFail')); })
+        .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', text.slice(0, 50));
     } else {
-      sendIt(SELECTED.id, text);
+      runAI(SELECTED.id, text);
     }
   });
-  function sendIt(convId, text) {
-    inp.value = ''; inp.style.height = 'auto';
-    document.getElementById('sendBtn').disabled = true;
-
-    // 1. Append user message
-    google.script.run
-      .withSuccessHandler(function () {
-        MESSAGES.push({ role: 'user', content: text, createdAt: new Date().toISOString() });
-        // Show typing indicator
-        MESSAGES.push({ role: 'ai', content: L('adAiThinking'), createdAt: new Date().toISOString(), _typing: true });
-        renderMessages();
-        // 2. Call AI — always the auth-gated admin AI (organiser context). When a
-        // specific activity is selected, pass its compId so the AI scopes to that
-        // activity's settings + live registration data. (The registrant-facing
-        // askCompetitionAI is NOT used here, to avoid exposing private reg data.)
-        var aiCall = SCOPE === 'comp' && SELECTED_COMP
-          ? function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, SELECTED_COMP); }
-          : function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, ''); };
-        aiCall(function (aiRes) {
-          MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });
-          var reply = (aiRes && (aiRes.answer || aiRes.reply)) || (aiRes && aiRes.error) || L('adAiNoReply');
-          MESSAGES.push({ role: 'ai', content: reply, createdAt: new Date().toISOString() });
-          renderMessages();
-          // 3. Append AI message to backend
-          google.script.run.withSuccessHandler(function () { loadConvs(); }).appendMessage(convId, 'ai', reply);
-        });
-      })
-      .appendMessage(convId, 'user', text);
+  // Remove the typing indicator and optionally show an error bubble.
+  function stopTyping(errMsg) {
+    MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });
+    if (errMsg) MESSAGES.push({ role: 'ai', content: errMsg, createdAt: new Date().toISOString() });
+    renderMessages();
+  }
+  // Persist the user message (background) + call the AI, then swap the dots for the reply.
+  function runAI(convId, text) {
+    google.script.run.withSuccessHandler(function () {}).withFailureHandler(function () {}).appendMessage(convId, 'user', text);
+    var aiCall = SCOPE === 'comp' && SELECTED_COMP
+      ? function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, SELECTED_COMP); }
+      : function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, ''); };
+    aiCall(function (aiRes) {
+      MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });
+      var reply = (aiRes && (aiRes.answer || aiRes.reply)) || (aiRes && aiRes.error) || L('adAiNoReply');
+      MESSAGES.push({ role: 'ai', content: reply, createdAt: new Date().toISOString() });
+      renderMessages();
+      google.script.run.withSuccessHandler(function () { loadConvs(); }).appendMessage(convId, 'ai', reply);
+    });
   }
 
   // Suggestion cards → fill the input and send (auto-creates a conversation if none).
