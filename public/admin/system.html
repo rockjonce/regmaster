@@ -640,8 +640,13 @@ body { background:var(--bg); }
       cfg = cfg || {};
       document.getElementById('p-tax').value = cfg.taxRate != null ? cfg.taxRate : '';
       document.getElementById('p-merid').value = cfg.payuniMerID || '';
-      document.getElementById('p-hashkey').value = cfg.payuniHashKey || '';
-      document.getElementById('p-hashiv').value = cfg.payuniHashIV || '';
+      // SECURITY (M-3): backend no longer returns the HashKey/HashIV secrets. Show a masked
+      // "already set" placeholder and keep the field blank; leaving it blank on save preserves
+      // the stored secret (the backend drops empty values).
+      var hk = document.getElementById('p-hashkey'), hi = document.getElementById('p-hashiv');
+      hk.value = ''; hi.value = '';
+      hk.placeholder = cfg.payuniHashKeySet ? '●●●●●●（已設定，留空不變更）' : '尚未設定';
+      hi.placeholder = cfg.payuniHashIVSet ? '●●●●●●（已設定，留空不變更）' : '尚未設定';
       document.getElementById('p-mode').value = cfg.payuniMode || '';
       document.getElementById('p-payoutCycle').value = cfg.payoutCycle === 'monthly' ? 'monthly' : 'weekly';
     }).withFailureHandler(function (e) { toast(e.message || window.L('adSysLoadFail'), 'err'); }).getSalesConfig();

@@ -499,7 +499,7 @@
     var subject = document.getElementById('subjectInput').value.trim() || window.L('aeAnnPvDefaultSubject');
     var html = buildPreviewHtml(subject, document.getElementById('bodyContent').value);
     var bg = document.createElement('div'); bg.className = 'pv-bg';
-    bg.innerHTML = '<div class="pv-card"><div class="pv-h"><h3>' + escapeHtml(window.L('aeAnnPvTitle')) + '</h3><button class="btn btn-ghost btn-sm" id="pvClose">' + escapeHtml(window.L('aeAnnPvClose')) + '</button></div><div class="pv-body"><iframe id="pvFrame" title="email preview"></iframe></div></div>';
+    bg.innerHTML = '<div class="pv-card"><div class="pv-h"><h3>' + escapeHtml(window.L('aeAnnPvTitle')) + '</h3><button class="btn btn-ghost btn-sm" id="pvClose">' + escapeHtml(window.L('aeAnnPvClose')) + '</button></div><div class="pv-body"><iframe id="pvFrame" title="email preview" sandbox></iframe></div></div>';
     document.body.appendChild(bg);
     bg.querySelector('#pvFrame').srcdoc = html;
     function close() { if (bg.parentNode) bg.parentNode.removeChild(bg); }

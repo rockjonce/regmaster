@@ -1058,8 +1058,9 @@ body { background:var(--bg); overflow:hidden; }
   // Same allow-list as the public render path. Strips style/class/script entirely.
   function sanitizeHelpInline(html) {
     var ALLOWED = { A: ['href'], B: [], STRONG: [], EM: [], I: [], U: [], BR: [], SPAN: [] };
-    var tmp = document.createElement('div');
-    tmp.innerHTML = String(html || '');
+    // SECURITY (M-1): inert parse — DOMParser has no browsing context, so <img onerror>/
+    // <svg onload> in pasted help never fire while we sanitize (a live div.innerHTML would).
+    var tmp = new DOMParser().parseFromString(String(html || ''), 'text/html').body;
     function walk(node) {
       Array.prototype.slice.call(node.childNodes).forEach(function (n) {
         if (n.nodeType === 3) return;

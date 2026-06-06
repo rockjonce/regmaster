@@ -425,8 +425,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   // for field help. Strip all attributes except href on <a>. No style, no class, no script.
   function sanitizeHelpInline(html) {
     var ALLOWED = { A: ['href'], B: [], STRONG: [], EM: [], I: [], U: [], BR: [], SPAN: [] };
-    var tmp = document.createElement('div');
-    tmp.innerHTML = String(html || '');
+    // SECURITY (H-NEW-1): parse in an INERT document (no browsing context). A live
+    // document.createElement('div')+innerHTML would fire <img onerror>/<svg onload> during
+    // parsing — before the walk() strips them. DOMParser('text/html') never loads resources
+    // or fires handlers, so the payload can't execute while we sanitize.
+    var tmp = new DOMParser().parseFromString(String(html || ''), 'text/html').body;
     function walk(node) {
       var children = Array.prototype.slice.call(node.childNodes);
       children.forEach(function (n) {

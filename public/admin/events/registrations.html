@@ -902,6 +902,10 @@
     });
   }
   function openFilePreview(fileName, dataUri, mimeType) {
+    // SECURITY (L-4): only ever inject a genuine data: URI into src/href. The backend builds
+    // it as "data:<mime>;base64,…", but hard-fail anything else so a future change can't turn
+    // this into a javascript:/http sink.
+    if (!/^data:/i.test(String(dataUri || ''))) { uiAlert(window.L('aeRegFileMissing')); return; }
     var lower = (fileName || '').toLowerCase();
     var isImg = /^image\//.test(mimeType) || /\.(png|jpe?g|gif|webp|bmp)$/.test(lower);
     var isPdf = mimeType === 'application/pdf' || /\.pdf$/.test(lower);

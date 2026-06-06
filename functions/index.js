@@ -906,7 +906,10 @@ exports.markAllNotificationsRead = authCallable(["system","competition"], async 
 
 // ===== Audit Logs =====
 /* Feature 3: 前端錯誤自動記錄到操作日誌 (標記 Alarm) */
-exports.logClientError = callable(async (data) => {
+exports.logClientError = callable(async (data, request) => {
+  // L-1: cap log volume per IP (best-effort — silently drop excess so we don't reveal limiting).
+  const _rl = await checkRateLimit("cerr_ip_" + clientIp(request), 40, 60000);
+  if (!_rl.ok) return { success: true };
   const action = (data.action || data.arg0 || "frontend_error");
   const detail = (data.detail || data.arg1 || "").substring(0, 500);
   await auditLog("⚠️ Alarm", action, "client", detail);
@@ -1772,7 +1775,10 @@ exports.submitRegistration = callable(async (data, request) => {
 
 
 // ===== 新增：帳號申請與驗證信功能 =====
-exports.requestAccount = callable(async (data) => {
+exports.requestAccount = callable(async (data, request) => {
+  // L-1: throttle account-request + OTP-email spam (5 per 10 min per IP).
+  const _rl = await checkRateLimit("racc_ip_" + clientIp(request), 5, 600000);
+  if (!_rl.ok) return { success: false, message: "操作過於頻繁，請稍後再試" };
   const { username, password, displayName, email, phone, intendedPlan, eulaAgreed } = data;
   if (!username || !password || !email || !displayName) return { success: false, message: "必填欄位請填寫完整" };
   if (!eulaAgreed) return { success: false, message: "請先閱讀並同意服務條款與 EULA" };
@@ -1822,10 +1828,14 @@ exports.requestAccount = callable(async (data) => {
 // C-7a: account password reset now emails a one-time RESET LINK (no plaintext password is ever
 // sent). Keeps the 15-min cooldown + anti-enumeration. The link lands on /reset-account.html,
 // which consumes the token via resetAccountPassword and sets a bcrypt hash.
-exports.resetAdminPassword = callable(async (data) => {
+exports.resetAdminPassword = callable(async (data, request) => {
   const email = String((data && data.email) || "").trim();
   if (!email) return { success: false, message: "請輸入 Email" };
   const genericMsg = "若此 Email 已註冊，密碼重設連結將寄送至信箱";
+  // L-1: throttle reset-email bombing per IP. Return the generic message (not an error) so the
+  // limit can't be used to probe registered emails (consistent with the anti-enumeration design).
+  const _rl = await checkRateLimit("rpw_ip_" + clientIp(request), 5, 600000);
+  if (!_rl.ok) return { success: true, message: genericMsg };
 
   let snap = await db.collection("accounts").where("email", "==", email).limit(1).get();
   if (snap.empty) snap = await db.collection("accounts").where("email", "==", email.toLowerCase()).limit(1).get();
@@ -4803,7 +4813,15 @@ exports.getSalesConfig = authCallable(["system","competition"], async (data, req
       payoutCycle: cfg.payoutCycle || "weekly"
     };
   }
-  return { ...cfg, plans };
+  // SECURITY (M-3): never ship the PayUni signing secrets to the browser. Return masked
+  // "is-set" flags instead; the form shows a placeholder and only re-sends a value when the
+  // admin actually types a new one (saveSalesConfig preserves the stored secret on empty).
+  const safe = { ...cfg, plans };
+  safe.payuniHashKeySet = !!cfg.payuniHashKey;
+  safe.payuniHashIVSet = !!cfg.payuniHashIV;
+  delete safe.payuniHashKey;
+  delete safe.payuniHashIV;
+  return safe;
 });
 
 // Public (no-auth) plan matrix for the landing pages — prices/fees/limits/features only,
@@ -4893,6 +4911,11 @@ exports.saveSalesConfig = authCallable(["system"], async (data) => {
       }
     }
   }
+  // SECURITY (M-3): the form sends an empty HashKey/HashIV when the admin left the masked
+  // field untouched. Drop empties before the merge so a blank field PRESERVES the stored
+  // secret instead of wiping it. (Empty MerID/Mode are still allowed to clear those.)
+  if (!config.payuniHashKey) delete config.payuniHashKey;
+  if (!config.payuniHashIV) delete config.payuniHashIV;
   await db.collection("config").doc("sales").set(config, { merge: true });
   return { success: true };
 });
@@ -6229,7 +6252,10 @@ exports.migrateViewCounts = authCallable(["system"], async () => {
 // ===== Public contact form (replaces Phase 1's addNotification hack) =====
 // Stores inquiries in contactInquiries collection + emails SYSTEM_ADMIN_EMAIL.
 // Public callable (no auth). Rate limited via simple per-IP best-effort cooldown.
-exports.submitContactInquiry = callable(async (data) => {
+exports.submitContactInquiry = callable(async (data, request) => {
+  // L-1: throttle contact-form spam (5 per 10 min per IP).
+  const _rl = await checkRateLimit("inq_ip_" + clientIp(request), 5, 600000);
+  if (!_rl.ok) return { success: false, message: "提交過於頻繁，請稍後再試" };
   const {
     name, email, company, phone,
     category,      // "general" | "sales" | "support"
@@ -7201,6 +7227,33 @@ exports.getFormSchema = compAuthCallable(async (data) => {
   return { success: true, schema: _normaliseSchemaSections(buildFormSchemaFromLegacy(cfg)), source: 'legacy' };
 });
 
+// SECURITY (H-NEW-1, defense-in-depth): server-side sanitizer for form-field `help`.
+// The real XSS sink (the registrant's browser) is closed by the client inert DOMParser render,
+// but a direct API caller could still POST a malicious schema. This keeps only the same small
+// inline allow-list as the client (a/b/strong/em/i/u/br/span), drops every other tag, removes
+// ALL attributes except a safe-protocol href on <a>, and caps length. No DOM available here, so
+// it is allow-list driven (anything not explicitly permitted is stripped).
+function sanitizeHelpServer(input) {
+  var s = String(input || '');
+  // 1. Remove script/style blocks together with their content.
+  s = s.replace(/<(script|style)\b[\s\S]*?(<\/\1\s*>|$)/gi, '');
+  // 2. Process every tag: keep only whitelisted ones; strip all attrs except href on <a>.
+  const ALLOW = { a: 1, b: 1, strong: 1, em: 1, i: 1, u: 1, br: 1, span: 1 };
+  s = s.replace(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, (m, slash, tag, attrs) => {
+    const t = tag.toLowerCase();
+    if (!ALLOW[t]) return '';                       // drop disallowed tag (inner text kept)
+    if (slash) return '</' + t + '>';               // closing tag → bare
+    if (t === 'a') {
+      const hm = attrs.match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i);
+      let url = hm ? (hm[1] || hm[2] || hm[3] || '') : '';
+      if (!/^(https?:|mailto:|tel:|\/)/i.test(url)) url = '';
+      return url ? '<a href="' + url.replace(/"/g, '%22') + '" rel="noopener noreferrer" target="_blank">' : '<a>';
+    }
+    return '<' + t + '>';                            // strip attributes from other allowed tags
+  });
+  return s.slice(0, 200);
+}
+
 exports.saveFormSchema = compAuthCallable(async (data, request) => {
   const { compId, schema } = data;
   if (!schema || !Array.isArray(schema.sections)) return { success: false, message: "schema 無效" };
@@ -7225,7 +7278,7 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
             label: String(f.label || '').slice(0, 100),
             req: !!f.req,
             opts: Array.isArray(f.opts) ? f.opts.slice(0, 50).map(o => String(o).slice(0, 100)) : [],
-            help: String(f.help || '').slice(0, 200),
+            help: sanitizeHelpServer(f.help),
             size: ['half','full','third'].includes(f.size) ? f.size : 'half'
           };
           if (f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) cleanF.legacyKey = f.legacyKey;
