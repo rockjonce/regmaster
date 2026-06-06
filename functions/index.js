@@ -45,6 +45,14 @@ function verifyPwd(plain, acct) {
   if (acct && acct.passwordHash)   return { ok: acct.passwordHash === hashPwd(plain), upgrade: true };
   return { ok: false, upgrade: false };
 }
+// P1-6: registrant TEAM passwords — bcrypt with lazy upgrade from legacy plaintext.
+function verifyTeamPwd(teamData, plain) {
+  if (teamData && teamData.passwordBcrypt) return bcrypt.compareSync(String(plain == null ? "" : plain), teamData.passwordBcrypt);
+  return !!(teamData && teamData.password != null && teamData.password === plain);  // legacy plaintext
+}
+async function upgradeTeamPwd(ref, teamData, plain) {
+  if (teamData && !teamData.passwordBcrypt && ref) { try { await ref.update({ passwordBcrypt: hashPwdBcrypt(plain), password: FieldValue.delete() }); } catch (e) {} }
+}
 function generateId(prefix) {
   const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let r = "";
@@ -1692,7 +1700,7 @@ exports.submitRegistration = callable(async (data, request) => {
         teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
         status: txStatus, paymentStatus: "待確認", paymentMethod: fd.paymentMethod || "",
         remitterName: fd.remitterName || "", remitterBank: fd.remitterBank || "",
-        remitterAccount: fd.remitterAccount || "", note: "", password: pwd,
+        remitterAccount: fd.remitterAccount || "", note: "", passwordBcrypt: hashPwdBcrypt(pwd),
         waitlistNum: txWn, creditCardOrderNo: fd.creditCardOrderNo || "", fileUrl: "",
         selectedSessions: fd.selectedSessions || [fd.selectedSession || 0],
         customAnswers: fd.customAnswers || {},
@@ -2036,7 +2044,8 @@ exports.loginTeam = callable(async (data) => {
   const { compId, teamId, password } = data;
   const doc = await db.collection("teams").doc(teamId).get();
   if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "找不到" };
-  if (doc.data().password !== password) return { success: false, message: "密碼錯誤" };
+  if (!verifyTeamPwd(doc.data(), password)) return { success: false, message: "密碼錯誤" };
+  await upgradeTeamPwd(doc.ref, doc.data(), password);
   const team = doc.data();
   const { password: _, ...safeTeam } = team;
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
@@ -2053,7 +2062,7 @@ exports.loginTeam = callable(async (data) => {
 exports.recoverTeamPassword = callable(async (data) => {
   const { compId, email } = data;
   const e = String(email || "").trim();
-  const generic = { success: true, message: "若該 Email 有報名此活動，我們已將報名編號與密碼寄出，請查收信箱。" };
+  const generic = { success: true, message: "若該 Email 有報名此活動，我們已將報名編號與密碼重設連結寄出，請查收信箱（含垃圾郵件匣）。" };
   if (!compId || !e) return generic;
   // Find this activity's members with that email (bounded per competition).
   const memSnap = await db.collection("members").where("compId", "==", compId).get();
@@ -2068,14 +2077,19 @@ exports.recoverTeamPassword = callable(async (data) => {
     if (!tDoc.exists) continue;
     const t = tDoc.data();
     if (t.status === "已取消") continue;
-    rows.push("報名編號：<b>" + escMail(t.teamId || tid) + "</b>　密碼：<b>" + escMail(t.password || "") + "</b>" + (t.teamNameCN ? "（" + escMail(t.teamNameCN) + "）" : ""));
+    // P0-2: never email the password. Issue a one-time reset link (60-min) per registration.
+    const token = generateSessionToken();
+    await db.collection("teamPwdResets").doc(token).set({ teamId: tid, compId, used: false, expiresAt: Date.now() + 60 * 60 * 1000, createdAt: fmtNow() });
+    const link = EMAIL_HOST + "/reset-team.html?token=" + token;
+    rows.push("報名編號：<b>" + escMail(t.teamId || tid) + "</b>" + (t.teamNameCN ? "（" + escMail(t.teamNameCN) + "）" : "") +
+      "<br><a href=\"" + link + "\" target=\"_blank\" style=\"color:#0A437A;font-weight:700;text-decoration:none\">設定 / 重設密碼 →</a>");
   }
   if (rows.length) {
-    const html = emailWrap("您的報名編號與密碼", `
-      <p>您在活動「<b>${escMail(compName)}</b>」的報名登入資訊如下：</p>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:2">${rows.join("<br>")}</div>
-      <p style="color:#64748b;font-size:13px">請至活動頁「查詢已報名」以報名編號 + 密碼登入，即可查詢、修改報名或申請退費。</p>`);
-    await queueMail(e, "[RegMaster] 您的報名編號與密碼 — " + compName, html);
+    const html = emailWrap("您的報名編號與密碼重設連結", `
+      <p>您在活動「<b>${escMail(compName)}</b>」的報名如下。基於安全，系統不再寄送密碼；請點擊連結設定新密碼（連結 <b>60 分鐘</b>內有效，用後即失效）：</p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:2">${rows.join("<br><br>")}</div>
+      <p style="color:#64748b;font-size:13px">設定密碼後，請至活動頁「查詢已報名」以報名編號 + 新密碼登入，即可查詢、修改報名或申請退費。</p>`);
+    await queueMail(e, "[RegMaster] 報名編號與密碼重設連結 — " + compName, html);
   }
   return generic;
 });
@@ -2159,7 +2173,7 @@ exports.resetTeamPassword = callable(async (data) => {
     const teamRef = db.collection("teams").doc(r.teamId);
     const tDoc = await tx.get(teamRef);
     if (!tDoc.exists) return { success: false, message: "找不到此報名" };
-    tx.update(teamRef, { password: newPassword });
+    tx.update(teamRef, { passwordBcrypt: hashPwdBcrypt(newPassword), password: FieldValue.delete() });
     tx.update(ref, { used: true, usedAt: fmtNow() });
     return { success: true, teamId: r.teamId, compId: r.compId };
   });
@@ -2266,7 +2280,7 @@ exports.getRefundPreview = callable(async (data) => {
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
-  if (team.password !== password) return { success: false, message: "密碼錯誤" };
+  if (!verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
   const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
   const calc = computeRefund(comp, team);
   let request = null;
@@ -2280,7 +2294,7 @@ exports.requestRefund = callable(async (data) => {
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
-  if (team.password !== password) return { success: false, message: "密碼錯誤" };
+  if (!verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
   if (team.status === "已取消") return { success: false, message: "此報名已取消" };
   if (["requested", "approved"].includes(team.refundStatus || "")) return { success: false, message: "已有退費申請處理中" };
   const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
@@ -2325,7 +2339,7 @@ exports.withdrawRefund = callable(async (data) => {
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
-  if (team.password !== password) return { success: false, message: "密碼錯誤" };
+  if (!verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
   if ((team.refundStatus || "") !== "requested") return { success: false, message: "目前無可撤回的申請" };
   if (team.refundReqId) await db.collection("refundRequests").doc(team.refundReqId).update({ status: "withdrawn", decidedAt: fmtNow() });
   await db.collection("teams").doc(teamId).update({ refundStatus: FieldValue.delete(), refundReqId: FieldValue.delete(), status: team.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() });
@@ -2417,7 +2431,7 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
 exports.updateRegistration = callable(async (data) => {
   const { compId, teamId, pwd, fd } = data;
   const doc = await db.collection("teams").doc(teamId).get();
-  if (!doc.exists || doc.data().compId !== compId || doc.data().password !== pwd) return { success: false, message: "驗證失敗" };
+  if (!doc.exists || doc.data().compId !== compId || !verifyTeamPwd(doc.data(), pwd)) return { success: false, message: "驗證失敗" };
   
   await doc.ref.update({
     group: fd.group || "", teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
@@ -4312,7 +4326,7 @@ exports.batchImportTeams = compAuthCallable(async (data) => {
       teamId, compId, registrationTime: fmtNow(), group: cols[0] || "",
       teamNameCN: cols[1] || "", teamNameEN: "", status, paymentStatus: "pending",
       paymentMethod: "", remitterName: "", remitterBank: "", remitterAccount: "",
-      note: "batch import", password: pwd, waitlistNum: wn, creditCardOrderNo: "", fileUrl: "",
+      note: "batch import", passwordBcrypt: hashPwdBcrypt(pwd), waitlistNum: wn, creditCardOrderNo: "", fileUrl: "",
       selectedSessions: teamSessions, customAnswers: {}
     });
     
@@ -7543,7 +7557,7 @@ exports.bindRegistrantSocial = callable(async (data) => {
   const { compId, teamId, password, provider, token } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
-  if (tDoc.data().password !== password) return { success: false, message: "密碼錯誤" };
+  if (!verifyTeamPwd(tDoc.data(), password)) return { success: false, message: "密碼錯誤" };
   let s;
   try { s = await verifySocialIdentity(provider, token); }
   catch (e) { return { success: false, message: (provider === "line" ? "LINE" : "Google") + " 驗證失敗：" + e.message }; }
