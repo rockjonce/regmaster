@@ -4,7 +4,8 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "public/legacy/**"
     ],
     "headers": [
       {
@@ -72,11 +73,14 @@
       {
         "source": "/admin/super",
         "destination": "/admin/super.html"
-      },
+      }
+    ],
+    "redirects": [
       {
-        "_comment": "Legacy SPA fallback during the 3-month overlap (per Q6). Any path that doesn't match a static file falls through to legacy. New v3 root is public/index.html (was landing.html).",
-        "source": "/legacy/**",
-        "destination": "/legacy/index.html"
+        "_comment": "Legacy SPA retired — not deployed (see ignore). Redirect any old /legacy link to the v3 home so stale bookmarks don't 404 or hit removed code.",
+        "source": "/legacy{,/**}",
+        "destination": "/",
+        "type": 301
       }
     ]
   },

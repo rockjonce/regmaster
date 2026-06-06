@@ -3965,7 +3965,9 @@ exports.getPdfData = callable(async (data) => {
 });
 
 
-exports.uploadTeamFile = callable(async (data) => {
+// P1-3: require the event owner/manager (was unauthenticated → anyone could overwrite any
+// team's file by teamId). Only caller was the retired legacy SPA; v3 has none.
+exports.uploadTeamFile = compAuthCallable("manage", async (data, request) => {
   const { compId, teamId, base64Data, fileName } = data;
   try {
     /* Delete old chunks */
