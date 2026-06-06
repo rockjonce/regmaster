@@ -52,6 +52,7 @@ a.btn-back { display:inline-block; margin-top:18px; padding:10px 18px; backgroun
     savedState = sessionStorage.getItem('line_oauth_state') || '';
     mode = sessionStorage.getItem('line_oauth_mode') || 'login';
     next = sessionStorage.getItem('line_oauth_next') || '/admin/';
+    if (!/^\/(?!\/)/.test(next) || /[\r\n\t]/.test(next)) next = '/admin/';  // P0-3: same-origin only
     sessionStorage.removeItem('line_oauth_state');
     sessionStorage.removeItem('line_oauth_mode');
     sessionStorage.removeItem('line_oauth_next');

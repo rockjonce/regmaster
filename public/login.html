@@ -181,6 +181,13 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 <script>
 (function () {
   AppState.init();
+  // P0-3: only allow same-origin relative redirects (block open-redirect via ?next=).
+  function safeNext(raw) {
+    var n = raw || '/admin/';
+    if (!/^\/(?!\/)/.test(n)) return '/admin/';   // must start with a single "/"
+    if (/[\r\n\t]/.test(n)) return '/admin/';
+    return n;
+  }
 
   var errBox = document.getElementById('errBox');
   var okBox = document.getElementById('okBox');
@@ -190,7 +197,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 
   // If already logged in, redirect away
   if (AppState.getMe() && AppState.getMe().sessionToken) {
-    var next = new URLSearchParams(location.search).get('next') || '/admin/';
+    var next = safeNext(new URLSearchParams(location.search).get('next'));
     location.href = next;
     return;
   }
@@ -260,7 +267,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   function finishLogin(res) {
     AppState.setMe({ username: res.username, role: res.role, displayName: res.displayName, sessionToken: res.sessionToken });
     showOk(window.L('lgMsgLoginOk'));
-    var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
+    var nextUrl = safeNext(new URLSearchParams(location.search).get('next'));
     setTimeout(function () { location.href = nextUrl; }, 600);
   }
   document.getElementById('totpBack').addEventListener('click', function () {
@@ -294,7 +301,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
     try {
       sessionStorage.setItem('line_oauth_state', state);
       sessionStorage.setItem('line_oauth_mode', mode);
-      var nx = new URLSearchParams(location.search).get('next') || '/admin/';
+      var nx = safeNext(new URLSearchParams(location.search).get('next'));
       sessionStorage.setItem('line_oauth_next', nx);
     } catch (e) {}
     location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code' +
@@ -342,7 +349,7 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
             if (res && res.success) {
               AppState.setMe({ username: res.username, role: res.role, displayName: res.displayName, sessionToken: res.sessionToken });
               showOk(window.L('lgMsgLoginOk'));
-              var nextUrl = new URLSearchParams(location.search).get('next') || '/admin/';
+              var nextUrl = safeNext(new URLSearchParams(location.search).get('next'));
               setTimeout(function () { location.href = nextUrl; }, 600);
             } else {
               hideLoading(); reset();

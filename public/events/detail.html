@@ -13,6 +13,7 @@
 <script src="/__/firebase/10.7.1/firebase-auth-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<script src="/shared/sanitize.js"></script>
 <script src="/shared/track-visit.js"></script>
 
 <style>
@@ -451,8 +452,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     if (cfg.descriptionSummary) {
       sub = String(cfg.descriptionSummary).trim();
     } else {
-      var subTmp = document.createElement('div'); subTmp.innerHTML = cfg.description || '';
-      var subPlain = (subTmp.textContent || subTmp.innerText || '').trim().replace(/\s+/g, ' ');
+      // Inert extraction — DOMParser does NOT load images / fire onerror (live div.innerHTML would)
+      var subPlain = window.richToPlainText(cfg.description || '');
       sub = subPlain.slice(0, 200) + (subPlain.length > 200 ? '⋯' : '');
     }
     document.getElementById('evSubtitle').textContent = sub;
@@ -660,15 +661,14 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       try {
         var doc = new DOMParser().parseFromString(s, 'text/html');
         if (doc && doc.body) {
-          // Strip any <script> for safety (admin-trusted but defensive)
-          doc.body.querySelectorAll('script').forEach(function (n) { n.remove(); });
-          return doc.body.innerHTML;
+          // Whitelist-sanitize before returning (organiser-authored, public page → XSS sink)
+          return window.sanitizeRichHtml(doc.body.innerHTML);
         }
       } catch (e) { /* fall through to fragment treatment */ }
     }
 
-    // HTML fragment (anything with a tag) → render as-is
-    if (/<\w+[^>]*>/.test(s)) return s;
+    // HTML fragment (anything with a tag) → sanitize, never return raw
+    if (/<\w+[^>]*>/.test(s)) return window.sanitizeRichHtml(s);
 
     // Plain text — wrap in paragraphs
     return s.split(/\n{2,}/).map(function (p) {

@@ -34,7 +34,10 @@
   // -------- Cookie helpers (matches legacy SPA's helpers) --------
   function setCookie(name, val, hours) {
     var d = new Date(); d.setTime(d.getTime() + (hours || 24) * 3600000);
-    document.cookie = name + '=' + encodeURIComponent(val || '') + ';expires=' + d.toUTCString() + ';path=/';
+    // P1-1: SameSite=Lax (CSRF/leak hardening) + Secure on HTTPS. (Full HttpOnly not possible
+    // here — the token must be read by JS to inject `_auth`; tracked as a separate refactor.)
+    var secure = (location.protocol === 'https:') ? ';Secure' : '';
+    document.cookie = name + '=' + encodeURIComponent(val || '') + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax' + secure;
   }
   function getCookie(name) {
     var m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
