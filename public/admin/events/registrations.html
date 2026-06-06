@@ -156,6 +156,32 @@
         </div>
 
         <!-- Row B: time-series (full width) -->
+        <!-- Time-range filter — applies to the time-based charts below -->
+        <div class="chart-grid" style="margin-top:16px">
+          <div class="chart-card full" style="display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; padding:14px 20px">
+            <strong style="font:700 13px/1.3 var(--f-display); color:var(--ink)" data-i18n="aeRegRangeLabel">查詢區間</strong>
+            <select id="rangeSel" style="padding:7px 10px; font:500 12.5px/1 var(--f-tc); border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)">
+              <option value="today" data-i18n="aeRegRangeToday">今日</option>
+              <option value="3" data-i18n="aeRegRange3">近 3 日</option>
+              <option value="7" data-i18n="aeRegRange7">近 7 日</option>
+              <option value="14" data-i18n="aeRegRange14">近 14 日</option>
+              <option value="30" data-i18n="aeRegRange30">近 30 日</option>
+              <option value="60" data-i18n="aeRegRange60">近 60 日</option>
+              <option value="90" data-i18n="aeRegRange90">近 90 日</option>
+              <option value="all" selected data-i18n="aeRegRangeAll">全部區間</option>
+              <option value="custom" data-i18n="aeRegRangeCustom">自訂起訖</option>
+            </select>
+            <span id="customRange" style="display:none; align-items:center; gap:6px">
+              <input type="date" id="rangeFrom" style="padding:6px 8px; font:500 12px/1 var(--f-tc); border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)">
+              <span data-i18n="aeRegRangeTo">至</span>
+              <input type="date" id="rangeTo" style="padding:6px 8px; font:500 12px/1 var(--f-tc); border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)">
+              <button id="rangeApply" class="btn btn-ghost btn-sm" data-i18n="aeRegRangeApply">套用</button>
+            </span>
+            <span class="help" data-i18n="aeRegRangeHint" style="margin-left:auto">套用於以下時間相關圖表</span>
+            <span id="rangeCount" class="help" style="width:100%; color:var(--ink-3)"></span>
+          </div>
+        </div>
+
         <div class="chart-grid" style="margin-top:16px">
           <div class="chart-card full">
             <div class="chart-head"><h4 data-i18n="aeRegChDailyH">每日新增報名數</h4><span class="help" data-i18n="aeRegChDailyHelp">每日完成報名的隊伍數量</span></div>
@@ -236,6 +262,11 @@
   var CFG = {}, TEAMS = [], STATS = {};
   var charts = {};      // Chart.js instances keyed by id (so we can destroy & re-render)
   var TREND_MODE = 'date';
+  // Time-range filter for the time-based charts. TSTATS holds dailyCounts/dailyPaidCounts/
+  // byHourOfWeek recomputed from TEAMS within the selected range (mirrors the server logic).
+  var TSTATS = {};
+  var RANGE = 'all';            // 'today' | '3' | '7' | '14' | '30' | '60' | '90' | 'all' | 'custom'
+  var RANGE_FROM = '', RANGE_TO = '';   // custom range, 'YYYY-MM-DD'
 
   // ---------- LOAD ----------
   document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
@@ -347,8 +378,58 @@
     };
   }
 
+  // Parse a registrationTime string ("YYYY-MM-DD HH:MM[:SS]" or ISO) into a Date — mirrors the
+  // server's _parseRegTime so client-recomputed stats match the original aggregates.
+  function parseRegTime(rt) {
+    if (!rt) return null;
+    var s = String(rt).replace('T', ' ');
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    if (!m) return null;
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0);
+  }
+  // Resolve the selected range to [fromMs, toMs] (inclusive day bounds). null = unbounded.
+  function rangeBounds() {
+    var now = new Date();
+    var endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+    function startNDaysAgo(n) { var d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); d.setDate(d.getDate() - (n - 1)); return d.getTime(); }
+    if (RANGE === 'all') return { from: null, to: null };
+    if (RANGE === 'today') return { from: startNDaysAgo(1), to: endOfToday };
+    if (RANGE === 'custom') {
+      var f = RANGE_FROM ? new Date(RANGE_FROM + 'T00:00:00').getTime() : null;
+      var t = RANGE_TO ? new Date(RANGE_TO + 'T23:59:59').getTime() : null;
+      return { from: f, to: t };
+    }
+    var n = parseInt(RANGE, 10) || 0;
+    return { from: n ? startNDaysAgo(n) : null, to: endOfToday };
+  }
+  // Recompute the time-based aggregates from TEAMS within the active range.
+  function computeTimeStats() {
+    var b = rangeBounds();
+    var dailyCounts = {}, dailyPaidCounts = {}, byHourOfWeek = {};
+    var n = 0;
+    (TEAMS || []).forEach(function (t) {
+      if ((t.status || '') === '已取消') return;             // exclude cancelled (matches list view)
+      var dt = parseRegTime(t.registrationTime);
+      if (!dt) return;
+      var ms = dt.getTime();
+      if (b.from != null && ms < b.from) return;
+      if (b.to != null && ms > b.to) return;
+      n++;
+      var day = String(t.registrationTime).slice(0, 10);
+      var paid = String(t.paymentStatus || '').indexOf('已確認') !== -1 || String(t.paymentStatus || '').toLowerCase().indexOf('paid') !== -1;
+      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      if (paid) dailyPaidCounts[day] = (dailyPaidCounts[day] || 0) + 1;
+      var key = dt.getDay() + '_' + dt.getHours();
+      byHourOfWeek[key] = (byHourOfWeek[key] || 0) + 1;
+    });
+    TSTATS = { dailyCounts: dailyCounts, dailyPaidCounts: dailyPaidCounts, byHourOfWeek: byHourOfWeek, count: n };
+    var ci = document.getElementById('rangeCount');
+    if (ci) ci.textContent = window.L('aeRegRangeCount').replace('{n}', n);
+  }
+
   function renderCharts() {
     if (typeof Chart === 'undefined') return;
+    computeTimeStats();
     var vis = computeVisibility();
     var fee = vis.fee;
 
@@ -438,7 +519,7 @@
     }
 
     // ----- Daily new bar (existing) -----
-    var daily = STATS.dailyCounts || {};
+    var daily = TSTATS.dailyCounts || {};
     var sortedDays = Object.keys(daily).sort();
     destroyChart('daily');
     charts.daily = new Chart(document.getElementById('chartDaily').getContext('2d'), {
@@ -450,7 +531,7 @@
     // ----- (d) Daily revenue bar -----
     document.getElementById('dailyRevenueCardWrap').style.display = vis.dailyRevenue ? '' : 'none';
     if (vis.dailyRevenue) {
-      var dpc = STATS.dailyPaidCounts || {};
+      var dpc = TSTATS.dailyPaidCounts || {};
       var dpDays = Object.keys(dpc).sort();
       destroyChart('dailyRevenue');
       charts.dailyRevenue = new Chart(document.getElementById('chartDailyRevenue').getContext('2d'), {
@@ -466,7 +547,7 @@
     // ----- (g) Cumulative revenue line -----
     document.getElementById('revenueTrendCardWrap').style.display = vis.revenueTrend ? '' : 'none';
     if (vis.revenueTrend) {
-      var dpc2 = STATS.dailyPaidCounts || {};
+      var dpc2 = TSTATS.dailyPaidCounts || {};
       var rDays = Object.keys(dpc2).sort();
       var cum = 0;
       var cumVals = rDays.map(function (d) { cum += (dpc2[d] || 0) * fee; return cum; });
@@ -510,7 +591,7 @@
   }
 
   function renderHeatmap() {
-    var byHour = STATS.byHourOfWeek || {};
+    var byHour = TSTATS.byHourOfWeek || {};
     // Find max for shading scale
     var max = 1;
     Object.keys(byHour).forEach(function (k) { if (byHour[k] > max) max = byHour[k]; });
@@ -544,7 +625,7 @@
 
   function drawTrend() {
     if (typeof Chart === 'undefined') return;
-    var daily = STATS.dailyCounts || {};
+    var daily = TSTATS.dailyCounts || {};
     var sortedDays = Object.keys(daily).sort();
     if (sortedDays.length === 0) {
       destroyChart('trend');
@@ -593,6 +674,32 @@
       TREND_MODE = btn.dataset.trendX;
       drawTrend();
     });
+  });
+
+  // ---------- TIME-RANGE FILTER ----------
+  document.getElementById('rangeSel').addEventListener('change', function () {
+    RANGE = this.value;
+    var custom = document.getElementById('customRange');
+    if (RANGE === 'custom') {
+      custom.style.display = 'inline-flex';
+      // Default the custom inputs to the activity's reg window (open date → today) on first open.
+      if (!RANGE_FROM) {
+        var open = String(CFG.openDate || '').slice(0, 10);
+        if (open) document.getElementById('rangeFrom').value = open;
+        var now = new Date();
+        document.getElementById('rangeTo').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      }
+      return;  // wait for 套用 before re-rendering
+    }
+    custom.style.display = 'none';
+    renderCharts();
+  });
+  document.getElementById('rangeApply').addEventListener('click', function () {
+    RANGE_FROM = document.getElementById('rangeFrom').value || '';
+    RANGE_TO = document.getElementById('rangeTo').value || '';
+    if (RANGE_FROM && RANGE_TO && RANGE_FROM > RANGE_TO) { var tmp = RANGE_FROM; RANGE_FROM = RANGE_TO; RANGE_TO = tmp; }
+    RANGE = 'custom';
+    renderCharts();
   });
 
   // ---------- LIST TAB ----------

@@ -402,6 +402,39 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     cb(url);
   }
 
+  // Rules PDF resolver. The PDF is stored as a pdfFiles doc (id in RULES_PDF_DOCID); the public
+  // bundle's rulesPdfUrl is a "pfpdf:<id>" placeholder, NOT a usable URL — so we must fetch the
+  // bytes via getPdfData and turn them into a Blob URL (cached, lazy on first click).
+  var RULES_PDF_DOCID = '', RULES_PDF_URL = '', RULES_PDF_BLOB = '';
+  function resolveRulesPdf(cb) {
+    if (RULES_PDF_BLOB) { cb(RULES_PDF_BLOB); return; }
+    if (/^https?:\/\//.test(RULES_PDF_URL) || RULES_PDF_URL.indexOf('data:') === 0) { RULES_PDF_BLOB = RULES_PDF_URL; cb(RULES_PDF_URL); return; }
+    if (!RULES_PDF_DOCID) { cb(''); return; }
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (!res || !res.success || !res.dataUri) { cb(''); return; }
+        try {
+          var bin = atob((res.dataUri.split(',')[1]) || '');
+          var arr = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          RULES_PDF_BLOB = URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
+        } catch (e) { RULES_PDF_BLOB = res.dataUri; }
+        cb(RULES_PDF_BLOB);
+      })
+      .withFailureHandler(function () { cb(''); })
+      .getPdfData(RULES_PDF_DOCID);
+  }
+  function openRulesPdf(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var trigger = e && e.currentTarget, orig = trigger && trigger.textContent;
+    if (trigger) { trigger.style.pointerEvents = 'none'; trigger.textContent = (document.body.getAttribute('data-lang') === 'en' ? 'Loading…' : '載入中…'); }
+    resolveRulesPdf(function (url) {
+      if (trigger) { trigger.style.pointerEvents = ''; trigger.textContent = orig; }
+      if (!url) { alert(document.body.getAttribute('data-lang') === 'en' ? 'Failed to load the rules PDF. Please try again.' : '規章 PDF 載入失敗，請稍後再試。'); return; }
+      window.open(url, '_blank');
+    });
+  }
+
   google.script.run
     .withSuccessHandler(function (data) {
       if (!data || data.error) {
@@ -618,12 +651,18 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       document.getElementById('tabRules').style.display = '';
       document.getElementById('rules').style.display = '';
       if (d.rulesPdfUrl || d.pdfDocId) {
-        var pdfUrl = d.rulesPdfUrl || '#';
+        // Resolve the real PDF source: a legacy direct URL, or the pdfFiles doc id (raw
+        // pdfDocId, or stripped from the "pfpdf:<id>" placeholder in rulesPdfUrl).
+        RULES_PDF_URL = (d.rulesPdfUrl && d.rulesPdfUrl.indexOf('pfpdf:') !== 0) ? d.rulesPdfUrl : '';
+        RULES_PDF_DOCID = d.pdfDocId || (d.rulesPdfUrl && d.rulesPdfUrl.indexOf('pfpdf:') === 0 ? d.rulesPdfUrl.slice(6) : '');
         document.getElementById('pdfSideCard').style.display = 'block';
-        document.getElementById('pdfLink').href = pdfUrl;
+        var pdfSideLink = document.getElementById('pdfLink');
+        pdfSideLink.href = '#';
+        pdfSideLink.addEventListener('click', openRulesPdf);
         document.getElementById('rulesArea').innerHTML =
           '<p style="margin-bottom:12px">' + escapeHtml(window.L('edRulesHasPdf')) + '</p>' +
-          '<a class="btn btn-ghost" href="' + escapeHtml(pdfUrl) + '" target="_blank">' + escapeHtml(window.L('edRulesDownloadBtn')) + '</a>';
+          '<a class="btn btn-ghost" id="rulesPdfBtn" href="#">' + escapeHtml(window.L('edRulesDownloadBtn')) + '</a>';
+        document.getElementById('rulesPdfBtn').addEventListener('click', openRulesPdf);
       } else if (d.config.rulesText) {
         document.getElementById('rulesArea').innerHTML = '<div class="rich-content">' + renderRich(d.config.rulesText) + '</div>';
       }

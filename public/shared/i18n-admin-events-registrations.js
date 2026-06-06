@@ -57,6 +57,22 @@
     aeRegChHeatmapH: '報名時段熱點（星期 × 小時）',
     aeRegChHeatmapHelp: '顏色深淺對應該時段報名筆數，可推測下次公告時機',
 
+    // ----- time-range filter (套用於下方時間相關圖表) -----
+    aeRegRangeLabel: '查詢區間',
+    aeRegRangeHint: '套用於以下時間相關圖表',
+    aeRegRangeToday: '今日',
+    aeRegRange3: '近 3 日',
+    aeRegRange7: '近 7 日',
+    aeRegRange14: '近 14 日',
+    aeRegRange30: '近 30 日',
+    aeRegRange60: '近 60 日',
+    aeRegRange90: '近 90 日',
+    aeRegRangeAll: '全部區間',
+    aeRegRangeCustom: '自訂起訖',
+    aeRegRangeApply: '套用',
+    aeRegRangeTo: '至',
+    aeRegRangeCount: '此區間共 {n} 筆報名',
+
     // ----- list toolbar -----
     aeRegSearchPh: '搜尋編號 / 隊名 / 狀態⋯',
     aeRegRefundBtn: '💸 退費申請',
@@ -321,6 +337,22 @@
     aeRegChRevenueTrendHelp: 'Revenue accumulated over time',
     aeRegChHeatmapH: 'Registration Time Heatmap (Day × Hour)',
     aeRegChHeatmapHelp: 'Color depth reflects registrations in each slot — handy for timing your next announcement.',
+
+    // ----- time-range filter -----
+    aeRegRangeLabel: 'Date range',
+    aeRegRangeHint: 'Applies to the time-based charts below',
+    aeRegRangeToday: 'Today',
+    aeRegRange3: 'Last 3 days',
+    aeRegRange7: 'Last 7 days',
+    aeRegRange14: 'Last 14 days',
+    aeRegRange30: 'Last 30 days',
+    aeRegRange60: 'Last 60 days',
+    aeRegRange90: 'Last 90 days',
+    aeRegRangeAll: 'All time',
+    aeRegRangeCustom: 'Custom range',
+    aeRegRangeApply: 'Apply',
+    aeRegRangeTo: 'to',
+    aeRegRangeCount: '{n} registrations in this range',
 
     // ----- list toolbar -----
     aeRegSearchPh: 'Search ID / team name / status…',
