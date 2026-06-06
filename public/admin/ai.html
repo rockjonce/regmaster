@@ -310,7 +310,7 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
             .map(function (s) { return '<div class="sg" data-sg="' + escapeHtml(s) + '">' + escapeHtml(s) + '</div>'; }).join('') +
         '</div>' : '') +
       '</div>';
-      document.querySelectorAll('.sg').forEach(function (b) { b.addEventListener('click', function () { document.getElementById('msgInput').value = b.dataset.sg; document.getElementById('msgInput').dispatchEvent(new Event('input')); }); });
+      // .sg clicks handled via delegation on #messages (fills + sends) — see submitSuggestion below.
       return;
     }
     box.innerHTML = MESSAGES.map(function (m) {
@@ -467,6 +467,19 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       })
       .appendMessage(convId, 'user', text);
   }
+
+  // Suggestion cards → fill the input and send (auto-creates a conversation if none).
+  // Delegated on #messages so it works for the static empty-state cards AND re-rendered ones.
+  function submitSuggestion(text) {
+    if (!text) return;
+    inp.value = text;
+    inp.dispatchEvent(new Event('input'));            // enable send button + autosize
+    document.getElementById('sendBtn').click();        // sendBtn handler auto-creates a conv when none
+  }
+  document.getElementById('messages').addEventListener('click', function (e) {
+    var sg = e.target.closest ? e.target.closest('.sg') : null;
+    if (sg) submitSuggestion(sg.getAttribute('data-sg') || sg.textContent.trim());
+  });
 
   renderKbPanel();
   loadConvs();
