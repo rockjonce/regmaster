@@ -30,6 +30,8 @@
     // ----- tabs -----
     aeRegTabStats: '📊 報名統計',
     aeRegTabList: '📋 報名列表',
+    aeRegSubCat: '分類統計',
+    aeRegSubTime: '時間趨勢',
 
     // ----- stats: chart card headings + help -----
     aeRegChGroupH: '各組別報名數量',
@@ -48,7 +50,7 @@
     aeRegChDailyH: '每日新增報名數',
     aeRegChDailyHelp: '每日完成報名的隊伍數量',
     aeRegChDailyRevenueH: '每日入帳金額 (NT$)',
-    aeRegChDailyRevenueHelp: '當日完成付款的隊伍 × 報名費',
+    aeRegChDailyRevenueHelp: '實際收款金額（線上付款以實收計，含折扣；銀行轉帳等未知者以報名費估算）',
     aeRegChTrendH: '報名累計趨勢',
     aeRegTrendByDate: '日期',
     aeRegTrendByCountdown: '距截止天數 (D-N)',
@@ -310,6 +312,8 @@
 
     // ----- tabs -----
     aeRegTabStats: '📊 Statistics',
+    aeRegSubCat: 'Breakdowns',
+    aeRegSubTime: 'Time trends',
     aeRegTabList: '📋 Registrations',
 
     // ----- stats: chart card headings + help -----
@@ -329,7 +333,7 @@
     aeRegChDailyH: 'New Registrations per Day',
     aeRegChDailyHelp: 'Teams that completed registration each day',
     aeRegChDailyRevenueH: 'Daily Revenue (NT$)',
-    aeRegChDailyRevenueHelp: 'Teams paid that day × registration fee',
+    aeRegChDailyRevenueHelp: 'Actual revenue (online payments use the real amount incl. discounts; unknown/bank transfers fall back to the flat fee)',
     aeRegChTrendH: 'Cumulative Registration Trend',
     aeRegTrendByDate: 'Date',
     aeRegTrendByCountdown: 'Days to deadline (D-N)',

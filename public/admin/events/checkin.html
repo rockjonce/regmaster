@@ -284,6 +284,7 @@
             <div class="set-row" style="display:block">
               <label class="lbl" data-i18n="aeChkSetPin">報到機解鎖 PIN</label>
               <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" class="fld" id="setPin" placeholder="4–8 位數字" data-i18n-placeholder="aeChkSetPinPh" style="max-width:200px">
+              <p class="lbl" style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:6px; font-weight:400" data-i18n="aeChkSetPinNote">說明：此 PIN 僅用於「離開自助報到機（Kiosk）全螢幕模式」的前端鎖定，防止現場人員誤觸離開；報到本身仍由時間窗與 GPS 範圍於伺服器端驗證，PIN 不是報到入場的驗證。</p>
             </div>
             <div style="display:flex; justify-content:flex-end; margin-top:18px">
               <button class="btn btn-primary btn-lg" id="setSaveBtn" data-i18n="aeChkSetSave">儲存設定</button>

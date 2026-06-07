@@ -1058,7 +1058,24 @@
     var boxSvg = '<div class="st-section"><h3 data-i18n="aeScoreBoxTitle">盒鬚圖（各組別總分分布）</h3>' +
       '<div class="box-wrap">' + buildBoxSvg(grp, statsByGroup) + buildBoxLegend() + '</div></div>';
 
-    body.innerHTML = tbl + boxSvg;
+    // #4: per-group spread of individual judge scores (multi-judge only) — shows where each
+    // group's judge scores fall and how consistent the judges were.
+    var judgeBox = '';
+    if (RESULTS.multiJudgeUsed && RESULTS.judgeSpreadByGroup) {
+      var js = RESULTS.judgeSpreadByGroup, jorder = [], jmap = {};
+      Object.keys(js).forEach(function (g) {
+        if (js[g] && js[g].length) { var gl = g || window.L('aeScoreNoGroup'); jorder.push(gl); jmap[gl] = js[g]; }
+      });
+      if (jorder.length) {
+        var grp2 = { order: jorder, map: jmap }, statsByGroup2 = {};
+        jorder.forEach(function (g) { statsByGroup2[g] = statsOf(jmap[g]); });
+        judgeBox = '<div class="st-section"><h3 data-i18n="aeScoreJudgeBoxTitle">盒鬚圖（各組別評審間評分分布）</h3>' +
+          '<p class="mc-hint" data-i18n="aeScoreJudgeBoxHint">每筆為一位評審對該組某隊的原始加權總分（0–100），用以判斷各組評審評分的區間與一致性。</p>' +
+          '<div class="box-wrap">' + buildBoxSvg(grp2, statsByGroup2) + buildBoxLegend() + '</div></div>';
+      }
+    }
+
+    body.innerHTML = tbl + boxSvg + judgeBox;
     window.applyI18n(body);
   }
 

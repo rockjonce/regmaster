@@ -41,6 +41,9 @@
 .chart-toggle { display:flex; gap:4px; }
 .chart-toggle button { padding:5px 10px; font:500 11.5px/1 var(--f-tc); background:var(--surface-2); border:1px solid var(--line); border-radius:5px; color:var(--ink-2); cursor:pointer; }
 .chart-toggle button.on { background:var(--ink); color:white; border-color:var(--ink); }
+.subtabs { display:flex; gap:6px; margin:16px 0 4px; }
+.subtab { padding:7px 14px; font:600 12.5px/1 var(--f-tc); background:var(--surface-2); border:1px solid var(--line); border-radius:7px; color:var(--ink-2); cursor:pointer; }
+.subtab.on { background:var(--ink); color:#fff; border-color:var(--ink); }
 .chart-box { position:relative; height:240px; }
 .chart-box.tall { height:280px; }
 
@@ -123,6 +126,13 @@
       <div class="tab-pane on" data-pane="stats">
         <div class="sum-row" id="kpiRow"></div>
 
+        <!-- sub-tabs: categorical breakdowns vs time-series -->
+        <div class="subtabs">
+          <button class="subtab on" data-sub="cat" data-i18n="aeRegSubCat">分類統計</button>
+          <button class="subtab" data-sub="time" data-i18n="aeRegSubTime">時間趨勢</button>
+        </div>
+
+        <div class="sub-pane" id="subCat">
         <!-- Row A: small categorical breakdowns (auto-fit) -->
         <div class="chart-grid">
           <div class="chart-card" id="groupCardWrap" style="display:none">
@@ -155,6 +165,9 @@
           </div>
         </div>
 
+        </div><!-- /subCat -->
+
+        <div class="sub-pane" id="subTime" style="display:none">
         <!-- Row B: time-series (full width) -->
         <!-- Time-range filter — applies to the time-based charts below -->
         <div class="chart-grid" style="margin-top:16px">
@@ -217,6 +230,7 @@
             <div id="heatmap" class="heatmap"></div>
           </div>
         </div>
+        </div><!-- /subTime -->
       </div>
 
       <!-- TAB 2: LIST -->
@@ -313,6 +327,19 @@
     });
   });
 
+  // ---------- STATS SUB-TABS (分類統計 / 時間趨勢) ----------
+  document.querySelectorAll('.subtab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.subtab').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var sub = b.dataset.sub;
+      document.getElementById('subCat').style.display = (sub === 'cat') ? '' : 'none';
+      document.getElementById('subTime').style.display = (sub === 'time') ? '' : 'none';
+      // Charts created while their pane was hidden render at 0 size — resize once visible.
+      Object.keys(charts).forEach(function (k) { try { charts[k].resize(); } catch (e) {} });
+    });
+  });
+
   // ---------- STATS TAB ----------
   function renderKPIs() {
     var team = STATS.teamTotal || 0;
@@ -405,7 +432,10 @@
   // Recompute the time-based aggregates from TEAMS within the active range.
   function computeTimeStats() {
     var b = rangeBounds();
-    var dailyCounts = {}, dailyPaidCounts = {}, byHourOfWeek = {};
+    var dailyCounts = {}, dailyPaidCounts = {}, byHourOfWeek = {}, dailyRevenue = {};
+    // Flat-fee fallback (used only when a paid team has no recorded actual amount, e.g. bank transfer).
+    var fee = parseInt(CFG.registrationFee, 10) || 0;
+    if (!fee && Array.isArray(CFG.feeItems)) fee = CFG.feeItems.reduce(function (s, it) { return s + (parseInt(it.amount, 10) || 0); }, 0);
     var n = 0;
     (TEAMS || []).forEach(function (t) {
       if ((t.status || '') === '已取消') return;             // exclude cancelled (matches list view)
@@ -418,11 +448,16 @@
       var day = String(t.registrationTime).slice(0, 10);
       var paid = String(t.paymentStatus || '').indexOf('已確認') !== -1 || String(t.paymentStatus || '').toLowerCase().indexOf('paid') !== -1;
       dailyCounts[day] = (dailyCounts[day] || 0) + 1;
-      if (paid) dailyPaidCounts[day] = (dailyPaidCounts[day] || 0) + 1;
+      if (paid) {
+        dailyPaidCounts[day] = (dailyPaidCounts[day] || 0) + 1;
+        // Real收款金額（含折扣）：線上付款用實收 paidAmount；其餘(銀行轉帳/未知)以報名費估算。
+        var amt = (t.paidAmount != null) ? Number(t.paidAmount) : fee;
+        dailyRevenue[day] = (dailyRevenue[day] || 0) + amt;
+      }
       var key = dt.getDay() + '_' + dt.getHours();
       byHourOfWeek[key] = (byHourOfWeek[key] || 0) + 1;
     });
-    TSTATS = { dailyCounts: dailyCounts, dailyPaidCounts: dailyPaidCounts, byHourOfWeek: byHourOfWeek, count: n };
+    TSTATS = { dailyCounts: dailyCounts, dailyPaidCounts: dailyPaidCounts, dailyRevenue: dailyRevenue, byHourOfWeek: byHourOfWeek, count: n };
     var ci = document.getElementById('rangeCount');
     if (ci) ci.textContent = window.L('aeRegRangeCount').replace('{n}', n);
   }
@@ -531,12 +566,12 @@
     // ----- (d) Daily revenue bar -----
     document.getElementById('dailyRevenueCardWrap').style.display = vis.dailyRevenue ? '' : 'none';
     if (vis.dailyRevenue) {
-      var dpc = TSTATS.dailyPaidCounts || {};
-      var dpDays = Object.keys(dpc).sort();
+      var drev = TSTATS.dailyRevenue || {};
+      var dpDays = Object.keys(drev).sort();
       destroyChart('dailyRevenue');
       charts.dailyRevenue = new Chart(document.getElementById('chartDailyRevenue').getContext('2d'), {
         type: 'bar',
-        data: { labels: dpDays, datasets: [{ label: window.L('aeRegDsDailyIncome'), data: dpDays.map(function (d) { return (dpc[d] || 0) * fee; }), backgroundColor: '#10b981', borderRadius: 4 }] },
+        data: { labels: dpDays, datasets: [{ label: window.L('aeRegDsDailyIncome'), data: dpDays.map(function (d) { return drev[d] || 0; }), backgroundColor: '#10b981', borderRadius: 4 }] },
         options: revenueOpts()
       });
     }
@@ -547,10 +582,10 @@
     // ----- (g) Cumulative revenue line -----
     document.getElementById('revenueTrendCardWrap').style.display = vis.revenueTrend ? '' : 'none';
     if (vis.revenueTrend) {
-      var dpc2 = TSTATS.dailyPaidCounts || {};
-      var rDays = Object.keys(dpc2).sort();
+      var drev2 = TSTATS.dailyRevenue || {};
+      var rDays = Object.keys(drev2).sort();
       var cum = 0;
-      var cumVals = rDays.map(function (d) { cum += (dpc2[d] || 0) * fee; return cum; });
+      var cumVals = rDays.map(function (d) { cum += (drev2[d] || 0); return cum; });
       destroyChart('revenueTrend');
       charts.revenueTrend = new Chart(document.getElementById('chartRevenueTrend').getContext('2d'), {
         type: 'line',

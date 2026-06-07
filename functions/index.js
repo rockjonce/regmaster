@@ -2687,10 +2687,15 @@ exports.getAllTeams = compAuthCallable("view", async (data, request) => {
     const tSnap = await db.collection("teams").where("compId", "==", data.compId).get();
     return tSnap.docs.map(d => { const t = d.data(); return { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
   }
-  const [snap, mSnap] = await Promise.all([
+  const [snap, mSnap, paySnap] = await Promise.all([
     db.collection("teams").where("compId", "==", data.compId).get(),
-    db.collection("members").where("compId", "==", data.compId).get()
+    db.collection("members").where("compId", "==", data.compId).get(),
+    db.collection("regPayments").where("compId", "==", data.compId).where("status", "==", "paid").get()
   ]);
+  // Map teamId → actual paid amount (reflects group/code discounts). Online (PayUNI) payments only;
+  // bank transfers have no recorded amount, so the revenue chart falls back to the flat fee for those.
+  const paidAmountByTeam = {};
+  paySnap.docs.forEach(d => { const p = d.data(); if (p.teamId) paidAmountByTeam[p.teamId] = Number(p.amount) || 0; });
   const membersByTeam = {};
   mSnap.docs.forEach(d => {
     const m = d.data();
@@ -2710,6 +2715,7 @@ exports.getAllTeams = compAuthCallable("view", async (data, request) => {
       checkedIn: !!t.checkedIn, checkedInAt: t.checkedInAt || "",
       selectedSession: t.selectedSession || 0,
       selectedSessions: t.selectedSessions || [t.selectedSession || 0],
+      paidAmount: (paidAmountByTeam[t.teamId] !== undefined ? paidAmountByTeam[t.teamId] : null),  // actual收款(線上)；null=未知(走估算)
       studentNames: mInfo.studentNames,
       teacherNames: mInfo.teacherNames
     };
@@ -7138,6 +7144,7 @@ async function computeScoring(compId) {
   const leafById = {}; leaves.forEach(l => { leafById[l.id] = l; });
   // per (team, leaf): collect each judge's record-aggregated value
   const sbtl = {}, judgesByTeam = {};
+  const pjv = {};   // pjv[tid][jid][leafId] = this judge's record-agg value (for judge-spread box-plot)
   sSnap.docs.forEach(d => {
     const s = d.data(); const tid = s.teamId; if (!teams[tid]) return; const jid = s.judgeId || s.user || "?";
     let cells = s.cells;
@@ -7147,7 +7154,9 @@ async function computeScoring(compId) {
     leaves.forEach(lf => {
       const r = cells[lf.id]; if (r == null) return;
       const arr = (Array.isArray(r) ? r : [r]).map(Number).filter(Number.isFinite); if (!arr.length) return;
-      ((sbtl[tid] = sbtl[tid] || {})[lf.id] = sbtl[tid][lf.id] || []).push(_aggRecords(arr, lf.aggregateRecords));
+      const rv = _aggRecords(arr, lf.aggregateRecords);
+      ((sbtl[tid] = sbtl[tid] || {})[lf.id] = sbtl[tid][lf.id] || []).push(rv);
+      ((pjv[tid] = pjv[tid] || {})[jid] = pjv[tid][jid] || {})[lf.id] = rv;
     });
   });
   // consensus per (team, leaf): trim extremes then aggregate judges
@@ -7173,7 +7182,24 @@ async function computeScoring(compId) {
   });
   results.slice().sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankOverall = i + 1; });
   const byG = {}; results.forEach(r => (byG[r.group] = byG[r.group] || []).push(r)); Object.values(byG).forEach(arr => arr.sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankInGroup = i + 1; }));
-  return { rubric: { aggregateJudges: rubric.aggregateJudges, trimExtremes: rubric.trimExtremes, nodes: rubric.nodes }, panels, leaves: leaves.map(l => ({ id: l.id, label: l.label, normalize: l.normalize, max: l.max })), leafStats, results };
+  // #4: per-group spread of each judge's RAW weighted total (0–100, leaf value÷max×weights). Lets
+  // the organiser see how judges scored across a group and where that group's judge scores sit.
+  const judgeSpreadByGroup = {};
+  Object.keys(teams).forEach(tid => {
+    const g = teams[tid].group || "";
+    const jmap = pjv[tid] || {};
+    Object.keys(jmap).forEach(jid => {
+      const rawPct = {};
+      leaves.forEach(lf => { const v = jmap[jid][lf.id]; if (v != null) rawPct[lf.id] = (lf.max > 0 ? Math.max(0, Math.min(100, v / lf.max * 100)) : 0); });
+      const ns = node => { if (node.children && node.children.length) { let s = 0; node.children.forEach(c => { s += ns(c) * (Number(c.weightPct) || 0) / 100; }); return s; } const v = rawPct[node.id]; return v == null ? 0 : v; };
+      let total = 0, any = false;
+      rubric.nodes.forEach(n => { total += ns(n) * (Number(n.weightPct) || 0) / 100; });
+      leaves.forEach(lf => { if (jmap[jid][lf.id] != null) any = true; });
+      if (any) (judgeSpreadByGroup[g] = judgeSpreadByGroup[g] || []).push(Math.round(total * 100) / 100);
+    });
+  });
+  const multiJudgeUsed = results.some(r => (r.judgeCount || 0) >= 2);
+  return { rubric: { aggregateJudges: rubric.aggregateJudges, trimExtremes: rubric.trimExtremes, nodes: rubric.nodes }, panels, leaves: leaves.map(l => ({ id: l.id, label: l.label, normalize: l.normalize, max: l.max })), leafStats, results, judgeSpreadByGroup, multiJudgeUsed };
 }
 
 // Whether a caller may see individual registrant info for this event (judges gated by toggle).
