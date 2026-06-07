@@ -679,3 +679,27 @@ a { color: inherit; text-decoration: none; }
 
 /* ===== HEROICONS-STYLE INLINE SVG SIZING ===== */
 [data-hero] { width: 1em; height: 1em; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ============================================================
+   MOBILE RWD SAFETY NET  (added 2026-06-07 · loaded on every page)
+   ─────────────────────────────────────────────────
+   Catch-all guards so no page can ever scroll sideways on a phone.
+   Root-cause fixes live in admin-layout.css / per-page styles; this
+   layer only stops overflow and makes wide tables scroll, never cram.
+   Desktop (>768px) is untouched.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* overflow-x:clip (not hidden) — never creates a scroll container, so it
+     does NOT break position:sticky headers/sidebars. Kills the "畫面寬度不對". */
+  html, body { overflow-x: clip; max-width: 100%; }
+  /* media + code blocks never push the page wider than the screen */
+  img, svg, video, canvas, iframe, pre, table { max-width: 100%; }
+  /* any horizontally-scrolling table wrapper actually scrolls on touch */
+  .tbl-wrap, .b-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* a wide data table SCROLLS (keeps columns readable) instead of cramming
+     6 columns into 360px. Pages that set a larger inline min-width win
+     (inline <style> loads after this file); narrow tables that opt out via
+     a more specific rule are unaffected. */
+  .tbl { min-width: 600px; }
+}
+

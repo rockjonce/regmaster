@@ -102,8 +102,37 @@
   .chart-grid { grid-template-columns:1fr; }
   .modal-body .kv { grid-template-columns:1fr; }
 }
+@media (max-width:600px){
+  .search-row { flex-wrap:wrap; }
+  .search-row input { flex:1 1 100%; max-width:none; }
+  .search-row .btn { flex:1 1 auto; }
+  /* ── Registration list → CARD VIEW on phones ──
+     "多欄位、少筆" data reads far better as one card per team than as a
+     6-column table squeezed/scrolled on a 360px screen. Each <td> becomes a
+     label:value row using its data-label; the action buttons sit full-width
+     at the bottom. Desktop keeps the normal table (rules scoped to ≤600px). */
+  .reg-cards { min-width:0; }                 /* cancel the 760px scroll width */
+  .reg-cards thead { display:none; }
+  .reg-cards, .reg-cards tbody, .reg-cards tr, .reg-cards td { display:block; width:100%; }
+  .tbl-wrap { overflow:visible; border:0; background:transparent; }
+  .reg-cards tr { border:1px solid var(--line); border-radius:11px; background:var(--surface);
+    margin-bottom:10px; padding:4px 2px; }
+  .reg-cards tbody tr:hover td { background:transparent; }   /* no row-hover in card mode */
+  .reg-cards td { border:0; border-bottom:1px solid var(--line-2);
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:9px 14px; text-align:right; }
+  .reg-cards td::before { content:attr(data-label); text-align:left; flex:0 0 auto;
+    font:600 10.5px/1.4 var(--f-mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+  .reg-cards td.td-actions { border-bottom:0; flex-wrap:wrap; justify-content:stretch; }
+  .reg-cards td.td-actions::before { display:none; }
+  .reg-cards td.td-actions .action-btn { flex:1 1 auto; margin:0; text-align:center; padding:9px; }
+  /* the empty-state row (single colspan cell) shouldn't look like a labelled field */
+  .reg-cards td[colspan]::before { display:none; }
+  .reg-cards td[colspan] { justify-content:center; }
+}
 @media (max-width:480px){ .sum-row { grid-template-columns:1fr; } }
 </style>
+<link rel="stylesheet" href="/shared/mobile.css">
 </head>
 <body>
 <div class="admin">
@@ -242,7 +271,7 @@
           <button class="btn btn-primary btn-sm" id="exportListBtn" data-i18n="aeRegExportBtn">⬇️ 匯出所有報名資料</button>
         </div>
         <div class="tbl-wrap">
-          <table class="tbl">
+          <table class="tbl reg-cards">
             <thead><tr><th data-i18n="aeRegColId">編號</th><th data-i18n="aeRegColNameCN">中文隊名</th><th data-i18n="aeRegColNameEN">英文隊名</th><th data-i18n="aeRegColStatus">狀態</th><th data-i18n="aeRegColPayStatus">付款狀態</th><th data-i18n="aeRegColActions">動作</th></tr></thead>
             <tbody id="listBody"></tbody>
           </table>
@@ -748,12 +777,12 @@
     document.getElementById('listBody').innerHTML = rows.map(function (t) {
       var paid = (t.paymentStatus || '').includes('已確認');
       return '<tr>' +
-        '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
-        '<td><b>' + escapeHtml(t.teamNameCN || window.L('aeRegDash')) + '</b></td>' +
-        '<td>' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
-        '<td>' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
-        '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +
-        '<td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColId')) + '" style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColNameCN')) + '"><b>' + escapeHtml(t.teamNameCN || window.L('aeRegDash')) + '</b></td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColNameEN')) + '">' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColStatus')) + '">' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +
+        '<td class="td-actions">' +
           '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnView') + '</button>' +
           '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' +
           '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnDelete') + '</button>' +

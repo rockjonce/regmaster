@@ -162,8 +162,15 @@ body { background:var(--bg); overflow:hidden; }
     padding:8px 12px; gap:4px; border-right:0; border-bottom:1px solid var(--line); overflow-x:auto; }
   .side-mini .logo { margin:0 6px 0 0; flex-shrink:0; }
   .side-mini a { flex-shrink:0; }
-  .top-bar { padding:0 14px; gap:10px; }
-  .top-bar .crumb { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* top-bar: crumb + save-meta + 預覽/儲存 buttons can't fit on one phone row
+     (the last button used to get clipped). Let it wrap: crumb scrolls on its
+     own full-width row, the controls sit on a second row. */
+  .top-bar { height:auto; min-height:52px; flex-wrap:wrap; padding:8px 14px; gap:8px 10px; }
+  .top-bar .crumb { flex:1 1 100%; order:-1; font-size:12px; white-space:nowrap;
+    overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .top-bar .crumb::-webkit-scrollbar { display:none; }
+  .top-bar .save-meta { font-size:11px; padding:5px 9px; }
+  .top-bar .btn { flex:0 0 auto; }
   /* stack palette → canvas → inspector vertically, each scrolls with the page */
   .builder { grid-template-columns:1fr; height:auto; }
   .palette, .canvas, .inspector { height:auto; overflow:visible; border-right:0; border-left:0;
@@ -173,6 +180,7 @@ body { background:var(--bg); overflow:hidden; }
 }
 @media (max-width:380px){ .field-types { grid-template-columns:1fr; } }
 </style>
+<link rel="stylesheet" href="/shared/mobile.css">
 </head>
 <body>
 

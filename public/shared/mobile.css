@@ -1,0 +1,112 @@
+/* ============================================================
+   RegMaster · Shared MOBILE / RWD refinements   (mobile.css)
+   ─────────────────────────────────────────────────
+   Loaded LAST (after styles.css + admin-layout.css + any page
+   <style>) so these mobile rules win on equal specificity.
+   Desktop (>768px) is never touched — every rule is inside a
+   max-width media query.
+
+   What lives here (cross-cutting, all pages):
+     1. Breadcrumb COLLAPSE on phones → "‹ 上一層 / 當前頁"
+        (the #1 reported overflow). Complements the scroll-in-slot
+        fallback already in admin-layout.css.
+     2. Top-bar / header de-crowding so the 中/EN + avatar + 漢堡
+        never push each other off-screen.
+     3. Generic tab / sub-tab / toolbar rows scroll sideways inside
+        their own slot instead of widening the page.
+     4. A belt-and-suspenders no-sideways-scroll guard for the
+        public-facing pages that don't load admin-layout.css.
+   Root-cause per-page fixes (card view, builder stacking, grid
+   stacking, table min-width) already live in their own files.
+   ============================================================ */
+
+/* ─────────────────────────────────────────────────────────
+   1 · BREADCRUMB COLLAPSE  (admin .head .crumbs + form-builder .top-bar .crumb)
+   The trail "主辦後台 / 活動 / 長活動名 / 報名管理" is wider than an
+   iPhone. On phones we hide the two top levels (首頁 + 活動列表) and
+   keep only the parent context + current page, prefixed with a ‹
+   back hint. Falls back to horizontal scroll if even that is long.
+   Works on the dominant markup: <a>首頁</a><sep/><a>活動</a><sep/>
+   <a id=crumbHub>名稱</a><sep/><b>當前</b> — degrades safely on the
+   few pages with a shorter or <span>-rooted trail. ───────────── */
+@media (max-width: 480px) {
+  .head .crumbs,
+  .top-bar .crumb {
+    flex: 1 1 auto; min-width: 0;
+    white-space: nowrap;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .head .crumbs::-webkit-scrollbar,
+  .top-bar .crumb::-webkit-scrollbar { display: none; }
+
+  /* hide the first two levels (首頁 + 活動列表) and their separators */
+  .head .crumbs > a:nth-of-type(1),
+  .head .crumbs > a:nth-of-type(2),
+  .head .crumbs > .sep:nth-of-type(1),
+  .head .crumbs > .sep:nth-of-type(2),
+  .top-bar .crumb > a:nth-of-type(1),
+  .top-bar .crumb > a:nth-of-type(2),
+  .top-bar .crumb > .sep:nth-of-type(1),
+  .top-bar .crumb > .sep:nth-of-type(2) { display: none; }
+
+  /* ‹ back hint before the first still-visible crumb */
+  .head .crumbs::before,
+  .top-bar .crumb::before {
+    content: '‹';
+    font-weight: 700; color: var(--ink-3);
+    margin-right: 6px; flex: 0 0 auto;
+  }
+  /* keep a trailing action icon in the edit-page crumb tappable, not squashed */
+  .head .crumbs > a.btn-ic-h { flex: 0 0 auto; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   2 · HEADER / TOP-BAR DE-CROWDING
+   The admin topbar packs 漢堡 + 麵包屑 + 頭像 + 中/EN onto one row.
+   On narrow phones shrink the chrome so the breadcrumb keeps room
+   and nothing gets clipped. (.admin-lang-toggle carries inline
+   styles set in admin-nav.js, so !important is required to win.) */
+@media (max-width: 480px) {
+  .head .admin-lang-toggle {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    margin-left: 6px !important;
+  }
+  .head .me-h { padding: 4px; }
+  .head .me-h span,
+  .head .me-h small { display: none; }   /* avatar circle only */
+  .head .actions { gap: 6px; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   3 · TAB / SUB-TAB / TOOLBAR ROWS — scroll, don't widen
+   Page tab strips (基本 / 組別 / 收費 …, 報名統計 / 報名列表,
+   分類統計 / 時間趨勢) and command bars overflow on phones. Let each
+   scroll horizontally inside its own slot. The page never widens. */
+@media (max-width: 600px) {
+  .tabs, .tabs-bar, .subtabs, .chart-toggle, .tabs-row, .seg, .pill-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar, .tabs-bar::-webkit-scrollbar,
+  .subtabs::-webkit-scrollbar, .chart-toggle::-webkit-scrollbar,
+  .tabs-row::-webkit-scrollbar, .seg::-webkit-scrollbar,
+  .pill-tabs::-webkit-scrollbar { display: none; }
+  .tabs > *, .tabs-bar > *, .subtabs > * { flex: 0 0 auto; white-space: nowrap; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   4 · PUBLIC-PAGE SAFETY NET
+   The public pages (event detail / register / my) don't load
+   admin-layout.css. Guarantee no sideways scroll and fluid media,
+   mirroring the admin safety net. overflow-x:clip never creates a
+   scroll container, so sticky/fixed elements keep working. */
+@media (max-width: 768px) {
+  html, body { overflow-x: clip; max-width: 100%; }
+  img, svg, video, canvas, iframe, table, pre { max-width: 100%; height: auto; }
+  table { height: auto; }
+}

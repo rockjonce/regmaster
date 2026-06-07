@@ -134,12 +134,33 @@ body.side-collapsed .side-collapse-btn svg { transform: rotate(180deg); }
     z-index: 110; opacity: 0; pointer-events: none; transition: opacity .2s;
   }
   body.side-open .side-backdrop { opacity: 1; pointer-events: auto; }
-  .head { padding: 12px 16px; }
+  .head { padding: 12px 14px; gap: 8px; }
   .head .quick-search { display: none; }
   .main-c { padding: 20px 16px 56px; }
   /* stack common multi-column grids so content fits an iPhone width */
   .kpis, .kpi-strip, .prim-grid, .sec-grid, .health-strip, .row-2, .row-3 { grid-template-columns: 1fr !important; }
+
+  /* ── Breadcrumbs (the #1 reported overflow): the trail can be longer than an
+     iPhone is wide ("主辦後台 / 活動 / 長長的活動名 / 報名管理"). Instead of
+     letting it push the whole page wider, keep it on one line and let it
+     scroll horizontally inside its own slot. A right-edge fade hints there's
+     more to swipe. Root crumb + current page stay readable; nothing clips the
+     page. (Chosen over a collapse-to-back-button because it needs zero
+     per-page JS and works identically on all 16 admin pages.) ── */
+  .head .crumbs {
+    flex: 1 1 auto; min-width: 0;
+    white-space: nowrap;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    font-size: 12px;
+    scrollbar-width: none;                       /* Firefox */
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent);
+            mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent);
+  }
+  .head .crumbs::-webkit-scrollbar { display: none; }   /* iOS / Chrome */
 }
 @media (max-width: 420px) {
   .head .me-h span { display: none; }   /* avatar only on very small screens */
+  .head { padding: 10px 12px; gap: 6px; }
+  .main-c { padding: 16px 12px 48px; }
 }
