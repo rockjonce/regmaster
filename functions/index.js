@@ -2501,8 +2501,14 @@ exports.lookupRegistration = callable(async (data) => {
   return { found: false };
 });
 
-exports.checkDuplicates = callable(async (data) => {
+exports.checkDuplicates = callable(async (data, request) => {
   const { compId, teamNameCN, idNumbers, passports, editTeamId } = data;
+  // P2: throttle this duplicate-existence oracle, but FAIL-OPEN on limit — return "no duplicates"
+  // so legitimate registrants behind a shared/NAT IP (e.g. a whole school registering from one
+  // public IP) are NEVER blocked. This check is only an advisory UX guard; exceeding the limit
+  // just stops feeding a mass id-number/team-name enumerator (no information is returned).
+  const _rl = await checkRateLimit("chkdup_ip_" + clientIp(request), 80, 600000);  // 80 / 10 min / IP
+  if (!_rl.ok) return { success: true, errors: [] };
   const errors = [];
   if (teamNameCN) {
     const snap = await db.collection("teams").where("compId", "==", compId).get();
@@ -5098,7 +5104,9 @@ exports.getOrderStatus = callable(async (data) => {
   const doc = await db.collection("orders").doc(orderId).get();
   if (!doc.exists) return { status: "unknown" };
   const o = doc.data();
-  return { status: o.status || "pending", licenseCodes: o.licenseCodes || [], total: o.total || 0 };
+  // N-2 hardening: only expose the order STATUS to this public poll. Previously it also returned
+  // licenseCodes + total, which (paired with a guessable orderId) leaked purchased codes/amounts.
+  return { status: o.status || "pending" };
 });
 
 // C-9 recovery: actively confirm a PLAN/licence order with PayUNI (二次查詢) and self-heal if a
