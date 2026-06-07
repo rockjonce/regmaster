@@ -14,10 +14,15 @@
         'padding:14px 20px 22px;display:flex;flex-direction:column;gap:4px;z-index:49;' +
         'box-shadow:0 16px 30px rgba(0,0,0,.14);transform:translateY(-14px);opacity:0;pointer-events:none;transition:transform .18s ease,opacity .18s ease}' +
       '.nav-drawer.open{transform:translateY(0);opacity:1;pointer-events:auto}' +
-      '.nav-drawer a{padding:11px 12px;border-radius:8px;font:500 15px/1.2 var(--f-tc);color:var(--ink-2);text-decoration:none}' +
-      '.nav-drawer a:hover{background:var(--surface-2);color:var(--ink)}' +
+      /* :not(.btn) — plain nav links get the muted ink colour; BUTTONS keep their
+         own variant colour. Without this the generic `a` rule (specificity 0,1,1)
+         beats .btn-primary (0,1,0) and paints 免費開始 dark-on-dark (invisible). */
+      '.nav-drawer a:not(.btn){padding:11px 12px;border-radius:8px;font:500 15px/1.2 var(--f-tc);color:var(--ink-2);text-decoration:none}' +
+      '.nav-drawer a:not(.btn):hover{background:var(--surface-2);color:var(--ink)}' +
       '.nav-drawer .dr-actions{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding-top:12px;border-top:1px solid var(--hairline)}' +
       '.nav-drawer .dr-actions .btn{width:100%;justify-content:center}' +
+      /* belt-and-suspenders: keep the primary CTA white-on-dark in the drawer */
+      '.nav-drawer .btn-primary{color:var(--surface)}' +
       '@media (max-width:' + BP + 'px){.nav .links,.nav .actions{display:none!important}.nav-burger{display:inline-flex!important}}' +
       '@media (min-width:' + (BP + 1) + 'px){.nav-burger,.nav-drawer{display:none!important}.nav-drawer.open{display:none!important}}';
     var s = document.createElement('style');

@@ -176,3 +176,16 @@
     grid-template-columns: 40px repeat(24, minmax(15px, 1fr)) !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────
+   8 · my.html（我的報名）— filter pills + 報名卡片動作列
+   • .tab-pills（全部/即將舉辦/待付款/已付款/已過期）原本不換行 → 已過期被切。
+   • .reg-card .actions 在 ≤760 變 nowrap 橫列，末端的報名編號 .teamid 被切。 */
+@media (max-width: 600px) {
+  .tab-pills { flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .reg-card .actions { flex-wrap: wrap; gap: 8px; }
+  .reg-card .actions .btn { flex: 0 0 auto; }
+  .reg-card .actions .teamid { flex: 1 1 100%; text-align: right; order: 99; margin-top: 2px; }
+}
