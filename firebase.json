@@ -36,6 +36,11 @@
     ],
     "rewrites": [
       {
+        "_comment": "#7: per-event share/SSR route — injects OG/Twitter meta for social previews.",
+        "source": "/e/**",
+        "function": { "functionId": "eventShare", "region": "us-central1" }
+      },
+      {
         "source": "/admin/events/*/edit",
         "destination": "/admin/events/edit.html"
       },

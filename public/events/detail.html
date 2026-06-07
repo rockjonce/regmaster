@@ -345,7 +345,9 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
 
   var qs = new URLSearchParams(location.search);
-  var compId = qs.get('id') || qs.get('comp') || '';
+  // __SHARE_COMP__ is injected by the /e/{id} SSR share route; fall back to ?id/?comp for the
+  // static /events/detail.html path used by in-app navigation.
+  var compId = qs.get('id') || qs.get('comp') || window.__SHARE_COMP__ || '';
   if (!compId) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
@@ -749,14 +751,16 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   }
 
   // Share
+  // Share the /e/{id} SSR route (carries OG title/description/image previews), not the raw app URL.
+  function shareUrl() { return compId ? (location.origin + '/e/' + encodeURIComponent(compId)) : location.href; }
   document.getElementById('shareCopy').addEventListener('click', function () {
-    navigator.clipboard.writeText(location.href).then(function () { this.textContent = window.L('edCopied'); setTimeout(function(){ document.getElementById('shareCopy').textContent = window.L('edShareCopy'); }, 1500); }.bind(this));
+    navigator.clipboard.writeText(shareUrl()).then(function () { this.textContent = window.L('edCopied'); setTimeout(function(){ document.getElementById('shareCopy').textContent = window.L('edShareCopy'); }, 1500); }.bind(this));
   });
   document.getElementById('shareLine').addEventListener('click', function () {
-    window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(location.href), '_blank');
+    window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(shareUrl()), '_blank');
   });
   document.getElementById('shareFB').addEventListener('click', function () {
-    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(location.href), '_blank');
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl()), '_blank');
   });
 
   // ----- B.3: Activity-scoped AI chatbot (uses askCompetitionAI callable) -----

@@ -642,7 +642,20 @@
             '<div class="body"><h6>' + escapeHtml(s.browser || 'Unknown') + (s.current ? ' <span class="cur">' + escapeHtml(L('adSetSessionCurrent')) + '</span>' : '') + '</h6>' +
             '<p>' + escapeHtml(s.device || '') + ' · ' + escapeHtml(s.lastActive || '') + '</p></div>' +
           '</div>';
-        }).join('');
+        }).join('') +
+        '<p style="font:400 12px/1.6 var(--f-tc); color:var(--muted); margin:10px 0 14px" data-i18n="adSetSessionsNote">' + escapeHtml(L('adSetSessionsNote')) + '</p>' +
+        '<button class="btn btn-ghost" id="logoutAllBtn">' + escapeHtml(L('adSetBtnLogoutAll')) + '</button>';
+        var allBtn = document.getElementById('logoutAllBtn');
+        if (allBtn) allBtn.addEventListener('click', function () {
+          uiConfirm(L('adSetLogoutAllConfirm'), { title: L('adSetBtnLogoutAll'), okText: L('adSetLogoutOk') }).then(function (ok) {
+            if (!ok) return;
+            allBtn.disabled = true;
+            google.script.run
+              .withSuccessHandler(function () { AppState.setMe(null); location.href = '/login.html'; })
+              .withFailureHandler(function () { AppState.setMe(null); location.href = '/login.html'; })
+              .revokeSession('all');
+          });
+        });
       })
       .listSessions({ device: navigator.userAgent.indexOf('Mobile') >= 0 ? 'Mobile' : 'Desktop', browser: navigator.userAgent.split(') ').pop().split(' ')[0] || 'Unknown' });
   }

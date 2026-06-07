@@ -2069,6 +2069,35 @@ exports.verifyAccount = callable(async (data, request) => {
   return { success: true, plan: intendedPlan, isTrial };
 });
 
+// Resend the signup OTP for a pending accountRequests doc. Anti-enumeration (always generic
+// success), IP-rate-limited, plus a 60s per-request cooldown. Regenerates the OTP, resets the
+// attempt counter, and extends the 15-min TTL.
+exports.resendVerification = callable(async (data, request) => {
+  const username = String((data && data.username) || "").trim();
+  const generic = { success: true, message: "若申請仍有效，新的驗證碼已重新寄出" };
+  if (!username) return { success: false, message: "缺少帳號" };
+  const _rl = await checkRateLimit("resend_ip_" + clientIp(request), 5, 600000);
+  if (!_rl.ok) return generic;                       // throttle silently (anti-enumeration)
+  const ref = db.collection("accountRequests").doc(username);
+  const doc = await ref.get();
+  if (!doc.exists) return generic;                   // don't reveal whether the request exists
+  const reqData = doc.data();
+  if (Date.now() - (reqData.lastResent || 0) < 60000) return generic;  // 60s cooldown
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  await ref.update({ otp, otpAttempts: 0, lastResent: Date.now(), expiresAt: Date.now() + 15 * 60000 });
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background: #0A437A; padding: 20px; text-align: center; color: white;"><h2 style="margin: 0;">RegMaster 帳號驗證碼（重新寄送）</h2></div>
+      <div style="padding: 30px 20px; text-align: center;">
+        <p style="font-size: 16px;">您好 <b>${escMail(reqData.displayName || "")}</b>，您的新驗證碼為：</p>
+        <div style="font-size: 32px; font-weight: 900; color: #F49121; letter-spacing: 4px; margin: 20px 0; background: #FFF7ED; padding: 15px; border-radius: 8px;">${otp}</div>
+        <p style="font-size: 14px; color: #ef4444;">請於 15 分鐘內在系統中輸入以完成開通。</p>
+      </div>
+    </div>`;
+  await queueMail(reqData.email, "[RegMaster] 帳號申請驗證碼（重新寄送）", htmlBody, `您的驗證碼為: ${otp}`);
+  return generic;
+});
+
 exports.loginTeam = callable(async (data, request) => {
   const { compId, teamId, password } = data;
   // N-6: per-IP throttle (team passwords are low-entropy and previously had NO lockout at all).
@@ -5968,6 +5997,17 @@ exports.dailyJobs = onSchedule({ schedule: "0 8 * * *", timeZone: "Asia/Taipei",
 exports.weeklyJobs = onSchedule({ schedule: "0 8 * * 1", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
   await _runNotifDigest("weekly").catch(e => console.error("[weeklyJobs] digest:", e));
 });
+// #4: every 15 min, send any campaign whose scheduledFor time has arrived.
+exports.processScheduledCampaigns = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+  const now = Date.now();
+  const snap = await db.collection("campaigns").where("status", "==", "scheduled").get();
+  for (const d of snap.docs) {
+    const due = d.data().scheduledFor ? new Date(d.data().scheduledFor).getTime() : 0;
+    if (due && due <= now) {
+      try { await _deliverCampaign(d.id, "system"); } catch (e) { console.error("[scheduledCampaign]", d.id, e); }
+    }
+  }
+});
 
 // ===== Feedback System =====
 exports.submitFeedback = authCallable(["system","competition"], async (data, request) => {
@@ -6508,14 +6548,16 @@ exports.listSessions = authCallable(["system", "competition"], async (data, requ
 });
 
 exports.revokeSession = authCallable(["system", "competition"], async (data, request) => {
-  if (data.sessionId === 'current') {
-    // Force logout by rotating token
+  // Single-token model: there is exactly one valid sessionToken per account, so both 'current'
+  // and 'all' are satisfied by rotating it — that instantly invalidates every device (including
+  // this one). The caller is expected to clear local state and redirect to login afterwards.
+  if (data.sessionId === 'current' || data.sessionId === 'all') {
     const newToken = generateSessionToken();
     const snap = await db.collection("accounts").where("username", "==", request.authUser.username).limit(1).get();
     if (!snap.empty) await snap.docs[0].ref.update({ sessionToken: newToken });
     return { success: true, loggedOut: true };
   }
-  return { success: false, message: "目前只支援登出當前裝置" };
+  return { success: false, message: "不支援的 sessionId" };
 });
 
 // Super admin: platform health + all orgs
@@ -6724,7 +6766,7 @@ exports.createCampaign = compAuthCallable(async (data, request) => {
     createdBy: request.authUser.username,
     sentAt: '',
     scheduledFor: payload.scheduledFor || '',
-    stats: { recipients: 0, sent: 0, opened: 0 }
+    stats: { recipients: 0, sent: 0, opened: 0, clicked: 0 }
   };
   const ref = await db.collection("campaigns").add(camp);
   await auditLog(request.authUser.username, "createCampaign", ref.id, payload.subject);
@@ -6761,20 +6803,26 @@ exports.deleteCampaign = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
-exports.sendCampaignNow = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "campaigns");
-  const { campaignId } = data;
+// Rewrite body links → click-tracking redirect, and append a 1x1 open-tracking pixel.
+// (Aggregate per-campaign tracking; the single multi-recipient mail can't track per person.)
+function _injectCampaignTracking(bodyHtml, campaignId) {
+  const cid = encodeURIComponent(campaignId);
+  let html = String(bodyHtml || '').replace(/href\s*=\s*"(https?:\/\/[^"]+)"/gi,
+    (m, url) => 'href="' + FUNCTIONS_BASE + '/trackClick?c=' + cid + '&u=' + encodeURIComponent(url) + '"');
+  html += '<img src="' + FUNCTIONS_BASE + '/trackOpen?c=' + cid + '" width="1" height="1" alt="" style="display:none">';
+  return html;
+}
+
+// Core campaign delivery. No request-auth here — callers (sendCampaignNow manual,
+// processScheduledCampaigns cron) must authorise first.
+async function _deliverCampaign(campaignId, actorUsername) {
   const doc = await db.collection("campaigns").doc(campaignId).get();
   if (!doc.exists) return { success: false, message: "找不到 campaign" };
   const camp = doc.data();
   const compDoc = await db.collection("competitions").doc(camp.compId).get();
   if (!compDoc.exists) return { success: false, message: "找不到活動" };
-  if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
-    return { success: false, message: "權限不足" };
-  }
   const cfg = compDoc.data().config || {};
 
-  // Gather recipients based on filter
   const teamSnap = await db.collection("teams").where("compId", "==", camp.compId).get();
   const teamIds = new Set();
   teamSnap.docs.forEach(d => {
@@ -6794,28 +6842,139 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
     if (teamIds.has(m.teamId) && m.email) emails.add(m.email);
   });
 
-  // Queue Email
   let sentCount = 0;
-  if (camp.channels.includes('email') && emails.size > 0) {
-    const html = emailWrap(camp.subject || '活動公告', camp.body.replace(/\n/g, '<br>'));
+  if ((camp.channels || []).includes('email') && emails.size > 0) {
+    const inner = _injectCampaignTracking((camp.body || '').replace(/\n/g, '<br>'), campaignId);
+    const html = emailWrap(camp.subject || '活動公告', inner);
     await db.collection("mail").add({
       to: Array.from(emails),
       message: { subject: '[' + (cfg.competitionName || '活動') + '] ' + camp.subject, html, text: camp.body }
     });
     sentCount += emails.size;
   }
-  // SMS / LINE: log as 'scheduled' (Phase 9+ for real integration)
-  const smsLineNote = (camp.channels.includes('sms') ? 'SMS ' : '') + (camp.channels.includes('line') ? 'LINE' : '');
-
+  const smsLineNote = ((camp.channels || []).includes('sms') ? 'SMS ' : '') + ((camp.channels || []).includes('line') ? 'LINE' : '');
   await doc.ref.update({
-    status: 'sent',
-    sentAt: fmtNow(),
-    'stats.recipients': emails.size,
-    'stats.sent': sentCount,
-    'stats.smsLineQueued': smsLineNote || ''
+    status: 'sent', sentAt: fmtNow(),
+    'stats.recipients': emails.size, 'stats.sent': sentCount, 'stats.smsLineQueued': smsLineNote || ''
   });
-  await auditLog(request.authUser.username, "sendCampaign", campaignId, sentCount + " emails");
+  await auditLog(actorUsername || 'system', "sendCampaign", campaignId, sentCount + " emails");
   return { success: true, sent: sentCount, channels: camp.channels };
+}
+
+exports.sendCampaignNow = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "campaigns");
+  const { campaignId } = data;
+  const doc = await db.collection("campaigns").doc(campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到 campaign" };
+  const compDoc = await db.collection("competitions").doc(doc.data().compId).get();
+  if (!compDoc.exists) return { success: false, message: "找不到活動" };
+  if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
+    return { success: false, message: "權限不足" };
+  }
+  return _deliverCampaign(campaignId, request.authUser.username);
+});
+
+// #4: mark a campaign to auto-send at a future time (picked up by processScheduledCampaigns).
+exports.scheduleCampaign = compAuthCallable(async (data, request) => {
+  await requireFeature(request.authUser, "campaigns");
+  const { campaignId, scheduledFor } = data;
+  const doc = await db.collection("campaigns").doc(campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到 campaign" };
+  const compDoc = await db.collection("competitions").doc(doc.data().compId).get();
+  if (!compDoc.exists || (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username)) {
+    return { success: false, message: "權限不足" };
+  }
+  const when = new Date(scheduledFor).getTime();
+  if (!when || isNaN(when)) return { success: false, message: "排程時間無效" };
+  if (when < Date.now() - 60000) return { success: false, message: "排程時間需為未來" };
+  await doc.ref.update({ status: 'scheduled', scheduledFor: new Date(when).toISOString() });
+  await auditLog(request.authUser.username, "scheduleCampaign", campaignId, new Date(when).toISOString());
+  return { success: true, scheduledFor: new Date(when).toISOString() };
+});
+
+// #5: open-tracking pixel — increments stats.opened, returns a 1x1 transparent GIF.
+exports.trackOpen = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  try {
+    const cid = String((req.query && req.query.c) || "");
+    if (cid) await db.collection("campaigns").doc(cid).update({ "stats.opened": FieldValue.increment(1) }).catch(() => {});
+  } catch (e) { /* never fail an image */ }
+  const gif = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
+  res.set("Content-Type", "image/gif");
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.status(200).send(gif);
+});
+
+// #5: click-tracking redirect — increments stats.clicked, 302s to the original (validated) URL.
+exports.trackClick = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  const cid = String((req.query && req.query.c) || "");
+  const url = String((req.query && req.query.u) || "");
+  if (!/^https?:\/\//i.test(url)) { res.status(400).send("bad url"); return; }   // no open-redirect
+  try { if (cid) await db.collection("campaigns").doc(cid).update({ "stats.clicked": FieldValue.increment(1) }).catch(() => {}); } catch (e) {}
+  res.redirect(302, url);
+});
+
+// #7: public poster image endpoint — serves the stored base64 poster as real image bytes so it
+// can be used as an og:image URL (Firestore-stored posters have no public URL otherwise).
+exports.posterImage = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  try {
+    const compId = String((req.query && (req.query.comp || req.query.id)) || "");
+    if (!compId) { res.status(400).send("missing comp"); return; }
+    const doc = await db.collection("competitions").doc(compId).get();
+    const posterDocId = doc.exists ? doc.data().posterDocId : "";
+    if (!posterDocId) { res.status(404).send("no poster"); return; }
+    const pDoc = await db.collection("posterFiles").doc(posterDocId).get();
+    if (!pDoc.exists) { res.status(404).send("no poster"); return; }
+    const p = pDoc.data();
+    res.set("Content-Type", p.mimeType || "image/png");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.status(200).send(Buffer.from(p.data || "", "base64"));
+  } catch (e) { res.status(500).send("error"); }
+});
+
+// #7: share/SSR route (/e/{compId}). Serves the REAL detail app with per-event OG/Twitter meta
+// injected into <head> so social shares + crawlers get a proper title/description/image. The
+// static /events/detail.html funnel page is left untouched (in-app navigation still uses it).
+let _detailTemplate = null;
+exports.eventShare = onRequest({ cors: true, region: "us-central1" }, async (req, res) => {
+  const fallbackId = ((req.path || "").split("/e/")[1] || "").split(/[?#]/)[0];
+  try {
+    const m = (req.path || "").match(/\/e\/([^\/?#]+)/);
+    const compId = m ? decodeURIComponent(m[1]) : String((req.query && req.query.comp) || "");
+    if (!compId) { res.redirect(302, "/events/"); return; }
+    if (!_detailTemplate) {
+      const tr = await fetch(PROJECT_HOST + "/events/detail.html");
+      _detailTemplate = await tr.text();
+    }
+    const doc = await db.collection("competitions").doc(compId).get();
+    const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    let title = "活動報名 · RegMaster", desc = "立即在 RegMaster 報名這場活動。", img = "";
+    if (doc.exists) {
+      const r = doc.data(); const cfg = r.config || {};
+      title = (cfg.competitionName || r.name || "活動報名") + " · RegMaster";
+      desc = String(cfg.descriptionSummary || "").slice(0, 160) || ("立即報名「" + (cfg.competitionName || "") + "」。");
+      if (r.posterDocId) img = FUNCTIONS_BASE + "/posterImage?comp=" + encodeURIComponent(compId);
+    }
+    const url = PROJECT_HOST + "/e/" + encodeURIComponent(compId);
+    let og = '\n<meta property="og:type" content="website">' +
+      '\n<meta property="og:title" content="' + esc(title) + '">' +
+      '\n<meta property="og:description" content="' + esc(desc) + '">' +
+      '\n<meta property="og:url" content="' + esc(url) + '">' +
+      '\n<meta name="twitter:card" content="' + (img ? "summary_large_image" : "summary") + '">' +
+      '\n<meta name="twitter:title" content="' + esc(title) + '">' +
+      '\n<meta name="twitter:description" content="' + esc(desc) + '">' +
+      '\n<meta name="description" content="' + esc(desc) + '">';
+    if (img) og += '\n<meta property="og:image" content="' + esc(img) + '">\n<meta name="twitter:image" content="' + esc(img) + '">';
+    og += '\n<script>window.__SHARE_COMP__=' + JSON.stringify(compId) + ';</script>';
+    let html = _detailTemplate
+      .replace(/<title>[\s\S]*?<\/title>/i, "<title>" + esc(title) + "</title>")
+      .replace(/<\/head>/i, og + "\n</head>");
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=300");
+    res.status(200).send(html);
+  } catch (e) {
+    console.error("eventShare error:", e);
+    res.redirect(302, "/events/detail.html?comp=" + encodeURIComponent(fallbackId));
+  }
 });
 
 // ---- Multi-judge scoring ----

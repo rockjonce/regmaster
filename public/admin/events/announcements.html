@@ -127,6 +127,8 @@
           <div class="actions">
             <button class="btn btn-ghost btn-sm" id="previewBtn" data-i18n="aeAnnPreviewBtn">🔍 預覽</button>
             <button class="btn btn-ghost btn-sm" id="saveCampBtn" data-i18n="aeAnnSaveBtn">儲存草稿</button>
+            <input type="datetime-local" id="schedAt" style="padding:6px 8px; font:500 12px/1 var(--f-tc); border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)">
+            <button class="btn btn-ghost btn-sm" id="scheduleBtn" data-i18n="aeAnnScheduleBtn">排程發送</button>
             <button class="btn btn-primary btn-sm" id="sendNowBtn" data-i18n="aeAnnSendBtn">立即發送 →</button>
           </div>
         </header>
@@ -356,9 +358,15 @@
     });
     updateRecipCount();
     var stats = c.stats || {};
-    document.getElementById('statsBox').innerHTML = c.status === 'sent'
-      ? window.L('aeAnnStatsSentPre') + escapeHtml(c.sentAt || '') + window.L('aeAnnStatsSentMid') + (stats.sent || 0) + window.L('aeAnnStatsSentSuf')
-      : window.L('aeAnnStatsNone');
+    if (c.status === 'sent') {
+      document.getElementById('statsBox').innerHTML =
+        window.L('aeAnnStatsSentPre') + escapeHtml(c.sentAt || '') + window.L('aeAnnStatsSentMid') + (stats.sent || 0) + window.L('aeAnnStatsSentSuf') +
+        '<br>' + window.L('aeAnnStatsOpened') + (stats.opened || 0) + ' · ' + window.L('aeAnnStatsClicked') + (stats.clicked || 0);
+    } else if (c.status === 'scheduled') {
+      document.getElementById('statsBox').innerHTML = window.L('aeAnnStatsScheduledPre') + escapeHtml((c.scheduledFor || '').replace('T', ' ').slice(0, 16));
+    } else {
+      document.getElementById('statsBox').innerHTML = window.L('aeAnnStatsNone');
+    }
     document.getElementById('sendNowBtn').disabled = (c.status === 'sent');
   }
 
@@ -471,6 +479,40 @@
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn'); alert(window.L('aeAnnSaveFailPre') + (err && err.message)); })
       .updateCampaign(SELECTED.id, payload);
     });
+  });
+
+  // #4: schedule the campaign to auto-send at a chosen time (cron sends it; no need to stay online).
+  document.getElementById('scheduleBtn').addEventListener('click', function () {
+    if (!SELECTED) return;
+    var btn = this;
+    if (!CAN_SEND) {
+      uiAlert(window.L('aeAnnGateMsg'), { title: window.L('aeAnnGateTitle'), okText: window.L('aeAnnGateOk') }).then(function () { location.href = '/admin/license.html'; });
+      return;
+    }
+    var when = document.getElementById('schedAt').value;
+    if (!when) { uiAlert(window.L('aeAnnSchedNeedTime')); return; }
+    if (new Date(when).getTime() <= Date.now()) { uiAlert(window.L('aeAnnSchedFuture')); return; }
+    if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;
+    var payload = {
+      subject: document.getElementById('subjectInput').value.trim(),
+      body: document.getElementById('bodyContent').value,
+      channels: CHANNELS,
+      recipientFilter: document.getElementById('recipFilter').value
+    };
+    btn.disabled = true; btn.textContent = window.L('aeAnnScheduling');
+    google.script.run
+      .withSuccessHandler(function () {
+        google.script.run
+          .withSuccessHandler(function (res) {
+            btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn');
+            if (res && res.success) { uiAlert(window.L('aeAnnSchedOk')); refreshCampaigns(SELECTED && SELECTED.id); }
+            else { uiAlert((res && res.message) || window.L('aeAnnSchedFail')); }
+          })
+          .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn'); uiAlert((err && err.message) || window.L('aeAnnSchedFail')); })
+          .scheduleCampaign(SELECTED.id, new Date(when).toISOString());
+      })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn'); uiAlert(window.L('aeAnnSaveFailPre') + (err && err.message)); })
+      .updateCampaign(SELECTED.id, payload);
   });
 
   // ----- Item 12: email preview (internal modal, RegMaster template) -----

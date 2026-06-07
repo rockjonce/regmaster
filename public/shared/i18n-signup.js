@@ -107,6 +107,7 @@
     sgErrOtpIncomplete: '請完整輸入 6 位數驗證碼',
     sgErrVerifyFail: '驗證失敗',
     sgResending: '正在重新寄送...',
+    sgResendDone: '新的驗證碼已重新寄出，請查收信箱',
     sgResendRedo: '請回到上一步重新填寫表單（驗證碼有效 15 分鐘）'
   };
 
@@ -208,6 +209,7 @@
     sgErrOtpIncomplete: 'Please enter the full 6-digit code',
     sgErrVerifyFail: 'Verification failed',
     sgResending: 'Resending...',
+    sgResendDone: 'A new verification code has been sent — please check your inbox',
     sgResendRedo: 'Please go back and fill in the form again (the code is valid for 15 minutes)'
   };
 

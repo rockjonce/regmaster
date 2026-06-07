@@ -46,6 +46,15 @@
     aeAnnPreviewBtn: '🔍 預覽',
     aeAnnSaveBtn: '儲存草稿',
     aeAnnSendBtn: '立即發送 →',
+    aeAnnScheduleBtn: '排程發送',
+    aeAnnScheduling: '排程中…',
+    aeAnnSchedNeedTime: '請先選擇排程時間',
+    aeAnnSchedFuture: '排程時間需為未來',
+    aeAnnSchedOk: '已排程，屆時系統會自動寄送',
+    aeAnnSchedFail: '排程失敗',
+    aeAnnStatsOpened: '開信 ',
+    aeAnnStatsClicked: '點擊 ',
+    aeAnnStatsScheduledPre: '已排程於 ',
 
     // ----- center: compose meta -----
     aeAnnLblChannel: '通道',
@@ -203,6 +212,15 @@
     aeAnnPreviewBtn: '🔍 Preview',
     aeAnnSaveBtn: 'Save Draft',
     aeAnnSendBtn: 'Send Now →',
+    aeAnnScheduleBtn: 'Schedule',
+    aeAnnScheduling: 'Scheduling…',
+    aeAnnSchedNeedTime: 'Please choose a schedule time first',
+    aeAnnSchedFuture: 'Schedule time must be in the future',
+    aeAnnSchedOk: 'Scheduled — the system will send it automatically',
+    aeAnnSchedFail: 'Scheduling failed',
+    aeAnnStatsOpened: 'Opens ',
+    aeAnnStatsClicked: 'Clicks ',
+    aeAnnStatsScheduledPre: 'Scheduled for ',
 
     // ----- center: compose meta -----
     aeAnnLblChannel: 'Channel',

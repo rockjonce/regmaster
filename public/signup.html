@@ -423,16 +423,24 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
       .verifyAccount(pendingUsername, otp);
   });
 
-  // ---- Resend OTP (re-trigger requestAccount with same params; backend handles dup) ----
+  // ---- Resend OTP — dedicated backend callable (regenerates OTP, resets attempts, extends TTL) ----
   document.getElementById('resendLink').addEventListener('click', function (e) {
     e.preventDefault();
     if (!pendingUsername) return;
+    var link = this;
+    if (link.dataset.busy) return;
+    link.dataset.busy = '1';
     showOtpErr(window.L('sgResending'));
-    // Backend doesn't yet have a dedicated "resend" callable; the cleanest behavior would be a
-    // new resendVerification(username) callable. For Phase 2 we direct user to redo step 1.
-    setTimeout(function () {
-      showOtpErr(window.L('sgResendRedo'));
-    }, 800);
+    google.script.run
+      .withSuccessHandler(function (res) {
+        link.removeAttribute('data-busy');
+        showOtpErr((res && res.message) || window.L('sgResendDone'));
+      })
+      .withFailureHandler(function () {
+        link.removeAttribute('data-busy');
+        showOtpErr(window.L('sgResendRedo'));
+      })
+      .resendVerification(pendingUsername);
   });
 
   document.getElementById('backToStep1').addEventListener('click', function (e) {

@@ -382,8 +382,19 @@ body { min-height:100vh; background:var(--surface-2); }
   // ---- Step navigation ----
   var currentStep = 1;
   var totalSteps = 4;
+  // #6: the "invite partners" step (3) is a Team-plan feature (roles capability). Hide & skip it
+  // for plans that can't invite, so onboarding never promises invites it can't send.
+  var STEP3_ENABLED = false;
+  google.script.run
+    .withSuccessHandler(function (p) {
+      STEP3_ENABLED = !!(p && p.features && p.features.roles);
+      if (!STEP3_ENABLED) { var r3 = document.querySelector('.s-item[data-step="3"]'); if (r3) r3.style.display = 'none'; }
+    })
+    .withFailureHandler(function () { /* default: step 3 hidden */ })
+    .getMyPlan();
   function goStep(n) {
     if (n < 1 || n > totalSteps) return;
+    if (n === 3 && !STEP3_ENABLED) { n = (n > currentStep) ? 4 : 2; }   // skip the gated invite step
     // Validate when leaving step 2
     if (currentStep === 2 && n > 2) {
       var orgName = document.getElementById('orgName').value.trim();
@@ -407,6 +418,13 @@ body { min-height:100vh; background:var(--surface-2); }
     }
     if (currentStep === 3 && n > 3) {
       saveStepData(3, { invitees: invitees });
+      // #6: actually send the invitations (this step only renders for Team-plan users).
+      invitees.forEach(function (iv) {
+        google.script.run
+          .withSuccessHandler(function () {})
+          .withFailureHandler(function () {})
+          .inviteMember(iv.email, iv.role || 'staff', 'all');
+      });
     }
     currentStep = n;
     document.querySelectorAll('.step-pane').forEach(function (p) {

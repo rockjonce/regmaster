@@ -548,22 +548,31 @@
     }
     document.getElementById('liveBadge').textContent = liveCount + window.L('adIdxLiveBadgeSuffix');
 
-    // Sparklines: fill with random-ish derived bars (real time-series in Phase 7)
-    function spark(elId, intensity) {
-      var el = document.getElementById(elId);
-      el.innerHTML = '';
-      var pattern = [30, 42, 38, 55, 48, 64, 78, 90, 100, 88];
-      for (var i = 0; i < 10; i++) {
-        var div = document.createElement('div');
-        div.className = 'b' + (i >= 6 ? ' peak' : '');
-        div.style.height = Math.max(8, pattern[i] * intensity) + '%';
-        el.appendChild(div);
-      }
+    // Sparkline: REAL last-10-day registration trend for 總報名 (from stats.dailyTrend).
+    // The other KPIs (已付/待付/活動數) have no per-day series, so we hide their sparklines
+    // rather than render fabricated bars.
+    var dayMap = {};
+    comps.forEach(function (c) {
+      ((c.stats && c.stats.dailyTrend) || []).forEach(function (p) { if (p && p.date) dayMap[p.date] = (dayMap[p.date] || 0) + (p.count || 0); });
+    });
+    var sparkPts = [], spNow = Date.now();
+    for (var si = 0; si < 10; si++) {
+      var sd = new Date(spNow - (9 - si) * 86400000);
+      var sk = sd.getFullYear() + '-' + String(sd.getMonth() + 1).padStart(2, '0') + '-' + String(sd.getDate()).padStart(2, '0');
+      sparkPts.push(dayMap[sk] || 0);
     }
-    spark('d1Spark', 1);
-    spark('d2Spark', Math.max(.3, paidCount / Math.max(1, totalRegs)));
-    spark('d3Spark', Math.max(.4, Math.min(1, pendingCount / 10)));
-    spark('d4Spark', Math.max(.5, Math.min(1, comps.length / 10)));
+    var sparkMax = Math.max.apply(null, sparkPts.concat([1]));
+    var d1Spark = document.getElementById('d1Spark');
+    if (d1Spark) {
+      d1Spark.innerHTML = '';
+      sparkPts.forEach(function (v, i) {
+        var div = document.createElement('div');
+        div.className = 'b' + (i >= 7 ? ' peak' : '');
+        div.style.height = Math.max(6, Math.round(v / sparkMax * 100)) + '%';
+        d1Spark.appendChild(div);
+      });
+    }
+    ['d2Spark', 'd3Spark', 'd4Spark'].forEach(function (id) { var e = document.getElementById(id); if (e) e.style.display = 'none'; });
   }
 
   function renderActiveEvents(comps) {
