@@ -8391,3 +8391,85 @@ exports.getPublicCertTemplates = callable(async (data) => {
   return { templates };
 });
 
+
+// ===== TEMPORARY: QA test-account seeding (remove after pre-launch UX testing) =====
+// Secret-guarded. action 'seed' creates qa_* test accounts/licenses/orgMembers (idempotent);
+// action 'cleanup' deletes everything tagged _qatest plus any events created by qa_* accounts.
+exports.qaSeed = callable(async (data) => {
+  if (!data || data.secret !== "QA-SEED-2026-RM") return { error: "forbidden" };
+  const PW = "55a6c5114d06d567db099acc175dde58ffed80ac65fc0988fd4e48c38ce4846f"; // sha256("QAtest2026!")
+  const QA_USERS = ["qa_free", "qa_starter", "qa_pro", "qa_team", "qa_sys", "qa_manager", "qa_judge", "qa_staff"];
+
+  if (data.action === "cleanup") {
+    let n = 0;
+    const delWhere = async (col, field, op, val) => {
+      const s = await db.collection(col).where(field, op, val).get();
+      for (let i = 0; i < s.docs.length; i += 400) { const b = db.batch(); s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); n += Math.min(400, s.docs.length - i); }
+    };
+    await delWhere("accounts", "_qatest", "==", true);
+    await delWhere("licenses", "_qatest", "==", true);
+    await delWhere("orgMembers", "_qatest", "==", true);
+    // events created by qa_* accounts + their dependent docs
+    const compSnap = await db.collection("competitions").where("creator", "in", QA_USERS.slice(0, 10)).get();
+    for (const c of compSnap.docs) {
+      const cid = c.id;
+      for (const col of ["teams", "members", "scores", "regPayments", "announcements", "campaigns", "posterFiles", "pdfFiles", "certAssets", "teamFiles", "notifications"]) {
+        await delWhere(col, "compId", "==", cid);
+      }
+      await c.ref.delete(); n++;
+    }
+    await delWhere("notifPrefs", "_qatest", "==", true);
+    return { success: true, cleaned: n };
+  }
+
+  // ---- seed ----
+  const created = [], skipped = [];
+  const ensureAccount = async (username, role, displayName, org) => {
+    const ex = await db.collection("accounts").where("username", "==", username).limit(1).get();
+    if (!ex.empty) { skipped.push(username); return; }
+    await db.collection("accounts").add({
+      username, passwordHash: PW, role, displayName, email: username + "@qa.test", emailVerified: true,
+      organizationName: org || "", intendedPlan: role === "system" ? "" : "free",
+      createdAt: fmtNow(), loginFails: 0, lockedUntil: "", _qatest: true
+    });
+    created.push(username);
+  };
+  await ensureAccount("qa_free", "competition", "QA Free 主辦", "QA Free 機構");
+  await ensureAccount("qa_starter", "competition", "QA Starter 主辦", "QA Starter 機構");
+  await ensureAccount("qa_pro", "competition", "QA Pro 主辦", "QA Pro 機構");
+  await ensureAccount("qa_team", "competition", "QA Team 主辦", "QA Team 機構");
+  await ensureAccount("qa_sys", "system", "QA 系統管理員", "");
+  await ensureAccount("qa_manager", "competition", "QA 管理者", "");
+  await ensureAccount("qa_judge", "competition", "QA 評審", "");
+  await ensureAccount("qa_staff", "competition", "QA 工作人員", "");
+
+  const ensureLicense = async (code, tier, owner) => {
+    const ex = await db.collection("licenses").doc(code).get();
+    if (ex.exists) { skipped.push(code); return; }
+    await db.collection("licenses").doc(code).set({
+      code, type: "subscription", tier, status: "已啟用", activatedBy: owner, purchasedBy: owner,
+      years: 1, maxCount: 0, usedCount: 0,
+      activatedAt: fmtNow(), createdAt: fmtNow(),
+      expiresAt: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(), _qatest: true
+    });
+    created.push(code);
+  };
+  await ensureLicense("QA-STARTER", "starter", "qa_starter");
+  await ensureLicense("QA-PRO", "pro", "qa_pro");
+  await ensureLicense("QA-TEAM", "team", "qa_team");
+
+  const ensureMember = async (memberUsername, role) => {
+    const ex = await db.collection("orgMembers").where("memberUsername", "==", memberUsername).where("orgOwner", "==", "qa_team").get();
+    if (!ex.empty) { skipped.push("member:" + memberUsername); return; }
+    await db.collection("orgMembers").add({
+      orgOwner: "qa_team", memberEmail: memberUsername + "@qa.test", memberUsername, role, scope: "all",
+      status: "active", invitedBy: "qa_team", invitedAt: fmtNow(), acceptedAt: fmtNow(), token: "", _qatest: true
+    });
+    created.push("member:" + memberUsername);
+  };
+  await ensureMember("qa_manager", "manager");
+  await ensureMember("qa_judge", "judge");
+  await ensureMember("qa_staff", "staff");
+
+  return { success: true, created, skipped };
+});
