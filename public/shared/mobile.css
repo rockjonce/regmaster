@@ -148,3 +148,31 @@
   .editor-h .actions { flex-wrap: wrap; }
   .editor-h .actions input[type="datetime-local"] { flex: 1 1 100%; max-width: 100%; }
 }
+
+/* ─────────────────────────────────────────────────────────
+   7 · registrations.html — real-data rows the stub audit didn't render
+   (only appear when logged in with ≥1 registration), overflowing at the
+   ~375–390 boundary. Three rows the user hit on a real iPhone:
+   • .search-row 工具列：「共N筆 / 退費申請 / 匯出所有報名資料」— the long
+     export button + inline margin-left:auto + missing min-width:0 tipped it
+     over. Count on its own line; the two buttons share a row and may shrink.
+   • .td-actions 卡片動作（檢視詳情 / 寄送信件 …）：.action-btn had
+     flex:1 1 auto WITHOUT min-width:0, so it couldn't shrink below its label.
+   • .heatmap 報名時段熱點（7×24）：grid cells force ≥18px tracks (~550px).
+     Pin a legible min track and SCROLL inside the box (keeps 24 columns). */
+@media (max-width: 600px) {
+  .search-row { flex-wrap: wrap; gap: 8px; }
+  .search-row > input { flex: 1 1 100%; max-width: none; }
+  .search-row > #listCount { flex: 1 1 100%; margin: 0; }
+  .search-row #refundReqBtn { margin-left: 0 !important; }
+  .search-row .btn { flex: 1 1 calc(50% - 4px); min-width: 0; justify-content: center;
+    font-size: 13px; white-space: normal; }
+  .reg-cards td.td-actions .action-btn { flex: 1 1 calc(50% - 4px); min-width: 0; }
+}
+@media (max-width: 768px) {
+  .chart-card, .chart-grid, .chart-box { min-width: 0; }
+  .heatmap {
+    overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;
+    grid-template-columns: 40px repeat(24, minmax(15px, 1fr)) !important;
+  }
+}

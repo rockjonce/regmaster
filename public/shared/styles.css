@@ -711,6 +711,10 @@ a { color: inherit; text-decoration: none; }
   .tbl-wrap, .b-tbl-wrap, [class*="tbl-wrap"] {
     overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;
   }
-  .tbl-wrap > .tbl, .b-tbl-wrap > .tbl, [class*="tbl-wrap"] > .tbl { min-width: 600px; }
+  /* :not(.reg-cards) — tables that switch to a stacked CARD view on phones
+     (registrations) must stay fluid; only real scrolling tables get min-width. */
+  .tbl-wrap > .tbl:not(.reg-cards),
+  .b-tbl-wrap > .tbl:not(.reg-cards),
+  [class*="tbl-wrap"] > .tbl:not(.reg-cards) { min-width: 600px; }
 }
 
