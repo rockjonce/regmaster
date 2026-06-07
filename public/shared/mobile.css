@@ -86,27 +86,65 @@
    分類統計 / 時間趨勢) and command bars overflow on phones. Let each
    scroll horizontally inside its own slot. The page never widens. */
 @media (max-width: 600px) {
-  .tabs, .tabs-bar, .subtabs, .chart-toggle, .tabs-row, .seg, .pill-tabs {
+  .tabs, .tabs-bar, .subtabs, .tabbar, .ana-subtabs, .chart-toggle,
+  .tabs-row, .seg, .pill-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .tabs::-webkit-scrollbar, .tabs-bar::-webkit-scrollbar,
-  .subtabs::-webkit-scrollbar, .chart-toggle::-webkit-scrollbar,
+  .subtabs::-webkit-scrollbar, .tabbar::-webkit-scrollbar,
+  .ana-subtabs::-webkit-scrollbar, .chart-toggle::-webkit-scrollbar,
   .tabs-row::-webkit-scrollbar, .seg::-webkit-scrollbar,
   .pill-tabs::-webkit-scrollbar { display: none; }
-  .tabs > *, .tabs-bar > *, .subtabs > * { flex: 0 0 auto; white-space: nowrap; }
+  .tabs > *, .tabs-bar > *, .subtabs > *, .tabbar > *, .ana-subtabs > * {
+    flex: 0 0 auto; white-space: nowrap;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────
-   4 · PUBLIC-PAGE SAFETY NET
-   The public pages (event detail / register / my) don't load
-   admin-layout.css. Guarantee no sideways scroll and fluid media,
-   mirroring the admin safety net. overflow-x:clip never creates a
-   scroll container, so sticky/fixed elements keep working. */
+   4 · INLINE FORM-GRID / WIDE-GRID STACKING
+   Cards that lay out their fields in fixed multi-column grids (評分卡片的
+   「滿分 / 可記錄次數」, 設定頁的雙欄 form-grid) get cut off on phones.
+   Stack them to a single column. Genuinely wide visual grids (24-hour
+   heatmap, panel grids) scroll inside their own box rather than widen the
+   page (the column itself is already allowed to shrink via styles.css). */
+@media (max-width: 600px) {
+  /* hyphen (.row-2) = system.html; no-hyphen (.row2/.row3) = edit.html.
+     edit.html only stacked .row2 — .row3 (1fr 1fr 1fr, e.g. 開始/結束日期時間)
+     kept 3 tracks whose date inputs blew out to 483px on a 390 screen. */
+  .rb-leaf-fields, .score-grid, .pn-grid, .fr-row, .form-grid,
+  .row-2, .row-3, .row2, .row3, .datemode-grp, .kv { grid-template-columns: 1fr !important; }
+}
 @media (max-width: 768px) {
-  html, body { overflow-x: clip; max-width: 100%; }
-  img, svg, video, canvas, iframe, table, pre { max-width: 100%; height: auto; }
-  table { height: auto; }
+  .ana-heatmap, .heatmap, .ana-grid { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   5 · PUBLIC-PAGE SAFETY NET
+   The public pages (event detail / register / my) don't load
+   admin-layout.css. Keep media fluid. NOTE: we deliberately do NOT set
+   overflow-x on <html>/<body> — that disables iOS pinch-zoom. Overflow is
+   prevented at the source (min-width:0 in styles.css) so the page fits and
+   stays zoomable. */
+@media (max-width: 768px) {
+  img, svg, video, canvas, iframe, pre { max-width: 100%; height: auto; }
+}
+
+/* ─────────────────────────────────────────────────────────
+   6 · PAGE-SPECIFIC OVERFLOW FIXES (kept here so all RWD lives in one file)
+   • edit.html .save-bar uses margin:0 -32px to bleed into the desktop 32px
+     gutter; on the 16px mobile gutter that pushes it 16px off-screen. Re-fit
+     it to the mobile gutter and let its meta/buttons wrap.
+   • announcements.html .editor-h .actions is a nowrap flex row (排程時間
+     datetime input + 立即發送/排程 buttons) → 561px. Let it wrap; the
+     datetime input goes full-width. */
+@media (max-width: 768px) {
+  .save-bar { margin-left: 0 !important; margin-right: 0 !important;
+    padding-left: 16px !important; padding-right: 16px !important; flex-wrap: wrap; gap: 10px; }
+}
+@media (max-width: 600px) {
+  .editor-h .actions { flex-wrap: wrap; }
+  .editor-h .actions input[type="datetime-local"] { flex: 1 1 100%; max-width: 100%; }
 }

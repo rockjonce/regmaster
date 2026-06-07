@@ -681,25 +681,36 @@ a { color: inherit; text-decoration: none; }
 [data-hero] { width: 1em; height: 1em; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ============================================================
-   MOBILE RWD SAFETY NET  (added 2026-06-07 · loaded on every page)
+   MOBILE RWD SAFETY NET  (rev. 2026-06-07b · loaded on every page)
    ─────────────────────────────────────────────────
-   Catch-all guards so no page can ever scroll sideways on a phone.
-   Root-cause fixes live in admin-layout.css / per-page styles; this
-   layer only stops overflow and makes wide tables scroll, never cram.
+   Root cause of the "畫面寬度被鎖、雙指縮放縮不了" report:
+     1. CSS grid/flex items (esp. <main> in the .admin grid) default to
+        min-width:auto, so they REFUSE to shrink below their content's
+        intrinsic width → <main> blows out to ~700–990px on a 390 phone.
+     2. The previous fix put overflow-x:clip on <html>, which on iOS
+        Safari (a) DISABLES pinch-zoom — overflow on the root captures the
+        gesture — and (b) just HID the blow-out (right side clipped off)
+        instead of fixing it.
+   This rev fixes the cause: let the content columns shrink (min-width:0)
+   and let genuinely-wide blocks (tables, etc.) SCROLL inside their own
+   box. NOTHING sets overflow on <html>/<body>, so pinch-zoom works again.
    Desktop (>768px) is untouched.
    ============================================================ */
 @media (max-width: 768px) {
-  /* overflow-x:clip (not hidden) — never creates a scroll container, so it
-     does NOT break position:sticky headers/sidebars. Kills the "畫面寬度不對". */
-  html, body { overflow-x: clip; max-width: 100%; }
-  /* media + code blocks never push the page wider than the screen */
-  img, svg, video, canvas, iframe, pre, table { max-width: 100%; }
-  /* any horizontally-scrolling table wrapper actually scrolls on touch */
-  .tbl-wrap, .b-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  /* a wide data table SCROLLS (keeps columns readable) instead of cramming
-     6 columns into 360px. Pages that set a larger inline min-width win
-     (inline <style> loads after this file); narrow tables that opt out via
-     a more specific rule are unaffected. */
-  .tbl { min-width: 600px; }
+  /* (1) kill the min-width:auto blow-out so grid/flex columns fit the phone.
+     Without this, one wide descendant drags the whole column off-screen. */
+  .admin, main, .main-c, .shell, .builder, .body-3, .mc-wrap, .center-c,
+  .container, .container-sm, .container-md, .page,
+  header, footer, nav, section, article { min-width: 0; }
+  main, .main-c { max-width: 100%; }
+  /* media + code never push the page wider than the screen */
+  img, svg, video, canvas, iframe, pre { max-width: 100%; height: auto; }
+  /* (2) wide data tables SCROLL inside their wrapper (columns stay readable)
+     instead of widening the page. .tbl keeps a min-width only WHEN it sits in
+     a scroll wrapper; a bare .tbl falls back to fluid so it can't overflow. */
+  .tbl-wrap, .b-tbl-wrap, [class*="tbl-wrap"] {
+    overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;
+  }
+  .tbl-wrap > .tbl, .b-tbl-wrap > .tbl, [class*="tbl-wrap"] > .tbl { min-width: 600px; }
 }
 
