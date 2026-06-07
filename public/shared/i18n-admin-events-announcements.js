@@ -62,6 +62,8 @@
     aeAnnBodyTitlePlaceholder: '信件標題（讀者第一眼看到）',
     aeAnnBodyPlaceholder: '開始寫信⋯\n\n可用純文字（換行會保留），或基本內聯 HTML（如 <b> <a> <table> 等）。\n系統會自動套上 RegMaster 模板（含 logo、頁尾），並於儲存／發送前檢查 Outlook 相容性。',
 
+    aeAnnVars: '可用變數（寄送時自動帶入每位收件人）：{{競賽名稱}}　{{報名編號}}　{{組別}}　{{中文隊名}}　{{英文隊名}}',
+
     // ----- right column: recipients / stats / tip -----
     aeAnnRightRecipients: '預計收件人',
     aeAnnRecipCountLabel: '符合條件的 Email 數',
@@ -216,6 +218,8 @@
     // ----- center: email canvas -----
     aeAnnBodyTitlePlaceholder: 'Email heading (the first thing readers see)',
     aeAnnBodyPlaceholder: 'Start writing⋯\n\nUse plain text (line breaks are preserved) or basic inline HTML (such as <b> <a> <table>).\nThe RegMaster template (logo, footer) is applied automatically, and Outlook compatibility is checked before saving / sending.',
+
+    aeAnnVars: 'Variables (auto-filled per recipient when sent): {{競賽名稱}}　{{報名編號}}　{{組別}}　{{中文隊名}}　{{英文隊名}}',
 
     // ----- right column: recipients / stats / tip -----
     aeAnnRightRecipients: 'Estimated Recipients',

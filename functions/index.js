@@ -1788,7 +1788,8 @@ exports.requestAccount = callable(async (data, request) => {
   if (!eulaAgreed) return { success: false, message: "請先閱讀並同意服務條款與 EULA" };
 
   // V3 Phase 2.5: validate plan from signup page (defaults to "free" legacy behavior)
-  const validPlans = ["free", "trial", "starter", "pro"];
+  // QW-2: the 14-day free trial is offered for Starter / Pro only (no standalone "trial" plan).
+  const validPlans = ["free", "starter", "pro"];
   const plan = validPlans.includes(intendedPlan) ? intendedPlan : "free";
 
   // 檢查是否已被註冊
@@ -1984,7 +1985,7 @@ exports.verifyAccount = callable(async (data, request) => {
     for (let j = 0; j < 4; j++) code += c[crypto.randomInt(c.length)];
   }
 
-  const isTrial = intendedPlan === "trial" || intendedPlan === "starter" || intendedPlan === "pro";
+  const isTrial = intendedPlan === "starter" || intendedPlan === "pro";   // QW-2: Starter/Pro only
   const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
   if (isTrial) {
