@@ -305,7 +305,11 @@ function totpVerify(secret, token) {
 }
 function genTotpSecret() { return base32Encode(crypto.randomBytes(20)); }
 
-exports.loginAccount = callable(async (data) => {
+exports.loginAccount = callable(async (data, request) => {
+  // N-6: per-IP throttle on top of the per-account lockout below (defends distributed
+  // spraying across many usernames, which the account-level lock alone doesn't catch).
+  const _rl = await checkRateLimit("login_ip_" + clientIp(request), 30, 600000);  // 30 / 10 min / IP
+  if (!_rl.ok) return { success: false, message: "嘗試過於頻繁，請稍後再試" };
   const { username, password } = data;
   const key = (username || "").trim();
   // Allow logging in with either the username OR the account email.
@@ -1935,6 +1939,9 @@ exports.sendSystemEmail = authCallable(["system"], async (data, request) => {
 
 
 exports.verifyAccount = callable(async (data, request) => {
+  // N-6: per-IP throttle on OTP verification (the 5-attempt cap is per pending request only).
+  const _rl = await checkRateLimit("verify_ip_" + clientIp(request), 30, 600000);
+  if (!_rl.ok) return { success: false, message: "嘗試過於頻繁，請稍後再試" };
   const { username, otp } = data;
   const doc = await db.collection("accountRequests").doc(username).get();
   if (!doc.exists) return { success: false, message: "查無申請紀錄，或已逾期失效" };
@@ -2050,11 +2057,24 @@ exports.verifyAccount = callable(async (data, request) => {
   return { success: true, plan: intendedPlan, isTrial };
 });
 
-exports.loginTeam = callable(async (data) => {
+exports.loginTeam = callable(async (data, request) => {
   const { compId, teamId, password } = data;
+  // N-6: per-IP throttle (team passwords are low-entropy and previously had NO lockout at all).
+  const _rl = await checkRateLimit("loginteam_ip_" + clientIp(request), 30, 600000);
+  if (!_rl.ok) return { success: false, message: "嘗試過於頻繁，請稍後再試" };
   const doc = await db.collection("teams").doc(teamId).get();
   if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "找不到" };
-  if (!verifyTeamPwd(doc.data(), password)) return { success: false, message: "密碼錯誤" };
+  // N-6: per-team failure lockout (mirrors loginAccount) — stops brute-forcing one team's password.
+  const _t = doc.data();
+  if (_t.lockedUntil && new Date() < new Date(_t.lockedUntil)) return { success: false, message: "嘗試過多，請稍後再試" };
+  if (!verifyTeamPwd(_t, password)) {
+    const fails = (_t.loginFails || 0) + 1;
+    const upd = { loginFails: fails };
+    if (fails >= 8) upd.lockedUntil = new Date(Date.now() + 900000).toISOString();  // 15-min lock after 8 misses
+    await doc.ref.update(upd).catch(() => {});
+    return { success: false, message: fails >= 8 ? "嘗試過多，鎖定 15 分鐘" : "密碼錯誤" };
+  }
+  if (_t.loginFails || _t.lockedUntil) { await doc.ref.update({ loginFails: 0, lockedUntil: "" }).catch(() => {}); }
   await upgradeTeamPwd(doc.ref, doc.data(), password);
   const team = doc.data();
   const { password: _, ...safeTeam } = team;
@@ -4947,8 +4967,11 @@ exports.validateCoupon = callable(async (data) => {
 });
 
 // --- Order + PAYUNi ---
-exports.createPayuniOrder = callable(async (data) => {
-  const { items, couponCode, username } = data;
+exports.createPayuniOrder = authCallable(["system", "competition"], async (data, request) => {
+  // N-3 fix: require auth and derive the buyer from the session — never trust a body `username`
+  // (which previously let anyone create plan orders for arbitrary accounts / enumerate tiers).
+  const { items, couponCode } = data;
+  const username = request.authUser.username;
   const salesDoc = await db.collection("config").doc("sales").get();
   const sales = salesDoc.exists ? salesDoc.data() : {};
   if (!sales.payuniMerID || !sales.payuniHashKey) return { success: false, message: "金流尚未設定" };
@@ -5392,6 +5415,24 @@ exports.payuniRegNotify = onRequest({ cors: true, region: "us-central1" }, async
     const orderDoc = await orderRef.get();
     if (!orderDoc.exists) { res.status(404).send("order not found"); return; }
     const order = orderDoc.data();
+    // N-1 fix: re-verify the callback was signed with THIS order's OWN merchant keyset. The
+    // hash-matching loop above can match ANY competition's HashKey; without this binding an
+    // attacker controlling one competition's key could forge "paid" on another competition's
+    // order. We look up the keyset the order was created against and re-check the signature.
+    {
+      let expKey, expIV;
+      if (order.payuniKeySource === "comp" && order.compId) {
+        const cDoc = await db.collection("competitions").doc(order.compId).get();
+        const ccfg = cDoc.exists ? (cDoc.data().config || {}) : {};
+        expKey = ccfg.payuniHashKey; expIV = ccfg.payuniHashIV;
+      } else {
+        expKey = sales.payuniHashKey; expIV = sales.payuniHashIV;
+      }
+      if (!expKey || payuniHash(EncryptInfo, expKey, expIV) !== HashInfo) {
+        console.error("[N-1] payuniRegNotify key/order mismatch:", orderId);
+        res.status(400).send("key mismatch"); return;
+      }
+    }
     // compId for downstream collection writes (notifications, discount codes, etc.)
     const compId = matched.compId || order.compId;
 
@@ -7523,9 +7564,13 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
 //     re-verification of teamId+pwd pair). For Phase 3 we keep it simple:
 //     return non-sensitive summary only. Password lookup remains via legacy
 //     lookupRegistration + loginTeam.
-exports.listMyRegistrationsByEmail = callable(async (data) => {
+exports.listMyRegistrationsByEmail = callable(async (data, request) => {
   const { email, phone } = data || {};
   if (!email && !phone) return { success: false, message: "請提供 Email 或電話" };
+  // N-4 fix: this stays public (registrants look up their own registrations without logging in),
+  // but throttle per-IP + audit so it can't be used as a bulk email/PII-enumeration oracle.
+  const _rl = await checkRateLimit("lreg_ip_" + clientIp(request), 10, 600000);  // 10 / 10 min / IP
+  if (!_rl.ok) return { success: false, message: "查詢過於頻繁，請稍後再試" };
 
   // Find members matching email or phone
   const membersFound = new Map(); // teamId -> member info
@@ -7574,6 +7619,11 @@ exports.listMyRegistrationsByEmail = callable(async (data) => {
   regs.sort((a, b) => {
     return (b.registrationTime || "").localeCompare(a.registrationTime || "");
   });
+  // N-4: audit the lookup (masked) so bulk-enumeration attempts are detectable after the fact.
+  try {
+    const maskedEmail = String(email || "").replace(/^(.).*(@.*)$/, "$1***$2");
+    await auditLog("訪客", "查詢個人報名", maskedEmail || (phone ? "phone" : ""), "hits=" + regs.length);
+  } catch (e) { /* audit best-effort */ }
   return { success: true, registrations: regs };
 });
 
