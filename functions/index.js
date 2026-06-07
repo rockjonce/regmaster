@@ -2,6 +2,7 @@
  * RegMaster v5.1 — Firebase Cloud Functions (Gen2)
  */
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { setGlobalOptions } = require("firebase-functions/v2/options");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -5846,7 +5847,7 @@ exports.getRegPaymentStatus = callable(async (data) => {
 });
 
 // ===== Scheduled Tasks (converted to callable — trigger via Cloud Scheduler HTTP or manually) =====
-exports.checkDeadlines = authCallable(["system"], async () => {
+async function _runCheckDeadlines() {
   const snap = await db.collection("competitions").get();
   const now = new Date();
   for (const doc of snap.docs) {
@@ -5864,13 +5865,13 @@ exports.checkDeadlines = authCallable(["system"], async () => {
     }
   }
   return { success: true };
-});
+}
+exports.checkDeadlines = authCallable(["system"], async () => _runCheckDeadlines());
 
 // Organiser email digest (daily / weekly). Consumes notifPrefs.email.dailyDigest / .weekly.
-// Triggered by the platform scheduler the same way as checkDeadlines / checkLicenseExpirations
-// (system-only). Skips organisers with nothing new in the window so we never send empty digests.
-exports.sendNotifDigest = authCallable(["system"], async (data) => {
-  const period = (data && data.period === "weekly") ? "weekly" : "daily";
+// Skips organisers with nothing new in the window so we never send empty digests.
+async function _runNotifDigest(period) {
+  period = (period === "weekly") ? "weekly" : "daily";
   const prefKey = period === "weekly" ? "weekly" : "dailyDigest";
   const since = Date.now() - (period === "weekly" ? 7 : 1) * 24 * 60 * 60 * 1000;
   const prefSnap = await db.collection("notifPrefs").get();
@@ -5908,9 +5909,10 @@ exports.sendNotifDigest = authCallable(["system"], async (data) => {
     sent++;
   }
   return { success: true, sent, period };
-});
+}
+exports.sendNotifDigest = authCallable(["system"], async (data) => _runNotifDigest(data && data.period));
 
-exports.checkLicenseExpirations = authCallable(["system"], async () => {
+async function _runCheckLicenseExpirations() {
   const snap = await db.collection("licenses").where("status", "==", "已啟用").where("type", "==", "subscription").get();
   const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
@@ -5952,7 +5954,21 @@ exports.checkLicenseExpirations = authCallable(["system"], async () => {
     }
   }
   return { success: true };
+}
+exports.checkLicenseExpirations = authCallable(["system"], async () => _runCheckLicenseExpirations());
+
+// ===== Scheduled jobs (Cloud Scheduler via onSchedule) — Asia/Taipei timezone =====
+// Each sub-task is individually try/caught so one failure never blocks the others. maxInstances:1
+// (these run rarely and don't need concurrency; keeps standing CPU footprint minimal).
+exports.dailyJobs = onSchedule({ schedule: "0 8 * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+  await _runCheckDeadlines().catch(e => console.error("[dailyJobs] deadlines:", e));
+  await _runCheckLicenseExpirations().catch(e => console.error("[dailyJobs] license:", e));
+  await _runNotifDigest("daily").catch(e => console.error("[dailyJobs] digest:", e));
 });
+exports.weeklyJobs = onSchedule({ schedule: "0 8 * * 1", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+  await _runNotifDigest("weekly").catch(e => console.error("[weeklyJobs] digest:", e));
+});
+
 // ===== Feedback System =====
 exports.submitFeedback = authCallable(["system","competition"], async (data, request) => {
   const { category, subject, description, stepsToReproduce, pageUrl, attachmentBase64, attachmentName, clientInfo } = data;
