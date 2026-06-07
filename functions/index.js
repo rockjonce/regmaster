@@ -1516,15 +1516,19 @@ exports.getRegistrationBundle = callable(async (data) => {
   // 活動 AI 助理 availability = owner's plan (STARTER+) AND the organiser's per-activity
   // toggle (cfg.enableAI, default on).
   let eventAiEnabled = false;
+  let ownerTier = "free";   // QW-4: drives the "Powered by RegMaster" badge on Free-tier event pages
   const ownerUser = r.creator || createdBy || "";
-  if (ownerUser && cfg.enableAI !== false) {
+  if (ownerUser) {
     try {
-      const plans = await getPlans();
-      const ownerTier = await getEffectiveTier(ownerUser);
-      eventAiEnabled = !!(plans[ownerTier] && plans[ownerTier].features && plans[ownerTier].features.eventAi);
-    } catch (e) { /* swallow — default to disabled */ }
+      ownerTier = await getEffectiveTier(ownerUser);
+      if (cfg.enableAI !== false) {
+        const plans = await getPlans();
+        eventAiEnabled = !!(plans[ownerTier] && plans[ownerTier].features && plans[ownerTier].features.eventAi);
+      }
+    } catch (e) { /* swallow — default to free / AI disabled */ }
   }
   return {
+    ownerTier,
     config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
     sessionAccepted: stats.sessionAccepted || {},
     sessionWaitlist: stats.sessionWaitlist || {},
@@ -1774,6 +1778,12 @@ exports.submitRegistration = callable(async (data, request) => {
       await db.collection("mail").add({ to: emailList, message: { subject: subject, html: htmlBody, text: `報名成功！您的報名編號：${teamId}，密碼：${pwd}` } });
     }
   }
+  // Notify the organiser of a new registration (honors notifPrefs.email.newRegistration). Best-effort.
+  await notifyOrganizer(compId, "newRegistration",
+    `[RegMaster] 新報名通知 — ${cfg.competitionName || ""}`,
+    emailWrap("📥 新的報名", `<p>活動「<b>${escMail(cfg.competitionName || "")}</b>」收到一筆新報名。</p>
+      <p>報名編號：<b>${escMail(teamId)}</b><br>隊伍：${escMail(fd.teamNameCN || fd.teamNameEN || "")}<br>狀態：${escMail(status)}</p>
+      <p style="color:#475569;font-size:13px">登入主辦後台即可查看完整報名資料。</p>`));
   return { success: true, teamId, password: pwd, status };
 });
 
@@ -2298,6 +2308,28 @@ async function queueMail(to, subject, html, text) {
   const arr = Array.isArray(to) ? to.filter(Boolean) : (to ? [to] : []);
   if (!arr.length) return;
   await db.collection("mail").add({ to: arr, message: { subject, html, text: text || subject } });
+}
+
+// Email a competition's organiser IF they have the matching notification preference on.
+// Consumes the notifPrefs.email.<prefKey> toggle (settings → 通知偏好). Best-effort: any error
+// is swallowed so it can never break the caller's registration / payment flow.
+const NOTIF_EMAIL_DEFAULTS = { newRegistration: true, paymentReceived: true, dailyDigest: false, weekly: true };
+async function notifyOrganizer(compId, prefKey, subject, html) {
+  try {
+    if (!compId) return;
+    const cDoc = await db.collection("competitions").doc(compId).get();
+    if (!cDoc.exists) return;
+    const owner = cDoc.data().creator || cDoc.data().createdBy || "";
+    if (!owner) return;
+    const pDoc = await db.collection("notifPrefs").doc(owner).get();
+    const emailPrefs = pDoc.exists ? (pDoc.data().email || {}) : {};
+    const enabled = emailPrefs[prefKey] !== undefined ? !!emailPrefs[prefKey] : !!NOTIF_EMAIL_DEFAULTS[prefKey];
+    if (!enabled) return;
+    const aSnap = await db.collection("accounts").where("username", "==", owner).limit(1).get();
+    if (aSnap.empty) return;
+    const to = aSnap.docs[0].data().email || "";
+    if (to) await queueMail(to, subject, html);
+  } catch (e) { console.error("notifyOrganizer error:", e); }
 }
 
 // Templates + floors for the organiser policy editor.
@@ -4820,6 +4852,11 @@ async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo)
       });
     }
   }
+  // Notify the organiser of a received payment (honors notifPrefs.email.paymentReceived). Best-effort.
+  await notifyOrganizer(compId, "paymentReceived",
+    `[RegMaster] 收到報名費 — ${compCfg.competitionName || ""}`,
+    emailWrap("💰 收到一筆報名費", `<p>活動「<b>${escMail(compCfg.competitionName || "")}</b>」收到線上付款。</p>
+      <p>報名編號：<b>${escMail(order.teamId)}</b><br>金額：NT$${Number(order.amount) || 0}</p>`));
   return true;
 }
 
@@ -5827,6 +5864,50 @@ exports.checkDeadlines = authCallable(["system"], async () => {
     }
   }
   return { success: true };
+});
+
+// Organiser email digest (daily / weekly). Consumes notifPrefs.email.dailyDigest / .weekly.
+// Triggered by the platform scheduler the same way as checkDeadlines / checkLicenseExpirations
+// (system-only). Skips organisers with nothing new in the window so we never send empty digests.
+exports.sendNotifDigest = authCallable(["system"], async (data) => {
+  const period = (data && data.period === "weekly") ? "weekly" : "daily";
+  const prefKey = period === "weekly" ? "weekly" : "dailyDigest";
+  const since = Date.now() - (period === "weekly" ? 7 : 1) * 24 * 60 * 60 * 1000;
+  const prefSnap = await db.collection("notifPrefs").get();
+  let sent = 0;
+  for (const pd of prefSnap.docs) {
+    const owner = pd.id;
+    const emailPrefs = pd.data().email || {};
+    const enabled = emailPrefs[prefKey] !== undefined ? !!emailPrefs[prefKey] : !!NOTIF_EMAIL_DEFAULTS[prefKey];
+    if (!enabled) continue;
+    const comps = await db.collection("competitions").where("creator", "==", owner).get();
+    if (comps.empty) continue;
+    const lines = [];
+    let totalNew = 0;
+    for (const c of comps.docs) {
+      const cname = (c.data().config || {}).competitionName || c.data().name || c.id;
+      const tSnap = await db.collection("teams").where("compId", "==", c.id).get();
+      let n = 0;
+      tSnap.docs.forEach(t => {
+        const rt = String(t.data().registrationTime || "");
+        if (rt.length >= 10 && new Date(rt.replace(" ", "T")).getTime() >= since) n++;
+      });
+      if (n > 0) { totalNew += n; lines.push(`${cname}：新報名 ${n} 筆`); }
+    }
+    if (totalNew === 0) continue;                 // nothing new → don't send an empty digest
+    const aSnap = await db.collection("accounts").where("username", "==", owner).limit(1).get();
+    if (aSnap.empty) continue;
+    const to = aSnap.docs[0].data().email || "";
+    if (!to) continue;
+    const title = period === "weekly" ? "📊 每週報名摘要" : "📊 每日報名摘要";
+    const span = period === "weekly" ? "過去 7 天" : "昨日";
+    await queueMail(to, `[RegMaster] ${title}`,
+      emailWrap(title, `<p>${span}您的活動共新增 <b>${totalNew}</b> 筆報名：</p>
+        <ul>${lines.map(l => `<li>${escMail(l)}</li>`).join("")}</ul>
+        <p style="color:#475569;font-size:13px">登入主辦後台查看完整數據。</p>`));
+    sent++;
+  }
+  return { success: true, sent, period };
 });
 
 exports.checkLicenseExpirations = authCallable(["system"], async () => {
