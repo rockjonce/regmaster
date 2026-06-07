@@ -146,6 +146,7 @@
       feScoreMulti: '評分 · 多評審 · 團隊成員權限 · 公告群發', feQrAiAdmin: 'QR 報到 · 活動 AI 助理 · 主辦後台 AI 助理',
       feActiveUnlim: '<b>無限</b> 進行中活動', feRegUnlim: '<b>無限</b> 報名名額', feFee1: '金流手續費 <b>1%</b>',
       btnUseFree: '開始使用', btnUpStarter: '升級 Starter', btnUpPro: '升級 Pro →', btnChooseTeam: '選擇 Team →',
+      btnTrialStarter: '免費試用 14 天', btnTrialPro: '免費試用 14 天 →',
       // ----- plan-card features / unit templates ({n} = number) -----
       pfPayment: '線上金流收款', pfCsv: '匯出報表', pfScoring: '評分', pfMultiJudge: '多評審評分 + 團隊成員權限', pfCampaigns: '公告群發',
       prTipScoring: '評分：由主辦或工作人員為每隊輸入一份成績（覆寫式），適合單一評審或小組統一登錄。',
@@ -250,6 +251,7 @@
       feScoreMulti: 'Scoring · multi-judge · team member roles · broadcast notices', feQrAiAdmin: 'QR check-in · event AI · organizer-console AI',
       feActiveUnlim: '<b>Unlimited</b> active events', feRegUnlim: '<b>Unlimited</b> registrations', feFee1: '<b>1%</b> transaction fee',
       btnUseFree: 'Get started', btnUpStarter: 'Upgrade to Starter', btnUpPro: 'Upgrade to Pro →', btnChooseTeam: 'Choose Team →',
+      btnTrialStarter: 'Start 14-day free trial', btnTrialPro: 'Start 14-day free trial →',
       // ----- plan-card features / unit templates ({n} = number) -----
       pfPayment: 'Online payments', pfCsv: 'Report export', pfScoring: 'Scoring', pfMultiJudge: 'Multi-judge + team member roles', pfCampaigns: 'Broadcast notices',
       prTipScoring: 'Scoring: the organizer or staff enters one score per team (overwrite-style) — ideal when a single judge or panel records final scores together.',
