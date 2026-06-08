@@ -378,7 +378,7 @@
       var tplRes = r[0] || {};
       CONFIG = r[1] || {};
       RAW_RECIPIENTS = (r[2] && r[2].recipients) || [];
-      LEADERBOARD = r[3] || [];
+      LEADERBOARD = Array.isArray(r[3]) ? r[3] : (r[3] && Array.isArray(r[3].leaderboard) ? r[3].leaderboard : []);
       var fs = r[4] || {};
       SCHEMA = (fs && fs.schema) ? fs.schema : { sections: [] };
       ENABLED = tplRes.enabled !== false;

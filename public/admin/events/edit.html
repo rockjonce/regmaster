@@ -1636,7 +1636,7 @@
           // P3: surface AI summary status so organiser sees whether the hero text was regenerated
           var aiNote = '';
           if (res && res.summaryUpdated) aiNote = window.L('aeEditSaveAiSummaryPre') + (res.summaryLength || 0) + window.L('aeEditSaveAiSummarySuf');
-          else if (res && res.summaryReason) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + res.summaryReason;
+          else if (res && res.summaryReason) { var _sk = { empty: 'aeEditSumEmpty', error: 'aeEditSumError' }[res.summaryReason]; if (_sk) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + window.L(_sk); }
           meta.textContent = window.L('aeEditSaveOk') + aiNote;
           meta.className = 'meta saved';
           // Refresh local cfg so re-saves know the current summary

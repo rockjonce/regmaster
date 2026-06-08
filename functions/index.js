@@ -1154,7 +1154,7 @@ exports.createCompetition = authCallable(["system","competition"], async (data, 
     const existing = await db.collection("competitions").where("creator", "==", creator).get();
     if (existing.size >= lim.maxActiveEvents) {
       throw new HttpsError("permission-denied",
-        "您的方案（" + tierLabel(tier) + "）最多可建立 " + lim.maxActiveEvents + " 個活動，目前已有 " + existing.size + " 個。請升級方案或刪除舊活動。");
+        "您的方案（" + tierLabel(tier) + "）最多可擁有 " + lim.maxActiveEvents + " 個活動（含報名中／未開始／已截止／已結束等所有狀態），目前已有 " + existing.size + " 個。請刪除舊活動或升級方案。");
     }
   }
 
@@ -1339,22 +1339,22 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
       if (summary) {
         jc.descriptionSummary = summary;
         summaryUpdated = true;
-        summaryReason = descChanged ? "description changed" : "first-time backfill";
+        summaryReason = descChanged ? "changed" : "backfill";
       } else {
-        summaryReason = "AI returned empty";
+        summaryReason = "empty";
         // Preserve any existing summary so we don't blank out a working one.
         if (prevCfg.descriptionSummary) jc.descriptionSummary = prevCfg.descriptionSummary;
       }
     } catch (e) {
-      summaryReason = "AI threw: " + String(e && e.message || e);
+      summaryReason = "error"; // detail intentionally not surfaced to the UI
       if (prevCfg.descriptionSummary) jc.descriptionSummary = prevCfg.descriptionSummary;
     }
   } else if (!newDesc) {
     jc.descriptionSummary = ""; // clear when description was removed
-    summaryReason = "description empty";
+    summaryReason = "removed";
   } else if (prevCfg.descriptionSummary !== undefined) {
     jc.descriptionSummary = prevCfg.descriptionSummary; // preserve existing summary
-    summaryReason = "no change, kept existing";
+    summaryReason = "unchanged";
   }
 
   await ref.update({
@@ -4656,7 +4656,7 @@ exports.duplicateCompetition = compAuthCallable(async (data, request) => {
     if (lim.maxActiveEvents !== Infinity) {
       const existing = await db.collection("competitions").where("creator", "==", creator).get();
       if (existing.size >= lim.maxActiveEvents) {
-        return { success: false, message: "您的方案（" + tierLabel(tier) + "）最多可建立 " + lim.maxActiveEvents + " 個活動，目前已有 " + existing.size + " 個。請升級方案或刪除舊活動。" };
+        return { success: false, message: "您的方案（" + tierLabel(tier) + "）最多可擁有 " + lim.maxActiveEvents + " 個活動（含報名中／未開始／已截止／已結束等所有狀態），目前已有 " + existing.size + " 個。請刪除舊活動或升級方案。" };
       }
     }
   }

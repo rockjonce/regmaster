@@ -20,6 +20,7 @@
     // ----- leaderboard (left column) -----
     aeScoreLeaderboardTitle: '🏆 即時排行榜',
     aeScoreJudgePrefix: '您為評審：',
+    aeScoreStaffPrefix: '您為工作人員：',
     aeScoreLeaderboardEmpty: '尚無報名隊伍',
     aeScoreJudgeUnit: ' 評審',
     aeScoreNoTeamName: '(無)',
@@ -163,6 +164,7 @@
     // ----- leaderboard (left column) -----
     aeScoreLeaderboardTitle: '🏆 Live Leaderboard',
     aeScoreJudgePrefix: 'You are judging as: ',
+    aeScoreStaffPrefix: 'You are staff: ',
     aeScoreLeaderboardEmpty: 'No registered teams yet',
     aeScoreJudgeUnit: ' judges',
     aeScoreNoTeamName: '(none)',

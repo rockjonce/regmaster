@@ -433,6 +433,8 @@
     aeEditSaveAiSummaryPre: '　·　🤖 AI 摘要已更新（',
     aeEditSaveAiSummarySuf: ' 字）',
     aeEditSaveAiSummaryReasonPre: '　·　AI 摘要：',
+    aeEditSumEmpty: 'AI 回傳空白，保留原摘要',
+    aeEditSumError: 'AI 暫時無法產生，稍後再試',
     aeEditSaveFailPre: '儲存失敗：',
 
     // danger zone dynamic
@@ -880,6 +882,8 @@
     aeEditSaveAiSummaryPre: '　·　🤖 AI summary updated (',
     aeEditSaveAiSummarySuf: ' characters)',
     aeEditSaveAiSummaryReasonPre: '　·　AI summary: ',
+    aeEditSumEmpty: 'AI returned blank; kept the existing summary',
+    aeEditSumError: 'AI is temporarily unavailable; try again later',
     aeEditSaveFailPre: 'Save failed: ',
 
     // danger zone dynamic

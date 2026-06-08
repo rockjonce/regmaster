@@ -1323,6 +1323,13 @@
   google.script.run
     .withSuccessHandler(function (res) {
       var role = res && res.role;
+      // UX-020: the sidebar prefix must reflect the ACTUAL role, not a hard-wired
+      // "您為評審" — a staff member (no scoring right) seeing "您為評審…無評分權限"
+      // is self-contradictory. Swap the i18n key so a later lang-switch stays correct.
+      if (role === 'staff') {
+        var _pfx = document.querySelector('[data-i18n="aeScoreJudgePrefix"]');
+        if (_pfx) { _pfx.setAttribute('data-i18n', 'aeScoreStaffPrefix'); _pfx.textContent = window.L('aeScoreStaffPrefix'); }
+      }
       if (role === 'owner' || role === 'manager' || role == null) {
         // owner (role null for system / creator returns 'owner') & manager → console.
         // Note: getMyEventRole returns 'owner' for creators/system; null means no

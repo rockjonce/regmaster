@@ -79,6 +79,7 @@
       // ----- shared nav -----
       brandName: 'RegMaster', navExplore: '探索活動', navPricing: '方案', navFeatures: '功能',
       navAbout: '關於', navContact: '聯絡', navMy: '我的報名', navLogin: '主辦方登入', navTrial: '免費開始',
+      dtIndex: 'RegMaster — 為認真辦活動的人，打造的報名系統', dtPricing: '方案定價 · RegMaster', dtFeatures: '產品功能 · RegMaster', dtEventDetail: '活動詳情 · RegMaster', dtEventsIndex: '探索活動 · RegMaster',
       // ----- shared footer -----
       ftTagline: '為認真辦活動的人，打造的線上報名系統。', ftColProduct: '產品', ftColCompany: '公司', ftColSupport: '支援',
       ftFeatures: '功能', ftPricing: '方案定價', ftExplore: '探索活動', ftAbout: '關於我們', ftPrivacy: '隱私權政策',
@@ -184,6 +185,7 @@
       // ----- shared nav -----
       brandName: 'RegMaster', navExplore: 'Explore', navPricing: 'Pricing', navFeatures: 'Features',
       navAbout: 'About', navContact: 'Contact', navMy: 'My Registrations', navLogin: 'Organizer Login', navTrial: 'Start Free',
+      dtIndex: 'RegMaster — the registration system for people serious about events', dtPricing: 'Pricing · RegMaster', dtFeatures: 'Features · RegMaster', dtEventDetail: 'Event details · RegMaster', dtEventsIndex: 'Explore events · RegMaster',
       // ----- shared footer -----
       ftTagline: 'The online registration platform built for people who take their events seriously.', ftColProduct: 'Product', ftColCompany: 'Company', ftColSupport: 'Support',
       ftFeatures: 'Features', ftPricing: 'Pricing', ftExplore: 'Explore Events', ftAbout: 'About Us', ftPrivacy: 'Privacy Policy',
@@ -324,7 +326,12 @@
     '轉帳':   { zh: '轉帳',   en: 'Bank transfer' },
     'LINE Pay': { zh: 'LINE Pay', en: 'LINE Pay' },
     '線上付款': { zh: '線上付款', en: 'Online payment' },
-    '折抵':   { zh: '折抵',   en: 'Discount' }
+    '折抵':   { zh: '折抵',   en: 'Discount' },
+    // Raw paymentMethod codes stored on team docs / config.paymentMethods
+    'payuni': { zh: '信用卡（PayUNI）', en: 'Credit card (PayUNI)' },
+    'atm':    { zh: '銀行轉帳',         en: 'Bank transfer' },
+    'onlinePayment': { zh: '線上付款',  en: 'Online payment' },
+    'discount': { zh: '折扣全免',       en: 'Free (discount)' }
   };
   window.LS = function (val, lang) {
     var L = lang || window.LANG || 'zh';
