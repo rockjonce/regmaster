@@ -594,7 +594,7 @@
         '<div class="av-e c' + ((i % 5) + 1) + '"><span>' + escapeHtml((c.name || '?').charAt(0)) + '</span></div>' +
         '<div class="body-e"><h6>' + escapeHtml(c.name) + '</h6>' +
           '<div class="meta-e">' +
-            (c.deadline ? '<div>📅 ' + window.L('adIdxRowDeadline') + ' ' + escapeHtml(c.deadline) + '</div>' : '') +
+            (c.deadline ? '<div>📅 ' + window.L('adIdxRowDeadline') + ' ' + escapeHtml((c.deadline || '').replace('T', ' ')) + '</div>' : '') +
             (daysLeft !== null && daysLeft > 0 ? '<div>' + window.L('adIdxRowDaysLeftPre') + ' <b>' + daysLeft + window.L('adIdxLegDaysSuffix') + '</b></div>' : (daysLeft !== null ? '<div style="color:var(--err-700)"><b>' + window.L('adIdxClosedTag') + '</b></div>' : '')) +
           '</div></div>' +
         '<div class="progress-e">' +

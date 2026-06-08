@@ -377,7 +377,7 @@
         '<h3>' + escapeHtml(c.name) + '</h3>' +
         creatorTag +
         '<div class="meta-evt">' +
-          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml(c.deadline || window.L('aeIdxNoDeadline')) + '</div>' +
+          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml((c.deadline || '').replace('T', ' ') || window.L('aeIdxNoDeadline')) + '</div>' +
           '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + (c.teamCount || 0) + '</b> ' + window.L('aeIdxRegSuffix') + (max > 0 ? ' / ' + max : '') + '</div>' +
         '</div>' +
         '<div class="progress">' +

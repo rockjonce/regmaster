@@ -403,7 +403,7 @@
     document.getElementById('heroTop').innerHTML = topHtml;
 
     var metaHtml = '';
-    if (cfg.competitionDate) metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + window.L('aeHubMetaEventDate') + ' <b>' + escapeHtml(cfg.competitionDate) + '</b></div>';
+    if (cfg.competitionDate) metaHtml += '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + window.L('aeHubMetaEventDate') + ' <b>' + escapeHtml((cfg.competitionDate || '').replace('T', ' ')) + '</b></div>';
     if (cfg.deadline) {
       var dl = parseDate(cfg.deadline);
       var daysLeft = dl ? Math.ceil((dl - Date.now()) / 86400000) : null;
@@ -468,8 +468,8 @@
       var evtTypeLabel = { single_no_coach: window.L('aeHubEvtTypeSingleNoCoach'), single_coach: window.L('aeHubEvtTypeSingleCoach'), team_no_coach: window.L('aeHubEvtTypeTeamNoCoach'), team_coach: window.L('aeHubEvtTypeTeamCoach') };
       info.push({ k: window.L('aeHubInfoEventType'), v: escapeHtml(evtTypeLabel[cfg.eventType] || cfg.eventType) });
     }
-    if (cfg.competitionDate) info.push({ k: window.L('aeHubInfoEventDate'), v: escapeHtml(cfg.competitionDate) });
-    if (cfg.openDate) info.push({ k: window.L('aeHubInfoOpenDate'), v: escapeHtml(cfg.openDate) });
+    if (cfg.competitionDate) info.push({ k: window.L('aeHubInfoEventDate'), v: escapeHtml((cfg.competitionDate || '').replace('T', ' ')) });
+    if (cfg.openDate) info.push({ k: window.L('aeHubInfoOpenDate'), v: escapeHtml((cfg.openDate || '').replace('T', ' ')) });
     if (cfg.deadline) info.push({ k: window.L('aeHubInfoDeadline'), v: escapeHtml(String(cfg.deadline).replace('T', ' ').slice(0, 16)) });
     var fee = cfg.registrationFee || 0;
     info.push({ k: window.L('aeHubInfoFee'), v: fee > 0 ? 'NT$ ' + fee.toLocaleString() : window.L('aeHubInfoFeeFree') });
