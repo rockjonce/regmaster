@@ -66,8 +66,8 @@
   if (em && em[1] && em[1] !== 'index.html') {
     var cid = em[1], sub = em[2] || 'hub';
     // roles = which member roles may see this item (owner/system always see all).
-    var eitem = function (suffix, i18nKey, label, key, icon, roles, extra) {
-      return '<a class="nav-it' + (key === sub ? ' on' : '') + '" href="/admin/events/' + cid + suffix + '" data-evt-roles="' + roles + '">' +
+    var eitem = function (suffix, i18nKey, label, key, icon, roles, extra, feat) {
+      return '<a class="nav-it' + (key === sub ? ' on' : '') + '" href="/admin/events/' + cid + suffix + '" data-evt-roles="' + roles + '"' + (feat ? ' data-feat="' + feat + '"' : '') + '>' +
         icon + '<span data-i18n="' + i18nKey + '">' + esc(label) + '</span>' + (extra || '') + '</a>';
     };
     evtNavHtml =
@@ -76,11 +76,11 @@
         eitem('/edit', 'anEvtSettings', '設定', 'edit', IC.gear, 'manager') +
         eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.cal, 'manager') +
         eitem('/registrations', 'anEvtReg', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>', 'manager') +
-        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log, 'manager') +
+        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log, 'manager', '', 'campaigns') +
         eitem('/payments', 'anEvtBilling', '帳務', 'payments', IC.lic, '') +
-        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge') +
-        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff') +
-        eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager') +
+        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge', '', 'scoring') +
+        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff', '', 'checkin') +
+        eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager', '', 'certificate') +
       '</div>';
   }
 
@@ -163,6 +163,21 @@
           badge.textContent = 'FREE';
           if (ut) ut.textContent = LL('anUsageFreeHint', '免費方案 — 升級解鎖更多');
         }
+        // UX-002: lock (not hide) the sub-nav items whose feature the plan excludes,
+        // and turn the click into an upsell. Backend still enforces; this is UX only.
+        var feats = (res && res.features) || {};
+        side.querySelectorAll('a.nav-it[data-feat]').forEach(function (a) {
+          if (feats[a.getAttribute('data-feat')] === false) {
+            a.classList.add('feat-locked');
+            if (!a.querySelector('.lock-i')) { var lk = document.createElement('span'); lk.className = 'lock-i'; lk.textContent = '🔒'; a.appendChild(lk); }
+            a.addEventListener('click', function (e) {
+              e.preventDefault();
+              var msg = LL('anFeatLocked', '此功能需升級方案才能使用');
+              if (window.uiAlert) { uiAlert(msg).then(function () { location.href = '/admin/license.html'; }); }
+              else { alert(msg); location.href = '/admin/license.html'; }
+            });
+          }
+        });
       }).withFailureHandler(function () {}).getLicenseStatus();
     } catch (x) {}
   }

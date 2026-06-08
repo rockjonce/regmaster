@@ -178,7 +178,7 @@
       anGrpThisEvent: '本活動', anEvtOverview: '總覽', anEvtSettings: '設定', anEvtForm: '表單設計', anEvtReg: '報名管理', anEvtNotice: '通知', anEvtBilling: '帳務', anEvtScoring: '評分', anEvtCheckin: '報到', anEvtCert: '證書 / 名牌',
       anGrpManage: '管理', anLicense: '方案與授權', anLogs: '操作紀錄', anSettings: '設定',
       anGrpSysadmin: '系統管理', anSysSettings: '系統設定', anAudit: '操作日誌',
-      anUsageCur: '目前方案', anUsageFreeText: '免費方案', anUsageFreeHint: '免費方案 — 升級解鎖更多', anUpgrade: '升級方案 →', anLogout: '登出',
+      anUsageCur: '目前方案', anUsageFreeText: '免費方案', anUsageFreeHint: '免費方案 — 升級解鎖更多', anUpgrade: '升級方案 →', anLogout: '登出', anFeatLocked: '此功能需升級方案才能使用，前往方案與授權？',
       anUntil: '至 ', anLangTitle: '切換語言 / Switch language'
     },
     en: {
@@ -284,7 +284,7 @@
       anGrpThisEvent: 'This Event', anEvtOverview: 'Overview', anEvtSettings: 'Settings', anEvtForm: 'Form Builder', anEvtReg: 'Registrations', anEvtNotice: 'Notices', anEvtBilling: 'Billing', anEvtScoring: 'Scoring', anEvtCheckin: 'Check-in', anEvtCert: 'Certificates / Badges',
       anGrpManage: 'Manage', anLicense: 'Plans & Licenses', anLogs: 'Activity Log', anSettings: 'Settings',
       anGrpSysadmin: 'System Admin', anSysSettings: 'System Settings', anAudit: 'Audit Log',
-      anUsageCur: 'Current plan', anUsageFreeText: 'Free plan', anUsageFreeHint: 'Free plan — upgrade to unlock more', anUpgrade: 'Upgrade →', anLogout: 'Log out',
+      anUsageCur: 'Current plan', anUsageFreeText: 'Free plan', anUsageFreeHint: 'Free plan — upgrade to unlock more', anUpgrade: 'Upgrade →', anLogout: 'Log out', anFeatLocked: 'This feature requires a plan upgrade. Go to Plans & Licensing?',
       anUntil: 'Until ', anLangTitle: '切換語言 / Switch language'
     }
   };

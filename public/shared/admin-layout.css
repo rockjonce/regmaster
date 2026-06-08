@@ -39,6 +39,10 @@ body { background: var(--bg); }
 .side .nav-it .ct { margin-left: auto; padding: 2px 6px; background: var(--surface-2); border-radius: 4px; font: 600 10px/1.4 var(--f-mono); color: var(--ink-2); }
 .side .nav-it.on .ct { background: rgba(255,255,255,.14); color: white; }
 .side .nav-it .dot-live { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--ok-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok-500) 25%, transparent); }
+/* UX-002: plan-locked sub-nav item (visible + upsell on click, not hidden) */
+.side .nav-it.feat-locked { opacity: .55; }
+.side .nav-it.feat-locked:hover { opacity: .8; }
+.side .nav-it .lock-i { margin-left: auto; font-size: 11px; line-height: 1; }
 
 .side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 1px; }
 .usage-card { padding: 12px; background: linear-gradient(135deg, var(--ink) 0%, #1a2e52 100%); border-radius: 10px; color: white; margin-bottom: 8px; position: relative; overflow: hidden; }

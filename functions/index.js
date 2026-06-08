@@ -3469,7 +3469,12 @@ exports.getLicenseStatus = authCallable(["system","competition"], async (data, r
     ? new Date(maxExpiresAt).toISOString().substring(0, 10)
     : (hasLifetime ? "永久" : "");
 
-  return { hasValid: subValid || totalRem > 0, tier, planLabel: tierLabel(tier), expiresAt, message: msg, history };
+  // UX-002: expose the effective feature matrix so the admin UI can lock/upsell
+  // gated entry points (scoring/campaigns/checkin/certificate) without duplicating
+  // the matrix client-side.
+  const _plans = await getPlans();
+  const features = (_plans[tier] && _plans[tier].features) || {};
+  return { hasValid: subValid || totalRem > 0, tier, planLabel: tierLabel(tier), expiresAt, message: msg, history, features };
 });
 
 // ===== 2. 啟用授權碼 (時間累加機制) =====
@@ -6997,7 +7002,17 @@ exports.submitJudgeScore = compAuthCallable("scoring", async (data, request) => 
     const cDoc = await db.collection("competitions").doc(compId).get();
     const panels = (cDoc.exists && cDoc.data().config && cDoc.data().config.scoringPanels) || [];
     const myPanels = panels.filter(p => (p.judges || []).indexOf(judgeId) >= 0);
-    if (myPanels.length) { const allowed = new Set(); myPanels.forEach(p => (p.teams || []).forEach(t => allowed.add(t))); if (!allowed.has(teamId)) return { success: false, message: "此隊伍未指派給您評分" }; }
+    // UX-019: match by GROUP (dynamic) — same rule as judgeContext so newly-registered
+    // teams in the judge's group are scorable without re-editing the panel.
+    if (myPanels.length) {
+      const tDoc = await db.collection("teams").doc(teamId).get();
+      const tGroup = (tDoc.exists && tDoc.data().group) || "";
+      const ok = myPanels.some(p =>
+        (!p.group || tGroup === p.group) ||
+        (Array.isArray(p.teams) && p.teams.indexOf(teamId) >= 0)
+      );
+      if (!ok) return { success: false, message: "此隊伍未指派給您評分" };
+    }
   }
   const docId = compId + '_' + teamId + '_' + judgeId;
   const rec = { compId, teamId, judgeId, comment: String(comment || '').slice(0, 1000), updatedAt: fmtNow() };
@@ -7080,6 +7095,9 @@ function sanitizePanels(arr) {
 // Manager-authored scoring configuration (rubric + panels + fairness toggles), stored in
 // competitions/{compId}.config. Read back via getCompetitionConfig.
 exports.saveScoringConfig = compAuthCallable("manage", async (data, request) => {
+  // UX-002: gate the SCORING SETUP on the plan too (previously only role-gated, so a
+  // FREE org could fully configure rubric/panels/fairness; only score submission was blocked).
+  await requireFeature(request.authUser, "scoring");
   const compId = String(data.compId || "");
   const ref = db.collection("competitions").doc(compId);
   const doc = await ref.get();
@@ -7230,7 +7248,14 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
     let teams = tSnap.docs.map(d => d.data()).filter(t => t.status !== "已取消");
     if (role === "judge") {
       const myPanels = panels.filter(p => (p.judges || []).indexOf(me) >= 0);
-      if (myPanels.length) { const allowed = new Set(); myPanels.forEach(p => (p.teams || []).forEach(t => allowed.add(t))); teams = teams.filter(t => allowed.has(t.teamId)); }
+      // UX-019: assign by GROUP (dynamic) — 不指定組別 = 涵蓋全部、之後新報名的隊伍
+      //自動納入；組別指定時涵蓋該組所有隊伍。明確 panel.teams 仍額外納入（向下相容）。
+      if (myPanels.length) {
+        teams = teams.filter(t => myPanels.some(p =>
+          (!p.group || (t.group || "") === p.group) ||
+          (Array.isArray(p.teams) && p.teams.indexOf(t.teamId) >= 0)
+        ));
+      }
     }
     const seeInfo = role !== "judge" || cfg.judgeSeeRegistrantInfo === true;
     const teamsOut = teams.map(t => seeInfo
