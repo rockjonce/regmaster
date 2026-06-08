@@ -1360,6 +1360,23 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     summaryReason = !newDesc ? "removed" : "unchanged";
   }
 
+  // UX-004: payment is TWO-WAY EXCLUSIVE with a ONE-WAY lock to online (PayUni).
+  // Enabling online collection closes bank transfer and can never be switched back —
+  // the platform then handles collection + payout + auto-reconciliation (feePct% / order).
+  {
+    const lockedToOnline = !!prevCfg.paymentLocked || prevCfg.payuniEnabled === true;
+    const payuni = jc.payuniEnabled === true || lockedToOnline;   // online wins / stays locked
+    const bank = (jc.bankTransferEnabled === true) && !payuni;
+    jc.payuniEnabled = payuni;
+    jc.bankTransferEnabled = bank;
+    jc.paymentLocked = payuni;                                    // once online, locked forever
+    if (payuni) jc.bankInfo = {};                                 // bank account unused in online mode
+    jc.paymentMethods = [
+      payuni ? 'payuni' : null,
+      (bank && jc.bankInfo && jc.bankInfo.accountNumber) ? 'atm' : null
+    ].filter(Boolean);
+  }
+
   // UX-006: block opening registration if the form collects no required email.
   const willOpen = openImmediateRequested ? true : (config.isOpen === true);
   if (willOpen && !formHasRequiredEmail(prevCfg)) {
@@ -2935,6 +2952,16 @@ exports.getTeamDetail = compAuthCallable("view", async (data, request) => {
 
 exports.confirmPayment = compAuthCallable(async (data, request) => {
   const { teamId } = data;
+  const teamDoc = await db.collection("teams").doc(teamId).get();
+  if (!teamDoc.exists) return { success: false, message: "隊伍不存在" };
+  const compId = teamDoc.data().compId;
+  const compDoc = compId ? await db.collection("competitions").doc(compId).get() : null;
+  const cfg = (compDoc && compDoc.exists && compDoc.data().config) || {};
+  // UX-004: online-payment (PayUni) events are reconciled ONLY via the gateway callback —
+  // manual confirmation is disabled. Bank-transfer events can still be confirmed by hand.
+  if (cfg.payuniEnabled === true) {
+    return { success: false, message: "本活動為線上付款，款項由 PayUni 自動對帳，無法手動確認。" };
+  }
   await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 " + fmtNow() });
   await auditLog(request.authUser.username, "確認付款", teamId, "");
   return { success: true };
@@ -5005,6 +5032,7 @@ exports.getMyPlan = authCallable(["system", "competition"], async (data, request
     tier,
     maxActiveEvents: p.maxActiveEvents,   // 0 = 無限
     maxCapacity: p.maxCapacity,           // 0 = 無限
+    feePct: (typeof p.feePct === "number") ? p.feePct : 0,   // UX-004: 線上付款託收 %
     features: Object.assign({}, p.features)
   };
 });

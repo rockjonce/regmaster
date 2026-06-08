@@ -142,6 +142,10 @@
     aeEditFeeTotalLabel: '收費總額（自動加總）',
     aeEditPayuniH: '啟用線上付款 (PayUni 信用卡)',
     aeEditPayuniP: '開啟後報名者可直接線上刷卡，付款成功自動對帳',
+    aeEditPayuniConfirmTitle: '啟用線上付款？',
+    aeEditPayuniConfirmPre: '開啟線上付款後，本活動將由平台協助託收轉付並自動對帳，每筆收取 ',
+    aeEditPayuniConfirmSuf: '%。同時會關閉銀行轉帳，且日後無法改回。確定啟用？',
+    aeEditBankLockedHint: '已採用線上付款，銀行轉帳已停用且不可改回。',
 
     // ----- PAYMENT: 銀行 / ATM -----
     aeEditSecBankH: '銀行 / ATM 轉帳',
@@ -597,6 +601,10 @@
     aeEditFeeTotalLabel: 'Total fee (auto-summed)',
     aeEditPayuniH: 'Enable online payment (PayUni credit card)',
     aeEditPayuniP: 'Once on, registrants can pay by card online and successful payments reconcile automatically',
+    aeEditPayuniConfirmTitle: 'Enable online payment?',
+    aeEditPayuniConfirmPre: 'With online payment on, the platform collects, pays out and auto-reconciles for this event, charging ',
+    aeEditPayuniConfirmSuf: '% per order. Bank transfer will be turned off and cannot be re-enabled later. Enable?',
+    aeEditBankLockedHint: 'Online payment is in use; bank transfer is disabled and cannot be switched back.',
 
     // ----- PAYMENT: 銀行 / ATM -----
     aeEditSecBankH: 'Bank / ATM Transfer',

@@ -394,6 +394,7 @@
               <div class="body"><h6 data-i18n="aeEditBankEnableH">啟用銀行轉帳收款與對帳</h6><p data-i18n="aeEditBankEnableP">開啟後須填寫下方銀行帳號；「付款對帳」頁的快速銀行對帳功能才會啟用</p></div>
               <div class="tg-sw" id="bankEnabled" data-dirty></div>
             </div>
+            <p id="bankLockedHint" style="display:none; margin:8px 0 0; font:500 12px/1.5 var(--f-tc); color:var(--warn-700)" data-i18n="aeEditBankLockedHint">已採用線上付款，銀行轉帳已停用且不可改回。</p>
             <div id="bankFields" style="display:none; margin-top:14px">
               <div class="row2">
                 <div class="fld"><div class="lbl"><span data-i18n="aeEditFldBank">銀行</span> <span class="req">*</span></div><select id="pay-bank" data-dirty><option value="" data-i18n="aeEditBankSelectPlaceholder">— 請選擇銀行 —</option></select></div>
@@ -824,6 +825,9 @@
     var bankOn = (CFG.bankTransferEnabled === true) || (CFG.bankTransferEnabled === undefined && !!b.accountNumber);
     setToggle('bankEnabled', bankOn);
     updateBankFields();
+    // UX-004: one-way lock — once online payment is on it can't be turned off / reverted to bank.
+    if (CFG.paymentLocked || CFG.payuniEnabled) document.getElementById('payuniEnabled').dataset.locked = '1';
+    refreshPaymentInterlock();
 
     renderGroupDisc(CFG.groupDiscounts || []);
     loadDiscCodes();
@@ -1047,8 +1051,33 @@
 
   function setToggle(id, on) { document.getElementById(id).classList.toggle('on', !!on); }
   document.querySelectorAll('.tg-sw').forEach(function (sw) {
+    if (sw.id === 'payuniEnabled') return;   // UX-004: payuni handled by its own interlock below
     sw.addEventListener('click', function () { if (sw.dataset.locked) return; sw.classList.toggle('on'); markDirty(); });
   });
+
+  // UX-004: 線上付款 二擇一 + 單向鎖。開啟時跳託收確認彈窗，並關閉/鎖死銀行轉帳。
+  function refreshPaymentInterlock() {
+    var online = document.getElementById('payuniEnabled').classList.contains('on');
+    var bankSw = document.getElementById('bankEnabled');
+    var hint = document.getElementById('bankLockedHint');
+    if (online) { bankSw.dataset.locked = '1'; bankSw.classList.remove('on'); if (hint) hint.style.display = ''; }
+    else { delete bankSw.dataset.locked; if (hint) hint.style.display = 'none'; }
+    if (typeof updateBankFields === 'function') updateBankFields();
+  }
+  (function () {
+    var payuniSw = document.getElementById('payuniEnabled');
+    payuniSw.addEventListener('click', function () {
+      if (payuniSw.dataset.locked) return;                       // already locked on — cannot turn off
+      if (payuniSw.classList.contains('on')) { payuniSw.classList.remove('on'); markDirty(); refreshPaymentInterlock(); return; }
+      var pct = (PLAN && typeof PLAN.feePct === 'number') ? PLAN.feePct : ({ free: 5, starter: 3, pro: 2, team: 1 }[(PLAN && PLAN.tier)] || 0);
+      uiConfirm(window.L('aeEditPayuniConfirmPre') + pct + window.L('aeEditPayuniConfirmSuf'), { title: window.L('aeEditPayuniConfirmTitle') }).then(function (ok) {
+        if (!ok) return;
+        payuniSw.classList.add('on');
+        markDirty();
+        refreshPaymentInterlock();
+      });
+    });
+  })();
   document.getElementById('adv-maxTeams').addEventListener('blur', validateCapacity);
   document.getElementById('adv-maxTeams').addEventListener('input', function () { if (document.getElementById('maxTeamsErr').style.display !== 'none') validateCapacity(); });
 
