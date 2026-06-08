@@ -526,7 +526,11 @@
         if (!ok) return;
         btn.disabled = true;
         google.script.run
-          .withSuccessHandler(function () { location.reload(); })
+          .withSuccessHandler(function (r) {
+            // UX-006: backend may refuse to OPEN if the form has no required email field.
+            if (r && r.success === false) { btn.disabled = false; uiAlert((r && r.message) || window.L('aeHubFailPre')); return; }
+            location.reload();
+          })
           .withFailureHandler(function (err) { btn.disabled = false; uiAlert(window.L('aeHubFailPre') + (err && err.message)); })
           .setRegistrationOpen(compId, !COMP.isOpen);
       });

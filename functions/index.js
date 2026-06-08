@@ -1360,11 +1360,18 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     summaryReason = !newDesc ? "removed" : "unchanged";
   }
 
+  // UX-006: block opening registration if the form collects no required email.
+  const willOpen = openImmediateRequested ? true : (config.isOpen === true);
+  if (willOpen && !formHasRequiredEmail(prevCfg)) {
+    return { success: false, code: 'NO_EMAIL',
+      message: "開放報名前，請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），否則無法寄送確認信與通知。" };
+  }
+
   await ref.update({
     name: config.competitionName || "", category: config.category || "", config: jc,
     // U1: 即日起 forces isOpen=true regardless of the explicit toggle, so registration
     // really does open the moment the organiser hits 儲存.
-    isOpen: openImmediateRequested ? true : (config.isOpen === true),
+    isOpen: willOpen,
     isVisible: !!config.isVisible,
     deadline: config.deadline || "", maxTeams: config.maxTeams || 0
   });
@@ -1439,7 +1446,26 @@ async function generateDescriptionSummary(rawDesc) {
   }
 }
 
+// UX-006: does the event's form collect at least one REQUIRED email? Legacy/no-schema
+// forms have none, so opening registration on them is blocked until the organiser adds one.
+function formHasRequiredEmail(cfg) {
+  const fs = cfg && cfg.formSchema;
+  if (fs && Array.isArray(fs.sections)) {
+    return fs.sections.some(s => (s.fields || []).some(f => f.type === 'email' && f.req === true));
+  }
+  return false;
+}
+
 exports.setRegistrationOpen = compAuthCallable(async (data) => {
+  // UX-006: refuse to OPEN registration unless the form has a required email field.
+  if (data.isOpen === true) {
+    const doc = await db.collection("competitions").doc(data.compId).get();
+    const cfg = (doc.exists && doc.data().config) || {};
+    if (!formHasRequiredEmail(cfg)) {
+      return { success: false, code: 'NO_EMAIL',
+        message: "開放報名前，請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），否則無法寄送確認信與通知。" };
+    }
+  }
   await db.collection("competitions").doc(data.compId).update({ isOpen: data.isOpen });
   return { success: true, isOpen: data.isOpen };
 });
@@ -7708,6 +7734,15 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
       }
       cleanSchema.sections = cleanSchema.sections.filter(s => s.role !== 'custom' || s === first);
     }
+  }
+
+  // UX-006: a registration form MUST collect at least one REQUIRED email (in any section —
+  // 學員 / 指導者 / 附加問題), otherwise confirmation mail + EDM/通知 can't reach registrants.
+  const hasRequiredEmail = cleanSchema.sections.some(sec =>
+    (sec.fields || []).some(f => f.type === 'email' && f.req === true));
+  if (!hasRequiredEmail) {
+    return { success: false, code: 'NO_EMAIL',
+      message: "報名表單需至少一個「必填 Email」欄位（學員或指導者區塊皆可），否則無法寄送確認信與通知。請新增後再儲存。" };
   }
 
   const derived = deriveLegacyFromFormSchema(cleanSchema);
