@@ -206,6 +206,15 @@
                 <button type="button" class="btn btn-ghost btn-sm" id="convertHtmlBtn" style="flex-shrink:0" data-i18n="aeEditConvertHtmlBtn">🔄 一鍵轉內聯 HTML</button>
               </div>
             </div>
+            <!-- UX-001: AI summary DRAFT review — never public until approved here -->
+            <div class="fld" id="aiDraftBar" style="display:none; background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:10px; padding:12px 14px">
+              <b style="color:var(--warn-700)" data-i18n="aeEditAiDraftTitle">🤖 AI 摘要草稿待審核（批准後才會顯示在公開頁）</b>
+              <div id="aiDraftText" style="font:400 13px/1.6 var(--f-tc); color:var(--ink-2); margin:8px 0; white-space:pre-wrap"></div>
+              <div style="display:flex; gap:8px">
+                <button type="button" class="btn btn-primary btn-sm" id="aiDraftApprove" data-i18n="aeEditAiDraftApprove">✓ 批准並公開</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="aiDraftDiscard" data-i18n="aeEditAiDraftDiscard">✕ 捨棄草稿</button>
+              </div>
+            </div>
             <div class="row2">
               <div class="fld">
                 <div class="lbl" data-i18n="aeEditFldOpenDate">開放報名時間</div>
@@ -765,6 +774,7 @@
     document.getElementById('basic-category').value = CFG.category || '研討會';
     document.getElementById('basic-eventType').value = CFG.eventType || 'single_no_coach';
     document.getElementById('basic-description').value = CFG.description || '';
+    renderAiDraft();   // UX-001: show pending AI summary draft (if any) for approval
     // ---- Dates: prefill sensible defaults when empty ----
     var _today = (function () { var d = new Date(); var pad = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); })();
     document.getElementById('basic-openDate').value = CFG.openDate ? toLocalInput(CFG.openDate) : (_today + 'T08:30');
@@ -1286,6 +1296,30 @@
     ta.value = convertDescToHtml(v); markDirty();
   });
 
+  // ===== UX-001: AI summary draft review =====
+  function renderAiDraft() {
+    var bar = document.getElementById('aiDraftBar'); if (!bar) return;
+    var draft = (CFG && CFG.descriptionSummaryDraft) || '';
+    if (draft) { document.getElementById('aiDraftText').textContent = draft; bar.style.display = ''; }
+    else { bar.style.display = 'none'; }
+  }
+  document.getElementById('aiDraftApprove').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    google.script.run.withSuccessHandler(function (r) {
+      b.disabled = false;
+      if (r && r.success) { CFG.descriptionSummary = r.descriptionSummary || ''; CFG.descriptionSummaryDraft = ''; renderAiDraft(); uiAlert(window.L('aeEditAiDraftApproved')); }
+      else uiAlert((r && r.message) || window.L('aeEditSaveFailPre'));
+    }).withFailureHandler(function (e) { b.disabled = false; uiAlert((e && e.message) || ''); }).approveDescriptionSummary(compId, true);
+  });
+  document.getElementById('aiDraftDiscard').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    google.script.run.withSuccessHandler(function (r) {
+      b.disabled = false;
+      if (r && r.success) { CFG.descriptionSummaryDraft = ''; renderAiDraft(); }
+      else uiAlert((r && r.message) || '');
+    }).withFailureHandler(function (e) { b.disabled = false; uiAlert((e && e.message) || ''); }).approveDescriptionSummary(compId, false);
+  });
+
   // ===== Shared: in-page media preview modal (poster image / rules PDF) =====
   function openMediaModal(innerHtml, title) {
     var ov = document.createElement('div');
@@ -1635,12 +1669,14 @@
           var meta = document.getElementById('saveMeta');
           // P3: surface AI summary status so organiser sees whether the hero text was regenerated
           var aiNote = '';
-          if (res && res.summaryUpdated) aiNote = window.L('aeEditSaveAiSummaryPre') + (res.summaryLength || 0) + window.L('aeEditSaveAiSummarySuf');
-          else if (res && res.summaryReason) { var _sk = { empty: 'aeEditSumEmpty', error: 'aeEditSumError' }[res.summaryReason]; if (_sk) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + window.L(_sk); }
+          if (res && res.summaryDraft) {
+            // UX-001: a NEW AI draft was produced — it is NOT public until approved below.
+            aiNote = window.L('aeEditSaveAiDraftPre') + (res.summaryDraftLength || 0) + window.L('aeEditSaveAiDraftSuf');
+            CFG.descriptionSummaryDraft = res.summaryDraftText || '';
+            renderAiDraft();
+          } else if (res && res.summaryReason) { var _sk = { empty: 'aeEditSumEmpty', error: 'aeEditSumError' }[res.summaryReason]; if (_sk) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + window.L(_sk); }
           meta.textContent = window.L('aeEditSaveOk') + aiNote;
           meta.className = 'meta saved';
-          // Refresh local cfg so re-saves know the current summary
-          if (res && typeof res.summaryLength === 'number') CFG.descriptionSummary = (res.summaryLength > 0) ? (CFG.descriptionSummary || '<已更新>') : '';
         });
       })
       .withFailureHandler(function (err) {

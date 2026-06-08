@@ -435,6 +435,12 @@
     aeEditSaveAiSummaryReasonPre: '　·　AI 摘要：',
     aeEditSumEmpty: 'AI 回傳空白，保留原摘要',
     aeEditSumError: 'AI 暫時無法產生，稍後再試',
+    aeEditSaveAiDraftPre: '　·　🤖 AI 摘要草稿已產生（',
+    aeEditSaveAiDraftSuf: ' 字）— 待批准後才公開',
+    aeEditAiDraftTitle: '🤖 AI 摘要草稿待審核（批准後才會顯示在公開頁）',
+    aeEditAiDraftApprove: '✓ 批准並公開',
+    aeEditAiDraftDiscard: '✕ 捨棄草稿',
+    aeEditAiDraftApproved: '已批准，AI 摘要已公開於活動頁。',
     aeEditSaveFailPre: '儲存失敗：',
 
     // danger zone dynamic
@@ -884,6 +890,12 @@
     aeEditSaveAiSummaryReasonPre: '　·　AI summary: ',
     aeEditSumEmpty: 'AI returned blank; kept the existing summary',
     aeEditSumError: 'AI is temporarily unavailable; try again later',
+    aeEditSaveAiDraftPre: '　·　🤖 AI summary draft ready (',
+    aeEditSaveAiDraftSuf: ' chars) — publishes only after approval',
+    aeEditAiDraftTitle: '🤖 AI summary draft pending review (shown publicly only after approval)',
+    aeEditAiDraftApprove: '✓ Approve & publish',
+    aeEditAiDraftDiscard: '✕ Discard draft',
+    aeEditAiDraftApproved: 'Approved — the AI summary is now live on the event page.',
     aeEditSaveFailPre: 'Save failed: ',
 
     // danger zone dynamic

@@ -1331,30 +1331,33 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   const plainNewDesc = String(newDesc).replace(/<[^>]*>/g, '').trim();
   const hasNoSummary = !prevCfg.descriptionSummary;
   const needsAI = (descChanged || hasNoSummary) && plainNewDesc.length >= 20;
-  let summaryUpdated = false;
+  // UX-001: the AI summary is a DRAFT and NEVER goes public on its own — it lands in
+  // descriptionSummaryDraft and only becomes the public descriptionSummary after the
+  // organiser approves it (approveDescriptionSummary). Existing public summaries are
+  // grandfathered: we always carry the current approved summary forward unchanged here.
+  if (prevCfg.descriptionSummary !== undefined) jc.descriptionSummary = prevCfg.descriptionSummary;
+  if (!newDesc) jc.descriptionSummary = "";                 // description removed → drop public summary too
+  let summaryUpdated = false;                               // true when a NEW DRAFT was produced
   let summaryReason = "";
-  if (needsAI) {
+  if (needsAI && newDesc) {
     try {
       const summary = await generateDescriptionSummary(newDesc);
       if (summary) {
-        jc.descriptionSummary = summary;
+        jc.descriptionSummaryDraft = summary;               // pending the organiser's approval
         summaryUpdated = true;
         summaryReason = descChanged ? "changed" : "backfill";
       } else {
         summaryReason = "empty";
-        // Preserve any existing summary so we don't blank out a working one.
-        if (prevCfg.descriptionSummary) jc.descriptionSummary = prevCfg.descriptionSummary;
+        jc.descriptionSummaryDraft = prevCfg.descriptionSummaryDraft || "";
       }
     } catch (e) {
       summaryReason = "error"; // detail intentionally not surfaced to the UI
-      if (prevCfg.descriptionSummary) jc.descriptionSummary = prevCfg.descriptionSummary;
+      jc.descriptionSummaryDraft = prevCfg.descriptionSummaryDraft || "";
     }
-  } else if (!newDesc) {
-    jc.descriptionSummary = ""; // clear when description was removed
-    summaryReason = "removed";
-  } else if (prevCfg.descriptionSummary !== undefined) {
-    jc.descriptionSummary = prevCfg.descriptionSummary; // preserve existing summary
-    summaryReason = "unchanged";
+  } else {
+    if (prevCfg.descriptionSummaryDraft !== undefined) jc.descriptionSummaryDraft = prevCfg.descriptionSummaryDraft;
+    if (!newDesc) jc.descriptionSummaryDraft = "";
+    summaryReason = !newDesc ? "removed" : "unchanged";
   }
 
   await ref.update({
@@ -1368,7 +1371,29 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
 
   await auditLog(request.authUser.username, "儲存設定", compId, "");
   cDel("cfg_" + compId);
-  return { success: true, message: "儲存成功！", summaryUpdated, summaryReason, summaryLength: (jc.descriptionSummary || "").length };
+  return { success: true, message: "儲存成功！", summaryUpdated, summaryReason,
+    summaryLength: (jc.descriptionSummary || "").length,
+    summaryDraft: !!jc.descriptionSummaryDraft, summaryDraftLength: (jc.descriptionSummaryDraft || "").length,
+    summaryDraftText: jc.descriptionSummaryDraft || "" };
+});
+
+// UX-001: organiser approves (or discards) the pending AI summary draft. Only on approval
+// does the draft become the public descriptionSummary.
+exports.approveDescriptionSummary = compAuthCallable("manage", async (data, request) => {
+  const compId = String(data.compId || "");
+  const approve = data.approve !== false;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "找不到活動" };
+  const cfg = doc.data().config || {};
+  const draft = cfg.descriptionSummaryDraft || "";
+  if (!draft) return { success: false, message: "沒有待審核的 AI 摘要草稿" };
+  if (approve) cfg.descriptionSummary = draft;
+  cfg.descriptionSummaryDraft = "";
+  await ref.update({ config: cfg });
+  await auditLog(request.authUser.username, approve ? "批准AI摘要" : "捨棄AI摘要", compId, "");
+  cDel("cfg_" + compId);
+  return { success: true, approved: approve, descriptionSummary: cfg.descriptionSummary || "" };
 });
 
 // B.1 helper: ask Gemini for a 100–150 字 Chinese summary of an activity description.
@@ -1378,7 +1403,10 @@ async function generateDescriptionSummary(rawDesc) {
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return "";
   try {
-    const prompt = "請將下列活動描述濃縮成 100 到 150 字的中文摘要，保留時間、地點、對象、特色等關鍵資訊。" +
+    const prompt = "請將下列活動描述濃縮成 100 到 150 字的中文摘要。" +
+      "只能使用活動描述中明確出現的資訊；嚴禁推測、補充或杜撰任何未提供的內容，" +
+      "尤其是地點、日期、時間、金額、人數、主辦單位或聯絡方式——若原文沒寫就一律略過、不要提及。" +
+      "若原文有提到時間、地點、對象、特色等，才保留這些關鍵資訊。" +
       "不要使用 markdown、標題、條列、表情符號，直接輸出純文字段落。摘要長度必須介於 100 到 150 個中文字。\n\n" +
       "活動描述：\n" + text.slice(0, 4000) + "\n\n摘要：";
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
