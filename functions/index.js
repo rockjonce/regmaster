@@ -1285,7 +1285,12 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
     "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts", "refundPolicy"];
 
-  const jc = {};
+  // DATA-LOSS FIX: `ref.update({config: jc})` REPLACES the whole config object, so jc must
+  // be SEEDED from the existing config — otherwise every Settings-page save wipes fields that
+  // aren't in the whitelist below (formSchema, scoringRubric, scoringPanels, judgeSee*,
+  // descriptionSummaryDraft, themeColors, …) which are owned by other endpoints (form-builder,
+  // scoring, poster AI). Whitelisted keys are still overwritten by the incoming payload as before.
+  const jc = Object.assign({}, compData.config || {});
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
 
