@@ -5590,11 +5590,10 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
         const paidDateStr = String(p.paidAt || "").slice(0, 10);
         if (!paidDateStr || paidDateStr < fromDate || paidDateStr > toDate) return;
         const amt = parseInt(p.amount, 10) || 0;
-        const fee = Math.round(amt * feePct) / 100; // 2-decimal precision then we round to int
-        const feeInt = Math.round(amt * feePct / 100);
-        const net = amt - feeInt;
+        const fee = Math.round(amt * feePct) / 100; // UX-003: 2-decimal handling fee (feePct% of amt)
+        const net = Math.round((amt - fee) * 100) / 100;
         payuniGross += amt;
-        feeTotal    += feeInt;
+        feeTotal    += fee;
         payuniNet   += net;
         orders.push({
           type: "payuni",
@@ -5605,7 +5604,7 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
           teamNameEN: p.teamNameEN || "",
           payuniTradeNo: p.payuniTradeNo || "",
           paidAt: p.paidAt || "",
-          amount: amt, feePct, fee: feeInt, net
+          amount: amt, feePct, fee, net
         });
       });
 
@@ -5656,7 +5655,8 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
     // money never reaches the platform, so it doesn't enter the wire-out calculation.
     // ATM rows are still surfaced in the orders list as informational context, but
     // subtotal / actualWire compute on PayUNI net only.
-    const subtotal = payuniNet;
+    feeTotal = Math.round(feeTotal * 100) / 100;          // UX-003: 2-decimal accumulated handling fee
+    const subtotal = Math.round(payuniNet);               // round net to whole NT$ at payout time
     const wireFee  = 15;                                  // NT$ 15 / actual wire-out
     const actualWire = Math.max(0, subtotal - wireFee);
 
@@ -5760,21 +5760,21 @@ exports.getSettlementData = authCallable(["system", "competition"], async (data,
   const compIds = scopeComp ? [scopeComp] : Object.keys(compMap);
 
   const orders = [];
-  let gross = 0, feeTotal = 0, net = 0, settledNet = 0, unsettledNet = 0;
+  let gross = 0, feeTotal = 0, net = 0, settledNet = 0, unsettledNet = 0, unsettledGross = 0;
   for (const cid of compIds) {
     const paySnap = await db.collection("regPayments").where("compId", "==", cid).where("status", "==", "paid").get();
     paySnap.docs.forEach(d => {
       const p = d.data();
       const amt = parseInt(p.amount, 10) || 0;
-      const feeInt = Math.round(amt * feePct / 100);
-      const n = amt - feeInt;
-      gross += amt; feeTotal += feeInt; net += n;
-      if (p.settled) settledNet += n; else unsettledNet += n;
+      const fee = Math.round(amt * feePct) / 100;          // UX-003: 2-decimal handling fee
+      const n = Math.round((amt - fee) * 100) / 100;
+      gross += amt; feeTotal += fee; net += n;
+      if (p.settled) settledNet += n; else { unsettledNet += n; unsettledGross += amt; }
       orders.push({
         orderId: p.orderId || d.id, compId: cid, compName: compMap[cid] || cid,
         teamId: p.teamId || "", teamNameCN: p.teamNameCN || "", teamNameEN: p.teamNameEN || "",
         payuniTradeNo: p.payuniTradeNo || "", paidAt: p.paidAt || "",
-        amount: amt, feePct, fee: feeInt, net: n,
+        amount: amt, feePct, fee, net: n,
         settled: !!p.settled, settlementId: p.settlementId || "", settledAt: p.settledAt || ""
       });
     });
@@ -5797,10 +5797,19 @@ exports.getSettlementData = authCallable(["system", "competition"], async (data,
   }
   settlements.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 
+  // UX-003: surface the NT$1000 gross threshold so the admin preview matches createSettlement.
+  const SETTLE_MIN = 1000;
   return {
     creator, tier, feePct, payoutCycle, payout, scope: scopeComp || null,
     summary: {
-      gross, feeTotal, net, settledNet, unsettledNet,
+      gross: Math.round(gross * 100) / 100,
+      feeTotal: Math.round(feeTotal * 100) / 100,
+      net: Math.round(net * 100) / 100,
+      settledNet: Math.round(settledNet * 100) / 100,
+      unsettledNet: Math.round(unsettledNet * 100) / 100,
+      unsettledGross,
+      settleThreshold: SETTLE_MIN,
+      canSettle: unsettledGross >= SETTLE_MIN,   // false → createSettlement will accumulate, not pay out
       orderCount: orders.length,
       settledCount: orders.filter(o => o.settled).length,
       unsettledCount: orders.filter(o => !o.settled).length
@@ -5835,20 +5844,33 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
 
   const settlementId = "STL" + Date.now();
   const now = fmtNow();
+  const SETTLE_MIN = 1000;                       // UX-003 (Q1): gross threshold to settle
+  const r2 = x => Math.round(x * 100) / 100;     // UX-003 (Q2): keep 2 decimals while accumulating
   let grossTotal = 0, feeTotal = 0, netTotal = 0;
   const orderSnap = targets.map(t => {
     const amt = parseInt(t.p.amount, 10) || 0;
-    const feeInt = Math.round(amt * feePct / 100);
-    const n = amt - feeInt;
-    grossTotal += amt; feeTotal += feeInt; netTotal += n;
+    const fee = r2(amt * feePct / 100);          // 2-decimal handling fee, NOT pre-rounded per order
+    const n = r2(amt - fee);
+    grossTotal += amt; feeTotal += fee; netTotal += n;
     return {
       orderId: t.p.orderId || t.ref.id, compId: t.cid, compName: compMap[t.cid] || t.cid,
       teamId: t.p.teamId || "", teamNameCN: t.p.teamNameCN || "", teamNameEN: t.p.teamNameEN || "",
-      amount: amt, fee: feeInt, net: n
+      amount: amt, fee, net: n
     };
   });
+  feeTotal = r2(feeTotal); netTotal = r2(netTotal);
+
+  // UX-003 (Q1): below the NT$1000 gross threshold, leave the orders UNSETTLED so they
+  // accumulate into the next batch — nothing is marked settled, no settlement doc created.
+  if (grossTotal < SETTLE_MIN) {
+    return { success: false, accumulated: true, grossTotal, threshold: SETTLE_MIN, orderCount: orderSnap.length,
+      message: "本批未結算總額 NT$" + grossTotal + " 未達 NT$" + SETTLE_MIN + " 結算門檻，已保留累積至下批。" };
+  }
+
+  // UX-003 (Q2): round the net to whole NT$ only here at payout time, then deduct the NT$15 wire fee.
   const wireFee = 15;
-  const actualWire = Math.max(0, netTotal - wireFee);
+  const netRounded = Math.round(netTotal);
+  const actualWire = Math.max(0, netRounded - wireFee);
 
   const accSnap = await db.collection("accounts").where("username", "==", creator).limit(1).get();
   const acc = accSnap.empty ? {} : accSnap.docs[0].data();
@@ -5863,7 +5885,7 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
   await db.collection("settlements").doc(settlementId).set({
     settlementId, creator, tier, feePct,
     orderCount: orderSnap.length,
-    grossTotal, feeTotal, netTotal, wireFee, actualWire,
+    grossTotal, feeTotal, netTotal, netRounded, wireFee, actualWire,
     payout: {
       bankCode: acc.payoutBankCode || "", bankName: acc.payoutBankName || "",
       branchCode: acc.payoutBranchCode || "", branchName: acc.payoutBranchName || "",
@@ -5875,7 +5897,7 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
   });
   await auditLog(request.authUser.username, "平台結算匯款", creator,
     settlementId + " " + orderSnap.length + "筆 實匯NT$" + actualWire);
-  return { success: true, settlementId, orderCount: orderSnap.length, grossTotal, feeTotal, netTotal, wireFee, actualWire };
+  return { success: true, accumulated: false, settlementId, orderCount: orderSnap.length, grossTotal, feeTotal, netTotal, netRounded, wireFee, actualWire };
 });
 
 exports.getRegPaymentStatus = callable(async (data) => {

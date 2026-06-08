@@ -999,6 +999,7 @@ body { background:var(--bg); }
     google.script.run
       .withSuccessHandler(function (r) {
         if (r && r.success) { toast(window.L('adSysBillSettleOkPre') + r.settlementId + window.L('adSysBillSettleOkMid') + (r.actualWire || 0).toLocaleString() + window.L('adSysBillSettleOkPost')); loadBilling(); }
+        else if (r && r.accumulated) { btn.disabled = false; btn.textContent = o; toast(r.message); loadBilling(); }  // UX-003: below NT$1000 → accumulate, not an error
         else { btn.disabled = false; btn.textContent = o; toast((r && r.message) || window.L('adSysBillSettleFail'), 'err'); }
       })
       .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || window.L('adSysBillFail'), 'err'); })
