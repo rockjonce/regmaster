@@ -848,7 +848,13 @@ body { background:var(--bg); }
   // that organiser's activities, and marks as 已實際匯款 (records NT$15 wire fee).
   var BILL_DATA = null;
   function _esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
-  function _money(n) { return 'NT$ ' + (parseInt(n, 10) || 0).toLocaleString(); }
+  function _money(n) {
+    // UX-003: keep cents (fee/net can be 2-decimal, e.g. 3% of NT$10 = 0.30) — the old
+    // parseInt truncated 0.30→0 / 9.70→9. Show 2 decimals only when there ARE decimals.
+    var v = Number(n) || 0;
+    var opts = Number.isInteger(v) ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+    return 'NT$ ' + v.toLocaleString(undefined, opts);
+  }
   function loadBillingOrgs() {
     google.script.run.withSuccessHandler(function (list) {
       list = list || [];

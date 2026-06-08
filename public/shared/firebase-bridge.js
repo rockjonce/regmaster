@@ -144,6 +144,7 @@
     saveCompetitionConfig:["compId","config"],
     saveScoringConfig:["compId","aggregateJudges","trimExtremes","nodes","scoringPanels","judgeSeeRegistrantInfo","judgeSeeLiveRanking"],
     setRegistrationOpen:["compId","isOpen"],
+    approveDescriptionSummary:["compId","approve"],
     deleteCompetition:["compId"],
     getRegistrationBundle:["compId"],
     getShareLink:["compId"],
