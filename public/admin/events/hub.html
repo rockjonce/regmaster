@@ -553,6 +553,25 @@
     document.getElementById('legacyAnnLink').href = base + '/announcements';
     document.getElementById('legacyScoreLink').href = base + '/scoring';
     document.getElementById('legacyCheckinLink').href = base + '/checkin';
+    // UX-018: gate the hub tools by the member's role IN THIS event. getMyEventRole resolves
+    // per-event (owner if you created it, else your member role) — so the same person is full
+    // owner in their own events and limited (judge=評分 / staff=報到) inside others' events.
+    if (!window.__hubRoleGated) {
+      window.__hubRoleGated = true;
+      google.script.run.withSuccessHandler(function (res) {
+        var role = res && res.role;
+        if (!role || role === 'owner' || role === 'manager') return;   // full access — show all
+        var keep = {};
+        (role === 'staff' ? ['/checkin'] : role === 'judge' ? ['/scoring'] : []).forEach(function (p) { keep[p] = 1; });
+        document.querySelectorAll('[data-goto]').forEach(function (a) {
+          var g = a.getAttribute('data-goto'); if (g && !keep[g]) a.style.display = 'none';
+        });
+        [['editLinkBtn', '/edit'], ['formBuilderLinkBtn', '/form-builder'], ['registrationsLink', '/registrations'],
+         ['legacyRegLink', '/payments'], ['legacyAnnLink', '/announcements'], ['legacyScoreLink', '/scoring'], ['legacyCheckinLink', '/checkin']
+        ].forEach(function (p) { var el = document.getElementById(p[0]); if (el && !keep[p[1]]) el.style.display = 'none'; });
+        var tog = document.getElementById('toggleOpenBtn'); if (tog) tog.style.display = 'none';   // 開關報名 = manage write
+      }).withFailureHandler(function () {}).getMyEventRole(compId);
+    }
     document.getElementById('legacyRegLink').textContent = window.L('aeHubStubRegBtn');
     document.getElementById('legacyAnnLink').textContent = window.L('aeHubStubAnnBtn');
     document.getElementById('legacyScoreLink').textContent = window.L('aeHubStubScoreBtn');
