@@ -107,10 +107,14 @@
         item('/admin/audit.html', 'anAudit', '操作日誌', IC.log) +
       '</div>' : '') +
     '<div class="side-foot">' +
-      '<div class="usage-card"><h6 data-i18n="anUsageCur">目前方案</h6><div class="nm-p" id="planBadge">FREE</div>' +
+      // UX-15: SYSTEM accounts have no plan/license concept → never show the
+      // upsell card. Non-system: start the badge as a neutral "⋯" skeleton (not
+      // "FREE") so a paid org never flashes FREE before getLicenseStatus resolves.
+      (isSystem ? '' :
+      '<div class="usage-card"><h6 data-i18n="anUsageCur">目前方案</h6><div class="nm-p" id="planBadge">⋯</div>' +
         '<div class="bar"><div id="usageBar" style="width:0%"></div></div>' +
-        '<div class="meta-u"><span id="usageText" data-i18n="anUsageFreeText">免費方案</span><span id="usagePct"></span></div>' +
-        '<a class="upgrade-link" href="/admin/license.html" data-i18n="anUpgrade">升級方案 →</a></div>' +
+        '<div class="meta-u"><span id="usageText">　</span><span id="usagePct"></span></div>' +
+        '<a class="upgrade-link" href="/admin/license.html" data-i18n="anUpgrade">升級方案 →</a></div>') +
       '<a class="nav-it" id="logoutBtn" href="/login.html">' + IC.out + '<span data-i18n="anLogout">登出</span></a>' +
     '</div>';
 
@@ -143,7 +147,7 @@
   }
 
   // --- Plan badge: FREE unless the account holds a valid (paid) license ---
-  if (me && me.sessionToken && window.google && window.google.script && window.google.script.run) {
+  if (me && me.sessionToken && !isSystem && window.google && window.google.script && window.google.script.run) {
     try {
       google.script.run.withSuccessHandler(function (res) {
         var badge = document.getElementById('planBadge');

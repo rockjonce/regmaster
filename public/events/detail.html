@@ -595,7 +595,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     ctaSubEl.removeAttribute('data-i18n');
     if (d.isOpen) {
       ctaTitleEl.textContent = window.L('edCtaOpen');
-      ctaSubEl.textContent = cfg.deadline ? window.L('edCtaDeadlinePrefix') + cfg.deadline : window.L('edCtaAnytime');
+      ctaSubEl.textContent = cfg.deadline ? window.L('edCtaDeadlinePrefix') + String(cfg.deadline).replace('T', ' ').slice(0, 16) : window.L('edCtaAnytime');
     } else {
       ctaTitleEl.textContent = window.L('edCtaClosedTitle');
       ctaSubEl.textContent = window.L('edCtaClosedSub');
