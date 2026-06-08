@@ -123,17 +123,44 @@
   // --- #3 RBAC: hide event sub-nav items the member's role can't use ---
   // Owner/system see everything; a member's role determines visible event tabs.
   // UI only — the backend (compAuthCallable capabilities) enforces access regardless.
-  if (em && em[1] && em[1] !== 'index.html' && window.google && window.google.script && window.google.script.run && window.google.script.run.getMyEventRole) {
+  var inEvent = !!(em && em[1] && em[1] !== 'index.html');
+  // navState coordinates two async calls (event role + plan features). Plan-based feature
+  // locks must reflect the EVENT OWNER's entitlements: a member viewing another org's event
+  // inherits the owner's paid features (enforced server-side by requireCompFeature), so we
+  // only show 🔒 locks to the OWNER of this event — never to members on their personal plan.
+  var navState = { role: inEvent ? undefined : 'owner', feats: undefined, applied: false };
+  function applyFeatLock() {
+    if (navState.applied || navState.feats === undefined || navState.role === undefined) return;
+    navState.applied = true;
+    if (navState.role !== 'owner') return;   // members inherit owner entitlements — no plan lock
+    var feats = navState.feats || {};
+    side.querySelectorAll('a.nav-it[data-feat]').forEach(function (a) {
+      if (feats[a.getAttribute('data-feat')] === false) {
+        a.classList.add('feat-locked');
+        if (!a.querySelector('.lock-i')) { var lk = document.createElement('span'); lk.className = 'lock-i'; lk.textContent = '🔒'; a.appendChild(lk); }
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          var msg = window.L ? window.L('anFeatLocked') : '此功能需升級方案才能使用';
+          if (window.uiAlert) { uiAlert(msg).then(function () { location.href = '/admin/license.html'; }); }
+          else { alert(msg); location.href = '/admin/license.html'; }
+        });
+      }
+    });
+  }
+  if (inEvent && window.google && window.google.script && window.google.script.run && window.google.script.run.getMyEventRole) {
     try {
       window.google.script.run.withSuccessHandler(function (res) {
-        var role = res && res.role;
-        if (!role || role === 'owner') return; // owner/system: show all
-        side.querySelectorAll('a.nav-it[data-evt-roles]').forEach(function (a) {
-          var allowed = (a.getAttribute('data-evt-roles') || '').split(/\s+/);
-          if (allowed.indexOf(role) < 0) a.style.display = 'none';
-        });
-      }).withFailureHandler(function () {}).getMyEventRole(em[1]);
-    } catch (e) {}
+        var role = (res && res.role) || 'owner'; // null → treat as full (own/unknown context)
+        navState.role = role;
+        if (role !== 'owner') {
+          side.querySelectorAll('a.nav-it[data-evt-roles]').forEach(function (a) {
+            var allowed = (a.getAttribute('data-evt-roles') || '').split(/\s+/);
+            if (allowed.indexOf(role) < 0) a.style.display = 'none';
+          });
+        }
+        applyFeatLock();
+      }).withFailureHandler(function () { navState.role = 'owner'; applyFeatLock(); }).getMyEventRole(em[1]);
+    } catch (e) { navState.role = 'owner'; applyFeatLock(); }
   }
 
   // --- Logout ---
@@ -164,20 +191,10 @@
           if (ut) ut.textContent = LL('anUsageFreeHint', '免費方案 — 升級解鎖更多');
         }
         // UX-002: lock (not hide) the sub-nav items whose feature the plan excludes,
-        // and turn the click into an upsell. Backend still enforces; this is UX only.
-        var feats = (res && res.features) || {};
-        side.querySelectorAll('a.nav-it[data-feat]').forEach(function (a) {
-          if (feats[a.getAttribute('data-feat')] === false) {
-            a.classList.add('feat-locked');
-            if (!a.querySelector('.lock-i')) { var lk = document.createElement('span'); lk.className = 'lock-i'; lk.textContent = '🔒'; a.appendChild(lk); }
-            a.addEventListener('click', function (e) {
-              e.preventDefault();
-              var msg = LL('anFeatLocked', '此功能需升級方案才能使用');
-              if (window.uiAlert) { uiAlert(msg).then(function () { location.href = '/admin/license.html'; }); }
-              else { alert(msg); location.href = '/admin/license.html'; }
-            });
-          }
-        });
+        // and turn the click into an upsell. Applied via applyFeatLock(), which only locks
+        // when the viewer is the OWNER of this event (members inherit owner entitlements).
+        navState.feats = (res && res.features) || {};
+        applyFeatLock();
       }).withFailureHandler(function () {}).getLicenseStatus();
     } catch (x) {}
   }

@@ -259,6 +259,7 @@ function compAuthCallable(capabilityOrHandler, maybeHandler) {
         const compDoc = await db.collection("competitions").doc(compId).get();
         if (!compDoc.exists) throw new HttpsError("not-found", "活動不存在");
         const comp = compDoc.data();
+        request.compOwner = comp.creator;   // feature entitlement follows the owner's plan (members inherit)
         if (comp.creator !== request.authUser.username) {
           const role = await memberRoleFor(request.authUser.username, comp.creator, compId);
           if ((ROLE_CAPS[role] || []).indexOf(capability) < 0) throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
@@ -1243,9 +1244,9 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   const wantsPayment = (Array.isArray(config.paymentMethods) && config.paymentMethods.length > 0)
     || config.payuniEnabled === true
     || (parseInt(config.registrationFee) || 0) > 0;
-  if (wantsPayment) await requireFeature(request.authUser, "payment");
+  if (wantsPayment) await requireCompFeature(request, "payment");
   // 允許候補 is a STARTER+ feature — reject enabling it on a plan that lacks it.
-  if (config.allowWaitlist === true) await requireFeature(request.authUser, "waitlist");
+  if (config.allowWaitlist === true) await requireCompFeature(request, "waitlist");
 
   if (!capUnlocked && capLimit > 0) {
     const sessMode = config.sessionSelectMode || "single";
@@ -3023,7 +3024,7 @@ exports.reconcilePayments = compAuthCallable(async (data, request) => {
 });
 
 exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "csvExport");
+  await requireCompFeature(request, "csvExport");
   const compId = data.compId;
   const compDoc = await db.collection("competitions").doc(compId).get();
   const cfg = compDoc.exists ? (compDoc.data().config || {}) : {};
@@ -3225,7 +3226,7 @@ exports.sendNotificationToAll = compAuthCallable(async (data, request) => {
 
 // ===== Scores =====
 exports.saveScore = compAuthCallable("scoring", async (data, request) => {
-  await requireFeature(request.authUser, "scoring");
+  await requireCompFeature(request, "scoring");
   const { compId, teamId, item, score, rank, comment, user } = data;
   const snap = await db.collection("scores").where("compId", "==", compId).where("teamId", "==", teamId).where("item", "==", item).limit(1).get();
   if (!snap.empty) {
@@ -3372,9 +3373,10 @@ async function getEffectiveTier(username) {
 
 // Throw permission-denied if a competition-role account's tier lacks `key`.
 // Returns the resolved tier on success. System role always allowed (returns "team").
-async function requireFeature(authUser, key) {
-  if (authUser && authUser.role === "system") return "team";
-  const tier = await getEffectiveTier(authUser.username);
+// Resolve a feature gate against a SPECIFIC user's plan (tier). `isSystem` short-circuits to full.
+async function requireFeatureAs(username, isSystem, key) {
+  if (isSystem) return "team";
+  const tier = await getEffectiveTier(username);
   const plans = await getPlans();
   const feats = (plans[tier] && plans[tier].features) || {};
   // Matrix is authoritative; keys absent from the matrix fall back to legacy rank logic.
@@ -3392,6 +3394,17 @@ async function requireFeature(authUser, key) {
       "「" + (FEATURE_LABEL[key] || key) + "」為 " + minLabel + " 以上方案功能，請先升級方案。");
   }
   return tier;
+}
+// Account-level gate — checks the CALLER's own plan (e.g. createCompetition).
+async function requireFeature(authUser, key) {
+  return requireFeatureAs(authUser && authUser.username, !!(authUser && authUser.role === "system"), key);
+}
+// Comp-scoped gate — entitlement follows the EVENT OWNER's plan, so org members
+// (manager/judge/staff) inherit the owner's paid features for that event. For an owner
+// acting on their own event compOwner === caller, so behaviour is unchanged.
+async function requireCompFeature(request, key) {
+  const owner = (request && request.compOwner) || (request && request.authUser && request.authUser.username);
+  return requireFeatureAs(owner, !!(request && request.authUser && request.authUser.role === "system"), key);
 }
 
 exports.createLicense = authCallable(["system"], async (data) => {
@@ -3985,7 +3998,7 @@ async function buildOrgStatsContext(username, role, compId) {
 }
 
 exports.askAdminAI = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "ai");
+  await requireCompFeature(request, "ai");
   const { question, compId } = data;
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return { answer: "AI 未設定" };
@@ -4775,7 +4788,7 @@ exports.duplicateCompetition = compAuthCallable(async (data, request) => {
 
 // ===== QR Code Check-in =====
 exports.checkInTeam = compAuthCallable("checkin", async (data, request) => {
-  await requireFeature(request.authUser, "checkin");
+  await requireCompFeature(request, "checkin");
   const { teamId } = data;
   if (!teamId) return { success: false, message: "missing teamId" };
   const ref = db.collection("teams").doc(teamId);
@@ -6872,7 +6885,7 @@ exports.getCampaignRecipients = compAuthCallable(async (data) => {
 });
 
 exports.createCampaign = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "campaigns");
+  await requireCompFeature(request, "campaigns");
   const { compId, payload } = data;
   if (!payload || !payload.subject) return { success: false, message: "缺少標題" };
   const camp = {
@@ -6982,7 +6995,7 @@ async function _deliverCampaign(campaignId, actorUsername) {
 }
 
 exports.sendCampaignNow = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "campaigns");
+  await requireCompFeature(request, "campaigns");
   const { campaignId } = data;
   const doc = await db.collection("campaigns").doc(campaignId).get();
   if (!doc.exists) return { success: false, message: "找不到 campaign" };
@@ -6996,7 +7009,7 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
 
 // #4: mark a campaign to auto-send at a future time (picked up by processScheduledCampaigns).
 exports.scheduleCampaign = compAuthCallable(async (data, request) => {
-  await requireFeature(request.authUser, "campaigns");
+  await requireCompFeature(request, "campaigns");
   const { campaignId, scheduledFor } = data;
   const doc = await db.collection("campaigns").doc(campaignId).get();
   if (!doc.exists) return { success: false, message: "找不到 campaign" };
@@ -7102,7 +7115,7 @@ exports.eventShare = onRequest({ cors: true, region: "us-central1" }, async (req
 // Legacy saveScore (single-judge) still works; we just add a new shape.
 
 exports.submitJudgeScore = compAuthCallable("scoring", async (data, request) => {
-  await requireFeature(request.authUser, "scoring");
+  await requireCompFeature(request, "scoring");
   const { compId, teamId, cells, items, totalScore, comment } = data;
   if (!compId || !teamId) return { success: false, message: "缺少 compId / teamId" };
   const judgeId = request.authUser.username;
@@ -7206,7 +7219,7 @@ function sanitizePanels(arr) {
 exports.saveScoringConfig = compAuthCallable("manage", async (data, request) => {
   // UX-002: gate the SCORING SETUP on the plan too (previously only role-gated, so a
   // FREE org could fully configure rubric/panels/fairness; only score submission was blocked).
-  await requireFeature(request.authUser, "scoring");
+  await requireCompFeature(request, "scoring");
   const compId = String(data.compId || "");
   const ref = db.collection("competitions").doc(compId);
   const doc = await ref.get();
@@ -7394,7 +7407,7 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
 // Already exists: exports.checkInTeam — leave untouched. Add a sister
 // callable that records extras separately so the legacy field stays clean.
 exports.checkInTeamV2 = compAuthCallable("checkin", async (data, request) => {
-  await requireFeature(request.authUser, "checkin");
+  await requireCompFeature(request, "checkin");
   const { teamId, extras, attendedMembers, attendedCount } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists) return { success: false, message: "找不到隊伍" };
