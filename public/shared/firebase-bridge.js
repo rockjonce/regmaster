@@ -175,6 +175,7 @@
     getPayableItems:["compId"],
     applyPayout:["compId","orderIds","depositIds"],
     withdrawPayout:["compId","reqId"],
+    payuniRefundAndDelete:["compId","reqId"],
     getUserAnalytics:["fromDate","toDate"],
     reconcilePayments:["compId","accountSuffix"],
     saveEmailTemplate:["compId","name","subject","body"],

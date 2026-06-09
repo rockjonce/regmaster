@@ -2481,6 +2481,14 @@ exports.requestRefund = callable(async (data) => {
   if (calc.eventDateMissing) return { success: false, message: "本活動未設定活動日期，請直接聯繫主辦方辦理退費" };
   if (calc.pastStart) return { success: false, message: "活動已開始或結束，線上退費已關閉，請直接聯繫主辦方" };
   if (!calc.hasPolicy) return { success: false, message: "主辦方尚未設定退費政策，請直接聯繫主辦方" };
+  // 帳務重構 S4：判斷退費通道 — 有 PayUNI 已付訂單 → payuni_refund（平台退刷）；否則 owner_bank（主辦方自退）。
+  let channel = "owner_bank", payMethod = team.paymentMethod || "", orderId = team.regPaymentId || "";
+  if (orderId) {
+    try {
+      const rp = await db.collection("regPayments").doc(orderId).get();
+      if (rp.exists && rp.data().status === "paid" && rp.data().payuniTradeNo && rp.data().payoutState !== "paid_out") { channel = "payuni_refund"; payMethod = "payuni"; }
+    } catch (e) {}
+  }
   const reqId = generateId("RF");
   await db.collection("refundRequests").doc(reqId).set({
     reqId, compId, creator: comp.creator || "", teamId,
@@ -2488,6 +2496,7 @@ exports.requestRefund = callable(async (data) => {
     refundAccount: String(refundAccount || "").slice(0, 200), reason: String(reason || "").slice(0, 500),
     status: "requested", policyTemplate: (comp.config && comp.config.refundPolicy || {}).template || "",
     policyPct: calc.pct, paidAmount: calc.paidAmount, calcRefund: calc.calcRefund, daysBefore: calc.daysBefore,
+    paymentMethod: payMethod, channel, orderId,
     actualRefund: 0, refundMethod: "", refundProof: "", refundedAt: "", operator: "", decideNote: "",
     createdAt: fmtNow(), decidedAt: ""
   });
@@ -2561,13 +2570,18 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
   if (action === "approve") {
     await rRef.update({ status: "approved", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
     if (tDoc.exists) await tDoc.ref.update({ refundStatus: "approved" });
+    // 帳務重構 S4：PayUNI 通道核准後，標記訂單 refundState=approved，供「退刷」執行。
+    if (r.channel === "payuni_refund" && r.orderId) { try { await db.collection("regPayments").doc(r.orderId).update({ refundState: "approved", refundReqId: reqId }); } catch (e) {} }
     await auditLog(request.authUser.username, "核准退費", r.teamId, "應退NT$" + r.calcRefund);
     try {
+      const refundLine = r.channel === "payuni_refund"
+        ? "主辦方核准後，將由平台透過原信用卡退刷退款（無需提供帳戶），完成後您會再收到通知。"
+        : "主辦方將依您提供的退款帳戶辦理退款，完成後您會再收到一封通知。";
       const html = emailWrap("退費申請已核准", `
         <p>您在活動「<b>${escMail(compName)}</b>」的退費申請（隊伍 ${escMail(r.teamNameCN || r.teamId)}）已核准。</p>
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
           <b>應退金額：</b>${r.policyPct}% ＝ NT$${r.calcRefund}</div>
-        <p>主辦方將依您提供的退款帳戶辦理退款，完成後您會再收到一封通知。</p>`, contactFooter(contact));
+        <p>${refundLine}</p>`, contactFooter(contact));
       await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費申請已核准 — " + compName, html);
     } catch (e) {}
     return { success: true };
@@ -2605,6 +2619,72 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
     await queueMail(await refundTeamEmails(r.teamId), "[RegMaster] 退費已完成 — " + compName, html);
   } catch (e) {}
   return { success: true };
+});
+
+// 帳務重構 S4：PayUNI 退刷 + 刪除報名 + 釋名額 + 保留款入 deposit。擁有者/管理者於明細執行。
+// 需求 3/4：已匯出(paid_out)禁退刷；退刷成功才刪報名；部分退保留款依方案費率可結算。
+exports.payuniRefundAndDelete = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, reqId = data.reqId, creator = request.compOwner;
+  const rRef = db.collection("refundRequests").doc(reqId);
+  const rDoc = await rRef.get();
+  if (!rDoc.exists) return { success: false, message: "找不到退費申請" };
+  const r = rDoc.data();
+  if (r.compId !== compId) return { success: false, message: "申請不屬此活動" };
+  if (r.channel !== "payuni_refund") return { success: false, message: "此申請非 PayUNI 線上退刷，請循銀行退款流程" };
+  if (r.status === "refunded") return { success: false, message: "此申請已退款完成" };
+  if (!["approved", "requested"].includes(r.status)) return { success: false, message: "此申請狀態無法退刷" };
+  const orderId = r.orderId; if (!orderId) return { success: false, message: "缺少對應付款訂單" };
+  const oRef = db.collection("regPayments").doc(orderId);
+  const oDoc = await oRef.get();
+  if (!oDoc.exists) return { success: false, message: "找不到付款訂單" };
+  const order = oDoc.data();
+  if (order.payoutState === "paid_out") return { success: false, code: "ALREADY_PAID_OUT", message: "款項已匯出至主辦方，平台無法退刷；請自行向報名者索取銀行帳戶辦理退款。" };
+  if (order.status !== "paid") return { success: false, message: "訂單未完成付款" };
+  const refundAmt = Math.round(Number(r.calcRefund) || 0);
+  if (refundAmt <= 0) return { success: false, message: "退款金額為 0" };
+  const amt = parseInt(order.amount, 10) || 0;
+  const retained = Math.max(0, amt - refundAmt);
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
+  const contact = await organiserContact(creator);
+
+  // (b) 呼叫 PayUNI 退刷（冪等：已退過則跳過）
+  let refundNo = order.payuniRefundNo || "";
+  if (order.refundState !== "refunded") {
+    const res = await payuniRefund(order, refundAmt);
+    if (!res.ok) return { success: false, message: "PayUNI 退刷失敗：" + res.message, code: res.code || "" };
+    refundNo = res.tradeNo || "";
+    const { feePct } = await _ownerFeePct(creator);
+    await oRef.update({ refundState: "refunded", refundedAmount: refundAmt, retainedAmount: retained, payuniRefundNo: refundNo, refundedAt: fmtNow() });
+    if (retained > 0) {
+      const depRef = db.collection("deposits").doc();
+      await depRef.set({ depId: depRef.id, creator, compId, compName, sourceOrderId: orderId, sourceTeamName: order.teamNameCN || r.teamNameCN || "", retainedAmount: retained, feePct, status: "available", payoutReqId: "", createdAt: fmtNow(), note: "PayUNI 部分退款保留款" });
+    }
+  }
+  // (c) 標記退費申請、刪除報名、釋名額（先取 email 再刪）
+  await rRef.update({ status: "refunded", channel: "payuni_refund", actualRefund: refundAmt, refundedAmount: refundAmt, retainedAmount: retained, payuniRefundNo: refundNo, refundMethod: "PayUNI 退刷", operator: request.authUser.username, refundedAt: fmtNow() });
+  const teamId = r.teamId;
+  let emails = [];
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (tDoc.exists) {
+    const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+    emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
+    const batch = db.batch();
+    memSnap.docs.forEach(d => batch.delete(d.ref));
+    batch.delete(db.collection("teams").doc(teamId));
+    await batch.commit();
+    if (tDoc.data().status !== "已取消") await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(-1) });
+  }
+  await auditLog(request.authUser.username, "PayUNI退刷並刪除報名", teamId, "退NT$" + refundAmt + (retained > 0 ? (" 保留NT$" + retained) : "") + " " + refundNo);
+  try {
+    const html = emailWrap("退費已完成（並取消報名）", `
+      <p>您在活動「<b>${escMail(compName)}</b>」的退費（隊伍 ${escMail(r.teamNameCN || teamId)}）已由平台透過原信用卡完成退刷。</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
+        <b>退款金額：</b>NT$${refundAmt}（退刷至原付款卡，依發卡行作業約數個工作日入帳）</div>
+      <p>依退費規定，您的報名已取消、名額已釋出。感謝您的參與。</p>`, contactFooter(contact));
+    if (emails.length) await queueMail(emails, "[RegMaster] 退費已完成 — " + compName, html);
+  } catch (e) {}
+  return { success: true, refundedAmount: refundAmt, retainedAmount: retained, payuniRefundNo: refundNo };
 });
 
 exports.updateRegistration = callable(async (data) => {
@@ -4877,6 +4957,45 @@ async function payuniInquiry(orderId, creds) {
     if (tradeStatus === "2" || tradeStatus === "3" || tradeStatus === "9") return { verdict: "notpaid", tradeNo };
     return { verdict: "unknown", tradeNo };
   } catch (e) { return { verdict: "unknown", tradeNo: "" }; }
+}
+
+// 帳務重構 S4：取得某訂單對應的 PayUNI 金鑰（須與原始扣款同一把：comp 或 sales）。
+async function resolvePayuniCreds(order) {
+  if (order.payuniKeySource === "comp" && order.compId) {
+    const c = await db.collection("competitions").doc(order.compId).get();
+    const cfg = c.exists ? (c.data().config || {}) : {};
+    if (cfg.payuniHashKey && cfg.payuniHashIV) return { merID: cfg.payuniMerID, key: cfg.payuniHashKey, iv: cfg.payuniHashIV, mode: cfg.payuniMode };
+  }
+  const s = await db.collection("config").doc("sales").get();
+  const sales = s.exists ? s.data() : {};
+  return { merID: sales.payuniMerID, key: sales.payuniHashKey, iv: sales.payuniHashIV, mode: sales.payuniMode };
+}
+// 信用卡退刷（trade_close, CloseType=2）。部分退帶 TradeAmt（一次付清/國外卡支援；分期/銀聯僅全額，
+// 由 PayUNI 端把關，失敗則回錯誤訊息）。回 { ok, tradeNo, message, code }。
+async function payuniRefund(order, refundAmt) {
+  const creds = await resolvePayuniCreds(order);
+  if (!creds.merID || !creds.key || !creds.iv) return { ok: false, message: "金流金鑰未設定" };
+  if (!order.payuniTradeNo) return { ok: false, message: "缺少 PayUNI 交易序號(TradeNo)" };
+  const info = { MerID: creds.merID, TradeNo: order.payuniTradeNo, Timestamp: Math.floor(Date.now() / 1000), CloseType: 2, TradeAmt: Math.round(refundAmt) };
+  const enc = payuniEncrypt(info, creds.key, creds.iv);
+  const hash = payuniHash(enc, creds.key, creds.iv);
+  const prefix = creds.mode === "t" ? "https://sandbox-" : "https://";
+  let resp;
+  try {
+    resp = await fetch(prefix + "api.payuni.com.tw/api/trade/close", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "user-agent": "payuni" },
+      body: new URLSearchParams({ MerID: creds.merID, Version: "1.0", EncryptInfo: enc, HashInfo: hash })
+    });
+  } catch (e) { return { ok: false, message: "PayUNI 連線失敗：" + (e && e.message) }; }
+  if (!resp.ok) return { ok: false, message: "PayUNI HTTP " + resp.status };
+  const json = await resp.json().catch(() => null);
+  if (!json) return { ok: false, message: "PayUNI 回應無法解析" };
+  let inner = {};
+  if (json.EncryptInfo) { try { inner = payuniDecrypt(json.EncryptInfo, creds.key, creds.iv); } catch (e) { return { ok: false, message: "PayUNI 回應解密失敗" }; } }
+  const status = inner.Status || json.Status || "";
+  if (status === "SUCCESS") return { ok: true, tradeNo: inner.TradeNo || order.payuniTradeNo, message: inner.Message || "SUCCESS", raw: inner };
+  return { ok: false, message: (inner.Message || json.Message || status || "退刷失敗"), code: status, raw: inner };
 }
 
 // Activation logic for a PLAN/licence order — single source of truth shared by the webhook
