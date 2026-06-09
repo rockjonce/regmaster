@@ -6074,7 +6074,8 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
   const targets = [];
   for (const cid of Object.keys(compMap)) {
     const paySnap = await db.collection("regPayments").where("compId", "==", cid).where("status", "==", "paid").get();
-    paySnap.docs.forEach(d => { const p = d.data(); if (!p.settled) targets.push({ ref: d.ref, p, cid }); });
+    // 帳務重構：排除已在匯款申請中(requested)或已退款的訂單，避免與新申請流程重複出帳。
+    paySnap.docs.forEach(d => { const p = d.data(); if (!p.settled && p.payoutState !== "requested" && p.refundState !== "refunded") targets.push({ ref: d.ref, p, cid }); });
   }
   if (!targets.length) return { success: false, message: "沒有未結算的 PayUNI 訂單" };
 

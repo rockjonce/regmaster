@@ -12,6 +12,9 @@
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+<!-- 帳務重構 S3：單筆申請 PDF（jsPDF）、勾選/全選 Excel（SheetJS）。非阻斷載入。 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
 <script src="/shared/ui-dialog.js"></script>
 <style>
 body { background:var(--bg); }
@@ -346,6 +349,31 @@ body { background:var(--bg); }
 
       <!-- ============ 帳務管理 — 平台代收轉付結算 (system role) ============ -->
       <div class="pane" data-pane="billing">
+        <!-- 帳務重構 S3：匯款申請管理（新流程：主辦方申請 → 管理員審核/拒絕/註記匯款；單筆 PDF、勾選 Excel）-->
+        <div class="card">
+          <div class="ch"><div>
+            <h3>💸 匯款申請管理</h3>
+            <p>主辦方勾選「各報名收款明細」後提出匯款申請。於此<b>審核</b>、<b>拒絕</b>（附理由）、或在會計轉帳後<b>註記已匯款</b>。單筆可下載 <b>PDF</b>、勾選/全選可匯出 <b>Excel</b> 交會計。</p>
+          </div></div>
+          <div class="cb">
+            <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap">
+              <label class="lbl" style="margin:0">狀態</label>
+              <select id="pa-status" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink)">
+                <option value="requested">待審核</option>
+                <option value="approved">已核准（待匯款）</option>
+                <option value="paid">已匯款</option>
+                <option value="rejected">已拒絕</option>
+                <option value="">全部</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" id="pa-reload">↻ 重新整理</button>
+              <button class="btn btn-ghost btn-sm" id="pa-excel">⬇️ 匯出 Excel</button>
+              <label style="font:500 12px/1.4 var(--f-tc); color:var(--muted); display:flex; align-items:center; gap:5px"><input type="checkbox" id="pa-all"> 全選</label>
+            </div>
+            <div id="pa-list"><p style="color:var(--muted); padding:16px">載入中⋯</p></div>
+          </div>
+        </div>
+
+        <!-- 舊式直接結算（過渡保留；新案請用上方「匯款申請管理」）-->
         <div class="card">
           <div class="ch">
             <div>
@@ -366,7 +394,7 @@ body { background:var(--bg); }
             <div id="b-detail"></div>
             <div style="display:flex; gap:8px; margin-top:14px; justify-content:flex-end">
               <button class="btn btn-ghost" id="b-export" data-i18n="adSysBillExport">⬇️ 匯出 CSV</button>
-              <button class="btn btn-primary" id="b-settle" data-i18n="adSysBillSettle">💸 結算並匯款</button>
+              <button class="btn btn-primary" id="b-settle" data-i18n="adSysBillSettle" style="display:none">💸 結算並匯款</button>
             </div>
             <div id="b-history" style="margin-top:24px; padding-top:18px; border-top:1px solid var(--line-2)"></div>
           </div>
@@ -1018,6 +1046,129 @@ body { background:var(--bg); }
   document.getElementById('b-export').addEventListener('click', exportBillingSys);
   document.getElementById('b-settle').addEventListener('click', settleNow);
   loadBillingOrgs();
+
+  // ===== 帳務重構 S3：匯款申請管理（list / approve / reject / markPaid / PDF / Excel）=====
+  var PA_DATA = [];
+  var PA_REASONS = { acct_mismatch: '收款帳戶資訊不符 / 缺漏', order_dispute: '訂單含爭議 / 退款處理中', below_threshold: '金額未達建議結算門檻', data_mismatch: '申請內容與紀錄不符，請重新確認', other: '其他' };
+  function paMoney(n) { return 'NT$ ' + (Number(n) || 0).toLocaleString(); }
+  function paFindReq(id) { return PA_DATA.filter(function (r) { return r.reqId === id; })[0]; }
+  function loadPayoutAdmin() {
+    var st = document.getElementById('pa-status').value;
+    document.getElementById('pa-list').innerHTML = '<p style="color:var(--muted); padding:16px">載入中⋯</p>';
+    google.script.run
+      .withSuccessHandler(function (res) { PA_DATA = (res && res.requests) || []; renderPayoutAdmin(); })
+      .withFailureHandler(function (e) { document.getElementById('pa-list').innerHTML = '<p style="color:var(--err-700); padding:16px">載入失敗：' + ((e && e.message) || '') + '</p>'; })
+      .listPayoutRequests(st);
+  }
+  function renderPayoutAdmin() {
+    var rows = PA_DATA;
+    if (!rows.length) { document.getElementById('pa-list').innerHTML = '<p style="color:var(--muted); padding:16px">沒有符合條件的申請</p>'; return; }
+    var stMap = { requested: '待審核', approved: '已核准', paid: '已匯款', rejected: '已拒絕', withdrawn: '已撤回' };
+    document.getElementById('pa-list').innerHTML = rows.map(function (r) {
+      var po = r.payoutSnapshot || {};
+      var items = (r.items || []).map(function (it) {
+        return '<tr><td>' + _esc(it.teamNameCN || it.depositId || it.orderId || '—') + '</td><td class="right">' + paMoney(it.amount) + '</td><td class="right" style="color:var(--err-700)">' + (it.fee > 0 ? '− ' + paMoney(it.fee) : '—') + '</td><td class="right" style="font-weight:700">' + paMoney(it.net) + '</td></tr>';
+      }).join('');
+      var actions = '';
+      if (r.status === 'requested' || r.status === 'approved') {
+        if (r.status === 'requested') actions += '<button class="btn btn-ghost btn-sm pa-approve" data-r="' + _esc(r.reqId) + '">核准</button> ';
+        actions += '<button class="btn btn-primary btn-sm pa-paid" data-r="' + _esc(r.reqId) + '">註記已匯款</button> ';
+        actions += '<button class="btn btn-ghost btn-sm pa-reject" data-r="' + _esc(r.reqId) + '">拒絕</button> ';
+      }
+      actions += '<button class="btn btn-ghost btn-sm pa-pdf" data-r="' + _esc(r.reqId) + '">⬇️ PDF</button>';
+      var rejectForm = '<div id="parej-' + _esc(r.reqId) + '" style="display:none; margin-top:10px; padding:10px; background:var(--surface-2); border-radius:8px">' +
+        '<select class="pa-reason" style="padding:6px 10px; border:1px solid var(--line); border-radius:6px; margin-right:8px">' +
+        Object.keys(PA_REASONS).map(function (k) { return '<option value="' + k + '">' + PA_REASONS[k] + '</option>'; }).join('') + '</select>' +
+        '<input class="pa-reason-text" placeholder="補充說明（可選）" style="padding:6px 10px; border:1px solid var(--line); border-radius:6px; width:220px; margin-right:8px">' +
+        '<button class="btn btn-primary btn-sm pa-reject-go" data-r="' + _esc(r.reqId) + '">確認拒絕</button></div>';
+      return '<div class="card" style="margin-bottom:12px; padding:14px 16px; border:1px solid var(--line)">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap">' +
+          '<label style="display:flex; gap:8px; align-items:flex-start">' +
+            '<input type="checkbox" class="pa-pick" data-r="' + _esc(r.reqId) + '" style="margin-top:3px">' +
+            '<span><b>' + _esc(r.compName || r.compId) + '</b> <span style="font:400 11px/1.3 var(--f-mono); color:var(--muted)">' + _esc(r.reqId) + '</span><br>' +
+            '<span style="font:400 12px/1.6 var(--f-tc); color:var(--muted)">主辦方 ' + _esc(r.creator) + '　申請 ' + _esc(String(r.appliedAt || r.createdAt).slice(0, 16)) + '　預計匯款 ' + _esc(r.scheduledPayoutDate || '—') + '</span></span>' +
+          '</label>' +
+          '<div style="text-align:right"><div style="font:700 16px/1.2 var(--f-tc); color:var(--ok-700)">實匯 ' + paMoney(r.actualWire) + '</div><div style="font:500 11px/1.4 var(--f-tc); color:var(--muted)">狀態 ' + (stMap[r.status] || r.status) + '</div></div>' +
+        '</div>' +
+        '<div style="margin-top:8px; font:400 12px/1.5 var(--f-tc); color:var(--muted)">收款帳戶 ' + _esc((po.bankCode || '') + ' ' + (po.bankName || '') + '　' + (po.accountNumber || '') + '　' + (po.accountName || '')) + '</div>' +
+        (items ? '<div class="b-tbl-wrap" style="margin-top:8px"><table class="b-tbl"><thead><tr><th>報名/項目</th><th class="right">實收</th><th class="right">手續費</th><th class="right">實領</th></tr></thead><tbody>' + items + '</tbody><tfoot><tr><td style="font-weight:700">合計</td><td class="right">' + paMoney(r.grossTotal) + '</td><td class="right" style="color:var(--err-700)">− ' + paMoney(r.feeTotal) + '</td><td class="right" style="font-weight:700">' + paMoney(r.netTotal) + '（− 匯費 NT$' + (r.wireFee || 15) + ' ＝ 實匯 ' + paMoney(r.actualWire) + '）</td></tr></tfoot></table></div>' : '') +
+        (r.status === 'rejected' && r.rejectReasonCode ? '<div style="margin-top:8px; color:var(--warn-700); font:500 12px/1.5 var(--f-tc)">拒絕理由：' + _esc(PA_REASONS[r.rejectReasonCode] || r.rejectReasonCode) + (r.rejectReasonText ? '（' + _esc(r.rejectReasonText) + '）' : '') + '</div>' : '') +
+        '<div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap">' + actions + '</div>' +
+        rejectForm +
+      '</div>';
+    }).join('');
+    var L = document.getElementById('pa-list');
+    L.querySelectorAll('.pa-approve').forEach(function (b) { b.addEventListener('click', function () { paSimple('approvePayout', b.dataset.r, '確定核准此申請？'); }); });
+    L.querySelectorAll('.pa-paid').forEach(function (b) { b.addEventListener('click', function () { paMarkPaid(b.dataset.r); }); });
+    L.querySelectorAll('.pa-reject').forEach(function (b) { b.addEventListener('click', function () { var f = document.getElementById('parej-' + b.dataset.r); if (f) f.style.display = (f.style.display === 'none' ? '' : 'none'); }); });
+    L.querySelectorAll('.pa-reject-go').forEach(function (b) { b.addEventListener('click', function () { paReject(b.dataset.r); }); });
+    L.querySelectorAll('.pa-pdf').forEach(function (b) { b.addEventListener('click', function () { paPdf(b.dataset.r); }); });
+  }
+  function paSimple(method, reqId, msg) {
+    uiConfirm(msg, { title: '確認' }).then(function (ok) {
+      if (!ok) return;
+      var run = google.script.run
+        .withSuccessHandler(function (res) { if (res && res.success) { toast('已處理'); loadPayoutAdmin(); } else toast((res && res.message) || '失敗', 'err'); })
+        .withFailureHandler(function (e) { toast((e && e.message) || '失敗', 'err'); });
+      run[method](reqId);
+    });
+  }
+  function paMarkPaid(reqId) {
+    uiConfirm('確認此申請已由會計完成轉帳？將標記為「已匯款」並鎖定相關訂單/保留款。', { title: '註記已匯款' }).then(function (ok) {
+      if (!ok) return;
+      google.script.run
+        .withSuccessHandler(function (res) { if (res && res.success) { toast('已標記匯款 實匯 NT$' + (res.actualWire || 0)); loadPayoutAdmin(); } else toast((res && res.message) || '失敗', 'err'); })
+        .withFailureHandler(function (e) { toast((e && e.message) || '失敗', 'err'); })
+        .markPayoutPaid(reqId, '');
+    });
+  }
+  function paReject(reqId) {
+    var form = document.getElementById('parej-' + reqId);
+    var code = form.querySelector('.pa-reason').value, text = form.querySelector('.pa-reason-text').value;
+    google.script.run
+      .withSuccessHandler(function (res) { if (res && res.success) { toast('已拒絕，款項已退回可申請狀態'); loadPayoutAdmin(); } else toast((res && res.message) || '失敗', 'err'); })
+      .withFailureHandler(function (e) { toast((e && e.message) || '失敗', 'err'); })
+      .rejectPayout(reqId, code, text);
+  }
+  function paPdf(reqId) {
+    var r = paFindReq(reqId); if (!r) return;
+    var po = r.payoutSnapshot || {};
+    var its = (r.items || []).map(function (it) { return '<tr><td>' + _esc(it.teamNameCN || it.depositId || it.orderId || '-') + '</td><td class="r">' + paMoney(it.amount) + '</td><td class="r">' + paMoney(it.fee) + '</td><td class="r">' + paMoney(it.net) + '</td></tr>'; }).join('');
+    var w = window.open('', '_blank');
+    if (!w) { toast('請允許彈出視窗以下載 PDF', 'err'); return; }
+    var h = '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><title>匯款申請單 ' + _esc(r.reqId) + '</title>' +
+      '<style>body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;padding:32px;color:#1a1a1a}h1{font-size:20px;margin:0 0 12px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ccc;padding:6px 10px;font-size:13px}th{background:#f3f4f6}.r{text-align:right}.meta{font-size:13px;line-height:1.9;color:#444}</style></head><body>' +
+      '<h1>RegMaster 匯款申請單</h1>' +
+      '<div class="meta">申請編號：' + _esc(r.reqId) + '<br>活動：' + _esc(r.compName || r.compId) + '　主辦方：' + _esc(r.creator) + '<br>申請時間：' + _esc(String(r.appliedAt || r.createdAt).slice(0, 16)) + '　預計匯款日：' + _esc(r.scheduledPayoutDate || '-') + '　狀態：' + _esc(r.status) + '<br>收款帳戶：' + _esc((po.bankCode || '') + ' ' + (po.bankName || '') + ' ' + (po.branchName || '')) + '　帳號 ' + _esc(po.accountNumber || '') + '　戶名 ' + _esc(po.accountName || '') + '</div>' +
+      '<table><thead><tr><th>報名/項目</th><th class="r">實收</th><th class="r">手續費</th><th class="r">實領</th></tr></thead><tbody>' + its + '</tbody>' +
+      '<tfoot><tr><th>合計</th><th class="r">' + paMoney(r.grossTotal) + '</th><th class="r">− ' + paMoney(r.feeTotal) + '</th><th class="r">' + paMoney(r.netTotal) + '</th></tr>' +
+      '<tr><th colspan="3" class="r">匯費</th><th class="r">− NT$' + (r.wireFee || 15) + '</th></tr><tr><th colspan="3" class="r">實匯</th><th class="r">' + paMoney(r.actualWire) + '</th></tr></tfoot></table>' +
+      '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},300);};</scr' + 'ipt></body></html>';
+    w.document.write(h); w.document.close();
+  }
+  function paExcel() {
+    if (!window.XLSX) { toast('Excel 元件未載入', 'err'); return; }
+    var picked = {}; document.getElementById('pa-list').querySelectorAll('.pa-pick:checked').forEach(function (cb) { picked[cb.dataset.r] = true; });
+    var anyPicked = Object.keys(picked).length > 0;
+    var rows = PA_DATA.filter(function (r) { return anyPicked ? picked[r.reqId] : true; });
+    if (!rows.length) { toast('沒有可匯出的申請', 'err'); return; }
+    var aoa = [['申請編號', '活動', '主辦方', '報名/項目', '實收', '手續費', '實領', '狀態', '申請時間', '預計匯款日', '銀行', '帳號', '戶名', '實匯合計']];
+    rows.forEach(function (r) {
+      var po = r.payoutSnapshot || {}; var its = r.items || [];
+      if (!its.length) its = [{ teamNameCN: '(無明細)', amount: '', fee: '', net: '' }];
+      its.forEach(function (it, i) {
+        aoa.push([i === 0 ? r.reqId : '', i === 0 ? (r.compName || r.compId) : '', i === 0 ? r.creator : '', (it.teamNameCN || it.depositId || it.orderId || ''), it.amount, it.fee, it.net, i === 0 ? r.status : '', i === 0 ? String(r.appliedAt || r.createdAt).slice(0, 16) : '', i === 0 ? (r.scheduledPayoutDate || '') : '', i === 0 ? ((po.bankCode || '') + ' ' + (po.bankName || '')) : '', i === 0 ? (po.accountNumber || '') : '', i === 0 ? (po.accountName || '') : '', i === 0 ? r.actualWire : '']);
+      });
+    });
+    var ws = window.XLSX.utils.aoa_to_sheet(aoa);
+    var wb = window.XLSX.utils.book_new(); window.XLSX.utils.book_append_sheet(wb, ws, '匯款申請');
+    window.XLSX.writeFile(wb, 'payout_requests.xlsx');
+  }
+  document.getElementById('pa-status').addEventListener('change', loadPayoutAdmin);
+  document.getElementById('pa-reload').addEventListener('click', loadPayoutAdmin);
+  document.getElementById('pa-excel').addEventListener('click', paExcel);
+  document.getElementById('pa-all').addEventListener('change', function () { var c = this.checked; document.getElementById('pa-list').querySelectorAll('.pa-pick').forEach(function (cb) { cb.checked = c; }); });
+  loadPayoutAdmin();
 
   // ================= 使用者分析 (CC1: 5-tab dashboard) =================
   var ANA = null; var anaCharts = {};
