@@ -6223,7 +6223,9 @@ exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
     deposits.push({ id: d.id, sourceTeamName: x.sourceTeamName || "", retainedAmount: amt, feePct: fpct, fee, net: Math.round((amt - fee) * 100) / 100 });
   });
   const acct = await _ownerPayoutAcct(creator);
-  return { compId, compName, feePct, orders, deposits, hasPayoutAccount: acct.has, payout: acct.snapshot, cycle, scheduledPayoutDate: computeScheduledPayout(cycle) };
+  const reqSnap = await db.collection("payoutRequests").where("creator", "==", creator).where("compId", "==", compId).get();
+  const requests = reqSnap.docs.map(d => d.data()).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return { compId, compName, feePct, orders, deposits, requests, hasPayoutAccount: acct.has, payout: acct.snapshot, cycle, scheduledPayoutDate: computeScheduledPayout(cycle) };
 });
 
 // 申請匯款（勾選訂單/保留款）。未設收款帳戶 → NO_PAYOUT_ACCOUNT。
@@ -6296,6 +6298,93 @@ exports.withdrawPayout = compAuthCallable("manage", async (data, request) => {
   });
   await auditLog(request.authUser.username, "撤回匯款申請", compId, reqId);
   return { success: true };
+});
+
+// ===== 帳務重構 S3：系統管理員帳款管理 =====
+const PAYOUT_REJECT_REASONS = {
+  acct_mismatch: "收款帳戶資訊不符 / 缺漏",
+  order_dispute: "訂單含爭議 / 退款處理中",
+  below_threshold: "金額未達建議結算門檻",
+  data_mismatch: "申請內容與紀錄不符，請重新確認",
+  other: "其他"
+};
+// 列出匯款申請（可篩 status）。
+exports.listPayoutRequests = authCallable(["system"], async (data) => {
+  const status = data && data.status;
+  const snap = status ? await db.collection("payoutRequests").where("status", "==", status).get()
+                      : await db.collection("payoutRequests").get();
+  const rows = snap.docs.map(d => d.data()).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return { requests: rows };
+});
+// 核准（requested → approved；可選步驟）。
+exports.approvePayout = authCallable(["system"], async (data, request) => {
+  const ref = db.collection("payoutRequests").doc(data.reqId);
+  const d = await ref.get();
+  if (!d.exists) return { success: false, message: "找不到申請" };
+  if (d.data().status !== "requested") return { success: false, message: "僅待審核的申請可核准" };
+  await ref.update({ status: "approved", decidedBy: request.authUser.username, decidedAt: fmtNow() });
+  await auditLog(request.authUser.username, "核准匯款申請", data.reqId, "");
+  return { success: true };
+});
+// 拒絕（→ rejected；訂單/保留款回 available；通知主辦方附理由）。
+exports.rejectPayout = authCallable(["system"], async (data, request) => {
+  const { reqId, reasonCode, reasonText } = data;
+  let snap;
+  await db.runTransaction(async (tx) => {
+    const ref = db.collection("payoutRequests").doc(reqId);
+    const d = await tx.get(ref);
+    if (!d.exists) throw new HttpsError("not-found", "找不到申請");
+    snap = d.data();
+    if (!["requested", "approved"].includes(snap.status)) throw new HttpsError("failed-precondition", "此申請無法拒絕");
+    (snap.orderIds || []).forEach(oid => tx.update(db.collection("regPayments").doc(oid), { payoutState: "available", payoutReqId: FieldValue.delete() }));
+    (snap.depositIds || []).forEach(did => tx.update(db.collection("deposits").doc(did), { status: "available", payoutReqId: FieldValue.delete() }));
+    tx.update(ref, { status: "rejected", rejectReasonCode: String(reasonCode || "").slice(0, 40), rejectReasonText: String(reasonText || "").slice(0, 500), decidedBy: request.authUser.username, decidedAt: fmtNow() });
+  });
+  await auditLog(request.authUser.username, "拒絕匯款申請", reqId, String(reasonCode || ""));
+  try {
+    const reasonLabel = PAYOUT_REJECT_REASONS[reasonCode] || reasonCode || "";
+    const oEmail = await organiserEmail(snap.creator);
+    const html = emailWrap("匯款申請未通過", `
+      <p>您在活動「<b>${escMail(snap.compName || snap.compId)}</b>」的匯款申請（${escMail(reqId)}）未通過審核，相關款項已退回可申請狀態。</p>
+      <p><b>原因：</b>${escMail(reasonLabel)}${reasonText ? "（" + escMail(reasonText) + "）" : ""}</p>
+      <p>請確認後重新提出申請。</p>`);
+    await queueMail(oEmail, "[RegMaster] 匯款申請未通過 — " + (snap.compName || ""), html);
+  } catch (e) {}
+  return { success: true };
+});
+// 註記已匯款（會計轉帳後）：→ paid；訂單/保留款 → paid_out；寫 settlements 歷史；通知主辦方。
+exports.markPayoutPaid = authCallable(["system"], async (data, request) => {
+  const { reqId, note } = data;
+  const ref = db.collection("payoutRequests").doc(reqId);
+  const r = await db.runTransaction(async (tx) => {
+    const d = await tx.get(ref);
+    if (!d.exists) throw new HttpsError("not-found", "找不到申請");
+    const rr = d.data();
+    if (!["requested", "approved"].includes(rr.status)) throw new HttpsError("failed-precondition", "此申請已處理或無法匯款");
+    (rr.orderIds || []).forEach(oid => tx.update(db.collection("regPayments").doc(oid), { payoutState: "paid_out", paidOutAt: fmtNow(), settled: true, settlementId: reqId }));
+    (rr.depositIds || []).forEach(did => tx.update(db.collection("deposits").doc(did), { status: "paid_out", paidOutAt: fmtNow() }));
+    tx.update(ref, { status: "paid", decidedBy: request.authUser.username, decidedAt: fmtNow(), decideNote: String(note || "").slice(0, 300) });
+    return rr;
+  });
+  // settlements 歷史（沿用既有 collection 供查詢/PDF）
+  await db.collection("settlements").doc(reqId).set({
+    settlementId: reqId, creator: r.creator, compId: r.compId, compName: r.compName || "",
+    orderCount: (r.orderIds || []).length + (r.depositIds || []).length,
+    grossTotal: r.grossTotal, feeTotal: r.feeTotal, netTotal: r.netTotal, wireFee: r.wireFee, actualWire: r.actualWire,
+    payout: r.payoutSnapshot || {}, orders: r.items || [], note: String(note || "").slice(0, 300),
+    createdAt: fmtNow(), createdBy: request.authUser.username, source: "payoutRequest"
+  });
+  await auditLog(request.authUser.username, "註記匯款完成", reqId, "實匯NT$" + r.actualWire);
+  try {
+    const oEmail = await organiserEmail(r.creator);
+    const html = emailWrap("款項已匯出", `
+      <p>您在活動「<b>${escMail(r.compName || r.compId)}</b>」的匯款申請（${escMail(reqId)}）已完成匯款。</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
+        <b>實匯金額：</b>NT$${r.actualWire}（已扣手續費與每批 NT$15 匯費）</div>
+      <p>請留意您的收款帳戶入帳。</p>`);
+    await queueMail(oEmail, "[RegMaster] 款項已匯出 — " + (r.compName || ""), html);
+  } catch (e) {}
+  return { success: true, actualWire: r.actualWire };
 });
 
 exports.getRegPaymentStatus = callable(async (data) => {
