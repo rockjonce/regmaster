@@ -769,7 +769,11 @@
   // ---------- LIST TAB ----------
   function renderList(rows) {
     rows = (rows || []).filter(function (t) { return t.status !== '已取消'; });
-    document.getElementById('listCount').textContent = window.L('aeRegCount').replace('{n}', rows.length);
+    var lc = document.getElementById('listCount');
+    // B-4: drop data-i18n so the i18n applier can't overwrite the live count back to the
+    // 「共 — 筆」placeholder (renderList re-runs on lang-changed, so it stays translatable).
+    lc.removeAttribute('data-i18n');
+    lc.textContent = window.L('aeRegCount').replace('{n}', rows.length);
     if (rows.length === 0) {
       document.getElementById('listBody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px">' + window.L('aeRegEmpty') + '</td></tr>';
       return;
