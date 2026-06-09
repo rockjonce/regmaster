@@ -547,6 +547,53 @@
     aePayPoLoadFailPre: 'Load failed: ',
   });
 
+  Object.assign(Z, {
+    aePayBtnRefund: '退費',
+    aePayRefundTitle: '主辦方退費',
+    aePayRefundAmtLbl: '退款金額',
+    aePayRefundFull: '全額',
+    aePayRefundPaidPre: '原付款金額：',
+    aePayRefundViaPayuni: '將透過 PayUNI 退刷至原付款卡（平台不收手續費）。',
+    aePayRefundPaidOut: '此筆款項平台已匯出給您，無法由平台退刷；確認後將記錄為您自行退款。',
+    aePayRefundManual: '此筆非 PayUNI 線上付款，確認後將記錄為您自行退款。',
+    aePayRefundActualPre: '實際退款：',
+    aePayRefundRetainedPre: '保留：',
+    aePayRefundCancel: '取消',
+    aePayRefundConfirm: '確認退費',
+    aePayRefundConfirmPre: '確定為以下報名退費？',
+    aePayRefundViaPayuniMsg: '系統將立即透過 PayUNI 退刷至原付款卡。',
+    aePayRefundManualMsg: '系統將記錄此退費；款項請由您自行退還報名者。',
+    aePayRefundInvalid: '請輸入有效的退款金額',
+    aePayRefundDonePre: '退費完成：',
+    aePayRefundManualDone: '（請記得自行退款給報名者）',
+    aePayRefundFail: '退費失敗',
+    aePayRefundLoadFail: '載入退費資料失敗：',
+    aePayRefundAlready: '此筆已退費',
+  });
+  Object.assign(E, {
+    aePayBtnRefund: 'Refund',
+    aePayRefundTitle: 'Issue Refund',
+    aePayRefundAmtLbl: 'Refund amount',
+    aePayRefundFull: 'Full',
+    aePayRefundPaidPre: 'Original payment: ',
+    aePayRefundViaPayuni: 'Will be refunded to the original card via PayUNI (no platform fee).',
+    aePayRefundPaidOut: 'These funds were already remitted to you; the platform cannot refund. Confirming records it as your own manual refund.',
+    aePayRefundManual: 'Not a PayUNI online payment; confirming records it as your own manual refund.',
+    aePayRefundActualPre: 'Actual refund: ',
+    aePayRefundRetainedPre: 'Retained: ',
+    aePayRefundCancel: 'Cancel',
+    aePayRefundConfirm: 'Confirm refund',
+    aePayRefundConfirmPre: 'Refund this registration?',
+    aePayRefundViaPayuniMsg: 'The platform will immediately refund to the original card via PayUNI.',
+    aePayRefundManualMsg: 'This refund will be recorded; please return the funds to the registrant yourself.',
+    aePayRefundInvalid: 'Please enter a valid refund amount',
+    aePayRefundDonePre: 'Refund complete: ',
+    aePayRefundManualDone: '(Remember to return the funds to the registrant yourself)',
+    aePayRefundFail: 'Refund failed',
+    aePayRefundLoadFail: 'Failed to load refund info: ',
+    aePayRefundAlready: 'Already refunded',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();

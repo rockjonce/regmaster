@@ -330,7 +330,7 @@
     // Raw paymentMethod codes stored on team docs / config.paymentMethods
     'payuni': { zh: '信用卡（PayUNI）', en: 'Credit card (PayUNI)' },
     'atm':    { zh: '銀行轉帳',         en: 'Bank transfer' },
-    'onlinePayment': { zh: '線上付款',  en: 'Online payment' },
+    'onlinePayment': { zh: '信用卡（PayUNI）',  en: 'Credit card (PayUNI)' },
     'discount': { zh: '折扣全免',       en: 'Free (discount)' }
   };
   window.LS = function (val, lang) {

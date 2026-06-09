@@ -2700,6 +2700,95 @@ exports.payuniRefundAndDelete = compAuthCallable("manage", async (data, request)
   return { success: true, refundedAmount: refundAmt, retainedAmount: retained, payuniRefundNo: refundNo };
 });
 
+// 帳務重構 Q2：主辦方「主動退費」（不需報名者申請）。用於報名費為壓金、賽後主動退還等情境。
+// 取得退費前置資訊（原付款金額、可用通道）供前端彈窗顯示。
+exports.getOwnerRefundContext = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, teamId = data.teamId;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  let paidAmount = 0, channel = "manual", payoutState = "", alreadyRefunded = false, hasPayuni = false;
+  if (team.regPaymentId) {
+    const rp = await db.collection("regPayments").doc(team.regPaymentId).get();
+    if (rp.exists) {
+      const p = rp.data();
+      paidAmount = parseInt(p.amount, 10) || 0;
+      payoutState = p.payoutState || "";
+      alreadyRefunded = p.refundState === "refunded";
+      if (p.status === "paid" && p.payuniTradeNo) { hasPayuni = true; channel = (p.payoutState === "paid_out") ? "manual" : "payuni"; }
+    }
+  }
+  if (!paidAmount) {
+    const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
+    paidAmount = (computeRefund(comp, team).paidAmount) || 0;
+  }
+  return { success: true, paidAmount, channel, payoutState, hasPayuni, alreadyRefunded, paid: (team.paymentStatus || "").includes("已確認"), teamNameCN: team.teamNameCN || "", status: team.status || "" };
+});
+
+// 執行主動退費：PayUNI 已付且未匯出 → 退刷；否則記錄主辦方自行退款。保留報名（標記已退費）。
+exports.ownerRefund = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, teamId = data.teamId;
+  const creator = await _resolveCreator(request, compId);
+  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方退費" };
+  const refundAmt = Math.round(Number(data.refundAmount));
+  const note = String(data.note || "").slice(0, 300);
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  if (team.status === "已取消") return { success: false, message: "此報名已取消" };
+  if (!(refundAmt > 0)) return { success: false, message: "請輸入有效的退款金額" };
+  let paidAmount = 0, order = null, orderRef = null;
+  if (team.regPaymentId) {
+    orderRef = db.collection("regPayments").doc(team.regPaymentId);
+    const rp = await orderRef.get();
+    if (rp.exists) { order = rp.data(); paidAmount = parseInt(order.amount, 10) || 0; }
+  }
+  if (!paidAmount) { const comp = (await db.collection("competitions").doc(compId).get()).data() || {}; paidAmount = (computeRefund(comp, team).paidAmount) || 0; }
+  if (refundAmt > paidAmount) return { success: false, message: "退款金額不可超過原付款金額 NT$" + paidAmount };
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
+  const contact = await organiserContact(creator);
+  const retained = Math.max(0, paidAmount - refundAmt);
+  let channelUsed = "manual", payuniRefundNo = "";
+
+  if (order && order.status === "paid" && order.payuniTradeNo && order.payoutState !== "paid_out" && order.refundState !== "refunded") {
+    const res = await payuniRefund(order, refundAmt);
+    if (!res.ok) return { success: false, message: "PayUNI 退刷失敗：" + res.message, code: res.code || "" };
+    payuniRefundNo = res.tradeNo || ""; channelUsed = "payuni";
+    const { feePct } = await _ownerFeePct(creator);
+    await orderRef.update({ refundState: "refunded", refundedAmount: refundAmt, retainedAmount: retained, payuniRefundNo, refundedAt: fmtNow() });
+    if (retained > 0) {
+      const depRef = db.collection("deposits").doc();
+      await depRef.set({ depId: depRef.id, creator, compId, compName, sourceOrderId: team.regPaymentId, sourceTeamName: team.teamNameCN || "", retainedAmount: retained, feePct, status: "available", payoutReqId: "", createdAt: fmtNow(), note: "主辦方部分退費保留款" });
+    }
+  } else if (order && order.payoutState === "paid_out") {
+    channelUsed = "manual_paid_out";
+  }
+  // 保留報名，標記已退費（壓金/賽後退還情境：報名者仍參賽，不刪報名、不釋名額）
+  await db.collection("teams").doc(teamId).update({
+    paymentStatus: "已退費 NT$" + refundAmt + (retained > 0 ? "（保留NT$" + retained + "）" : "") + " " + fmtNow(),
+    ownerRefundedAmount: refundAmt, ownerRefundedAt: fmtNow(), ownerRefundChannel: channelUsed
+  });
+  const reqId = generateId("RF");
+  await db.collection("refundRequests").doc(reqId).set({
+    reqId, compId, creator, teamId, teamNameCN: team.teamNameCN || "", requesterName: "(主辦方主動退費)",
+    refundAccount: "", reason: note || "主辦方主動退費", status: "refunded",
+    channel: channelUsed === "payuni" ? "payuni_refund" : "owner_bank", paymentMethod: team.paymentMethod || "",
+    policyPct: 0, paidAmount, calcRefund: refundAmt, actualRefund: refundAmt, refundedAmount: refundAmt, retainedAmount: retained,
+    payuniRefundNo, refundMethod: channelUsed === "payuni" ? "PayUNI 退刷" : "主辦方自行退款", operator: request.authUser.username,
+    initiatedBy: "owner", createdAt: fmtNow(), refundedAt: fmtNow(), decidedAt: fmtNow()
+  });
+  await auditLog(request.authUser.username, "主辦方主動退費", teamId, "退NT$" + refundAmt + " via " + channelUsed);
+  try {
+    const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+    const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
+    const extra = channelUsed === "payuni" ? "退款將退刷至原付款卡，依發卡行作業數個工作日入帳。" : "主辦方將以原付款管道或約定方式退款給您。";
+    const html = emailWrap("您已收到退費", `<p>活動「<b>${escMail(compName)}</b>」主辦方已為您的報名（${escMail(team.teamNameCN || teamId)}）辦理退費。</p><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8"><b>退款金額：</b>NT$${refundAmt}</div><p>${extra}</p>`, contactFooter(contact));
+    if (emails.length) await queueMail(emails, "[RegMaster] 退費通知 — " + compName, html);
+  } catch (e) {}
+  return { success: true, refundedAmount: refundAmt, retainedAmount: retained, channel: channelUsed, payuniRefundNo };
+});
+
 exports.updateRegistration = callable(async (data) => {
   const { compId, teamId, pwd, fd } = data;
   const doc = await db.collection("teams").doc(teamId).get();
@@ -5100,10 +5189,10 @@ async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo)
   if (order.status === "paid") return false;
   // 帳務重構 S1: paid 訂單帶入正交狀態（payoutState 可提領 / refundState 無退費）
   await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: tradeNo || "", payoutState: "available", refundState: "none" });
-  /* Auto-confirm team payment */
+  /* Auto-confirm team payment — 不覆寫 paymentMethod（保留報名時選的 "payuni"），
+     付款已由 paymentStatus「已確認(線上付款)」表達，使付款方式欄一致顯示「信用卡（PayUNI）」。 */
   await db.collection("teams").doc(order.teamId).update({
     paymentStatus: "已確認 (線上付款) " + fmtNow(),
-    paymentMethod: "onlinePayment",
     regPaymentId: orderId
   });
   /* Item 10: consume the discount code now that payment succeeded */

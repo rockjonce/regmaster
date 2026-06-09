@@ -176,6 +176,8 @@
     applyPayout:["compId","orderIds","depositIds"],
     withdrawPayout:["compId","reqId"],
     payuniRefundAndDelete:["compId","reqId"],
+    getOwnerRefundContext:["compId","teamId"],
+    ownerRefund:["compId","teamId","refundAmount","note"],
     listPayoutRequests:["status"],
     approvePayout:["reqId"],
     rejectPayout:["reqId","reasonCode","reasonText"],

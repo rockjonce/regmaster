@@ -294,6 +294,7 @@
         '<td class="right">NT$ ' + FEE.toLocaleString() + '</td>' +
         '<td>' +
           (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
+          (paid && !(me && me.role === 'system') ? '<button class="action-btn" data-act="refund" data-tid="' + escapeHtml(t.teamId) + '" data-name="' + escapeHtml(t.teamNameCN || t.teamNameEN || '') + '">' + window.L('aePayBtnRefund') + '</button>' : '') +
           '<button class="action-btn" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnView') + '</button>' +
           '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnDelete') + '</button>' +
         '</td>' +
@@ -316,6 +317,8 @@
           openTeamDetail(tid);
         } else if (b.dataset.act === 'del') {
           confirmDelete(tid);
+        } else if (b.dataset.act === 'refund') {
+          openOwnerRefund(tid, b.dataset.name);
         }
       });
     });
@@ -591,6 +594,74 @@
         })
         .withFailureHandler(function (e) { uiAlert(T('aePayPoRefundFailPre') + ((e && e.message) || '')); })
         .payuniRefundAndDelete(compId, reqId);
+    });
+  }
+
+  // 帳務 Q2：主辦方主動退費彈窗（原付款金額、全額/部分、實際退款結算、確認後執行）
+  var ORF = { teamId: '', paidAmount: 0, channel: 'manual', payoutState: '', name: '' };
+  function orfHide() { var m = document.getElementById('ownerRefundModal'); if (m) m.style.display = 'none'; }
+  function orfRecalc() {
+    var T = window.L, v = Math.max(0, Math.round(Number(document.getElementById('orfAmt').value) || 0));
+    if (v > ORF.paidAmount) { v = ORF.paidAmount; document.getElementById('orfAmt').value = v; }
+    var retained = Math.max(0, ORF.paidAmount - v);
+    document.getElementById('orfCalc').innerHTML = T('aePayRefundActualPre') + '<span style="color:var(--ok-700)">NT$ ' + v + '</span>' + (retained > 0 ? ('　' + T('aePayRefundRetainedPre') + 'NT$ ' + retained) : '');
+  }
+  function orfEnsureModal() {
+    if (document.getElementById('ownerRefundModal')) return;
+    var T = window.L;
+    var html = '<div id="ownerRefundModal" class="modal-bg" style="display:none">' +
+      '<div class="modal-card" style="max-width:460px">' +
+        '<div class="modal-h"><h3>' + T('aePayRefundTitle') + '</h3><button class="action-btn" id="orfClose">✕</button></div>' +
+        '<div class="modal-body">' +
+          '<div id="orfInfo" style="font:400 13px/1.8 var(--f-tc); color:var(--ink-2)"></div>' +
+          '<label style="display:block; margin:14px 0 6px; font:600 11px/1 var(--f-mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted)">' + T('aePayRefundAmtLbl') + '</label>' +
+          '<div style="display:flex; gap:8px; align-items:center">' +
+            '<span style="color:var(--muted)">NT$</span>' +
+            '<input id="orfAmt" type="number" min="0" step="1" style="flex:1; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font:500 14px/1 var(--f-tc)">' +
+            '<button class="action-btn" id="orfFull">' + T('aePayRefundFull') + '</button>' +
+          '</div>' +
+          '<div id="orfCalc" style="margin-top:14px; font:600 15px/1.5 var(--f-tc)"></div>' +
+          '<div id="orfHint" style="margin-top:8px; font:400 12px/1.6 var(--f-tc); color:var(--muted)"></div>' +
+        '</div>' +
+        '<div class="modal-h" style="border-top:1px solid var(--line); border-bottom:none; justify-content:flex-end; gap:8px">' +
+          '<button class="action-btn" id="orfCancel">' + T('aePayRefundCancel') + '</button>' +
+          '<button class="action-btn primary" id="orfConfirm">' + T('aePayRefundConfirm') + '</button>' +
+        '</div>' +
+      '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+    document.getElementById('orfClose').addEventListener('click', orfHide);
+    document.getElementById('orfCancel').addEventListener('click', orfHide);
+    document.getElementById('orfAmt').addEventListener('input', orfRecalc);
+    document.getElementById('orfFull').addEventListener('click', function () { document.getElementById('orfAmt').value = ORF.paidAmount; orfRecalc(); });
+    document.getElementById('orfConfirm').addEventListener('click', orfConfirm);
+  }
+  function openOwnerRefund(tid, name) {
+    var T = window.L;
+    orfEnsureModal();
+    google.script.run.withSuccessHandler(function (ctx) {
+      if (!ctx || !ctx.success) { uiAlert((ctx && ctx.message) || T('aePayRefundLoadFail')); return; }
+      if (ctx.alreadyRefunded) { uiAlert(T('aePayRefundAlready')); return; }
+      ORF = { teamId: tid, paidAmount: ctx.paidAmount, channel: ctx.channel, payoutState: ctx.payoutState, name: ctx.teamNameCN || name || tid };
+      var chHint = ctx.channel === 'payuni' ? T('aePayRefundViaPayuni') : (ctx.payoutState === 'paid_out' ? T('aePayRefundPaidOut') : T('aePayRefundManual'));
+      document.getElementById('orfInfo').innerHTML = '<b>' + escapeHtml(ORF.name) + '</b><br>' + T('aePayRefundPaidPre') + '<b>NT$ ' + ctx.paidAmount + '</b>';
+      document.getElementById('orfHint').innerHTML = chHint;
+      document.getElementById('orfAmt').value = ctx.paidAmount;
+      orfRecalc();
+      document.getElementById('ownerRefundModal').style.display = '';
+    }).withFailureHandler(function (e) { uiAlert(T('aePayRefundLoadFail') + ((e && e.message) || '')); }).getOwnerRefundContext(compId, tid);
+  }
+  function orfConfirm() {
+    var T = window.L, v = Math.max(0, Math.round(Number(document.getElementById('orfAmt').value) || 0));
+    if (!(v > 0)) { uiAlert(T('aePayRefundInvalid')); return; }
+    if (v > ORF.paidAmount) v = ORF.paidAmount;
+    var msg = T('aePayRefundConfirmPre') + ORF.name + '　' + T('aePayRefundActualPre') + 'NT$ ' + v + '\n' + (ORF.channel === 'payuni' ? T('aePayRefundViaPayuniMsg') : T('aePayRefundManualMsg'));
+    uiConfirm(msg, { title: T('aePayRefundConfirm'), okText: T('aePayRefundConfirm') }).then(function (ok) {
+      if (!ok) return;
+      google.script.run.withSuccessHandler(function (res) {
+        orfHide();
+        if (res && res.success) uiAlert(T('aePayRefundDonePre') + 'NT$ ' + res.refundedAmount + (res.channel === 'payuni' ? '' : ('\n' + T('aePayRefundManualDone')))).then(load);
+        else uiAlert((res && res.message) || T('aePayRefundFail'));
+      }).withFailureHandler(function (e) { uiAlert(T('aePayRefundFail') + '：' + ((e && e.message) || '')); }).ownerRefund(compId, ORF.teamId, v, '');
     });
   }
 
