@@ -208,9 +208,9 @@
             <button class="btn btn-primary" id="payoutApplyBtn" data-i18n="aePayPoApplyBtn">申請匯款 →</button>
           </div>
           <h4 class="po-sec-h" id="payoutRefundableH" style="display:none" data-i18n="aePayPoSecRefundable">可退刷（報名者退費已核准）</h4>
-          <div id="payoutRefundable"></div>
+          <div class="bill-detail" id="payoutRefundable"></div>
           <h4 class="po-sec-h" data-i18n="aePayPoSecRequests">我的匯款申請 / 紀錄</h4>
-          <div id="payoutRequests"></div>
+          <div class="bill-detail" id="payoutRequests"></div>
         </div>
       </div>
     </div>
@@ -452,7 +452,7 @@
   }
 
   function renderPayout(d) {
-    var T = window.L;
+    var T = window.L, sysView = (me && me.role === 'system');
     var po = d.payout || {};
     var acctBar = document.getElementById('payoutAccountBar');
     if (d.hasPayoutAccount && po.accountNumber) {
@@ -488,7 +488,7 @@
           '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(x.net) + '</td></tr>';
       }).join('');
       det.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th style="width:36px"><input type="checkbox" id="payoutPickAll" checked></th><th>' + T('aePayPoThItem') + '</th><th class="right">' + T('aePayPoThGross') + '</th><th class="right">' + T('aePayPoThFee') + '</th><th class="right">' + T('aePayPoThNet') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
-      document.getElementById('payoutApplyBar').style.display = '';
+      document.getElementById('payoutApplyBar').style.display = sysView ? 'none' : '';
       det.querySelectorAll('.po-pick').forEach(function (cb) { cb.addEventListener('change', recomputeApplyTotals); });
       var all = document.getElementById('payoutPickAll');
       if (all) all.addEventListener('change', function () { det.querySelectorAll('.po-pick').forEach(function (cb) { cb.checked = all.checked; }); recomputeApplyTotals(); });
@@ -502,9 +502,11 @@
       rfH.style.display = '';
       rfDiv.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th>' + T('aePayPoThTeam') + '</th><th class="right">' + T('aePayPoThRefund') + '</th><th class="right">' + T('aePayPoThRetained') + '</th><th></th></tr></thead><tbody>' +
         rf.map(function (x) {
-          var act = x.blocked
-            ? '<span style="color:var(--warn-700); font:500 12px/1.4 var(--f-tc)">' + T('aePayPoBlockedRefund') + '</span>'
-            : '<button class="btn btn-ghost btn-sm po-refund" data-req="' + escapeHtml(x.reqId) + '" data-team="' + escapeHtml(x.teamNameCN || '') + '" data-refund="' + x.calcRefund + '" data-ret="' + x.retained + '">' + T('aePayPoRefundBtn') + '</button>';
+          var act = sysView
+            ? '<span style="color:var(--muted); font:500 12px/1.4 var(--f-tc)">' + T('aePayPoViewOnly') + '</span>'
+            : (x.blocked
+              ? '<span style="color:var(--warn-700); font:500 12px/1.4 var(--f-tc)">' + T('aePayPoBlockedRefund') + '</span>'
+              : '<button class="btn btn-ghost btn-sm po-refund" data-req="' + escapeHtml(x.reqId) + '" data-team="' + escapeHtml(x.teamNameCN || '') + '" data-refund="' + x.calcRefund + '" data-ret="' + x.retained + '">' + T('aePayPoRefundBtn') + '</button>');
           return '<tr><td><b>' + escapeHtml(x.teamNameCN || '—') + '</b></td><td class="right">' + fmtMoney(x.calcRefund) + '</td><td class="right">' + fmtMoney(x.retained) + '</td><td class="right">' + act + '</td></tr>';
         }).join('') + '</tbody></table></div>';
       rfDiv.querySelectorAll('.po-refund').forEach(function (b) { b.addEventListener('click', function () { doRefund(b.dataset.req, b.dataset.team, b.dataset.refund, b.dataset.ret); }); });
@@ -518,7 +520,7 @@
       rq.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th>' + T('aePayPoThReqId') + '</th><th>' + T('aePayPoThApplyAt') + '</th><th class="right">' + T('aePayPoThActual') + '</th><th>' + T('aePayPoThSchedule') + '</th><th>' + T('aePayPoThStatus') + '</th><th></th></tr></thead><tbody>' +
         reqs.map(function (r) {
           var st = stMap[r.status] || r.status;
-          var act = r.status === 'requested' ? '<button class="btn btn-ghost btn-sm po-withdraw" data-req="' + escapeHtml(r.reqId) + '">' + T('aePayPoWithdraw') + '</button>' : (r.status === 'rejected' && r.rejectReasonText ? '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(r.rejectReasonText) + '</span>' : '');
+          var act = (r.status === 'requested' && !sysView) ? '<button class="btn btn-ghost btn-sm po-withdraw" data-req="' + escapeHtml(r.reqId) + '">' + T('aePayPoWithdraw') + '</button>' : (r.status === 'rejected' && r.rejectReasonText ? '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(r.rejectReasonText) + '</span>' : '');
           return '<tr><td><b style="font:500 11px/1.3 var(--f-mono)">' + escapeHtml(r.reqId) + '</b></td>' +
             '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(r.appliedAt || r.createdAt).slice(0, 16)) + '</span></td>' +
             '<td class="right" style="font-weight:700">' + fmtMoney(r.actualWire) + '</td>' +

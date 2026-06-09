@@ -2637,6 +2637,7 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
 exports.payuniRefundAndDelete = compAuthCallable("manage", async (data, request) => {
   const compId = data.compId, reqId = data.reqId;
   const creator = await _resolveCreator(request, compId);
+  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方退刷" };
   const rRef = db.collection("refundRequests").doc(reqId);
   const rDoc = await rRef.get();
   if (!rDoc.exists) return { success: false, message: "找不到退費申請" };
@@ -6261,6 +6262,7 @@ exports.applyPayout = compAuthCallable("manage", async (data, request) => {
   const compId = data.compId;
   const creator = await _resolveCreator(request, compId);
   if (!creator) return { success: false, message: "活動不存在" };
+  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方申請匯款" };
   const orderIds = Array.isArray(data.orderIds) ? data.orderIds : [];
   const depositIds = Array.isArray(data.depositIds) ? data.depositIds : [];
   if (!orderIds.length && !depositIds.length) return { success: false, message: "請至少勾選一筆" };
@@ -6316,6 +6318,7 @@ exports.applyPayout = compAuthCallable("manage", async (data, request) => {
 exports.withdrawPayout = compAuthCallable("manage", async (data, request) => {
   const compId = data.compId, reqId = data.reqId;
   const creator = await _resolveCreator(request, compId);
+  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方撤回申請" };
   const ref = db.collection("payoutRequests").doc(reqId);
   await db.runTransaction(async (tx) => {
     const d = await tx.get(ref);

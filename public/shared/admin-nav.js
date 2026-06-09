@@ -77,7 +77,7 @@
         eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.cal, 'manager') +
         eitem('/registrations', 'anEvtReg', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>', 'manager') +
         eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log, 'manager', '', 'campaigns') +
-        eitem('/payments', 'anEvtBilling', '帳務', 'payments', IC.lic, '') +
+        eitem('/payments', 'anEvtBilling', '帳務', 'payments', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', '') +
         eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge', '', 'scoring') +
         eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff', '', 'checkin') +
         eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager', '', 'certificate') +

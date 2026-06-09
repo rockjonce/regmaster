@@ -405,6 +405,7 @@
   };
 
   Object.assign(Z, {
+    aePayPoViewOnly: '檢視模式（系統管理員）',
     aePayPoIntro: '線上付款（PayUNI）由平台代收，扣手續費後依轉帳週期匯入「收款帳戶」。勾選下方款項即可向平台申請匯款。銀行轉帳（ATM）由報名者直接匯入主辦方，不在此列。',
     aePayPoSecDetail: '各報名收款明細（勾選後申請匯款）',
     aePayPoApplyBtn: '申請匯款 →',
@@ -475,6 +476,7 @@
     aePayPoLoadFailPre: '載入失敗：',
   });
   Object.assign(E, {
+    aePayPoViewOnly: 'View only (system admin)',
     aePayPoIntro: 'Online payments (PayUNI) are collected by the platform; after fees they are remitted to your payout account on the transfer cycle. Select items below to request a payout. Bank transfers (ATM) are paid directly to the organizer and are not listed here.',
     aePayPoSecDetail: 'Per-Registration Collection Detail (select to request payout)',
     aePayPoApplyBtn: 'Request Payout →',
