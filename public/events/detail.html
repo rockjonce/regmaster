@@ -206,10 +206,10 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
           <div class="progress-meta"><span data-i18n="edProgressLabel">已報名</span><strong id="ctaCount">0 / 0</strong></div>
 
           <div class="countdown" id="ctaCountdown" style="display:none">
-            <div class="b"><div class="n" id="cdD">00</div><div class="l">DAYS</div></div>
-            <div class="b"><div class="n" id="cdH">00</div><div class="l">HOURS</div></div>
-            <div class="b"><div class="n" id="cdM">00</div><div class="l">MINS</div></div>
-            <div class="b"><div class="n" id="cdS">00</div><div class="l">SECS</div></div>
+            <div class="b"><div class="n" id="cdD">00</div><div class="l" data-i18n="edCdDays">DAYS</div></div>
+            <div class="b"><div class="n" id="cdH">00</div><div class="l" data-i18n="edCdHours">HOURS</div></div>
+            <div class="b"><div class="n" id="cdM">00</div><div class="l" data-i18n="edCdMins">MINS</div></div>
+            <div class="b"><div class="n" id="cdS">00</div><div class="l" data-i18n="edCdSecs">SECS</div></div>
           </div>
 
           <a id="registerBtn" href="#" class="btn btn-primary btn-lg btn-block" data-i18n="edRegisterBtn">立即報名 →</a>
@@ -529,8 +529,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var dateHtml = '';
     if (dateMode === 'multi' && Array.isArray(cfg.sessions) && cfg.sessions.length) {
       dateHtml = cfg.sessions.map(function (s) {
-        var sd = s.startDate || '';
-        var ed = s.endDate || sd;
+        var sd = (s.startDate || '').replace('T', ' ');
+        var ed = (s.endDate || '').replace('T', ' ') || sd;
         var st = s.startTime || '';
         var et = s.endTime || '';
         var range;

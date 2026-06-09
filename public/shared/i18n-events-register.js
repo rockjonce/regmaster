@@ -36,7 +36,7 @@
     rgStep4Label: '確認送出',
 
     // ----- step 1 -----
-    rgStep1Eyebrow: 'STEP 01',
+    rgStep1Eyebrow: '步驟 01',
     rgStep1Title: '選擇你的組別與場次',
     rgStep1Sub: '先告訴我們你打算如何參賽。',
     rgSecGroup: '組別',
@@ -47,20 +47,20 @@
     rgTeamNameEN: '隊伍英文名稱',
 
     // ----- step 2 -----
-    rgStep2Eyebrow: 'STEP 02',
+    rgStep2Eyebrow: '步驟 02',
     rgStep2Title: '填寫成員資料',
     rgStep2Sub: '每位成員都需要提供基本資料。可以稍後再修改。',
     rgSecStudent: '學員',
     rgSecTeacher: '指導者',
 
     // ----- step 3 -----
-    rgStep3Eyebrow: 'STEP 03',
+    rgStep3Eyebrow: '步驟 03',
     rgStep3Title: '附加問題',
     rgStep3Sub: '主辦方有些額外問題想了解。',
     rgNoCustomQs: '本活動沒有附加問題，可直接進入下一步。',
 
     // ----- step 4 -----
-    rgStep4Eyebrow: 'STEP 04',
+    rgStep4Eyebrow: '步驟 04',
     rgStep4Title: '確認資料並送出',
     rgStep4Sub: '送出後將無法修改主要欄位，請仔細檢查。',
     rgPaySelect: '選擇付款方式',

@@ -14,10 +14,10 @@
     adSysDocTitle: '系統設定 · 主辦後台 · RegMaster',
     adSysBrandSub: '主辦後台',
     adSysOrgRole: '系統管理員',
-    adSysCrumbHome: '主辦後台',
+    adSysCrumbHome: '平台後台',
     adSysCrumbHere: '系統設定',
     // ---------- no-access gate ----------
-    adSysNaTitle: '需要 SYSTEM 權限',
+    adSysNaTitle: '需要平台管理員權限',
     adSysNaBody: '系統設定僅供平台管理員使用。<br>您目前的角色：<b id="curRole">—</b>',
     adSysNaBack: '回到主辦後台',
     // ---------- page heading ----------
@@ -56,6 +56,7 @@
     adSysStatNormal: '正常',
     adSysStatUnverified: '未驗證',
     adSysRoleOrg: '主辦方',
+    adSysRoleSys: '系統',
     adSysRoleOwner: '擁有者', adSysRoleManager: '管理者', adSysRoleStaff: '工作人員', adSysRoleJudge: '評審',
     adSysLoadFail: '載入失敗',
     // ---------- params: PayUni ----------
@@ -125,7 +126,7 @@
     adSysAcctThAccount: '帳號',
     adSysAcctThName: '名稱',
     adSysAcctThRole: '角色',
-    adSysAcctThEmail: 'Email',
+    adSysAcctThEmail: '電子郵件',
     adSysAcctThLogin: '登入方式',
     adSysAcctThStatus: '狀態',
     adSysAcctNone: '尚無帳號',
@@ -423,10 +424,10 @@
     adSysDocTitle: 'System Settings · Organizer Console · RegMaster',
     adSysBrandSub: 'Organizer Console',
     adSysOrgRole: 'System Admin',
-    adSysCrumbHome: 'Organizer Console',
+    adSysCrumbHome: 'Platform Console',
     adSysCrumbHere: 'System Settings',
     // ---------- no-access gate ----------
-    adSysNaTitle: 'SYSTEM Permission Required',
+    adSysNaTitle: 'Platform Admin Permission Required',
     adSysNaBody: 'System Settings are for platform admins only.<br>Your current role: <b id="curRole">—</b>',
     adSysNaBack: 'Back to Organizer Console',
     // ---------- page heading ----------
@@ -465,6 +466,7 @@
     adSysStatNormal: 'Normal',
     adSysStatUnverified: 'Unverified',
     adSysRoleOrg: 'Organizer',
+    adSysRoleSys: 'System',
     adSysRoleOwner: 'Owner', adSysRoleManager: 'Manager', adSysRoleStaff: 'Staff', adSysRoleJudge: 'Judge',
     adSysLoadFail: 'Load failed',
     // ---------- params: PayUni ----------

@@ -423,6 +423,9 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     }
   });
   document.getElementById('sendBtn').addEventListener('click', function () {
+    // E-5: if a brand-new conversation is mid-creation, ignore re-entrant sends so a fast
+    // second message can't spawn a 2nd empty conversation and lose the first message.
+    if (SELECTED && SELECTED._creating) return;
     var text = inp.value.trim();
     if (!text) return;
     inp.value = ''; inp.style.height = 'auto';
@@ -434,12 +437,14 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     renderMessages();
     if (!SELECTED) {
       // New conversation — create it, then run AI (UI already shows the message + dots).
+      // Claim creation synchronously so a re-entrant send is gated by the guard above.
+      SELECTED = { id: null, _creating: true };
       google.script.run
         .withSuccessHandler(function (res) {
           if (res && res.success) { SELECTED = { id: res.id }; loadConvs(); runAI(res.id, text); }
-          else { stopTyping(L('adAiCreateFail')); }
+          else { SELECTED = null; stopTyping(L('adAiCreateFail')); }
         })
-        .withFailureHandler(function () { stopTyping(L('adAiCreateFail')); })
+        .withFailureHandler(function () { SELECTED = null; stopTyping(L('adAiCreateFail')); })
         .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', text.slice(0, 50));
     } else {
       runAI(SELECTED.id, text);

@@ -774,8 +774,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var grid = document.getElementById('sessionGrid');
       grid.innerHTML = sessions.map(function (s, i) {
         var name = s.name || (window.L('rgSessionNFallback') + ' ' + (i+1));
-        var sd = s.startDate || s.date || '';
-        var ed = s.endDate || sd;
+        var sd = (s.startDate || s.date || '').replace('T', ' ');
+        var ed = (s.endDate || '').replace('T', ' ') || sd;
         var st = s.startTime || '';
         var et = s.endTime || '';
         var rangeTxt = '';

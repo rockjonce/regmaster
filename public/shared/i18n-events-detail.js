@@ -37,6 +37,7 @@
     edCtaTitle: '準備報名',
     edCtaSub: '即將開始⋯⋯',
     edProgressLabel: '已報名',
+    edCdDays: '天', edCdHours: '時', edCdMins: '分', edCdSecs: '秒',
     edRegisterBtn: '立即報名 →',
     edLookupBtn: '查詢已報名',
 
@@ -220,6 +221,7 @@
     edCtaTitle: 'Get ready to register',
     edCtaSub: 'Starting soon…',
     edProgressLabel: 'Registered',
+    edCdDays: 'DAYS', edCdHours: 'HOURS', edCdMins: 'MINS', edCdSecs: 'SECS',
     edRegisterBtn: 'Register now →',
     edLookupBtn: 'Look up registration',
 
