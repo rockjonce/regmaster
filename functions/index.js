@@ -3128,23 +3128,87 @@ exports.getTeamDetail = compAuthCallable("view", async (data, request) => {
   const memSnap = await db.collection("members").where("teamId", "==", data.teamId).get();
   const students = [], teachers = [];
   memSnap.docs.forEach(d => {
-    const m = d.data();
-    // 【新增】：讀出 dietary, tshirt, accommodation
-    const member = {
-      chineseName: m.chineseName || "", englishName: m.englishName || "", school: m.school || "",
-      grade: m.grade || "", jobTitle: m.jobTitle || "", nationality: m.nationality || "",
-      idNumber: m.idNumber || "", passport: m.passport || "", birthday: m.birthday || "",
-      gender: m.gender || "", organization: m.organization || "",
-      phone: m.phone || "", email: m.email || "",
-      postalCode: m.postalCode || "", address: m.address || "",
-      dietary: m.dietary || "", dietaryRestriction: m.dietaryRestriction || "",
-      tshirt: m.tshirt || "", accommodation: m.accommodation || "",
-      customAnswers: m.customAnswers || {}
-    };
-    if (m.role === "學生") students.push(member);
+    const { password: _mp, ...mFields } = d.data();
+    // 帳務/編輯：回傳完整成員欄位 + 文件 id（供主辦方編輯與稽核以 id 對應更新）。
+    const member = Object.assign({}, mFields, { id: d.id, customAnswers: mFields.customAnswers || {} });
+    if (mFields.role === "學生") students.push(member);
     else teachers.push(member);
   });
   return { ...safeT, students, teachers };
+});
+
+// 報名詳情可編輯（擁有者/管理者）＋逐項稽核。允許編輯的欄位與其中文標籤（用於操作紀錄）。
+const TEAM_EDIT_FIELDS = { teamNameCN: "中文隊名", teamNameEN: "英文隊名", group: "組別", note: "備註" };
+const MEMBER_EDIT_LABELS = {
+  salutation: "尊稱", chineseName: "中文姓名", englishName: "英文姓名", englishSurname: "英文姓", englishGivenName: "英文名",
+  gender: "性別", birthday: "生日", idNumber: "身分證", passport: "護照號碼", nationality: "國籍",
+  school: "學校", eduLevel: "教育階段", department: "系所", grade: "年級", classroom: "班級", studentId: "學號",
+  jobTitle: "職稱", organization: "服務單位", email: "Email", phone: "電話", city: "居住縣市", postalCode: "郵遞區號",
+  address: "地址", lineId: "LINE ID", emergencyName: "緊急聯絡人", emergencyPhone: "緊急聯絡電話", emergencyRelation: "緊急聯絡關係",
+  guardianName: "監護人姓名", guardianPhone: "監護人電話", guardianConsent: "家長同意", dietary: "飲食習慣",
+  dietaryRestriction: "飲食限制/過敏", accessibility: "特殊需求/無障礙", bloodType: "血型", tshirt: "T-shirt尺寸",
+  transportation: "交通方式", accommodation: "住宿需求", referralSource: "如何得知本活動", website: "網站",
+  consent: "條款同意", invoiceType: "發票類型", invoiceTitle: "發票抬頭", taxId: "統一編號"
+};
+// 擁有者/管理者修改報名詳情：逐欄位 diff，更新 teams/members，並對每個變更寫一筆操作紀錄。
+exports.updateTeamDetailOwner = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, teamId = data.teamId, actor = request.authUser.username;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  const teamName = team.teamNameCN || teamId;
+  const logs = [];
+  const _s = v => String(v == null ? "" : v);
+  // team-level fields
+  const teamUpd = {}, teamIn = data.team || {};
+  for (const k of Object.keys(TEAM_EDIT_FIELDS)) {
+    if (!(k in teamIn)) continue;
+    const nv = _s(teamIn[k]).slice(0, 500), ov = _s(team[k]);
+    if (nv !== ov) { teamUpd[k] = nv; logs.push({ who: "", label: TEAM_EDIT_FIELDS[k], old: ov, neu: nv }); }
+  }
+  // team-level custom answers
+  const teamCustomIn = data.teamCustom || {};
+  if (teamCustomIn && Object.keys(teamCustomIn).length) {
+    const ca = Object.assign({}, team.customAnswers || {});
+    for (const qk of Object.keys(teamCustomIn)) {
+      const nv = _s(teamCustomIn[qk]).slice(0, 1000), ov = _s(ca[qk]);
+      if (nv !== ov) { ca[qk] = nv; logs.push({ who: "", label: qk, old: ov, neu: nv }); }
+    }
+    teamUpd.customAnswers = ca;
+  }
+  if (Object.keys(teamUpd).length) await db.collection("teams").doc(teamId).update(teamUpd);
+  // members (by doc id)
+  const membersIn = Array.isArray(data.members) ? data.members : [];
+  for (const min of membersIn) {
+    if (!min || !min.id) continue;
+    const mRef = db.collection("members").doc(min.id);
+    const mDoc = await mRef.get();
+    if (!mDoc.exists || mDoc.data().teamId !== teamId) continue;
+    const m = mDoc.data();
+    const who = String(min.label || (m.role === "學生" ? "學員" : "指導者")).slice(0, 20);
+    const upd = {}, fin = min.fields || {};
+    for (const k of Object.keys(fin)) {
+      if (!MEMBER_EDIT_LABELS[k]) continue;
+      const nv = _s(fin[k]).slice(0, 500), ov = _s(m[k]);
+      if (nv !== ov) { upd[k] = nv; logs.push({ who, label: MEMBER_EDIT_LABELS[k], old: ov, neu: nv }); }
+    }
+    const mc = min.customAnswers || {};
+    if (mc && Object.keys(mc).length) {
+      const ca = Object.assign({}, m.customAnswers || {});
+      for (const qk of Object.keys(mc)) {
+        const nv = _s(mc[qk]).slice(0, 1000), ov = _s(ca[qk]);
+        if (nv !== ov) { ca[qk] = nv; logs.push({ who, label: qk, old: ov, neu: nv }); }
+      }
+      upd.customAnswers = ca;
+    }
+    if (Object.keys(upd).length) await mRef.update(upd);
+  }
+  // one audit entry per changed field — 隊伍編號/名稱 + 項目「由 OLD 改為 NEW」
+  for (const lg of logs) {
+    await auditLog(actor, "修改報名", teamId,
+      teamName + "｜" + (lg.who ? lg.who + " " : "") + lg.label + "：由『" + (lg.old || "（空白）") + "』改為『" + (lg.neu || "（空白）") + "』");
+  }
+  return { success: true, changes: logs.length };
 });
 
 exports.confirmPayment = compAuthCallable(async (data, request) => {

@@ -161,6 +161,7 @@
     getRegistrationStats:["compId"],
     sendTeamEmail:["compId","teamId","subject","body"],
     getTeamDetail:["teamId"],
+    updateTeamDetailOwner:["compId","teamId","team","members","teamCustom"],
     confirmPayment:["teamId","user"],
     updateTeamStatus:["teamId","newStatus","user"],
     deleteTeam:["teamId"],

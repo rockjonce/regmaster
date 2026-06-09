@@ -963,14 +963,16 @@
     }
   }
 
+  // ===== 報名詳情：檢視 + 編輯（擁有者/管理者）+ 逐項稽核 =====
+  var TD_CUR = null, TD_OV = null, TD_EDIT = false;
   function openTeamDetail(tid) {
     var loadingHtml = '<p style="color:var(--muted)">' + window.L('aeRegLoadingShort') + '</p>';
     openModal(window.L('aeRegDetailTitle') + tid, loadingHtml, function (ov, close) {
+      TD_OV = ov; TD_EDIT = false; TD_CUR = null;
       google.script.run
         .withSuccessHandler(function (t) {
           if (!t) { ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aeRegDetailNotFound') + '</p>'; return; }
-          ov.querySelector('.modal-body').innerHTML = renderTeamDetailHtml(t);
-          wireRegFileLinks(ov.querySelector('.modal-body'));
+          TD_CUR = t; tdRerender();
         })
         .withFailureHandler(function (e) {
           ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aeRegDetailLoadFail') + escapeHtml((e && e.message) || '') + '</p>';
@@ -978,44 +980,60 @@
         .getTeamDetail(tid);
     });
   }
-
+  function tdRerender() {
+    if (!TD_OV) return;
+    var body = TD_OV.querySelector('.modal-body'); if (!body || !TD_CUR) return;
+    body.innerHTML = renderTeamDetailHtml(TD_CUR);
+    wireRegFileLinks(body);
+    var eb = document.getElementById('tdEditBtn'); if (eb) eb.addEventListener('click', function () { TD_EDIT = true; tdRerender(); });
+    var cb = document.getElementById('tdCancelBtn'); if (cb) cb.addEventListener('click', function () { TD_EDIT = false; tdRerender(); });
+    var sb = document.getElementById('tdSaveBtn'); if (sb) sb.addEventListener('click', tdSave);
+  }
+  // editable cell — text input in edit mode (with data-* for collection), else read-only kv
+  function tdField(scope, mid, who, key, label, value, custom) {
+    if (!TD_EDIT) return kv(label, value);
+    var v = (value == null) ? '' : String(value);
+    return '<div class="k">' + escapeHtml(label) + '</div><div class="v"><input class="td-in" data-scope="' + scope + '" data-mid="' + escapeHtml(mid || '') + '" data-who="' + escapeHtml(who || '') + '" data-key="' + escapeHtml(key) + '" data-custom="' + (custom ? '1' : '0') + '" value="' + escapeHtml(v) + '" style="width:100%; padding:6px 9px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); font:400 13px/1.4 var(--f-tc)"></div>';
+  }
   function renderTeamDetailHtml(t) {
     var html = '';
+    // toolbar
+    html += TD_EDIT
+      ? '<div style="display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-bottom:14px"><span style="margin-right:auto; color:var(--muted); font:400 12px/1.4 var(--f-tc)">' + window.L('aeRegEditHint') + '</span><button class="btn btn-ghost btn-sm" id="tdCancelBtn">' + window.L('aeRegEditCancel') + '</button><button class="btn btn-primary btn-sm" id="tdSaveBtn">' + window.L('aeRegEditSave') + '</button></div>'
+      : '<div style="display:flex; justify-content:flex-end; margin-bottom:14px"><button class="btn btn-ghost btn-sm" id="tdEditBtn">✏️ ' + window.L('aeRegEditBtn') + '</button></div>';
     // 隊伍基本
     html += '<div class="group"><h5>' + window.L('aeRegGrpTeam') + '</h5><div class="kv">' +
       kv(window.L('aeRegFieldId'), t.teamId) +
-      kv(window.L('aeRegFieldNameCN'), t.teamNameCN) +
-      kv(window.L('aeRegFieldNameEN'), t.teamNameEN) +
-      kv(window.L('aeRegFieldGroup'), window.LO(t.group)) +
+      tdField('team', '', '', 'teamNameCN', window.L('aeRegFieldNameCN'), t.teamNameCN) +
+      tdField('team', '', '', 'teamNameEN', window.L('aeRegFieldNameEN'), t.teamNameEN) +
+      (TD_EDIT ? tdField('team', '', '', 'group', window.L('aeRegFieldGroup'), t.group) : kv(window.L('aeRegFieldGroup'), window.LO(t.group))) +
       kv(window.L('aeRegFieldStatus'), window.LS(t.status)) +
       kv(window.L('aeRegFieldPayStatus'), window.LS(t.paymentStatus)) +
       kv(window.L('aeRegFieldPayMethod'), window.LS(t.paymentMethod)) +
       kv(window.L('aeRegFieldRemitBank'), t.remitterBank) +
       kv(window.L('aeRegFieldRemitAccount'), t.remitterAccount) +
       kv(window.L('aeRegFieldRegTime'), t.registrationTime) +
+      tdField('team', '', '', 'note', window.L('aeRegFieldNote'), t.note) +
       ((t.consentSignature && t.consentSignature.agreed) ? kv(window.L('aeRegFieldConsent'), window.L('aeRegConsentSigned').replace('{v}', t.consentSignature.version || '').replace('{t}', t.consentSignature.signedAt || '').replace('{ip}', t.consentSignature.ip || '—')) : '') +
       (t.fileUrl ? '<div class="k">' + window.L('aeRegFieldFile') + '</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">' + window.L('aeRegFileView') + '</a></div>' : '') +
     '</div></div>';
     // 學員們
     (t.students || []).forEach(function (s, i) {
-      html += '<div class="group"><h5>' + window.L('aeRegGrpStudent') + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
+      html += '<div class="group"><h5>' + window.L('aeRegGrpStudent') + (i + 1) + '</h5><div class="kv">' + memberKVs(s, window.L('aeRegGrpStudent') + (i + 1)) + '</div></div>';
     });
     (t.teachers || []).forEach(function (s, i) {
-      html += '<div class="group"><h5>' + window.L('aeRegGrpTeacher') + (i + 1) + '</h5><div class="kv">' + memberKVs(s) + '</div></div>';
+      html += '<div class="group"><h5>' + window.L('aeRegGrpTeacher') + (i + 1) + '</h5><div class="kv">' + memberKVs(s, window.L('aeRegGrpTeacher') + (i + 1)) + '</div></div>';
     });
-    // V1: team-level 附加問題 (separate from member-level customAnswers)
+    // team-level 附加問題
     var teamAns = t.customAnswers || {};
-    var teamAnsKeys = Object.keys(teamAns).filter(function (k) { return teamAns[k] !== '' && teamAns[k] != null; });
+    var teamAnsKeys = Object.keys(teamAns).filter(function (k) { return TD_EDIT || (teamAns[k] !== '' && teamAns[k] != null); });
     if (teamAnsKeys.length > 0) {
       html += '<div class="group"><h5>' + window.L('aeRegGrpCustom') + '</h5><div class="kv">' +
-        teamAnsKeys.map(function (k) { return kv(k, window.LO(teamAns[k])); }).join('') +
+        teamAnsKeys.map(function (k) { return tdField('team', '', '', k, k, teamAns[k], true); }).join('') +
       '</div></div>';
     }
-    // Async-wire file viewers after innerHTML insertion (see openTeamDetail)
     return html;
   }
-  // V1: render a value cell — if the value looks like a regfile placeholder,
-  // emit a clickable link that lazily fetches + opens/downloads the file.
   function valueCell(v) {
     if (v === undefined || v === null || v === '') return '';
     var s = String(v);
@@ -1030,7 +1048,7 @@
     if (v === undefined || v === null || v === '') return '';
     return '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + valueCell(v) + '</div>';
   }
-  function memberKVs(m) {
+  function memberKVs(m, who) {
     var fields = [
       [window.L('aeRegMSalutation'),'salutation'],[window.L('aeRegMChineseName'),'chineseName'],[window.L('aeRegMEnglishName'),'englishName'],[window.L('aeRegMGender'),'gender'],[window.L('aeRegMBirthday'),'birthday'],
       [window.L('aeRegMIdNumber'),'idNumber'],[window.L('aeRegMPassport'),'passport'],[window.L('aeRegMNationality'),'nationality'],
@@ -1042,16 +1060,46 @@
       [window.L('aeRegMReferralSource'),'referralSource'],[window.L('aeRegMWebsite'),'website'],[window.L('aeRegMConsent'),'consent'],
       [window.L('aeRegMInvoiceType'),'invoiceType'],[window.L('aeRegMInvoiceTitle'),'invoiceTitle'],[window.L('aeRegMTaxId'),'taxId']
     ];
-    // Localize DISPLAY only: built-in field LABEL via window.LF(key, currentLabel)
-    // and built-in option VALUE via window.LO(value). Stored data/keys unchanged;
-    // organiser-custom labels/values pass through LF/LO untouched.
-    var rows = fields.map(function (f) { return kv(window.LF(f[1], f[0]), window.LO(m[f[1]])); }).join('');
+    var rows = fields.map(function (f) {
+      if (TD_EDIT) return tdField('member', m.id, who, f[1], window.LF(f[1], f[0]), m[f[1]], false);
+      return kv(window.LF(f[1], f[0]), window.LO(m[f[1]]));
+    }).join('');
     if (m.customAnswers && typeof m.customAnswers === 'object') {
-      // Custom-question text is organiser-authored → leave label as-is; value via LO (passes through free text).
-      Object.keys(m.customAnswers).forEach(function (k) { rows += kv(k, window.LO(m.customAnswers[k])); });
+      Object.keys(m.customAnswers).forEach(function (k) {
+        rows += TD_EDIT ? tdField('member', m.id, who, k, k, m.customAnswers[k], true) : kv(k, window.LO(m.customAnswers[k]));
+      });
     }
     return rows;
   }
+  function tdCollect() {
+    var team = {}, teamCustom = {}, mmap = {};
+    TD_OV.querySelectorAll('.td-in').forEach(function (el) {
+      var scope = el.dataset.scope, key = el.dataset.key, val = el.value, custom = el.dataset.custom === '1';
+      if (scope === 'team') { if (custom) teamCustom[key] = val; else team[key] = val; }
+      else {
+        var mid = el.dataset.mid; if (!mid) return;
+        if (!mmap[mid]) mmap[mid] = { id: mid, label: el.dataset.who || '', fields: {}, customAnswers: {} };
+        if (custom) mmap[mid].customAnswers[key] = val; else mmap[mid].fields[key] = val;
+      }
+    });
+    return { team: team, teamCustom: teamCustom, members: Object.keys(mmap).map(function (k) { return mmap[k]; }) };
+  }
+  function tdSave() {
+    if (!TD_CUR) return;
+    var p = tdCollect();
+    var btn = document.getElementById('tdSaveBtn'); if (btn) btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          uiToast(window.L('aeRegEditSavedPre') + res.changes + window.L('aeRegEditSavedPost'));
+          google.script.run.withSuccessHandler(function (t) { if (t) { TD_CUR = t; TD_EDIT = false; tdRerender(); } }).getTeamDetail(TD_CUR.teamId);
+          if (typeof reload === 'function') reload();
+        } else { if (btn) btn.disabled = false; uiAlert((res && res.message) || window.L('aeRegEditFail')); }
+      })
+      .withFailureHandler(function (e) { if (btn) btn.disabled = false; uiAlert(window.L('aeRegEditFail') + '：' + ((e && e.message) || '')); })
+      .updateTeamDetailOwner(compId, TD_CUR.teamId, p.team, p.members, p.teamCustom);
+  }
+
   // V1: after team-detail modal renders, wire any regfile links to fetch + show
   function wireRegFileLinks(scopeEl) {
     scopeEl.querySelectorAll('[data-regfile]').forEach(function (a) {

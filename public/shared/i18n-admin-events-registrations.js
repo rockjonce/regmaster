@@ -582,6 +582,27 @@
     aeRegNetworkErr: 'Network error'
   };
 
+  Object.assign(Z, {
+    aeRegEditBtn: '編輯資料',
+    aeRegEditSave: '儲存變更',
+    aeRegEditCancel: '取消',
+    aeRegEditHint: '所有修改都會記錄於操作紀錄',
+    aeRegEditSavedPre: '已儲存 ',
+    aeRegEditSavedPost: ' 項變更',
+    aeRegEditFail: '儲存失敗',
+    aeRegFieldNote: '備註',
+  });
+  Object.assign(E, {
+    aeRegEditBtn: 'Edit',
+    aeRegEditSave: 'Save changes',
+    aeRegEditCancel: 'Cancel',
+    aeRegEditHint: 'All changes are recorded in the audit log',
+    aeRegEditSavedPre: 'Saved ',
+    aeRegEditSavedPost: ' change(s)',
+    aeRegEditFail: 'Save failed',
+    aeRegFieldNote: 'Note',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();
