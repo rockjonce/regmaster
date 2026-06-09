@@ -194,18 +194,23 @@
         <div id="payoutLoading" class="loading-c" data-i18n="aePayPayoutLoading">載入代收轉付資料⋯</div>
         <div id="payoutContent" style="display:none">
           <div class="po-intro">
-            <h3 data-i18n="aePayPayoutIntroTitle">💸 平台代收轉付</h3>
-            <p data-i18n="aePayPayoutIntroDesc">線上付款（PayUNI）由平台代收，扣除手續費後依轉帳週期匯入主辦方「收款帳戶」。銀行轉帳（ATM）由報名者直接匯入主辦方帳戶，不在此列。</p>
+            <h3>💸 平台代收轉付</h3>
+            <p>線上付款（PayUNI）由平台代收，扣手續費後依轉帳週期匯入「收款帳戶」。勾選下方款項即可向平台申請匯款。銀行轉帳（ATM）由報名者直接匯入主辦方，不在此列。</p>
           </div>
           <div class="po-bars">
             <div class="po-bar" id="payoutAccountBar"></div>
             <div class="po-bar" id="payoutCycleBar"></div>
           </div>
-          <div class="bill-summary" id="payoutSummary"></div>
-          <h4 class="po-sec-h" data-i18n="aePayPayoutSecOrders">各隊收款明細</h4>
+          <h4 class="po-sec-h">各報名收款明細（勾選後申請匯款）</h4>
           <div class="bill-detail" id="payoutOrders"></div>
-          <h4 class="po-sec-h" data-i18n="aePayPayoutSecRemittances">平台匯款紀錄</h4>
-          <div id="payoutRemittances"></div>
+          <div id="payoutApplyBar" style="display:none; margin:14px 0; padding:14px 16px; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
+            <div id="payoutApplyTotals" style="font:500 13px/1.6 var(--f-tc)"></div>
+            <button class="btn btn-primary" id="payoutApplyBtn">申請匯款 →</button>
+          </div>
+          <h4 class="po-sec-h" id="payoutRefundableH" style="display:none">可退刷（報名者退費已核准）</h4>
+          <div id="payoutRefundable"></div>
+          <h4 class="po-sec-h">我的匯款申請 / 紀錄</h4>
+          <div id="payoutRequests"></div>
         </div>
       </div>
     </div>
@@ -443,78 +448,143 @@
         if (window.applyI18n) window.applyI18n();
       })
       .withFailureHandler(function (e) { document.getElementById('payoutLoading').textContent = window.L('aePayPayoutLoadFailPre') + ((e && e.message) || ''); })
-      .getSettlementData('', compId);
+      .getPayableItems(compId);
   }
 
   function renderPayout(d) {
-    var s = d.summary || { gross: 0, feeTotal: 0, net: 0, settledNet: 0, unsettledNet: 0, orderCount: 0, settledCount: 0, unsettledCount: 0 };
     var po = d.payout || {};
     var acctBar = document.getElementById('payoutAccountBar');
-    if (po.accountNumber) {
+    if (d.hasPayoutAccount && po.accountNumber) {
       acctBar.className = 'po-bar';
-      acctBar.innerHTML = '<h6>' + window.L('aePayPayoutAcctTitle') + '</h6>' +
-        '<div class="big">' + escapeHtml((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '</div>' +
-        '<div>' + escapeHtml((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div>' +
-        '<div>' + window.L('aePayPayoutAcctAccountPre') + escapeHtml(po.accountNumber) + window.L('aePayPayoutAcctNamePre') + escapeHtml(po.accountName || '') + '</div>';
+      acctBar.innerHTML = '<h6>收款帳戶</h6><div class="big">' + escapeHtml((po.bankCode ? po.bankCode + ' ' : '') + (po.bankName || '')) + '</div><div>' + escapeHtml((po.branchCode ? po.branchCode + ' ' : '') + (po.branchName || '')) + '</div><div>帳號 ' + escapeHtml(po.accountNumber) + '　戶名 ' + escapeHtml(po.accountName || '') + '</div>';
     } else {
       acctBar.className = 'po-bar warn';
-      acctBar.innerHTML = '<h6>' + window.L('aePayPayoutAcctTitle') + '</h6><div class="big" style="color:var(--warn-700)">' + window.L('aePayPayoutAcctNotSet') + '</div>' +
-        '<div>' + window.L('aePayPayoutAcctNoteHtml') + '</div>';
+      acctBar.innerHTML = '<h6>收款帳戶</h6><div class="big" style="color:var(--warn-700)">尚未設定</div><div>請至「帳戶設定 → 收款帳戶」填寫，平台才能匯款給您。</div>';
     }
     document.getElementById('payoutCycleBar').innerHTML =
-      '<h6>' + window.L('aePayPayoutCycleTitle') + '</h6>' +
-      '<div class="big">' + (d.payoutCycle === 'monthly' ? window.L('aePayPayoutCycleMonthly') : window.L('aePayPayoutCycleWeekly')) + '</div>' +
-      '<div>' + window.L('aePayPayoutCycleNextPre') + escapeHtml(nextPayoutDate(d.payoutCycle)) + '</div>' +
-      '<div style="color:var(--muted)">' + window.L('aePayPayoutFeePre') + Number(d.feePct || 0).toFixed(1) + window.L('aePayPayoutFeeSuf') + '</div>';
-
-    document.getElementById('payoutSummary').innerHTML =
-      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumGross') + '</div><div class="v">' + fmtMoney(s.gross) + '</div><div class="sub">' + s.orderCount + window.L('aePayPayoutSumGrossSub') + '</div></div>' +
-      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumFee') + '</div><div class="v" style="color:var(--err-700)">− ' + fmtMoney(s.feeTotal) + '</div></div>' +
-      '<div class="b-c featured"><div class="l">' + window.L('aePayPayoutSumNet') + '</div><div class="v">' + fmtMoney(s.net) + '</div></div>' +
-      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumSettled') + '</div><div class="v" style="color:var(--ok-700)">' + fmtMoney(s.settledNet) + '</div><div class="sub">' + s.settledCount + window.L('aePayPayoutSumSettledSub') + '</div></div>' +
-      '<div class="b-c"><div class="l">' + window.L('aePayPayoutSumUnsettled') + '</div><div class="v" style="color:var(--warn-700)">' + fmtMoney(s.unsettledNet) + '</div><div class="sub">' + s.unsettledCount + window.L('aePayPayoutSumUnsettledSub') + '</div></div>';
+      '<h6>轉帳週期</h6><div class="big">' + (d.cycle === 'monthly' ? '每月匯款' : '每週匯款') + '</div>' +
+      '<div>下次平台匯款日：' + escapeHtml(nextPayoutDate(d.cycle)) + '</div>' +
+      '<div style="color:var(--muted)">PayUNI 手續費 ' + Number(d.feePct || 0).toFixed(1) + '%　每批匯款扣 NT$15 匯費</div>';
 
     var det = document.getElementById('payoutOrders');
-    var orders = d.orders || [];
-    if (!orders.length) {
-      det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">' + window.L('aePayPayoutOrdEmpty') + '</p>';
+    var orders = d.orders || [], deposits = d.deposits || [];
+    if (!orders.length && !deposits.length) {
+      det.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">目前沒有可申請提領的款項</p>';
+      document.getElementById('payoutApplyBar').style.display = 'none';
     } else {
-      det.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl">' +
-        '<thead><tr><th>' + window.L('aePayOrdThTeam') + '</th><th>' + window.L('aePayOrdThPaidAt') + '</th><th class="right">' + window.L('aePayOrdThFee2') + '</th><th class="right">' + window.L('aePayOrdThCharge') + '</th><th class="right">' + window.L('aePayOrdThNet') + '</th><th>' + window.L('aePayOrdThSettleStatus') + '</th></tr></thead><tbody>' +
-        orders.map(function (o) {
-          var pill = o.settled
-            ? '<span class="po-settle-pill done">' + window.L('aePayOrdSettledPre') + escapeHtml(String(o.settledAt).slice(0, 10)) + '</span>'
-            : '<span class="po-settle-pill wait">' + window.L('aePayOrdWaiting') + '</span>';
-          return '<tr>' +
-            '<td><b>' + escapeHtml(o.teamNameCN || o.teamNameEN || '—') + '</b><br><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(o.teamId) + '</span></td>' +
-            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(o.paidAt).replace('T', ' ').slice(0, 16)) + '</span></td>' +
-            '<td class="right">' + fmtMoney(o.amount) + '</td>' +
-            '<td class="right" style="color:var(--err-700)">' + (o.fee > 0 ? '− ' + fmtMoney(o.fee) : '—') + '</td>' +
-            '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(o.net) + '</td>' +
-            '<td>' + pill + '</td>' +
-          '</tr>';
-        }).join('') + '</tbody></table></div>';
+      var rows = orders.map(function (o) {
+        return '<tr><td><input type="checkbox" class="po-pick" data-kind="order" data-id="' + escapeHtml(o.id) + '" data-net="' + o.net + '" checked></td>' +
+          '<td><b>' + escapeHtml(o.teamNameCN || o.teamNameEN || '—') + '</b><br><span style="font:400 11px/1.4 var(--f-mono); color:var(--muted)">' + escapeHtml(o.teamId) + '</span></td>' +
+          '<td class="right">' + fmtMoney(o.amount) + '</td>' +
+          '<td class="right" style="color:var(--err-700)">' + (o.fee > 0 ? '− ' + fmtMoney(o.fee) : '—') + '</td>' +
+          '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(o.net) + '</td></tr>';
+      }).join('');
+      rows += deposits.map(function (x) {
+        return '<tr><td><input type="checkbox" class="po-pick" data-kind="deposit" data-id="' + escapeHtml(x.id) + '" data-net="' + x.net + '" checked></td>' +
+          '<td><b>保留款</b> <span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(x.sourceTeamName || '') + '（部分退款）</span></td>' +
+          '<td class="right">' + fmtMoney(x.retainedAmount) + '</td>' +
+          '<td class="right" style="color:var(--err-700)">' + (x.fee > 0 ? '− ' + fmtMoney(x.fee) : '—') + '</td>' +
+          '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(x.net) + '</td></tr>';
+      }).join('');
+      det.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th style="width:36px"><input type="checkbox" id="payoutPickAll" checked></th><th>報名 / 項目</th><th class="right">實收</th><th class="right">手續費</th><th class="right">實領</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      document.getElementById('payoutApplyBar').style.display = '';
+      det.querySelectorAll('.po-pick').forEach(function (cb) { cb.addEventListener('change', recomputeApplyTotals); });
+      var all = document.getElementById('payoutPickAll');
+      if (all) all.addEventListener('change', function () { det.querySelectorAll('.po-pick').forEach(function (cb) { cb.checked = all.checked; }); recomputeApplyTotals(); });
+      recomputeApplyTotals();
     }
 
-    var rem = document.getElementById('payoutRemittances');
-    var sets = d.settlements || [];
-    if (!sets.length) {
-      rem.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">' + window.L('aePayPayoutRemEmpty') + '</p>';
-    } else {
-      rem.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl">' +
-        '<thead><tr><th>' + window.L('aePayRemThId') + '</th><th>' + window.L('aePayRemThRemitAt') + '</th><th class="right">' + window.L('aePayRemThCount') + '</th><th class="right">' + window.L('aePayRemThNet') + '</th><th>' + window.L('aePayRemThAcct') + '</th><th>' + window.L('aePayRemThNote') + '</th></tr></thead><tbody>' +
-        sets.map(function (st) {
-          var p = st.payout || {};
-          return '<tr>' +
-            '<td><b style="font:500 11px/1.3 var(--f-mono)">' + escapeHtml(st.settlementId) + '</b></td>' +
-            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(st.createdAt).slice(0, 16)) + '</span></td>' +
-            '<td class="right">' + (st.compOrderCount || 0) + '</td>' +
-            '<td class="right" style="font-weight:700; color:var(--ok-700)">' + fmtMoney(st.compNet || 0) + '</td>' +
-            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml((p.bankName || '') + ' ' + (p.accountNumber || '')) + '</span></td>' +
-            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(st.note || '—') + '</span></td>' +
-          '</tr>';
+    var rf = d.refundable || [];
+    var rfH = document.getElementById('payoutRefundableH'), rfDiv = document.getElementById('payoutRefundable');
+    if (!rf.length) { rfH.style.display = 'none'; rfDiv.innerHTML = ''; }
+    else {
+      rfH.style.display = '';
+      rfDiv.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th>隊伍</th><th class="right">應退</th><th class="right">保留款</th><th></th></tr></thead><tbody>' +
+        rf.map(function (x) {
+          var act = x.blocked
+            ? '<span style="color:var(--warn-700); font:500 12px/1.4 var(--f-tc)">款項已匯出，請自行向報名者退款</span>'
+            : '<button class="btn btn-ghost btn-sm po-refund" data-req="' + escapeHtml(x.reqId) + '" data-team="' + escapeHtml(x.teamNameCN || '') + '" data-refund="' + x.calcRefund + '" data-ret="' + x.retained + '">退刷並刪除報名</button>';
+          return '<tr><td><b>' + escapeHtml(x.teamNameCN || '—') + '</b></td><td class="right">' + fmtMoney(x.calcRefund) + '</td><td class="right">' + fmtMoney(x.retained) + '</td><td class="right">' + act + '</td></tr>';
         }).join('') + '</tbody></table></div>';
+      rfDiv.querySelectorAll('.po-refund').forEach(function (b) { b.addEventListener('click', function () { doRefund(b.dataset.req, b.dataset.team, b.dataset.refund, b.dataset.ret); }); });
     }
+
+    var rq = document.getElementById('payoutRequests');
+    var reqs = d.requests || [];
+    if (!reqs.length) { rq.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">尚無匯款申請</p>'; }
+    else {
+      var stMap = { requested: '待審核', approved: '已核准', paid: '已匯款', rejected: '已拒絕', withdrawn: '已撤回' };
+      rq.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th>申請編號</th><th>申請時間</th><th class="right">實匯</th><th>預計匯款日</th><th>狀態</th><th></th></tr></thead><tbody>' +
+        reqs.map(function (r) {
+          var st = stMap[r.status] || r.status;
+          var act = r.status === 'requested' ? '<button class="btn btn-ghost btn-sm po-withdraw" data-req="' + escapeHtml(r.reqId) + '">撤回</button>' : (r.status === 'rejected' && r.rejectReasonText ? '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(r.rejectReasonText) + '</span>' : '');
+          return '<tr><td><b style="font:500 11px/1.3 var(--f-mono)">' + escapeHtml(r.reqId) + '</b></td>' +
+            '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(r.appliedAt || r.createdAt).slice(0, 16)) + '</span></td>' +
+            '<td class="right" style="font-weight:700">' + fmtMoney(r.actualWire) + '</td>' +
+            '<td>' + escapeHtml(r.scheduledPayoutDate || '—') + '</td><td>' + st + '</td><td class="right">' + act + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      rq.querySelectorAll('.po-withdraw').forEach(function (b) { b.addEventListener('click', function () { doWithdraw(b.dataset.req); }); });
+    }
+  }
+
+  function recomputeApplyTotals() {
+    var det = document.getElementById('payoutOrders');
+    var net = 0, n = 0;
+    det.querySelectorAll('.po-pick:checked').forEach(function (cb) { net += Number(cb.dataset.net) || 0; n++; });
+    var wire = n > 0 ? 15 : 0, actual = Math.max(0, Math.round(net) - wire);
+    var html = '已選 <b>' + n + '</b> 筆　實領合計 NT$ ' + Math.round(net) + '　− 匯費 NT$' + wire + '　＝ <b style="color:var(--ok-700)">實匯 NT$ ' + actual + '</b>';
+    if (n > 0 && actual <= 0) html += '<br><span style="color:var(--warn-700); font-size:12px">實匯為 NT$0（不足匯費），建議累積更多再申請</span>';
+    document.getElementById('payoutApplyTotals').innerHTML = html;
+    document.getElementById('payoutApplyBtn').disabled = (n === 0);
+  }
+
+  function collectPicks() {
+    var orderIds = [], depositIds = [];
+    document.getElementById('payoutOrders').querySelectorAll('.po-pick:checked').forEach(function (cb) {
+      if (cb.dataset.kind === 'order') orderIds.push(cb.dataset.id); else depositIds.push(cb.dataset.id);
+    });
+    return { orderIds: orderIds, depositIds: depositIds };
+  }
+
+  document.getElementById('payoutApplyBtn').addEventListener('click', function () {
+    if (!PAYOUT_DATA || !PAYOUT_DATA.hasPayoutAccount) { uiAlert('請先至「帳戶設定 → 收款帳戶」填寫收款帳戶，平台才能匯款給您。'); return; }
+    var picks = collectPicks();
+    if (!picks.orderIds.length && !picks.depositIds.length) return;
+    uiConfirm('將申請匯款（' + (picks.orderIds.length + picks.depositIds.length) + ' 筆）。預計匯款日：' + (PAYOUT_DATA.scheduledPayoutDate || '依平台週期') + '。送出後由平台審核並匯款。確定申請？', { title: '申請匯款' }).then(function (ok) {
+      if (!ok) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) { uiAlert('已送出申請。預計匯款日 ' + (res.scheduledPayoutDate || '') + '，實匯 NT$' + res.actualWire + '。').then(loadPayout); }
+          else if (res && res.code === 'NO_PAYOUT_ACCOUNT') { uiAlert(res.message); }
+          else { uiAlert((res && res.message) || '申請失敗'); }
+        })
+        .withFailureHandler(function (e) { uiAlert('申請失敗：' + ((e && e.message) || '')); })
+        .applyPayout(compId, picks.orderIds, picks.depositIds);
+    });
+  });
+
+  function doWithdraw(reqId) {
+    uiConfirm('確定撤回此匯款申請？款項將回到可申請狀態。', { title: '撤回申請' }).then(function (ok) {
+      if (!ok) return;
+      google.script.run.withSuccessHandler(function (res) { if (res && res.success) loadPayout(); else uiAlert((res && res.message) || '撤回失敗'); })
+        .withFailureHandler(function (e) { uiAlert('撤回失敗：' + ((e && e.message) || '')); })
+        .withdrawPayout(compId, reqId);
+    });
+  }
+
+  function doRefund(reqId, team, refund, retained) {
+    var msg = '系統將透過 PayUNI 將款項退回報名者。此操作會同時永久刪除本筆報名（含所有成員與付款紀錄）並釋出名額，且無法復原。\n\n隊伍：' + team + '\n退款金額：NT$' + refund + '\n保留款：NT$' + retained + '（計入待結算餘額，依方案費率結算）\n\n確定退款並刪除此報名？';
+    uiConfirm(msg, { title: '確認退款並刪除報名', okText: '確認退款並刪除', danger: true }).then(function (ok) {
+      if (!ok) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success) uiAlert('已退刷 NT$' + res.refundedAmount + (res.retainedAmount > 0 ? ('，保留款 NT$' + res.retainedAmount + ' 已計入待結算') : '') + '，報名已刪除。').then(loadPayout);
+          else if (res && res.code === 'ALREADY_PAID_OUT') uiAlert(res.message);
+          else uiAlert((res && res.message) || '退刷失敗');
+        })
+        .withFailureHandler(function (e) { uiAlert('退刷失敗：' + ((e && e.message) || '')); })
+        .payuniRefundAndDelete(compId, reqId);
+    });
   }
 
   // Tab switching — payout data loads lazily on first open.

@@ -2597,6 +2597,8 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
   if (!rDoc.exists) return { success: false, message: "找不到申請" };
   const r = rDoc.data();
   if (!["requested", "approved"].includes(r.status)) return { success: false, message: "此申請狀態無法註記退款" };
+  // 帳務重構 S4：PayUNI 線上付款不可線下註記，須至「平台代收轉付」分頁退刷（系統自動退款）。
+  if (r.channel === "payuni_refund") return { success: false, message: "此為 PayUNI 線上付款，請至「平台代收轉付」分頁執行退刷，系統將自動退款並取消報名。" };
   const actual = Number(actualRefund);
   if (!(actual >= 0)) return { success: false, message: "請輸入有效的實退金額" };
   if (actual < Number(r.calcRefund || 0)) return { success: false, message: "實退金額不得低於政策應退 NT$" + r.calcRefund + "（可更優待、不可更低）" };
@@ -6222,10 +6224,22 @@ exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
     const fpct = Number(x.feePct || feePct); const fee = Math.round(amt * fpct) / 100;
     deposits.push({ id: d.id, sourceTeamName: x.sourceTeamName || "", retainedAmount: amt, feePct: fpct, fee, net: Math.round((amt - fee) * 100) / 100 });
   });
+  // 可退刷清單（已核准的 PayUNI 退費）— 供明細「退刷」用；已匯出者標 blocked（需求 4）。
+  const refundable = [];
+  const rfSnap = await db.collection("refundRequests").where("compId", "==", compId).where("status", "==", "approved").get();
+  for (const rd of rfSnap.docs) {
+    const rr = rd.data();
+    if (rr.channel !== "payuni_refund" || !rr.orderId) continue;
+    const od = await db.collection("regPayments").doc(rr.orderId).get();
+    if (!od.exists) continue;
+    const op = od.data();
+    const amt = parseInt(op.amount, 10) || 0;
+    refundable.push({ reqId: rr.reqId, teamId: rr.teamId, teamNameCN: rr.teamNameCN || "", paidAmount: amt, calcRefund: rr.calcRefund || 0, retained: Math.max(0, amt - (rr.calcRefund || 0)), blocked: op.payoutState === "paid_out" });
+  }
   const acct = await _ownerPayoutAcct(creator);
   const reqSnap = await db.collection("payoutRequests").where("creator", "==", creator).where("compId", "==", compId).get();
   const requests = reqSnap.docs.map(d => d.data()).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  return { compId, compName, feePct, orders, deposits, requests, hasPayoutAccount: acct.has, payout: acct.snapshot, cycle, scheduledPayoutDate: computeScheduledPayout(cycle) };
+  return { compId, compName, feePct, orders, deposits, refundable, requests, hasPayoutAccount: acct.has, payout: acct.snapshot, cycle, scheduledPayoutDate: computeScheduledPayout(cycle) };
 });
 
 // 申請匯款（勾選訂單/保留款）。未設收款帳戶 → NO_PAYOUT_ACCOUNT。
