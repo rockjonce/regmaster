@@ -4966,7 +4966,8 @@ async function activatePlanOrderPaid(orderRef, order, orderId, tradeNo) {
 // and the reconcile callable. Idempotent: no-op if already paid.
 async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo) {
   if (order.status === "paid") return false;
-  await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: tradeNo || "" });
+  // 帳務重構 S1: paid 訂單帶入正交狀態（payoutState 可提領 / refundState 無退費）
+  await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: tradeNo || "", payoutState: "available", refundState: "none" });
   /* Auto-confirm team payment */
   await db.collection("teams").doc(order.teamId).update({
     paymentStatus: "已確認 (線上付款) " + fmtNow(),
@@ -6012,6 +6013,34 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
   await auditLog(request.authUser.username, "平台結算匯款", creator,
     settlementId + " " + orderSnap.length + "筆 實匯NT$" + actualWire);
   return { success: true, accumulated: false, settlementId, orderCount: orderSnap.length, grossTotal, feeTotal, netTotal, netRounded, wireFee, actualWire };
+});
+
+// 帳務重構 S1：一次性遷移 — 為既有 regPayments 補 payoutState/refundState（冪等、可重跑）。
+// settled===true → paid_out（沿用 settlementId/settledAt）；其餘 → available；refundState 缺 → none。
+exports.migratePayoutStates = authCallable(["system"], async () => {
+  const snap = await db.collection("regPayments").get();
+  let scanned = 0, updated = 0, batch = db.batch(), n = 0;
+  for (const d of snap.docs) {
+    const p = d.data(); scanned++;
+    const upd = {};
+    if (p.payoutState === undefined || p.payoutState === null) {
+      if (p.settled === true) {
+        upd.payoutState = "paid_out";
+        if (p.settlementId) upd.payoutReqId = p.settlementId;
+        if (p.settledAt) upd.paidOutAt = p.settledAt;
+      } else {
+        upd.payoutState = "available";   // pending/paid 皆給；可提領另由 status==='paid' 把關
+      }
+    }
+    if (p.refundState === undefined || p.refundState === null) upd.refundState = "none";
+    if (Object.keys(upd).length) {
+      batch.update(d.ref, upd); n++; updated++;
+      if (n >= 400) { await batch.commit(); batch = db.batch(); n = 0; }
+    }
+  }
+  if (n > 0) await batch.commit();
+  await auditLog("system", "遷移 payoutState/refundState", "regPayments", "scanned=" + scanned + " updated=" + updated);
+  return { success: true, scanned, updated };
 });
 
 exports.getRegPaymentStatus = callable(async (data) => {
