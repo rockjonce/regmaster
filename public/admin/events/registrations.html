@@ -1050,7 +1050,7 @@
   }
   function memberKVs(m, who) {
     var fields = [
-      [window.L('aeRegMSalutation'),'salutation'],[window.L('aeRegMChineseName'),'chineseName'],[window.L('aeRegMEnglishName'),'englishName'],[window.L('aeRegMGender'),'gender'],[window.L('aeRegMBirthday'),'birthday'],
+      [window.L('aeRegMSalutation'),'salutation'],[window.L('aeRegMChineseName'),'chineseName'],[window.L('aeRegMEnglishName'),'englishName'],[window.L('aeRegMEnglishSurname'),'englishSurname'],[window.L('aeRegMEnglishGivenName'),'englishGivenName'],[window.L('aeRegMGender'),'gender'],[window.L('aeRegMBirthday'),'birthday'],
       [window.L('aeRegMIdNumber'),'idNumber'],[window.L('aeRegMPassport'),'passport'],[window.L('aeRegMNationality'),'nationality'],
       [window.L('aeRegMSchool'),'school'],[window.L('aeRegMEduLevel'),'eduLevel'],[window.L('aeRegMDepartment'),'department'],[window.L('aeRegMGrade'),'grade'],[window.L('aeRegMClassroom'),'classroom'],[window.L('aeRegMStudentId'),'studentId'],[window.L('aeRegMJobTitle'),'jobTitle'],[window.L('aeRegMOrganization'),'organization'],
       [window.L('aeRegMEmail'),'email'],[window.L('aeRegMPhone'),'phone'],[window.L('aeRegMCity'),'city'],[window.L('aeRegMPostalCode'),'postalCode'],[window.L('aeRegMAddress'),'address'],[window.L('aeRegMLineId'),'lineId'],
@@ -1060,16 +1060,41 @@
       [window.L('aeRegMReferralSource'),'referralSource'],[window.L('aeRegMWebsite'),'website'],[window.L('aeRegMConsent'),'consent'],
       [window.L('aeRegMInvoiceType'),'invoiceType'],[window.L('aeRegMInvoiceTitle'),'invoiceTitle'],[window.L('aeRegMTaxId'),'taxId']
     ];
+    var roleEn = (m.role === '學生' || m.role === 'student') ? 'student' : 'teacher';
+    var sch = tdSchemaFields(roleEn);
     var rows = fields.map(function (f) {
-      if (TD_EDIT) return tdField('member', m.id, who, f[1], window.LF(f[1], f[0]), m[f[1]], false);
-      return kv(window.LF(f[1], f[0]), window.LO(m[f[1]]));
+      var key = f[1], val = m[key];
+      if (TD_EDIT) {
+        // 編輯模式：只顯示「表單設計有設定的欄位」或「已填過的欄位」；未設定且空白者不顯示。
+        // 表單設計有、但此報名者沒填(空白) → 仍顯示空白輸入框，供管理者補填。
+        if (!sch.builtin[key] && !(val != null && val !== '')) return '';
+        return tdField('member', m.id, who, key, window.LF(key, f[0]), val, false);
+      }
+      return kv(window.LF(key, f[0]), window.LO(val));
     }).join('');
-    if (m.customAnswers && typeof m.customAnswers === 'object') {
-      Object.keys(m.customAnswers).forEach(function (k) {
-        rows += TD_EDIT ? tdField('member', m.id, who, k, k, m.customAnswers[k], true) : kv(k, window.LO(m.customAnswers[k]));
-      });
+    var ca = (m.customAnswers && typeof m.customAnswers === 'object') ? m.customAnswers : {};
+    if (TD_EDIT) {
+      var seen = {};
+      Object.keys(ca).forEach(function (k) { seen[k] = true; rows += tdField('member', m.id, who, k, k, ca[k], true); });
+      // 表單設計新增、但此報名者尚未作答的自訂題 → 顯示空白供補填
+      sch.customLabels.forEach(function (lbl) { if (!seen[lbl]) { seen[lbl] = true; rows += tdField('member', m.id, who, lbl, lbl, '', true); } });
+    } else {
+      Object.keys(ca).forEach(function (k) { rows += kv(k, window.LO(ca[k])); });
     }
     return rows;
+  }
+  // 由表單設計 schema 取得某角色(student/teacher)實際設定的內建欄位 keys + 自訂題 labels
+  function tdSchemaFields(roleEn) {
+    var builtin = {}, customLabels = [];
+    var secs = (CFG && CFG.formSchema && CFG.formSchema.sections) || [];
+    secs.forEach(function (s) {
+      if ((s.role || '') !== roleEn) return;
+      (s.fields || []).forEach(function (f) {
+        if (f.legacyKey) builtin[f.legacyKey] = true;
+        else if (f.label || f.id) customLabels.push(f.label || f.id);
+      });
+    });
+    return { builtin: builtin, customLabels: customLabels };
   }
   function tdCollect() {
     var team = {}, teamCustom = {}, mmap = {};

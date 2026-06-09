@@ -603,6 +603,15 @@
     aeRegFieldNote: 'Note',
   });
 
+  Object.assign(Z, {
+    aeRegMEnglishSurname: '英文姓',
+    aeRegMEnglishGivenName: '英文名',
+  });
+  Object.assign(E, {
+    aeRegMEnglishSurname: 'English Surname',
+    aeRegMEnglishGivenName: 'English Given Name',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();
