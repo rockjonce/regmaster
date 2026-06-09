@@ -1078,13 +1078,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
 
   // U3: keep the top errBox (existing) AND mirror the message to errBoxFoot near the
   // submit button so the user actually notices submission errors. Scroll the visible one.
+  var _liveValidating = false;   // A-7: true ONLY while re-validating on input — suppresses the scroll
   function showErr(msg) {
     var top = document.getElementById('errBox');
     var foot = document.getElementById('errBoxFoot');
     top.textContent = msg; top.style.display = 'block';
     foot.textContent = msg; foot.style.display = 'block';
-    // Scroll the foot box into view so the user sees the message immediately
-    setTimeout(function () { foot.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 30);
+    // Scroll the foot box into view so the user sees the message immediately — but NOT on every
+    // keystroke during live re-validation (that would yank the page around as the user types).
+    if (!_liveValidating) setTimeout(function () { foot.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 30);
   }
   function hideErr() {
     document.getElementById('errBox').style.display = 'none';
@@ -1382,6 +1384,28 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     if (!validateStep(STATE.step)) return;
     showStep(STATE.step + 1);
   });
+
+  // A-7: once an error banner is on screen, re-validate the CURRENT step live as the user edits,
+  // so corrected fields clear their red state and the banner auto-dismisses when everything passes.
+  // It re-runs the SAME validateStep (zero duplicated rules) with the scroll suppressed, and is
+  // gated on the banner being visible so it never pops errors before the user first submits a step.
+  // validateStep is idempotent (it rebuilds STATE.students/teachers/customAnswers from the DOM and
+  // only reads field values), so re-running it mid-typing is side-effect-free.
+  function liveRevalidate() {
+    var box = document.getElementById('errBox');
+    if (!box || box.style.display === 'none') return;   // no error showing → nothing to reconcile
+    try { _liveValidating = true; validateStep(STATE.step); }
+    catch (e) { /* never let live validation break the user's typing */ }
+    finally { _liveValidating = false; }
+  }
+  var _wizEl = document.getElementById('wizardArea');
+  if (_wizEl) {
+    // input covers text/email/textarea; change covers select/radio/checkbox/file/date.
+    // Attached on the wizard root so applyConds (bound on the inner fields container) runs first
+    // via bubbling, leaving field visibility correct before we re-validate.
+    _wizEl.addEventListener('input', liveRevalidate);
+    _wizEl.addEventListener('change', liveRevalidate);
+  }
 
   document.getElementById('submitBtn').addEventListener('click', function () {
     // Validate the step the submit button lives on (3 when no payment needed, 4 otherwise)
