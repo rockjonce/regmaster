@@ -6043,6 +6043,142 @@ exports.migratePayoutStates = authCallable(["system"], async () => {
   return { success: true, scanned, updated };
 });
 
+// ===== 帳務重構 S2/S7：匯款申請 + 排程 =====
+// 預計匯款日（YYYY-MM-DD），依平台 payoutCycle。工作天=平日（不含國定假日，依規格）。
+function _payoutLastWeekdayOfMonth(y, m0) { const d = new Date(y, m0 + 1, 0); while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1); return d; }
+function _payoutRollWeekendFwd(d) { while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1); return d; }
+function computeScheduledPayout(cycle, now) {
+  now = now || new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const iso = x => x.getFullYear() + "-" + pad(x.getMonth() + 1) + "-" + pad(x.getDate());
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (cycle === "monthly") {
+    // 月付款：每月 5 日(週末順延平日)；截止=當月最後工作日 → 本月申請→次月5日，否則再次月。
+    const lastWD = _payoutLastWeekdayOfMonth(d.getFullYear(), d.getMonth());
+    const baseMonth = (d <= lastWD) ? d.getMonth() + 1 : d.getMonth() + 2;
+    return iso(_payoutRollWeekendFwd(new Date(d.getFullYear(), baseMonth, 5)));
+  }
+  // 週付款：匯款=週四(4)，截止=週三23:59 → 週日~週三→本週四；週四~週六→下週四。
+  const dow = d.getDay();
+  const add = (dow <= 3) ? (4 - dow) : (11 - dow);
+  const t = new Date(d); t.setDate(d.getDate() + add);
+  return iso(t);
+}
+async function _ownerFeePct(creator) {
+  const salesDoc = await db.collection("config").doc("sales").get();
+  const sales = salesDoc.exists ? salesDoc.data() : {};
+  const plans = await getPlans();
+  const tier = await getEffectiveTier(creator);
+  const feePct = (plans[tier] && typeof plans[tier].feePct === "number") ? plans[tier].feePct : (parseFloat((sales.payuniFeeByTier || {})[tier]) || 0);
+  return { feePct, cycle: sales.payoutCycle || "weekly" };
+}
+async function _ownerPayoutAcct(creator) {
+  const s = await db.collection("accounts").where("username", "==", creator).limit(1).get();
+  const a = s.empty ? {} : s.docs[0].data();
+  return { acc: a, has: !!(a.payoutAccount && a.payoutName),
+    snapshot: { bankCode: a.payoutBankCode || "", bankName: a.payoutBankName || "", branchCode: a.payoutBranchCode || "", branchName: a.payoutBranchName || "", accountNumber: a.payoutAccount || "", accountName: a.payoutName || "" } };
+}
+
+// 各報名收款明細：可提領訂單 + 保留款 + 收款帳戶/週期/預計匯款日。
+exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, creator = request.compOwner;
+  const { feePct, cycle } = await _ownerFeePct(creator);
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
+  const orders = [];
+  const paySnap = await db.collection("regPayments").where("compId", "==", compId).where("status", "==", "paid").get();
+  paySnap.docs.forEach(d => {
+    const p = d.data();
+    if (p.payoutState !== "available") return;
+    if (p.refundState && p.refundState !== "none") return;
+    const amt = parseInt(p.amount, 10) || 0; if (amt <= 0) return;
+    const fee = Math.round(amt * feePct) / 100;
+    orders.push({ id: d.id, orderId: p.orderId || d.id, teamId: p.teamId || "", teamNameCN: p.teamNameCN || "", teamNameEN: p.teamNameEN || "", amount: amt, feePct, fee, net: Math.round((amt - fee) * 100) / 100, paidAt: p.paidAt || "" });
+  });
+  const deposits = [];
+  const depSnap = await db.collection("deposits").where("creator", "==", creator).where("compId", "==", compId).get();
+  depSnap.docs.forEach(d => {
+    const x = d.data(); if (x.status !== "available") return;
+    const amt = parseInt(x.retainedAmount, 10) || 0; if (amt <= 0) return;
+    const fpct = Number(x.feePct || feePct); const fee = Math.round(amt * fpct) / 100;
+    deposits.push({ id: d.id, sourceTeamName: x.sourceTeamName || "", retainedAmount: amt, feePct: fpct, fee, net: Math.round((amt - fee) * 100) / 100 });
+  });
+  const acct = await _ownerPayoutAcct(creator);
+  return { compId, compName, feePct, orders, deposits, hasPayoutAccount: acct.has, payout: acct.snapshot, cycle, scheduledPayoutDate: computeScheduledPayout(cycle) };
+});
+
+// 申請匯款（勾選訂單/保留款）。未設收款帳戶 → NO_PAYOUT_ACCOUNT。
+exports.applyPayout = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, creator = request.compOwner;
+  const orderIds = Array.isArray(data.orderIds) ? data.orderIds : [];
+  const depositIds = Array.isArray(data.depositIds) ? data.depositIds : [];
+  if (!orderIds.length && !depositIds.length) return { success: false, message: "請至少勾選一筆" };
+  const acct = await _ownerPayoutAcct(creator);
+  if (!acct.has) return { success: false, code: "NO_PAYOUT_ACCOUNT", message: "請先至『帳戶設定 → 收款帳戶』填寫收款帳戶，平台才能匯款給您。" };
+  const { feePct, cycle } = await _ownerFeePct(creator);
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
+  const reqRef = db.collection("payoutRequests").doc();
+  const out = await db.runTransaction(async (tx) => {
+    let gross = 0, feeTotal = 0, netTotal = 0; const orderRefs = [], depRefs = [], items = [];
+    for (const oid of orderIds) {
+      const ref = db.collection("regPayments").doc(oid); const d = await tx.get(ref);
+      if (!d.exists) throw new HttpsError("failed-precondition", "訂單不存在：" + oid);
+      const p = d.data();
+      if (p.compId !== compId) throw new HttpsError("permission-denied", "訂單不屬此活動");
+      if (p.status !== "paid" || p.payoutState !== "available" || (p.refundState && p.refundState !== "none"))
+        throw new HttpsError("failed-precondition", "訂單目前不可提領（可能已申請/已匯出/退費中）");
+      const amt = parseInt(p.amount, 10) || 0; if (amt <= 0) throw new HttpsError("failed-precondition", "金額為 0 無法提領");
+      const fee = Math.round(amt * feePct) / 100, net = Math.round((amt - fee) * 100) / 100;
+      gross += amt; feeTotal += fee; netTotal += net;
+      orderRefs.push(ref); items.push({ orderId: p.orderId || oid, teamId: p.teamId || "", teamNameCN: p.teamNameCN || "", amount: amt, fee, net });
+    }
+    for (const did of depositIds) {
+      const ref = db.collection("deposits").doc(did); const d = await tx.get(ref);
+      if (!d.exists) throw new HttpsError("failed-precondition", "保留款不存在");
+      const x = d.data();
+      if (x.creator !== creator || x.compId !== compId) throw new HttpsError("permission-denied", "保留款不屬此活動");
+      if (x.status !== "available") throw new HttpsError("failed-precondition", "保留款目前不可提領");
+      const amt = parseInt(x.retainedAmount, 10) || 0; const fpct = Number(x.feePct || feePct);
+      const fee = Math.round(amt * fpct) / 100, net = Math.round((amt - fee) * 100) / 100;
+      gross += amt; feeTotal += fee; netTotal += net;
+      depRefs.push(ref); items.push({ depositId: did, teamNameCN: x.sourceTeamName || "(保留款)", amount: amt, fee, net });
+    }
+    const wireFee = 15, netRounded = Math.round(netTotal), actualWire = Math.max(0, netRounded - wireFee);
+    const scheduledPayoutDate = computeScheduledPayout(cycle);
+    tx.set(reqRef, {
+      reqId: reqRef.id, creator, compId, compName, status: "requested",
+      orderIds, depositIds, items,
+      grossTotal: Math.round(gross * 100) / 100, feeTotal: Math.round(feeTotal * 100) / 100, netTotal: Math.round(netTotal * 100) / 100,
+      wireFee, actualWire, scheduledPayoutDate, payoutSnapshot: acct.snapshot,
+      appliedAt: fmtNow(), appliedBy: request.authUser.username, decidedAt: "", decidedBy: "", decideNote: "", createdAt: fmtNow()
+    });
+    orderRefs.forEach(r => tx.update(r, { payoutState: "requested", payoutReqId: reqRef.id }));
+    depRefs.forEach(r => tx.update(r, { status: "requested", payoutReqId: reqRef.id }));
+    return { grossTotal: Math.round(gross * 100) / 100, netTotal: Math.round(netTotal * 100) / 100, actualWire, scheduledPayoutDate };
+  });
+  await auditLog(request.authUser.username, "申請匯款", compId, reqRef.id + " 實匯NT$" + out.actualWire);
+  return { success: true, reqId: reqRef.id, ...out };
+});
+
+// 撤回匯款申請（僅 requested 可撤）。
+exports.withdrawPayout = compAuthCallable("manage", async (data, request) => {
+  const compId = data.compId, reqId = data.reqId, creator = request.compOwner;
+  const ref = db.collection("payoutRequests").doc(reqId);
+  await db.runTransaction(async (tx) => {
+    const d = await tx.get(ref);
+    if (!d.exists) throw new HttpsError("not-found", "申請不存在");
+    const r = d.data();
+    if (r.compId !== compId || r.creator !== creator) throw new HttpsError("permission-denied", "非此活動/主辦方之申請");
+    if (r.status !== "requested") throw new HttpsError("failed-precondition", "僅待審核的申請可撤回");
+    (r.orderIds || []).forEach(oid => tx.update(db.collection("regPayments").doc(oid), { payoutState: "available", payoutReqId: FieldValue.delete() }));
+    (r.depositIds || []).forEach(did => tx.update(db.collection("deposits").doc(did), { status: "available", payoutReqId: FieldValue.delete() }));
+    tx.update(ref, { status: "withdrawn", decidedAt: fmtNow() });
+  });
+  await auditLog(request.authUser.username, "撤回匯款申請", compId, reqId);
+  return { success: true };
+});
+
 exports.getRegPaymentStatus = callable(async (data) => {
   const { orderId } = data;
   if (!orderId) return { status: "unknown" };
