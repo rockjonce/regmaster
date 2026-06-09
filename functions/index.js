@@ -6217,20 +6217,21 @@ exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
     const fee = Math.round(amt * feePct) / 100;
     orders.push({ id: d.id, orderId: p.orderId || d.id, teamId: p.teamId || "", teamNameCN: p.teamNameCN || "", teamNameEN: p.teamNameEN || "", amount: amt, feePct, fee, net: Math.round((amt - fee) * 100) / 100, paidAt: p.paidAt || "" });
   });
+  // 單一 where（compId）+ 程式內過濾，避免新 collection 需要複合索引。
   const deposits = [];
-  const depSnap = await db.collection("deposits").where("creator", "==", creator).where("compId", "==", compId).get();
+  const depSnap = await db.collection("deposits").where("compId", "==", compId).get();
   depSnap.docs.forEach(d => {
-    const x = d.data(); if (x.status !== "available") return;
+    const x = d.data(); if (x.creator !== creator || x.status !== "available") return;
     const amt = parseInt(x.retainedAmount, 10) || 0; if (amt <= 0) return;
     const fpct = Number(x.feePct || feePct); const fee = Math.round(amt * fpct) / 100;
     deposits.push({ id: d.id, sourceTeamName: x.sourceTeamName || "", retainedAmount: amt, feePct: fpct, fee, net: Math.round((amt - fee) * 100) / 100 });
   });
   // 可退刷清單（已核准的 PayUNI 退費）— 供明細「退刷」用；已匯出者標 blocked（需求 4）。
   const refundable = [];
-  const rfSnap = await db.collection("refundRequests").where("compId", "==", compId).where("status", "==", "approved").get();
+  const rfSnap = await db.collection("refundRequests").where("compId", "==", compId).get();
   for (const rd of rfSnap.docs) {
     const rr = rd.data();
-    if (rr.channel !== "payuni_refund" || !rr.orderId) continue;
+    if (rr.status !== "approved" || rr.channel !== "payuni_refund" || !rr.orderId) continue;
     const od = await db.collection("regPayments").doc(rr.orderId).get();
     if (!od.exists) continue;
     const op = od.data();
@@ -6238,8 +6239,8 @@ exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
     refundable.push({ reqId: rr.reqId, teamId: rr.teamId, teamNameCN: rr.teamNameCN || "", paidAmount: amt, calcRefund: rr.calcRefund || 0, retained: Math.max(0, amt - (rr.calcRefund || 0)), blocked: op.payoutState === "paid_out" });
   }
   const acct = await _ownerPayoutAcct(creator);
-  const reqSnap = await db.collection("payoutRequests").where("creator", "==", creator).where("compId", "==", compId).get();
-  const requests = reqSnap.docs.map(d => d.data()).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const reqSnap = await db.collection("payoutRequests").where("compId", "==", compId).get();
+  const requests = reqSnap.docs.map(d => d.data()).filter(r => r.creator === creator).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   return { compId, compName, feePct, orders, deposits, refundable, requests, hasPayoutAccount: acct.has, payout: acct.snapshot, cycle, scheduledPayoutDate: computeScheduledPayout(cycle) };
 });
 
