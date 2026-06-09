@@ -272,6 +272,15 @@ function compAuthCallable(capabilityOrHandler, maybeHandler) {
   });
 }
 
+// 帳務重構：解析活動「擁有者」username。owner/manager 由 request.compOwner 取得；
+// 系統管理員(system role)的 request.compOwner 未設 → 由活動文件的 creator 補上（god-mode 檢視）。
+async function _resolveCreator(request, compId) {
+  if (request && request.compOwner) return request.compOwner;
+  if (!compId) return null;
+  const c = await db.collection("competitions").doc(compId).get();
+  return c.exists ? (c.data().creator || null) : null;
+}
+
 // ===== Account Management =====
 // ===== TOTP (RFC 6238) two-factor auth — implemented with crypto (no deps) =====
 const _B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -2626,7 +2635,8 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
 // 帳務重構 S4：PayUNI 退刷 + 刪除報名 + 釋名額 + 保留款入 deposit。擁有者/管理者於明細執行。
 // 需求 3/4：已匯出(paid_out)禁退刷；退刷成功才刪報名；部分退保留款依方案費率可結算。
 exports.payuniRefundAndDelete = compAuthCallable("manage", async (data, request) => {
-  const compId = data.compId, reqId = data.reqId, creator = request.compOwner;
+  const compId = data.compId, reqId = data.reqId;
+  const creator = await _resolveCreator(request, compId);
   const rRef = db.collection("refundRequests").doc(reqId);
   const rDoc = await rRef.get();
   if (!rDoc.exists) return { success: false, message: "找不到退費申請" };
@@ -6203,7 +6213,9 @@ async function _ownerPayoutAcct(creator) {
 
 // 各報名收款明細：可提領訂單 + 保留款 + 收款帳戶/週期/預計匯款日。
 exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
-  const compId = data.compId, creator = request.compOwner;
+  const compId = data.compId;
+  const creator = await _resolveCreator(request, compId);
+  if (!creator) throw new HttpsError("not-found", "活動不存在");
   const { feePct, cycle } = await _ownerFeePct(creator);
   const compDoc = await db.collection("competitions").doc(compId).get();
   const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
@@ -6246,7 +6258,9 @@ exports.getPayableItems = compAuthCallable("manage", async (data, request) => {
 
 // 申請匯款（勾選訂單/保留款）。未設收款帳戶 → NO_PAYOUT_ACCOUNT。
 exports.applyPayout = compAuthCallable("manage", async (data, request) => {
-  const compId = data.compId, creator = request.compOwner;
+  const compId = data.compId;
+  const creator = await _resolveCreator(request, compId);
+  if (!creator) return { success: false, message: "活動不存在" };
   const orderIds = Array.isArray(data.orderIds) ? data.orderIds : [];
   const depositIds = Array.isArray(data.depositIds) ? data.depositIds : [];
   if (!orderIds.length && !depositIds.length) return { success: false, message: "請至少勾選一筆" };
@@ -6300,7 +6314,8 @@ exports.applyPayout = compAuthCallable("manage", async (data, request) => {
 
 // 撤回匯款申請（僅 requested 可撤）。
 exports.withdrawPayout = compAuthCallable("manage", async (data, request) => {
-  const compId = data.compId, reqId = data.reqId, creator = request.compOwner;
+  const compId = data.compId, reqId = data.reqId;
+  const creator = await _resolveCreator(request, compId);
   const ref = db.collection("payoutRequests").doc(reqId);
   await db.runTransaction(async (tx) => {
     const d = await tx.get(ref);
