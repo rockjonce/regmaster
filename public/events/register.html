@@ -504,10 +504,16 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         document.getElementById('errorMsg').textContent = (data && data.error) || window.L('rgErrNotFound');
         return;
       }
-      if (!data.isOpen) {
+      // S2-2: block the whole wizard (not just show a dead button) when registration isn't
+      // open right now — distinguishing 尚未開放 / 已截止 / 未開放 by the backend regStatus.
+      var rs = data.regStatus || (data.isOpen ? 'open' : 'closed');
+      if (rs !== 'open') {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('errorState').style.display = 'block';
-        document.getElementById('errorMsg').textContent = window.L('rgErrNotOpen');
+        document.getElementById('errorMsg').textContent =
+          rs === 'not_yet_open' ? (window.L('rgErrNotYetOpen') + (data.openDate ? String(data.openDate).replace('T', ' ') : ''))
+          : rs === 'deadline_passed' ? window.L('rgErrDeadlinePassed')
+          : window.L('rgErrNotOpen');
         return;
       }
       CFG = data.config || {};

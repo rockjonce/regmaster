@@ -468,7 +468,9 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     // Tags
     var tags = [];
     if (cfg.category) tags.push({ cls:'', label: cfg.category });
-    if (d.isOpen) tags.push({ cls:'acc', label: window.L('edTagOpen') });
+    var rs = d.regStatus || (d.isOpen ? 'open' : 'closed');   // S2-5
+    if (rs === 'open') tags.push({ cls:'acc', label: window.L('edTagOpen') });
+    else if (rs === 'not_yet_open') tags.push({ cls:'urgent', label: window.L('edTagSoon') });
     else tags.push({ cls:'danger', label: window.L('edTagClosed') });
     if (cfg.deadline) {
       var dl = parseDate(cfg.deadline);
@@ -593,9 +595,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var ctaSubEl = document.getElementById('ctaSub');
     ctaTitleEl.removeAttribute('data-i18n');
     ctaSubEl.removeAttribute('data-i18n');
-    if (d.isOpen) {
+    if (rs === 'open') {
       ctaTitleEl.textContent = window.L('edCtaOpen');
       ctaSubEl.textContent = cfg.deadline ? window.L('edCtaDeadlinePrefix') + String(cfg.deadline).replace('T', ' ').slice(0, 16) : window.L('edCtaAnytime');
+    } else if (rs === 'not_yet_open') {
+      ctaTitleEl.textContent = window.L('edCtaSoonTitle');
+      ctaSubEl.textContent = cfg.openDate ? (window.L('edCtaSoonSub') + String(cfg.openDate).replace('T', ' ').slice(0, 16)) : window.L('edCtaSoonSub');
     } else {
       ctaTitleEl.textContent = window.L('edCtaClosedTitle');
       ctaSubEl.textContent = window.L('edCtaClosedSub');
@@ -610,7 +615,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var registerBtn = document.getElementById('registerBtn');
     var lookupBtn = document.getElementById('lookupBtn');
     registerBtn.removeAttribute('data-i18n');
-    if (d.isOpen) {
+    if (rs === 'open') {
       registerBtn.href = '/events/register.html?id=' + encodeURIComponent(compId);
       registerBtn.textContent = window.L('edRegisteredNow');
     } else {
@@ -619,7 +624,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       registerBtn.removeAttribute('href');
       registerBtn.style.cursor = 'not-allowed';
       registerBtn.style.opacity = '.5';
-      registerBtn.textContent = window.L('edRegisteredClosed');
+      registerBtn.textContent = rs === 'not_yet_open' ? window.L('edRegisteredSoon') : window.L('edRegisteredClosed');
     }
     lookupBtn.href = 'javascript:void(0)';
     lookupBtn.addEventListener('click', function (e) { e.preventDefault(); openManageModal(); });

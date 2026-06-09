@@ -110,6 +110,8 @@
     rgErrNoCompId: '網址未指定活動編號。',
     rgErrNotFound: '找不到活動',
     rgErrNotOpen: '此活動目前未開放報名。',
+    rgErrNotYetOpen: '此活動報名尚未開始，開放時間：',
+    rgErrDeadlinePassed: '此活動報名已截止。',
     rgErrNetwork: '網路錯誤',
 
     // ----- dynamic: edit-mode gate -----
@@ -338,6 +340,8 @@
     rgErrNoCompId: 'No event ID specified in the URL.',
     rgErrNotFound: 'Event not found',
     rgErrNotOpen: 'This event is not currently open for registration.',
+    rgErrNotYetOpen: 'Registration has not started yet. Opens at: ',
+    rgErrDeadlinePassed: 'Registration for this event has closed.',
     rgErrNetwork: 'Network error',
 
     rgEditGateTitle: 'Edit registration',

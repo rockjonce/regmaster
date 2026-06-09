@@ -900,7 +900,9 @@ body { background:var(--bg); }
       '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumFee') + '</div><div class="v" style="color:var(--err-700)">− ' + _money(s.feeTotal) + '</div></div>' +
       '<div class="b-c-sys featured"><div class="l">' + window.L('adSysBillSumNet') + '</div><div class="v">' + _money(s.net) + '</div></div>' +
       '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumSettled') + '</div><div class="v" style="color:var(--ok-700)">' + _money(s.settledNet) + '</div><div class="sub">' + (s.settledCount || 0) + window.L('adSysBillSumCount') + '</div></div>' +
-      '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumUnsettled') + '</div><div class="v" style="color:var(--warn-700)">' + _money(s.unsettledNet) + '</div><div class="sub">' + (s.unsettledCount || 0) + window.L('adSysBillSumCount') + '</div></div>';
+      '<div class="b-c-sys"><div class="l">' + window.L('adSysBillSumUnsettled') + '</div><div class="v" style="color:var(--warn-700)">' + _money(s.unsettledNet) + '</div><div class="sub">' + (s.unsettledCount || 0) + window.L('adSysBillSumCount') + '</div></div>' +
+      // S6-1: informational only — PayUNI orders created but not yet paid (not counted toward settleable amount).
+      (s.pendingCount ? '<div class="b-c-sys"><div class="l">⏳ ' + window.L('adSysBillSumPending') + '</div><div class="v" style="color:var(--ink-3)">' + _money(s.pendingGross) + '</div><div class="sub">' + s.pendingCount + window.L('adSysBillSumPendingNote') + '</div></div>' : '');
 
     var orders = d.orders || [];
     document.getElementById('b-detail').innerHTML = orders.length === 0

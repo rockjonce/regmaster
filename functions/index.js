@@ -1605,8 +1605,17 @@ exports.getRegistrationBundle = callable(async (data) => {
       }
     } catch (e) { /* swallow — default to free / AI disabled */ }
   }
+  // S2-2/S2-5: single source of truth for "is registration open RIGHT NOW", mirroring
+  // submitRegistration's gate exactly (isOpen → openDate → deadline). Frontend uses regStatus
+  // so it can't drift from the backend gate (no more clickable-but-dead pay button).
+  const _now = Date.now();
+  let regStatus = "open";
+  if (cfg.isOpen !== true) regStatus = "closed";
+  else if (cfg.openDate && _now < new Date(cfg.openDate).getTime()) regStatus = "not_yet_open";
+  else if (cfg.deadline && _now >= new Date(cfg.deadline).getTime()) regStatus = "deadline_passed";
+
   return {
-    ownerTier,
+    ownerTier, regStatus, openDate: cfg.openDate || "",
     config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
     sessionAccepted: stats.sessionAccepted || {},
     sessionWaitlist: stats.sessionWaitlist || {},
@@ -2346,7 +2355,7 @@ const REFUND_TEMPLATES = {
   general: {
     label: "一般活動／競賽（建議比照旅遊級距）",
     floors: [{ minDays: 41, pct: 95 }, { minDays: 31, pct: 90 }, { minDays: 21, pct: 80 }, { minDays: 2, pct: 70 }, { minDays: 1, pct: 50 }],
-    suggest: [{ daysBefore: 30, pct: 80 }, { daysBefore: 7, pct: 50 }, { daysBefore: 1, pct: 30 }]
+    suggest: [{ daysBefore: 30, pct: 80 }, { daysBefore: 7, pct: 70 }, { daysBefore: 1, pct: 50 }]
   }
 };
 function refundFloorPct(template, daysBefore) {
@@ -5861,6 +5870,7 @@ exports.getSettlementData = authCallable(["system", "competition"], async (data,
 
   const orders = [];
   let gross = 0, feeTotal = 0, net = 0, settledNet = 0, unsettledNet = 0, unsettledGross = 0;
+  let pendingCount = 0, pendingGross = 0;   // S6-1: PayUNI orders created-but-not-yet-paid (info only)
   for (const cid of compIds) {
     const paySnap = await db.collection("regPayments").where("compId", "==", cid).where("status", "==", "paid").get();
     paySnap.docs.forEach(d => {
@@ -5878,6 +5888,9 @@ exports.getSettlementData = authCallable(["system", "competition"], async (data,
         settled: !!p.settled, settlementId: p.settlementId || "", settledAt: p.settledAt || ""
       });
     });
+    // S6-1: count (don't settle) PayUNI orders still pending payment, for an info row.
+    const pendSnap = await db.collection("regPayments").where("compId", "==", cid).where("status", "==", "pending").get();
+    pendSnap.docs.forEach(d => { pendingCount++; pendingGross += parseInt(d.data().amount, 10) || 0; });
   }
   orders.sort((a, b) => String(b.paidAt).localeCompare(String(a.paidAt)));
 
@@ -5908,6 +5921,7 @@ exports.getSettlementData = authCallable(["system", "competition"], async (data,
       settledNet: Math.round(settledNet * 100) / 100,
       unsettledNet: Math.round(unsettledNet * 100) / 100,
       unsettledGross,
+      pendingCount, pendingGross,
       settleThreshold: SETTLE_MIN,
       canSettle: unsettledGross >= SETTLE_MIN,   // false → createSettlement will accumulate, not pay out
       orderCount: orders.length,

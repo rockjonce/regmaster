@@ -85,6 +85,7 @@
     // ----- dynamic: tags / facts -----
     edTagOpen: '🎟 報名中',
     edTagClosed: '已截止',
+    edTagSoon: '🔜 即將開放',
     edTagDaysLeft: '⚡ 剩 {n} 天',
     edUntitled: '(未命名活動)',
     edHostFallback: '活動主辦方',
@@ -105,9 +106,12 @@
     edCtaDeadlinePrefix: '報名截止：',
     edCtaAnytime: '隨時可報名',
     edCtaClosedTitle: '報名已截止',
+    edCtaSoonTitle: '即將開放',
+    edCtaSoonSub: '開放時間：',
     edCtaClosedSub: '若有疑問請洽詢主辦方',
     edRegisteredNow: '立即報名 →',
     edRegisteredClosed: '報名已截止',
+    edRegisteredSoon: '即將開放',
 
     // ----- dynamic: description / rules -----
     edDescEmpty: '主辦方尚未填寫詳細介紹。',
@@ -269,6 +273,7 @@
     // ----- dynamic: tags / facts -----
     edTagOpen: '🎟 Open',
     edTagClosed: 'Closed',
+    edTagSoon: '🔜 Opening soon',
     edTagDaysLeft: '⚡ {n} days left',
     edUntitled: '(Untitled event)',
     edHostFallback: 'Event organizer',
@@ -289,9 +294,12 @@
     edCtaDeadlinePrefix: 'Closes: ',
     edCtaAnytime: 'Register anytime',
     edCtaClosedTitle: 'Registration closed',
+    edCtaSoonTitle: 'Opening soon',
+    edCtaSoonSub: 'Opens at: ',
     edCtaClosedSub: 'If you have questions, please contact the organizer',
     edRegisteredNow: 'Register now →',
     edRegisteredClosed: 'Registration closed',
+    edRegisteredSoon: 'Opening soon',
 
     // ----- dynamic: description / rules -----
     edDescEmpty: 'The organizer has not added a detailed description yet.',
