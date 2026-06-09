@@ -641,11 +641,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('sumPh').appendChild(poImg);
     }
     if ((CFG.paymentMethods || []).length > 0) {
-      // Organiser-configured method labels (UGC) — drop the i18n binding so it isn't
-      // overwritten on language change.
+      // A-2: map enum keys → readable labels (was printing raw "payuni / bankTransfer / cash").
+      // UGC display — drop the i18n binding so it isn't overwritten on language change.
+      var PM_LBL = { payuni: '線上付款（PayUNI）', atm: '銀行 / ATM 轉帳', bankTransfer: '銀行轉帳', cash: '現場付款' };
       var pml = document.getElementById('payMethodsList');
       pml.removeAttribute('data-i18n');
-      pml.textContent = CFG.paymentMethods.join('、');
+      pml.textContent = CFG.paymentMethods.map(function (m) { return PM_LBL[m] || m; }).join('、');
     }
 
     // P2: render line items + total from CFG.feeItems (preferred) or CFG.registrationFee fallback.

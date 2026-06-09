@@ -57,7 +57,7 @@
     cnScaleXlargeP: '2,000+ 人',
 
     cnLabelPlan: '想諮詢的方案',
-    cnOptPro: 'Pro 方案 · NT$ 1,490 / 月',
+    cnOptPro: 'Pro 方案',
     cnOptTeam: 'Team 方案 · 客製報價',
     cnOptUndecided: '還在比較中，需要建議',
     cnOptOther: '其他',
@@ -145,7 +145,7 @@
     cnScaleXlargeP: '2,000+',
 
     cnLabelPlan: 'Plan you\'re interested in',
-    cnOptPro: 'Pro · NT$ 1,490 / mo',
+    cnOptPro: 'Pro plan',
     cnOptTeam: 'Team · Custom quote',
     cnOptUndecided: 'Still comparing — need advice',
     cnOptOther: 'Other',

@@ -779,7 +779,8 @@
     // ---- Dates: prefill sensible defaults when empty ----
     var _today = (function () { var d = new Date(); var pad = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); })();
     document.getElementById('basic-openDate').value = CFG.openDate ? toLocalInput(CFG.openDate) : (_today + 'T08:30');
-    document.getElementById('basic-deadline').value = (CFG.deadline || COMP.deadline) ? toLocalInput(CFG.deadline || COMP.deadline) : (_today + 'T12:00');
+    var _plus7 = (function () { var d = new Date(); d.setDate(d.getDate() + 7); var pad = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); })();
+    document.getElementById('basic-deadline').value = (CFG.deadline || COMP.deadline) ? toLocalInput(CFG.deadline || COMP.deadline) : (_plus7 + 'T23:59'); // S2-4: default 7 days out, not today noon
     document.getElementById('basic-openImmediate').checked = !!CFG.openImmediate;
     applyOpenImmediate();
     // competitionDate may carry datetime (old format) or date-only — split into date + start/end.

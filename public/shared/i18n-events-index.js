@@ -45,6 +45,7 @@
     evResultsSuffix: ' 場活動',
     evHeroSubPrefix: 'RegMaster 上有 ',
     evHeroSubMid: ' 場進行中的活動，總計 ',
+    evHeroSubMidOne: ' 場進行中的活動，總計 ',
     evHeroSubSuffix: ' 場。'
   };
   var E={
@@ -85,6 +86,7 @@
     evResultsSuffix: ' events for you',
     evHeroSubPrefix: 'RegMaster has ',
     evHeroSubMid: ' events open for registration, ',
+    evHeroSubMidOne: ' event open for registration, ',
     evHeroSubSuffix: ' in total.'
   };
   Object.keys(Z).forEach(function(k){window.I18N.zh[k]=Z[k];});

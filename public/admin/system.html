@@ -573,7 +573,7 @@ body { background:var(--bg); }
   // system-only gate
   if (me.role !== 'system') {
     document.getElementById('noAccess').style.display = 'block';
-    document.getElementById('curRole').textContent = me.role === 'system' ? '系統管理員' : (me.role === 'competition' ? '主辦方' : (me.role || '—'));
+    document.getElementById('curRole').textContent = '主辦方';   // E-2: this gate only fires for non-system users (organizers); avoid the "—" placeholder when me.role loads async
     return;
   }
   var initial = (me.displayName || me.username || '?').charAt(0).toUpperCase();

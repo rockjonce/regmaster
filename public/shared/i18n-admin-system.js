@@ -11,7 +11,7 @@
   if (!window.I18N) return;
   var Z = {
     // ---------- page title / header ----------
-    adSysDocTitle: '系統設定 · 主辦後台 · RegMaster',
+    adSysDocTitle: '系統設定 · 平台後台 · RegMaster',
     adSysBrandSub: '主辦後台',
     adSysOrgRole: '系統管理員',
     adSysCrumbHome: '平台後台',
@@ -421,7 +421,7 @@
 
   var E = {
     // ---------- page title / header ----------
-    adSysDocTitle: 'System Settings · Organizer Console · RegMaster',
+    adSysDocTitle: 'System Settings · Platform Console · RegMaster',
     adSysBrandSub: 'Organizer Console',
     adSysOrgRole: 'System Admin',
     adSysCrumbHome: 'Platform Console',

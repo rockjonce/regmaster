@@ -97,6 +97,7 @@ aside.filters { padding:24px 0; }
 .ev-cover::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px); background-size:30px 30px; opacity:.7; }
 .ev-cover .label { position:absolute; top:14px; left:14px; padding:5px 10px; background:rgba(255,255,255,.94); border-radius:6px; font:600 11px/1 var(--f-mono); letter-spacing:.05em; color:var(--ink); }
 .ev-cover .label.closed { background:rgba(0,0,0,.55); color:white; }
+[data-theme="dark"] .ev-cover .label:not(.closed) { background:rgba(2,6,23,.72); color:#fff; } /* S1-2: avoid white-on-white in dark mode */
 .ev-cover .date-stamp { position:absolute; bottom:14px; left:14px; color:white; }
 .ev-cover .date-stamp .d { font:800 32px/1 var(--f-display); letter-spacing:-.02em; }
 .ev-cover .date-stamp .m { font:500 11px/1 var(--f-mono); letter-spacing:.1em; text-transform:uppercase; opacity:.9; margin-top:4px; }
@@ -289,8 +290,8 @@ aside.filters { padding:24px 0; }
         '<div class="ev-tags">' + (c.category ? '<span class="t">' + escapeHtml(c.category) + '</span>' : '') + '</div>' +
         '<h3>' + escapeHtml(c.name || window.L('evUntitled')) + '</h3>' +
         '<div class="ev-meta">' +
-          (c.competitionDate ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><b>' + escapeHtml(c.competitionDate) + '</b></div>' : '') +
-          (c.deadline ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' + window.L('evDeadlinePrefix') + escapeHtml(c.deadline) + '</div>' : '') +
+          (c.competitionDate ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><b>' + escapeHtml(String(c.competitionDate).replace('T', ' ')) + '</b></div>' : '') +
+          (c.deadline ? '<div><svg data-hero viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' + window.L('evDeadlinePrefix') + escapeHtml(String(c.deadline).replace('T', ' ')) + '</div>' : '') +
         '</div>' +
         '<div class="ev-foot">' +
           '<div class="price"><div class="amt">' + window.L('evViewDetail') + '</div></div>' + teamMeta +
@@ -325,7 +326,9 @@ aside.filters { padding:24px 0; }
 
   function render() {
     var grid = document.getElementById('eventsGrid');
-    document.getElementById('resultsMeta').innerHTML = window.L('evResultsPrefix') + '<strong>' + FILTERED.length + '</strong>' + window.L('evResultsSuffix');
+    var rm = document.getElementById('resultsMeta');
+    rm.removeAttribute('data-i18n-html');   // S1-4: stop the i18n applier clobbering the live count back to the「—」placeholder
+    rm.innerHTML = window.L('evResultsPrefix') + '<strong>' + FILTERED.length + '</strong>' + window.L('evResultsSuffix');
     if (FILTERED.length === 0) {
       grid.innerHTML = '<div class="empty-state"><div class="ic">🔍</div><h3>' + window.L('evEmptyTitle') + '</h3><p>' + window.L('evEmptyDesc') + '</p></div>';
       return;
@@ -378,7 +381,7 @@ aside.filters { padding:24px 0; }
     document.getElementById('cntOpen').textContent = o;
     document.getElementById('cntUpcoming').textContent = u;
     document.getElementById('cntClosed').textContent = c;
-    document.getElementById('heroSubtitle').innerHTML = window.L('evHeroSubPrefix') + '<strong style="color:var(--ink); font-weight:700">' + o + '</strong>' + window.L('evHeroSubMid') + ALL.length + window.L('evHeroSubSuffix');
+    document.getElementById('heroSubtitle').innerHTML = window.L('evHeroSubPrefix') + '<strong style="color:var(--ink); font-weight:700">' + o + '</strong>' + window.L(o === 1 ? 'evHeroSubMidOne' : 'evHeroSubMid') + ALL.length + window.L('evHeroSubSuffix');
   }
 
   // Bind controls

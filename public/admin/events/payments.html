@@ -301,7 +301,9 @@
           uiConfirm(window.L('aePayConfirmMsg'), { title: window.L('aePayConfirmTitle') }).then(function (ok) {
             if (!ok) return;
             google.script.run
-              .withSuccessHandler(function () { load(); })
+              // S3-2: surface backend rejection (e.g. PayUNI orders can't be manually confirmed)
+              // instead of silently calling load() on {success:false}.
+              .withSuccessHandler(function (res) { if (res && res.success) { load(); } else { uiAlert(window.L('aePayConfirmFailPre') + ((res && res.message) || '')); } })
               .withFailureHandler(function (err) { uiAlert(window.L('aePayConfirmFailPre') + (err && err.message)); })
               .confirmPayment(tid, me.username);
           });
