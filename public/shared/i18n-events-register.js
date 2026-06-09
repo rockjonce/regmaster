@@ -473,6 +473,15 @@
     rgSessionNFallback: 'Session'
   };
 
+  Object.assign(Z, {
+    rgSpEnglishLettersOnly: ' 僅能輸入英文字母（比照護照）',
+    rgSpEnglishUppercase: ' 請改用大寫字母（比照護照填寫）',
+  });
+  Object.assign(E, {
+    rgSpEnglishLettersOnly: ' must contain English letters only (passport style)',
+    rgSpEnglishUppercase: ' please use UPPERCASE letters (passport style)',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();

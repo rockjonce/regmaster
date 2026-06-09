@@ -227,11 +227,13 @@ body { background:var(--bg); overflow:hidden; }
         <p style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin:-4px 0 6px" data-i18n="aeFormPaletteSpecialSub">內建驗證與選項的常用欄位 · 點分類標題展開/收合</p>
         <div id="spAccordion">
           <div class="sp-group">
-            <div class="sp-head open"><span data-i18n="aeFormCatBasic">基本欄位</span> <span class="ct">7</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="sp-head open"><span data-i18n="aeFormCatBasic">基本欄位</span> <span class="ct">9</span><svg class="chev" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
             <div class="sp-body open">
               <div class="ft-item b3" draggable="true" data-type="select" data-legacy="salutation"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0M4 21a8 8 0 0116 0"/></svg></div><h6 data-i18n="aeFormSpSalutation">尊稱</h6></div>
               <div class="ft-item b1" draggable="true" data-type="text" data-legacy="chineseName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg></div><h6 data-i18n="aeFormSpChineseName">中文姓名</h6></div>
               <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6 data-i18n="aeFormSpEnglishName">英文姓名</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishSurname"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6 data-i18n="aeFormSpEnglishSurname">英文姓</h6></div>
+              <div class="ft-item b1" draggable="true" data-type="text" data-legacy="englishGivenName"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h6 data-i18n="aeFormSpEnglishGivenName">英文名</h6></div>
               <div class="ft-item b3" draggable="true" data-type="select" data-legacy="gender"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="10" cy="13" r="5"/><path d="M19 5l-5 5M15 5h4v4"/></svg></div><h6 data-i18n="aeFormSpGender">性別</h6></div>
               <div class="ft-item b4" draggable="true" data-type="date" data-legacy="birthday"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6 data-i18n="aeFormSpBirthday">生日</h6></div>
               <div class="ft-item b2" draggable="true" data-type="email" data-legacy="email"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7"/></svg></div><h6 data-i18n="aeFormSpEmail">Email</h6></div>
@@ -655,6 +657,8 @@ body { background:var(--bg); overflow:hidden; }
   // keys (idNumber/email/…) are schema legacyKeys / field types and are unchanged.
   var VALIDATION_HINTS = {
     idNumber: 'aeFormValHintIdNumber',
+    englishSurname: 'aeFormValHintEnglishName',
+    englishGivenName: 'aeFormValHintEnglishName',
     email: 'aeFormValHintEmail',
     phone: 'aeFormValHintPhone',
     mobilePhone: 'aeFormValHintMobilePhone',
@@ -983,7 +987,7 @@ body { background:var(--bg); overflow:hidden; }
   // an i18n key (reusing the palette display keys where the wording matches); resolved
   // through window.L at insert time. The legacy KEY strings here are schema keys, unchanged.
   var LEGACY_LABEL_KEYS = {
-    chineseName:'aeFormSpChineseName', englishName:'aeFormSpEnglishName', idNumber:'aeFormSpIdNumber',
+    chineseName:'aeFormSpChineseName', englishName:'aeFormSpEnglishName', englishSurname:'aeFormSpEnglishSurname', englishGivenName:'aeFormSpEnglishGivenName', idNumber:'aeFormSpIdNumber',
     email:'aeFormSpEmail', phone:'aeFormSpPhone', school:'aeFormSpSchool', department:'aeFormSpDepartment',
     grade:'aeFormSpGrade', dietary:'aeFormDefDietary', tshirt:'aeFormDefTshirt', birthday:'aeFormSpBirthday',
     address:'aeFormSpAddress', gender:'aeFormSpGender', nationality:'aeFormSpNationality', passport:'aeFormSpPassport',

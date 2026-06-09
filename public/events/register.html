@@ -862,7 +862,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   var FIELD_LABELS = {
-    chineseName: '中文姓名', englishName: '英文姓名', idNumber: '身分證',
+    chineseName: '中文姓名', englishName: '英文姓名', englishSurname: '英文姓', englishGivenName: '英文名', idNumber: '身分證',
     birthday: '出生年月日', school: '學校', department: '系所', grade: '年級',
     email: 'Email', phone: '電話', address: '地址', dietary: '飲食習慣', tshirt: 'T-shirt 尺寸',
     gender: '性別', nationality: '國籍', passport: '護照號碼', classroom: '班級',
@@ -1160,6 +1160,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     if (!v) return null;
     var k = def.legacyKey;
     if (!k) return null;
+    // 英文姓 / 英文名 — 比照護照：僅英文字母（可含空格、連字號、撇號），並建議全大寫。
+    if (k === 'englishSurname' || k === 'englishGivenName') {
+      if (!/^[A-Za-z][A-Za-z\s'\-]*$/.test(v)) return def.label + window.L('rgSpEnglishLettersOnly');
+      if (/[a-z]/.test(v)) return def.label + window.L('rgSpEnglishUppercase');
+    }
     // Phones (TW): 0 + 8 or 9 digits, no separators
     if (k === 'phone' || k === 'emergencyPhone') {
       var pure = String(v).replace(/[^\d]/g, '');

@@ -454,6 +454,17 @@
     aeFormSaveFailPre: 'Save failed: '
   };
 
+  Object.assign(Z, {
+    aeFormSpEnglishSurname: '英文姓',
+    aeFormSpEnglishGivenName: '英文名',
+    aeFormValHintEnglishName: '✓ 自動驗證：僅英文字母，建議全大寫（比照護照）',
+  });
+  Object.assign(E, {
+    aeFormSpEnglishSurname: 'English Surname',
+    aeFormSpEnglishGivenName: 'English Given Name',
+    aeFormValHintEnglishName: '✓ Auto-validated: English letters only, uppercase recommended (passport style)',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();
