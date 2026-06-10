@@ -1460,7 +1460,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           //   - failed order      → alert + keep them here so they can retry (do NOT show
           //                         success — the user paid nothing and would be confused).
           //   - freeAfterDiscount → discount covered the bill, jump straight to success.
-          if (NEEDS_PAYMENT && STATE.payMethod === 'payuni') {
+          // #3-6: 備取暫不需付款 — 不導向 PayUNI，直接到成功頁（顯示備取狀態）；遞補後可於「我的報名」付款。
+          if (NEEDS_PAYMENT && STATE.payMethod === 'payuni' && !String(res.status || '').startsWith('備取')) {
             btn.removeAttribute('data-i18n'); btn.textContent = window.L('rgBtnCreatingPayuni');
             // Stash so user can find their team if they navigate away (e.g. close PayUNI tab)
             try { localStorage.setItem('regmaster_pending_team', JSON.stringify({ compId: compId, teamId: res.teamId, ts: Date.now() })); } catch (e) {}

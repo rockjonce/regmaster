@@ -5816,6 +5816,33 @@ exports.deleteDiscountCode = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
+// #3-2: 銀行轉帳套用折扣 — 把折後應付金額落地到 team 並消耗折扣碼（一次），使帳務應收正確。
+exports.confirmManualPayment = callable(async (data) => {
+  const { compId, teamId, code } = data || {};
+  if (!compId || !teamId) return { success: false, message: "缺少參數" };
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  if (team.status === "已取消") return { success: false, message: "此報名已取消" };
+  if (String(team.status || "").startsWith("備取")) return { success: false, code: "WAITLISTED", message: "您目前為備取，暫不需付款。" };
+  if (String(team.paymentStatus || "").includes("已確認")) return { success: false, message: "此報名已完成付款" };
+  const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const peopleCount = Math.max(1, memSnap.size);
+  const q = await quoteRegistration(compId, peopleCount, code || "");
+  if (!q.ok) return { success: false, message: q.codeMsg || "無法計算費用" };
+  if (code && !q.codeValid) return { success: false, message: q.codeMsg || "折扣碼無效" };
+  await db.collection("teams").doc(teamId).update({
+    owedAmount: q.total, base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount,
+    discountCode: q.codeValid ? q.code : ""
+  });
+  // 只在「首次套用此碼」時消耗，避免重複呼叫灌爆使用次數。
+  if (q.codeValid && q.code && team.discountCode !== q.code) {
+    try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
+  }
+  await auditLog("", "套用折扣(銀行轉帳)", teamId, "應付NT$" + q.total + (q.codeValid ? (" 碼:" + q.code) : ""));
+  return { success: true, owed: q.total, base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount, code: q.codeValid ? q.code : "" };
+});
+
 exports.createRegistrationPayment = callable(async (data) => {
   const { compId, teamId } = data;
   const compDoc = await db.collection("competitions").doc(compId).get();
@@ -5869,7 +5896,7 @@ exports.createRegistrationPayment = callable(async (data) => {
   const fee = q.total;
   if ((q.base || 0) > 0 && fee < 1) {
     // Fully discounted → no online payment needed; mark paid + consume code.
-    await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 (折扣全免) " + fmtNow(), paymentMethod: "discount" });
+    await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 (折扣全免) " + fmtNow(), paymentMethod: "discount", owedAmount: 0, discountCode: q.codeValid ? q.code : "" });
     if (q.codeValid && q.code) { try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {} }
     return { success: true, freeAfterDiscount: true };
   }
@@ -5882,6 +5909,8 @@ exports.createRegistrationPayment = callable(async (data) => {
     teamNameCN: team.teamNameCN || "", teamNameEN: team.teamNameEN || "",
     status: "pending", createdAt: fmtNow()
   });
+  // #3-2: 把折後應付金額落地到 team，供帳務「報名費」分頁顯示正確應收（PayUNI 與銀行轉帳一致）。
+  await db.collection("teams").doc(teamId).update({ owedAmount: fee, discountCode: q.codeValid ? q.code : "" });
 
   const hostUrl = PROJECT_HOST;
   // Persist the keyset used for this order so payuniRegNotify can verify the callback

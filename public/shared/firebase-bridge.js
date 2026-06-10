@@ -162,6 +162,7 @@
     sendTeamEmail:["compId","teamId","subject","body"],
     getTeamDetail:["teamId"],
     updateTeamDetailOwner:["compId","teamId","team","members","teamCustom"],
+    confirmManualPayment:["compId","teamId","code"],
     confirmPayment:["teamId","user"],
     updateTeamStatus:["teamId","newStatus","user"],
     deleteTeam:["teamId"],

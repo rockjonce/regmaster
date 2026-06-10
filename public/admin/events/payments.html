@@ -263,18 +263,22 @@
       if (window.applyI18n) window.applyI18n();
     });
   }
+  // #3-2: 以每隊實際應付(折後 owedAmount，無則退回 flat FEE)計算；#3-6: 備取暫不計入應收。
+  function owedOf(t) { return (t.owedAmount != null ? (parseInt(t.owedAmount) || 0) : FEE); }
+  function isWaitlist(t) { return (t.status || '').indexOf('備取') === 0; }
   function renderSum() {
-    var paid = 0, pending = 0;
+    var paid = 0, pending = 0, paidAmt = 0, pendingAmt = 0;
     TEAMS.forEach(function (t) {
-      if (t.status === '已取消') return;
-      if ((t.paymentStatus || '').includes('已確認')) paid++; else pending++;
+      if (t.status === '已取消' || isWaitlist(t)) return;
+      var owed = owedOf(t);
+      if ((t.paymentStatus || '').includes('已確認')) { paid++; paidAmt += owed; } else { pending++; pendingAmt += owed; }
     });
-    var total = paid + pending;
-    var revenue = paid * FEE;
+    var total = paid + pending, totalDue = paidAmt + pendingAmt;
+    var teamsSuf = (window.LANG === 'en' ? ' teams (accepted)' : ' 筆（正取）');
     document.getElementById('sumRow').innerHTML =
-      '<div class="sum-card featured"><div class="l">' + window.L('aePaySumTotalDue') + '</div><div class="v">NT$ ' + (total * FEE).toLocaleString() + '</div><div class="sub">' + total + window.L('aePaySumTotalSubPre') + FEE.toLocaleString() + '</div></div>' +
-      '<div class="sum-card"><div class="l">' + window.L('aePaySumReceived') + '</div><div class="v" style="color:var(--ok-700)">NT$ ' + revenue.toLocaleString() + '</div><div class="sub">' + paid + window.L('aePaySumReceivedSub') + '</div></div>' +
-      '<div class="sum-card"><div class="l">' + window.L('aePaySumPending') + '</div><div class="v" style="color:var(--warn-700)">NT$ ' + (pending * FEE).toLocaleString() + '</div><div class="sub">' + pending + window.L('aePaySumPendingSub') + '</div></div>' +
+      '<div class="sum-card featured"><div class="l">' + window.L('aePaySumTotalDue') + '</div><div class="v">NT$ ' + totalDue.toLocaleString() + '</div><div class="sub">' + total + teamsSuf + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aePaySumReceived') + '</div><div class="v" style="color:var(--ok-700)">NT$ ' + paidAmt.toLocaleString() + '</div><div class="sub">' + paid + window.L('aePaySumReceivedSub') + '</div></div>' +
+      '<div class="sum-card"><div class="l">' + window.L('aePaySumPending') + '</div><div class="v" style="color:var(--warn-700)">NT$ ' + pendingAmt.toLocaleString() + '</div><div class="sub">' + pending + window.L('aePaySumPendingSub') + '</div></div>' +
       '<div class="sum-card"><div class="l">' + window.L('aePaySumRate') + '</div><div class="v">' + (total > 0 ? Math.round(paid / total * 100) : 0) + '<em>%</em></div><div class="sub">' + window.L('aePaySumRateSub') + '</div></div>';
   }
   function renderTable() {
@@ -291,7 +295,7 @@
         '<td>' + escapeHtml(window.LS(t.status || '')) + '</td>' +
         '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus ? window.LS(t.paymentStatus) : window.L('aePayPillDefault')) + '</span></td>' +
         '<td>' + escapeHtml(t.paymentMethod ? window.LS(t.paymentMethod) : '—') + '</td>' +
-        '<td class="right">NT$ ' + FEE.toLocaleString() + '</td>' +
+        '<td class="right">' + (isWaitlist(t) ? '<span style="color:var(--muted)">—</span>' : ('NT$ ' + owedOf(t).toLocaleString())) + '</td>' +
         '<td>' +
           (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
           (paid && !(me && me.role === 'system') ? '<button class="action-btn" data-act="refund" data-tid="' + escapeHtml(t.teamId) + '" data-name="' + escapeHtml(t.teamNameCN || t.teamNameEN || '') + '">' + window.L('aePayBtnRefund') + '</button>' : '') +

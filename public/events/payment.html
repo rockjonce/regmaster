@@ -361,6 +361,8 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         document.getElementById('creditCardArea').style.display = (m === 'cc-link') ? 'block' : 'none';
 
         if (m === 'manual') {
+          // #3-2: 落地折後應付金額到 team（供主辦方帳務正確顯示應收），並消耗折扣碼。
+          google.script.run.withSuccessHandler(function (r) { if (r && r.success && r.owed != null) { var ma = document.getElementById('manualAmt'); if (ma) ma.textContent = r.owed.toLocaleString(); } }).withFailureHandler(function () {}).confirmManualPayment(compId, teamId, appliedCode || '');
           var info = CFG.bankInfo || {};
           var lines = [];
           if (info.bankName) lines.push('<b>' + window.L('pmBankLblBank') + '</b>' + (info.bankCode ? escapeHtml(info.bankCode) + ' ' : '') + escapeHtml(info.bankName));
