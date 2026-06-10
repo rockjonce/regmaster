@@ -242,22 +242,25 @@
 
   var FEE = 0;
   var TEAMS = [];
+  var IS_MANAGER = true; // #4-3/4-4: 僅 owner/manager 可見管理動作（後端已擋，前端隱藏避免誤觸）
 
   function load() {
     Promise.all([
       new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getRegistrationBundle(compId); }),
-      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getAllTeams(compId); })
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getAllTeams(compId); }),
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getMyEventRole(compId); })
     ]).then(function (r) {
       var bundle = r[0] || {}; var cfg = bundle.config || {};
       FEE = parseInt(cfg.registrationFee || 0) || 0;
       TEAMS = r[1] || [];
+      IS_MANAGER = !(r[2] && (r[2].role === 'staff' || r[2].role === 'judge'));
       document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
       document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('content').style.display = 'block';
       // Item 12: quick bank reconciliation only available when bank transfer is enabled in settings.
       var bankOn = (cfg.bankTransferEnabled === true) || (cfg.bankTransferEnabled === undefined && !!(cfg.bankInfo && cfg.bankInfo.accountNumber));
-      document.getElementById('reconcileBar').style.display = bankOn ? '' : 'none';
+      document.getElementById('reconcileBar').style.display = (bankOn && IS_MANAGER) ? '' : 'none';
       document.getElementById('reconcileDisabledNote').style.display = bankOn ? 'none' : '';
       renderSum(); renderTable();
       if (window.applyI18n) window.applyI18n();
@@ -297,10 +300,10 @@
         '<td>' + escapeHtml(t.paymentMethod ? window.LS(t.paymentMethod) : '—') + '</td>' +
         '<td class="right">' + (isWaitlist(t) ? '<span style="color:var(--muted)">—</span>' : ('NT$ ' + owedOf(t).toLocaleString())) + '</td>' +
         '<td>' +
-          (!paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
-          (paid && !(me && me.role === 'system') ? '<button class="action-btn" data-act="refund" data-tid="' + escapeHtml(t.teamId) + '" data-name="' + escapeHtml(t.teamNameCN || t.teamNameEN || '') + '">' + window.L('aePayBtnRefund') + '</button>' : '') +
+          (IS_MANAGER && !paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
+          (IS_MANAGER && paid && !(me && me.role === 'system') ? '<button class="action-btn" data-act="refund" data-tid="' + escapeHtml(t.teamId) + '" data-name="' + escapeHtml(t.teamNameCN || t.teamNameEN || '') + '">' + window.L('aePayBtnRefund') + '</button>' : '') +
           '<button class="action-btn" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnView') + '</button>' +
-          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnDelete') + '</button>' +
+          (IS_MANAGER ? '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnDelete') + '</button>' : '') +
         '</td>' +
       '</tr>';
     }).join('');

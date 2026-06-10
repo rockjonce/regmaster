@@ -317,12 +317,14 @@
     return Promise.all([
       new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationBundle(compId); }),
       new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r([]); }).getAllTeams(compId); }),
-      new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationStats(compId); })
+      new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getRegistrationStats(compId); }),
+      new Promise(function (r) { google.script.run.withSuccessHandler(r).withFailureHandler(function () { r({}); }).getMyEventRole(compId); })
     ]).then(function (results) {
       var bundle = results[0] || {};
       CFG = bundle.config || {};
       TEAMS = results[1] || [];
       STATS = results[2] || {};
+      IS_MANAGER = !(results[3] && (results[3].role === 'staff' || results[3].role === 'judge')); // #4-3/4-4
       document.getElementById('crumbHub').textContent = CFG.competitionName || compId;
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('content').style.display = 'block';
@@ -788,8 +790,8 @@
         '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +
         '<td class="td-actions">' +
           '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnView') + '</button>' +
-          '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' +
-          '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnDelete') + '</button>' +
+          (IS_MANAGER ? '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' : '') +
+          (IS_MANAGER ? '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnDelete') + '</button>' : '') +
         '</td>' +
       '</tr>';
     }).join('');
@@ -965,6 +967,7 @@
 
   // ===== 報名詳情：檢視 + 編輯（擁有者/管理者）+ 逐項稽核 =====
   var TD_CUR = null, TD_OV = null, TD_EDIT = false;
+  var IS_MANAGER = true; // #4-3/4-4: staff/judge 隱藏管理/編輯動作（後端已擋）
   function openTeamDetail(tid) {
     var loadingHtml = '<p style="color:var(--muted)">' + window.L('aeRegLoadingShort') + '</p>';
     openModal(window.L('aeRegDetailTitle') + tid, loadingHtml, function (ov, close) {
@@ -1000,7 +1003,7 @@
     // toolbar
     html += TD_EDIT
       ? '<div style="display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-bottom:14px"><span style="margin-right:auto; color:var(--muted); font:400 12px/1.4 var(--f-tc)">' + window.L('aeRegEditHint') + '</span><button class="btn btn-ghost btn-sm" id="tdCancelBtn">' + window.L('aeRegEditCancel') + '</button><button class="btn btn-primary btn-sm" id="tdSaveBtn">' + window.L('aeRegEditSave') + '</button></div>'
-      : '<div style="display:flex; justify-content:flex-end; margin-bottom:14px"><button class="btn btn-ghost btn-sm" id="tdEditBtn">✏️ ' + window.L('aeRegEditBtn') + '</button></div>';
+      : (IS_MANAGER ? '<div style="display:flex; justify-content:flex-end; margin-bottom:14px"><button class="btn btn-ghost btn-sm" id="tdEditBtn">✏️ ' + window.L('aeRegEditBtn') + '</button></div>' : '');
     // 隊伍基本
     html += '<div class="group"><h5>' + window.L('aeRegGrpTeam') + '</h5><div class="kv">' +
       kv(window.L('aeRegFieldId'), t.teamId) +

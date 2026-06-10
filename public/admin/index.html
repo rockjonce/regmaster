@@ -521,7 +521,7 @@
     comps.forEach(function (c) {
       totalRegs += (c.teamCount || 0);
       var s = c.stats || {};
-      paidCount += (s.accepted || 0) - (s.payWait || 0);
+      paidCount += (s.paid != null ? s.paid : ((s.accepted || 0) - (s.payWait || 0)));
       pendingCount += (s.payWait || 0);
     });
     document.getElementById('d1Val').innerHTML = totalRegs.toLocaleString() + '<em>' + window.L('adIdxUnitPeople') + '</em>';
