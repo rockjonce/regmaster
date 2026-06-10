@@ -5822,6 +5822,13 @@ exports.createRegistrationPayment = callable(async (data) => {
   if (!compDoc.exists) return { success: false, message: "找不到活動" };
   const cfg = compDoc.data().config || {};
   if (!cfg.payuniEnabled) return { success: false, message: "此活動未啟用線上付款" };
+  // #3-6: 備取暫不需付款（遞補為正取會另行通知），不建立付款訂單。
+  {
+    const _tDoc = await db.collection("teams").doc(teamId).get();
+    if (_tDoc.exists && String(_tDoc.data().status || "").startsWith("備取")) {
+      return { success: false, code: "WAITLISTED", message: "您目前為備取，暫不需付款；若遞補為正取會再通知您。" };
+    }
+  }
 
   // U2 fix: edit.html doesn't expose per-activity PayUNI keys (only the enable toggle), so
   // cfg.payuniMerID/payuniHashKey are almost always empty. Fall back to the system-level
