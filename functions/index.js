@@ -1875,8 +1875,9 @@ exports.submitRegistration = callable(async (data, request) => {
 
   // Write members outside transaction (not quota-sensitive)
   const members = [];
-  (fd.students || []).forEach((s, i) => { members.push({ teamId, compId, role: "學生", seq: i + 1, ...s }); });
-  (fd.teachers || []).forEach((t, i) => { members.push({ teamId, compId, role: "教練", seq: i + 1, ...t }); });
+  // #3-3: 正規化成員 email（trim + lowercase）以利「我的報名」查詢比對。
+  (fd.students || []).forEach((s, i) => { const m = { teamId, compId, role: "學生", seq: i + 1, ...s }; if (m.email) m.email = String(m.email).trim().toLowerCase(); members.push(m); });
+  (fd.teachers || []).forEach((t, i) => { const m = { teamId, compId, role: "教練", seq: i + 1, ...t }; if (m.email) m.email = String(m.email).trim().toLowerCase(); members.push(m); });
   const memBatch = db.batch();
   members.forEach(m => memBatch.set(db.collection("members").doc(), m));
   await memBatch.commit();
@@ -2937,7 +2938,7 @@ exports.getDashboardStats = compAuthCallable("view", async (data) => {
     db.collection("teams").where("compId", "==", compId).get()
   ]);
   const cfg = compDoc.exists ? (compDoc.data().config || {}) : {};
-  let total = 0, accepted = 0, waitlist = 0, payWait = 0;
+  let total = 0, accepted = 0, waitlist = 0, payWait = 0, paid = 0;
   const dailyMap = {}, groupMap = {}, sessionMap = {};
   const sessionAccMap = {}, sessionWLMap = {};
   /* Per-group detailed: { groupName: { total, accepted, waitlist, payWait } } */
@@ -2951,7 +2952,7 @@ exports.getDashboardStats = compAuthCallable("view", async (data) => {
     const isPayWait = !(t.paymentStatus || "").includes("已確認");
     if (isAccepted) accepted++;
     if (isWaitlist) waitlist++;
-    if (isPayWait) payWait++;
+    if (isPayWait) payWait++; else paid++;
     const day = toDayKey(t.registrationTime);
     if (day) dailyMap[day] = (dailyMap[day] || 0) + 1;
     const grp = t.group || "未分組";
@@ -2987,7 +2988,7 @@ exports.getDashboardStats = compAuthCallable("view", async (data) => {
     });
   }
   const genderStats = Object.keys(genderMap).map(g => ({ name: g, count: genderMap[g] }));
-  return { totalTeams: total, accepted, waitlist, payWait, dailyTrend, groupStats, groupDetail, sessionStats, genderStats,
+  return { totalTeams: total, accepted, waitlist, payWait, paid, dailyTrend, groupStats, groupDetail, sessionStats, genderStats,
     hasWaitlist: cfg.allowWaitlist !== false, hasPayment: (cfg.paymentMethods || []).length > 0, hasGender };
 });
 
@@ -3701,8 +3702,18 @@ async function requireFeature(authUser, key) {
 // (manager/judge/staff) inherit the owner's paid features for that event. For an owner
 // acting on their own event compOwner === caller, so behaviour is unchanged.
 async function requireCompFeature(request, key) {
-  const owner = (request && request.compOwner) || (request && request.authUser && request.authUser.username);
-  return requireFeatureAs(owner, !!(request && request.authUser && request.authUser.role === "system"), key);
+  let owner = (request && request.compOwner) || (request && request.authUser && request.authUser.username);
+  const isSystem = !!(request && request.authUser && request.authUser.role === "system");
+  // #4-1: 無活動範圍(未設 compOwner)時，組織成員回退到「所屬擁有者(最高方案)」以繼承付費功能(如 AI 助理一般範圍)。
+  if (!isSystem && !(request && request.compOwner) && owner) {
+    try {
+      let bestRank = TIER_RANK[await getEffectiveTier(owner)] || 0, bestOwner = null;
+      const ms = await db.collection("orgMembers").where("memberUsername", "==", owner).get();
+      for (const d of ms.docs) { const m = d.data(); if (m.status !== "active" || !m.orgOwner) continue; const r = TIER_RANK[await getEffectiveTier(m.orgOwner)] || 0; if (r > bestRank) { bestRank = r; bestOwner = m.orgOwner; } }
+      if (bestOwner) owner = bestOwner;
+    } catch (e) {}
+  }
+  return requireFeatureAs(owner, isSystem, key);
 }
 
 exports.createLicense = authCallable(["system"], async (data) => {
@@ -8451,13 +8462,22 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
 exports.getAiInsights = authCallable(["system", "competition"], async (data, request) => {
   // AI insights are a PRO+ feature. Lower tiers get a graceful locked payload
   // (this is auto-loaded on the dashboard, so we must not throw here).
+  let effUser = request.authUser.username; // #4-1: 組織成員繼承「所屬擁有者」的方案與活動
   if (request.authUser.role !== "system") {
-    const tier = await getEffectiveTier(request.authUser.username);
+    let tier = await getEffectiveTier(request.authUser.username);
+    if ((TIER_RANK[tier] || 0) < FEATURE_MIN_RANK.ai) {
+      try {
+        const ms = await db.collection("orgMembers").where("memberUsername", "==", request.authUser.username).get();
+        let bestRank = TIER_RANK[tier] || 0, bestOwner = null, bestTier = tier;
+        for (const d of ms.docs) { const m = d.data(); if (m.status !== "active" || !m.orgOwner) continue; const ot = await getEffectiveTier(m.orgOwner); if ((TIER_RANK[ot] || 0) > bestRank) { bestRank = TIER_RANK[ot] || 0; bestOwner = m.orgOwner; bestTier = ot; } }
+        if (bestOwner && bestRank >= FEATURE_MIN_RANK.ai) { effUser = bestOwner; tier = bestTier; }
+      } catch (e) {}
+    }
     if ((TIER_RANK[tier] || 0) < FEATURE_MIN_RANK.ai) {
       return { insights: [], locked: true, tier, message: "AI 洞察為 PRO 以上方案功能，升級即可解鎖。" };
     }
   }
-  const username = request.authUser.username;
+  const username = effUser;
   const compId = data && data.compId;
 
   // Pull this user's competitions (or single compId if specified)
@@ -8645,8 +8665,13 @@ exports.listMyRegistrationsByEmail = callable(async (data, request) => {
   // Find members matching email or phone
   const membersFound = new Map(); // teamId -> member info
   if (email) {
-    const sn = await db.collection("members").where("email", "==", String(email).trim()).get();
-    sn.docs.forEach(d => { const m = d.data(); membersFound.set(m.teamId, m); });
+    // #3-3: 比對正規化(小寫)與原樣(舊資料可能含大小寫)兩種，避免大小寫/空白導致查無。
+    const eTrim = String(email).trim(), eLower = eTrim.toLowerCase();
+    const variants = eTrim === eLower ? [eLower] : [eLower, eTrim];
+    for (const ev of variants) {
+      const sn = await db.collection("members").where("email", "==", ev).get();
+      sn.docs.forEach(d => { const m = d.data(); membersFound.set(m.teamId, m); });
+    }
   }
   if (phone) {
     const sn = await db.collection("members").where("phone", "==", String(phone).trim()).get();
