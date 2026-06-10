@@ -792,11 +792,13 @@
       var groupOpts = '<option value="" data-i18n="aeScorePanelGroupAny">（不指定）</option>' + groups.map(function (g) {
         return '<option value="' + escapeHtml(g) + '"' + (g === p.group ? ' selected' : '') + '>' + escapeHtml(g) + '</option>';
       }).join('');
-      var judgeChecks = ORG_MEMBERS.length ? ORG_MEMBERS.map(function (m) {
+      // #5-4: 僅具評分權限者(manager/judge)可被指派為評審；staff 無評分權限，避免靜默失效。
+      var _eligJudges = ORG_MEMBERS.filter(function (m) { return m.role === 'manager' || m.role === 'judge'; });
+      var judgeChecks = _eligJudges.length ? _eligJudges.map(function (m) {
         var name = m.displayName || m.memberUsername || m.memberEmail || '';
         var on = (p.judges || []).indexOf(m.memberUsername) >= 0;
         return '<label class="pn-check"><input type="checkbox" data-judge="' + escapeHtml(m.memberUsername) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(name) + '</span><small>' + escapeHtml(m.memberUsername || '') + '</small></label>';
-      }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoJudges">尚無可指派的評審成員。</div>';
+      }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoJudges">尚無可指派的評審成員（僅管理者/評審可被指派）。</div>';
       var teamChecks = teamsInGroup.length ? teamsInGroup.map(function (t) {
         var on = (p.teams || []).indexOf(t.teamId) >= 0;
         return '<label class="pn-check"><input type="checkbox" data-team="' + escapeHtml(t.teamId) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(t.teamNameCN || t.teamId) + '</span><small>' + escapeHtml(t.teamId) + '</small></label>';
@@ -938,7 +940,13 @@
       window.applyI18n(body);
       return;
     }
-    var html = '<table class="res-table"><thead><tr>' +
+    // #5-2: 小樣本提示 — 量表用 t分布/z分數但隊伍數少時，正規化會自動退回線性，極端化({0,100})易誤讀排名。
+    var usesAdvNorm = (RESULTS.leaves || []).some(function (l) { return l.normalize === 'tdist' || l.normalize === 'zscore'; });
+    var judgedCount = rows.filter(function (r) { return r.judged; }).length;
+    var smallNote = (usesAdvNorm && judgedCount > 0 && judgedCount < 5)
+      ? '<div style="background:color-mix(in srgb, var(--amber-500) 10%, transparent); border:1px solid color-mix(in srgb, var(--amber-500) 30%, transparent); border-radius:8px; padding:10px 12px; margin-bottom:10px; color:var(--warn-700); font:400 12.5px/1.5 var(--f-tc)">⚠️ ' + window.L('aeScoreSmallSample') + '</div>'
+      : '';
+    var html = smallNote + '<table class="res-table"><thead><tr>' +
       '<th data-i18n="aeScoreResRank">名次</th>' +
       '<th data-i18n="aeScoreResTeam">隊伍</th>' +
       '<th data-i18n="aeScoreResGroup">組別</th>' +
@@ -1280,6 +1288,14 @@
       var b = e.target.closest('button[data-tab]'); if (b) switchTab(b.dataset.tab);
     });
   }
+  // #5-1: 評分輸入即時 clamp 至 [0, 滿分]（後端為權威；此為避免畫面顯示超出滿分）。
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el && el.matches && el.matches('input[type=number][data-leaf]')) {
+      var mx = parseFloat(el.max), v = parseFloat(el.value);
+      if (!isNaN(v)) { if (!isNaN(mx) && v > mx) el.value = mx; else if (v < 0) el.value = 0; }
+    }
+  });
 
   function loadConsole() {
     document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
@@ -1314,6 +1330,20 @@
 
       wireTabs(); wireRubric(); wirePanels(); wireSave(); wireResultsStats();
       renderRubric(); renderPanels(); renderFairness();
+      // #5-3: owner/manager 若也被指派為評審 → 提供「以評審身分評分」浮動入口（原本只能進設定視圖無法評分）。
+      try {
+        var _myName = (window.AppState && AppState.getMe && (AppState.getMe() || {}).username) || '';
+        var _meRole = (window.AppState && AppState.getMe && (AppState.getMe() || {}).role) || '';
+        var _inPanel = PANELS.some(function (p) { return (p.judges || []).indexOf(_myName) >= 0; });
+        if ((_inPanel || _meRole === 'system') && !document.getElementById('gotoScoreBtn')) {
+          var _b = document.createElement('button');
+          _b.id = 'gotoScoreBtn'; _b.className = 'btn btn-primary btn-sm';
+          _b.style.cssText = 'position:fixed; right:24px; bottom:24px; z-index:50; box-shadow:var(--sh-lg)';
+          _b.textContent = '🎯 ' + window.L('aeScoreGotoScore');
+          _b.addEventListener('click', function () { var c = document.getElementById('mcConsole'); if (c) c.style.display = 'none'; _b.remove(); load(); });
+          document.body.appendChild(_b);
+        }
+      } catch (e) {}
     });
   }
 

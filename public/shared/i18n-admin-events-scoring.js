@@ -294,6 +294,15 @@
     aeScoreXlsxFallback: 'Excel library failed to load; exported CSV instead.'
   };
 
+  Object.assign(Z, {
+    aeScoreGotoScore: '以評審身分評分',
+    aeScoreSmallSample: '小樣本：本組評審/隊伍數較少，正規化已自動退回線性；分數可能被極端化(0/100)，排名僅供參考，建議對照原始分（可由 CSV 匯出）。',
+  });
+  Object.assign(E, {
+    aeScoreGotoScore: 'Score as judge',
+    aeScoreSmallSample: 'Small sample: few judges/teams in this group, so normalization fell back to linear; scores may be extreme (0/100) and ranks are approximate — cross-check the raw scores (CSV export).',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();
