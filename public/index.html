@@ -329,6 +329,11 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 /* dark-mode fix: inverted CTA section stays dark so white text stays visible */
 [data-theme="dark"] .cta-section { background:#0d1638; color:#fff; }
 [data-theme="dark"] .cta-section h2 { color:#fff; }
+/* dark-mode fix: 「MOST POPULAR」專業版卡片本是深底白字(亮色模式 bg:--ink)；深色模式 --ink 翻白
+   → 卡片變白底但 p/li 仍是寫死的白字而看不見。固定為深底，兩種模式皆深底白字一致。 */
+[data-theme="dark"] .plan.featured { background:#0d1638; color:#fff; border-color:#26345c; }
+[data-theme="dark"] .plan.featured h3, [data-theme="dark"] .plan.featured .price-num { color:#fff; }
+[data-theme="dark"] .plan.featured p, [data-theme="dark"] .plan.featured ul li { color:rgba(255,255,255,.82); }
 </style>
 </head>
 <body>
