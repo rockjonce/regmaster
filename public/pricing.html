@@ -114,6 +114,10 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 .tip .tipbox { position:absolute; bottom:150%; left:50%; transform:translateX(-50%); width:248px; max-width:60vw; background:#1e293b; color:#fff; padding:9px 12px; border-radius:8px; font:400 12px/1.55 var(--f-tc); text-align:left; white-space:normal; opacity:0; visibility:hidden; transition:.15s; z-index:30; box-shadow:0 8px 24px rgba(0,0,0,.22); }
 .tip .tipbox::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:#1e293b; }
 .tip:hover .tipbox { opacity:1; visibility:visible; }
+
+/* dark-mode fix: featured plan card stays dark so white text stays visible */
+[data-theme="dark"] .plan.featured { background:#0d1638; color:#fff; border-color:color-mix(in srgb, var(--acc) 45%, var(--line)); }
+[data-theme="dark"] .plan.featured h3, [data-theme="dark"] .plan.featured .price-num { color:#fff; }
 </style>
 </head>
 <body>

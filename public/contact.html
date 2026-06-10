@@ -105,6 +105,9 @@
 
 .theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; }
 .theme-toggle:hover { background: var(--surface-3); }
+
+/* dark-mode fix: inverted left hero panel stays dark so white text stays visible */
+[data-theme="dark"] .left { background:#0B1432; color:#fff; }
 </style>
 </head>
 <body>

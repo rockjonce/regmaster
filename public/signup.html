@@ -104,6 +104,9 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
 
 @media (max-width:960px) { body { grid-template-columns:1fr; } .right { display:none; } }
 @media (max-width:600px) { .left { padding:28px 18px 24px; } .row-2 { grid-template-columns:1fr; } }
+
+/* dark-mode fix: inverted right panel stays dark so white text stays visible */
+[data-theme="dark"] .right { background:#0B1432; }
 </style>
 </head>
 <body>

@@ -325,6 +325,10 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
 /* theme toggle (replaces preview-bar) */
 .theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; transition: .12s; }
 .theme-toggle:hover { background: var(--surface-3); }
+
+/* dark-mode fix: inverted CTA section stays dark so white text stays visible */
+[data-theme="dark"] .cta-section { background:#0d1638; color:#fff; }
+[data-theme="dark"] .cta-section h2 { color:#fff; }
 </style>
 </head>
 <body>

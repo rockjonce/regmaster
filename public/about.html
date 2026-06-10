@@ -100,6 +100,10 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 
 .theme-toggle { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font: 500 12px/1 var(--f-tc); cursor: pointer; }
 .theme-toggle:hover { background: var(--surface-3); }
+
+/* dark-mode fix: keep inverted CTA band dark so white text stays visible */
+[data-theme="dark"] .cta-strip { background:#0d1638; color:#fff; }
+[data-theme="dark"] .cta-strip .btn-accent { background:#fff; color:#0B1432; border-color:#fff; }
 </style>
 </head>
 <body>
