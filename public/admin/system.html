@@ -54,6 +54,16 @@ body { background:var(--bg); }
 .tbl .muted { color:var(--muted); font:500 11px/1.4 var(--f-mono); }
 .tbl-wrap { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:auto; }
 
+/* 匯款申請明細表（報名/項目｜實收｜手續費｜實領）— 比照 .tbl / .b-tbl-sys 系統表格樣式 */
+.b-tbl-wrap { overflow-x:auto; border:1px solid var(--line-2); border-radius:9px; }
+.b-tbl { width:100%; border-collapse:collapse; font:400 12.5px/1.5 var(--f-tc); }
+.b-tbl thead th { text-align:left; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--line); font:600 10px/1 var(--f-mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+.b-tbl tbody td { padding:9px 12px; border-bottom:1px solid var(--line-2); color:var(--ink-2); vertical-align:middle; white-space:nowrap; }
+.b-tbl tbody tr:hover td { background:var(--surface-2); }
+.b-tbl tfoot td { padding:10px 12px; border-top:2px solid var(--line); font:500 12.5px/1.5 var(--f-tc); color:var(--ink); white-space:nowrap; }
+.b-tbl th.right, .b-tbl td.right { text-align:right; }
+.b-tbl td:first-child, .b-tbl th:first-child { width:42%; white-space:normal; }
+
 .pill { padding:3px 8px; border-radius:5px; font:600 10.5px/1.4 var(--f-mono); display:inline-flex; align-items:center; gap:5px; }
 .pill.ok { background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); }
 .pill.warn { background:color-mix(in srgb, var(--amber-500) 16%, transparent); color:var(--warn-700); }
