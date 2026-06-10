@@ -90,7 +90,7 @@
       heroTitleFull: '<span class="tc">為認真辦活動的人</span><br>打造的 <em>報名系統</em>。',
       heroLead: 'RegMaster 是一套讓主辦方在 10 分鐘內就能上線的線上報名平台。從表單設計、報名審核、金流串接，到證書產生、即時統計 —— 一個後台搞定。',
       ctaFreeStart: '免費開始 →', ctaSeeFeatures: '看產品功能', ctaTrialMeta: '無需信用卡 · <b>Free</b> 終生免費',
-      statEvents: '場次成功舉辦', statRegs: '累積報名人次', statMinUnit: '分鐘', statLaunch: '活動上線時間', statSla: '系統 SLA 可用性',
+      statEvents: '報名・收費・評分・證書', statRegs: '線上金流・自動對帳', statMinUnit: '分鐘', statLaunch: '活動快速上線', statSla: '全程加密・資料保護', statAllInOneNum: '一站式',
       // ----- logos -----
       logosLabel: '適用於各類主辦單位', lgUni: '大專院校', lgGov: '政府機關', lgAssoc: '公協會',
       lgResearch: '研究機構', lgCorp: '企業內訓', lgCamp: '補教與營隊',
@@ -125,13 +125,13 @@
       // ----- use cases -----
       usesH2: '每種活動<br>都有適合的姿勢。',
       useCodeH4: '校園 / 各式競賽', useCodeP: '多階段賽制、組別管理、即時計分、多評審評分 —— 從程式競賽、學科競賽到體育賽會都能 cover。',
-      useCodeQ: '「過去用表單工具收 200 人累慘，改用系統化流程後幾分鐘就搞定。」<br>— 某科技大學 競賽承辦',
+      useCodeQ: '競賽報名：報名表單、收費與候補一站式管理，分享連結即可開始收件。',
       useCampH4: '夏令營 / 冬令營', useCampP: '梯次選擇、住宿分房、家長同意書、緊急聯絡人 —— 一次 cover 兒童活動的所有合規。',
-      useCampQ: '「家長同意書、退費條款都自動套好，省了半個行政人力。」<br>— 自然探索營',
+      useCampQ: '營隊報名：家長同意書、退費條款範本內建，行政流程自動化。',
       useEventH4: '企業 / 研討會', useEventP: '多票種、早鳥優惠、統編收集、出席證明 —— 從研討會到員工旅遊都搞得定。',
-      useEventQ: '「年度春酒 2,800 人報名零失誤，財務對帳順順利利。」<br>— 某 IC 設計公司',
+      useEventQ: '企業活動：大量報名與財務對帳，報表匯出清楚易核。',
       useGovH4: '政府 / 協會徵件', useGovP: '身分驗證、檔案上傳、評審分配、公文寄送 —— 公部門級的合規流程。',
-      useGovQ: '「公開賽件 1,400 件投稿，評審排程、結果公告全自動。」<br>— 某縣政府文化局',
+      useGovQ: '公開徵件：投稿收件、評審排程與結果公告一條龍。',
       // ----- pricing teaser -----
       ptH2: '從免費開始，<br>用得越多越划算。',
       ptSub: '透明定價、免費版也能收費（每筆 5% 手續費）。價格與功能以實際方案設定為準，<a href="/pricing.html" style="color:inherit;text-decoration:underline">看完整比較</a>。',
@@ -196,7 +196,7 @@
       heroTitleFull: '<span class="tc">The registration system</span><br>built for <em>serious organizers</em>.',
       heroLead: 'RegMaster is an online registration platform that gets your event live in 10 minutes. From form design, application review and payments to certificate generation and real-time analytics — it all runs from one dashboard.',
       ctaFreeStart: 'Start free →', ctaSeeFeatures: 'See features', ctaTrialMeta: 'No credit card · <b>Free</b> forever',
-      statEvents: 'events run', statRegs: 'total registrations', statMinUnit: 'min', statLaunch: 'to launch an event', statSla: 'system SLA uptime',
+      statEvents: 'Register · Pay · Score · Certify', statRegs: 'Online payments & reconciliation', statMinUnit: 'min', statLaunch: 'to launch an event', statSla: 'End-to-end encryption', statAllInOneNum: 'All-in-one',
       // ----- logos -----
       logosLabel: 'Trusted by organizers of every kind', lgUni: 'Universities', lgGov: 'Government', lgAssoc: 'Associations',
       lgResearch: 'Research Institutes', lgCorp: 'Corporate Training', lgCamp: 'Tutoring & Camps',
@@ -231,13 +231,13 @@
       // ----- use cases -----
       usesH2: 'Every kind of event,<br>handled the right way.',
       useCodeH4: 'Campus & competitions', useCodeP: 'Multi-stage formats, group management, live scoring and multi-judge — from coding contests to academic and sports competitions, all covered.',
-      useCodeQ: '“Collecting 200 entries with a form tool used to be exhausting; with a proper workflow it now takes minutes.”<br>— Contest coordinator, a university of technology',
+      useCodeQ: 'Competitions: registration, payment and waitlist in one place — share a link and start collecting entries.',
       useCampH4: 'Summer & winter camps', useCampP: 'Session selection, room assignments, parental consent, emergency contacts — every compliance need for children\'s programs in one place.',
-      useCampQ: '“Consent forms and refund terms are filled in automatically — it saved us half an admin headcount.”<br>— Nature Discovery Camp',
+      useCampQ: 'Camps: built-in consent-form and refund-policy templates automate the admin work.',
       useEventH4: 'Corporate & conferences', useEventP: 'Multiple ticket types, early-bird pricing, tax-ID collection, attendance certificates — from conferences to company trips.',
-      useEventQ: '“2,800 sign-ups for our annual banquet with zero errors and smooth financial reconciliation.”<br>— An IC design company',
+      useEventQ: 'Corporate events: large sign-ups with clear, exportable financial reconciliation.',
       useGovH4: 'Government & open calls', useGovP: 'Identity verification, file uploads, reviewer assignment, official correspondence — public-sector-grade compliance.',
-      useGovQ: '“1,400 open-call submissions with fully automated review scheduling and results announcements.”<br>— A county cultural affairs bureau',
+      useGovQ: 'Open calls: submission intake, judge scheduling and results announcements end to end.',
       // ----- pricing teaser -----
       ptH2: 'Start free,<br>better value the more you use it.',
       ptSub: 'Transparent pricing — even the Free plan can collect payments (5% per transaction). Actual prices and features follow your plan settings; <a href="/pricing.html" style="color:inherit;text-decoration:underline">see the full comparison</a>.',
