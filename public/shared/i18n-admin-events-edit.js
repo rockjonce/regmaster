@@ -924,6 +924,19 @@
     aeEditDeleteFailPre: 'Failed: '
   };
 
+  Object.assign(Z, {
+    aeEditWarnTitle: '提醒',
+    aeEditWarnDateOrder: '活動日期早於報名截止日，請確認是否正確。',
+    aeEditWarnNoDate: '此活動可見但尚未填寫活動日期（退費等功能需要活動日期）。',
+    aeEditWarnProceed: '仍要儲存嗎？',
+  });
+  Object.assign(E, {
+    aeEditWarnTitle: 'Heads up',
+    aeEditWarnDateOrder: 'The event date is earlier than the registration deadline — please double-check.',
+    aeEditWarnNoDate: 'This event is visible but has no event date set (refunds and other features need it).',
+    aeEditWarnProceed: 'Save anyway?',
+  });
+
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });
   Object.keys(E).forEach(function (k) { window.I18N.en[k] = E[k]; });
 })();

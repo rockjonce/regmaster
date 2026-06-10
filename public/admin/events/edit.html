@@ -1617,6 +1617,7 @@
     });
   });
 
+  var _skipSaveWarn = false; // #2-6/2-8: 一次性略過警告旗標（確認後重觸發儲存）
   document.getElementById('saveBtn').addEventListener('click', function () {
     var data = JSON.parse(serialize());
 
@@ -1626,6 +1627,19 @@
     }
     if (data.openDate && data.deadline && data.openDate >= data.deadline) {
       uiAlert(window.L('aeEditValOpenDeadline')); return;
+    }
+    // #2-6/#2-8: 非阻斷的提醒（活動日早於截止、或可見活動未填活動日）。確認後才繼續存。
+    if (!_skipSaveWarn) {
+      var _warns = [];
+      var _single = data.dateMode !== 'multi';
+      if (_single && data.competitionDate && data.deadline && data.competitionDate < data.deadline) _warns.push(window.L('aeEditWarnDateOrder'));
+      if (_single && data.isVisible && !data.competitionDate) _warns.push(window.L('aeEditWarnNoDate'));
+      if (_warns.length) {
+        uiConfirm(_warns.join('\n') + '\n\n' + window.L('aeEditWarnProceed'), { title: window.L('aeEditWarnTitle') }).then(function (ok) {
+          if (ok) { _skipSaveWarn = true; document.getElementById('saveBtn').click(); _skipSaveWarn = false; }
+        });
+        return;
+      }
     }
     // Item 1 & 2: block save when capacity exceeds the plan's per-activity cap.
     if (!validateCapacity()) {

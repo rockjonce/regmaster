@@ -1489,7 +1489,14 @@ async function generateDescriptionSummary(rawDesc) {
     out = (out || "").replace(/\s+/g, ' ').trim();
     // Light tidy: drop leading "摘要：" / "以下是" prefixes the model sometimes emits despite the prompt.
     out = out.replace(/^(摘要[:：]|以下是.{0,20}摘要[:：]?|這是.{0,10}摘要[:：]?)\s*/, '').trim();
-    return out.slice(0, 220);
+    // #1-3: 於句界/詞界截斷並加省略號，避免英文字中途硬切（如「…使用Sam」）。
+    if (out.length <= 220) return out;
+    let cut = out.slice(0, 220);
+    const punct = Math.max(cut.lastIndexOf("。"), cut.lastIndexOf("！"), cut.lastIndexOf("？"), cut.lastIndexOf("."), cut.lastIndexOf("!"), cut.lastIndexOf("?"));
+    if (punct >= 140) return cut.slice(0, punct + 1);
+    const sp = cut.lastIndexOf(" ");
+    if (sp >= 140) cut = cut.slice(0, sp);
+    return cut.trim() + "…";
   } catch (e) {
     await rotateGeminiKey();
     return "";

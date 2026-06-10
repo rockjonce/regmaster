@@ -743,7 +743,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     }
     // Footer step counter reflects only the steps that will actually render
     var totalSteps = document.getElementById('footMeta');
-    if (totalSteps) totalSteps.innerHTML = window.L('rgFootStep') + ' <b id="curStep">' + STATE.step + '</b> / ' + activeStepCount();
+    if (totalSteps) totalSteps.innerHTML = window.L('rgFootStep') + ' <b id="curStep">' + (STATE.step - firstStep() + 1) + '</b> / ' + activeStepCount();
     // T1: when step 1 was skipped, synchronise DOM with STATE so step 2 is the visible pane
     if (!STEP1_NEEDED) showStep(2);
 
@@ -1072,7 +1072,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     document.querySelectorAll('.steps-row .bar').forEach(function (b, i) {
       b.classList.toggle('done', n > i + 1);
     });
-    document.getElementById('curStep').textContent = n;
+    document.getElementById('curStep').textContent = (n - firstStep() + 1); // #3-10: 相對步數，避免「步驟 4/3」
     document.getElementById('prevBtn').disabled = (n <= firstStep());
     // Submit button appears on the FINAL active step (4 with payment, 3 without).
     var last = lastStep();

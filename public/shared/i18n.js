@@ -259,7 +259,7 @@
       prTipScoring: 'Scoring: the organizer or staff enters one score per team (overwrite-style) — ideal when a single judge or panel records final scores together.',
       prTipMulti: 'Multi-judge scoring: each judge signs in and scores the same team independently; the system aggregates all judges\' scores, computes the average and produces a live leaderboard. Pairs with team member roles so you can invite multiple judge accounts.',
       pfCheckin: 'QR check-in', pfWaitlist: 'Waitlist', pfEventAi: 'Event AI assistant', pfAdminAi: 'Organizer-console AI', pfCert: 'Badges & certificates',
-      tActive: '<b>{n}</b> active events', tReg: '<b>{n}</b> registrations per event', tFee: '<b>{n}%</b> transaction fee', uUnlimited: 'Unlimited',
+      tActive: '<b>{n}</b> active event(s)', tReg: '<b>{n}</b> registrations per event', tFee: '<b>{n}%</b> transaction fee', uUnlimited: 'Unlimited',
       // ----- faq -----
       faqH2: 'Frequently asked questions',
       faqQ1: 'How is RegMaster different from Google Forms?',

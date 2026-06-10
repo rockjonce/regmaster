@@ -84,6 +84,8 @@
   // -------- LANG --------
   function loadLang() {
     var v = '';
+    // #1-5: 支援 ?lang=zh|en URL 參數（分享在地化連結用），優先於 localStorage。
+    try { var qp = (new URLSearchParams(location.search)).get('lang'); if (qp === 'zh' || qp === 'en') { try { localStorage.setItem(LS_KEY_LANG, qp); } catch (e) {} return qp; } } catch (e) {}
     try { v = localStorage.getItem(LS_KEY_LANG) || ''; } catch (e) {}
     if (v !== 'zh' && v !== 'en') {
       // Detect from browser
