@@ -31,6 +31,18 @@ function toDayKey(s) {
   if (m) return m[1] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[3]).padStart(2, "0");
   return "";
 }
+// Parse an organiser-entered datetime string as Asia/Taipei (UTC+8) → absolute epoch ms.
+// The Cloud Run runtime is UTC, so a bare `new Date("2026-06-10T08:30")` mis-reads it as 08:30 UTC
+// (8h skew) which kept public pages "not yet open" for 8h. Returns NaN for empty/unparseable-as-empty.
+function parseTW(s) {
+  if (!s) return NaN;
+  const str = String(s).replace("T", " ").trim();
+  let m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+  if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 8 * 3600000;
+  m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]) - 8 * 3600000;
+  return new Date(s).getTime();
+}
 function hashPwd(p) {
   return crypto.createHash("sha256").update(p).digest("hex");
 }
@@ -1304,6 +1316,12 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
 
+  // #2-2: 拒絕負數費用（退費/結算數學的資料完整性）。
+  if (jc.registrationFee != null && Number(jc.registrationFee) < 0) throw new HttpsError("failed-precondition", "報名費不可為負數");
+  if (Array.isArray(jc.feeItems)) {
+    for (const it of jc.feeItems) { if (it && Number(it.amount) < 0) throw new HttpsError("failed-precondition", "費用項目金額不可為負數"); }
+  }
+
   // Refund policy: enforce legal floors (organiser may be more generous, never below).
   if (jc.refundPolicy && typeof jc.refundPolicy === "object") {
     const rp = jc.refundPolicy;
@@ -1620,8 +1638,8 @@ exports.getRegistrationBundle = callable(async (data) => {
   const _now = Date.now();
   let regStatus = "open";
   if (cfg.isOpen !== true) regStatus = "closed";
-  else if (cfg.openDate && _now < new Date(cfg.openDate).getTime()) regStatus = "not_yet_open";
-  else if (cfg.deadline && _now >= new Date(cfg.deadline).getTime()) regStatus = "deadline_passed";
+  else if (cfg.openDate && _now < parseTW(cfg.openDate)) regStatus = "not_yet_open";
+  else if (cfg.deadline && _now >= parseTW(cfg.deadline)) regStatus = "deadline_passed";
 
   return {
     ownerTier, regStatus, openDate: cfg.openDate || "",
@@ -1679,10 +1697,35 @@ exports.submitRegistration = callable(async (data, request) => {
   const cfg = comp.config || {};
   if (!comp.isOpen) return { success: false, message: "報名未開放" };
   // Item 1: enforce the organizer-set open time — registration is not allowed before it.
-  if (cfg.openDate && new Date() < new Date(cfg.openDate)) {
+  if (cfg.openDate && Date.now() < parseTW(cfg.openDate)) {
     return { success: false, message: "報名尚未開始，開放時間：" + String(cfg.openDate).replace('T', ' ') };
   }
-  if (comp.deadline && new Date() >= new Date(comp.deadline)) return { success: false, message: "已截止" };
+  if (comp.deadline && Date.now() >= parseTW(comp.deadline)) return { success: false, message: "已截止" };
+
+  // #3-1: server-side 組別年齡/生日驗證（主辦方 UI 承諾「報名時自動驗證」；原僅前端可繞過）。
+  {
+    const ageRule = (cfg.groupAgeRules || {})[fd.group];
+    if (ageRule && (ageRule.type === "age" || ageRule.type === "birth")) {
+      const students = Array.isArray(fd.students) ? fd.students : [];
+      for (let i = 0; i < students.length; i++) {
+        const bd = students[i] && students[i].birthday;
+        if (!bd) continue;
+        if (ageRule.type === "age") {
+          const b = new Date(bd);
+          if (isNaN(b.getTime())) return { success: false, message: "學員" + (i + 1) + " 生日格式有誤" };
+          const t = new Date();
+          let age = t.getFullYear() - b.getFullYear();
+          const mm = t.getMonth() - b.getMonth();
+          if (mm < 0 || (mm === 0 && t.getDate() < b.getDate())) age--;
+          if (ageRule.minAge != null && age < ageRule.minAge) return { success: false, message: "學員" + (i + 1) + " 不符組別「" + fd.group + "」年齡下限 " + ageRule.minAge + " 歲（目前 " + age + " 歲）" };
+          if (ageRule.maxAge != null && age > ageRule.maxAge) return { success: false, message: "學員" + (i + 1) + " 不符組別「" + fd.group + "」年齡上限 " + ageRule.maxAge + " 歲（目前 " + age + " 歲）" };
+        } else {
+          if (ageRule.birthFrom && bd < ageRule.birthFrom) return { success: false, message: "學員" + (i + 1) + " 生日早於組別「" + fd.group + "」允許範圍（" + ageRule.birthFrom + " 起）" };
+          if (ageRule.birthTo && bd > ageRule.birthTo) return { success: false, message: "學員" + (i + 1) + " 生日晚於組別「" + fd.group + "」允許範圍（至 " + ageRule.birthTo + "）" };
+        }
+      }
+    }
+  }
 
   // U4: team-name uniqueness — within this competition, no two teams may share a CN or EN name.
   // Skip empty names. Trim + case-fold the EN name for fairness.
@@ -2362,8 +2405,8 @@ const REFUND_TEMPLATES = {
     suggest: [{ daysBefore: 1, pct: 90 }]
   },
   general: {
-    label: "一般活動／競賽（建議比照旅遊級距）",
-    floors: [{ minDays: 41, pct: 95 }, { minDays: 31, pct: 90 }, { minDays: 21, pct: 80 }, { minDays: 2, pct: 70 }, { minDays: 1, pct: 50 }],
+    label: "一般活動／競賽（平台建議級距，非法定強制）",
+    floors: [{ minDays: 30, pct: 80 }, { minDays: 7, pct: 70 }, { minDays: 1, pct: 50 }],
     suggest: [{ daysBefore: 30, pct: 80 }, { daysBefore: 7, pct: 70 }, { daysBefore: 1, pct: 50 }]
   }
 };
@@ -3275,7 +3318,7 @@ exports.reconcilePayments = compAuthCallable(async (data, request) => {
     }
   }
   if (matched > 0) await auditLog(request.authUser.username, "匯款對帳", compId, "後碼:" + accountSuffix + " 匹配:" + matched);
-  return { success: matched > 0, message: "匹配 " + matched + " 筆" };
+  return { success: matched > 0, matched, message: "匹配 " + matched + " 筆" };
 });
 
 exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
@@ -6451,6 +6494,8 @@ exports.applyPayout = compAuthCallable("manage", async (data, request) => {
       depRefs.push(ref); items.push({ depositId: did, teamNameCN: x.sourceTeamName || "(保留款)", amount: amt, fee, net });
     }
     const wireFee = 15, netRounded = Math.round(netTotal), actualWire = Math.max(0, netRounded - wireFee);
+    // #6-2: 防呆 — 實際可匯金額為 0（未達 NT$15 匯費門檻）不應成立申請。
+    if (actualWire <= 0) throw new HttpsError("failed-precondition", "實際可匯金額為 0（未達 NT$15 匯費門檻），請累積更多款項後再申請。");
     const scheduledPayoutDate = computeScheduledPayout(cycle);
     tx.set(reqRef, {
       reqId: reqRef.id, creator, compId, compName, status: "requested",
@@ -6590,14 +6635,14 @@ async function _runCheckDeadlines() {
     const r = doc.data();
     const cfg = r.config || {};
     // Auto close if deadline passed
-    if (r.isOpen && r.deadline && now >= new Date(r.deadline)) {
+    if (r.isOpen && r.deadline && now.getTime() >= parseTW(r.deadline)) {
       await doc.ref.update({ isOpen: false });
       await db.collection("announcements").add({ compId: doc.id, date: now.toISOString().substring(0, 10), title: "📌 報名已截止", content: "" });
     }
     // Auto open if openDate reached
-    if (!r.isOpen && cfg.openDate && now >= new Date(cfg.openDate)) {
-      const dl = r.deadline ? new Date(r.deadline) : null;
-      if (!dl || now < dl) await doc.ref.update({ isOpen: true });
+    if (!r.isOpen && cfg.openDate && now.getTime() >= parseTW(cfg.openDate)) {
+      const dl = r.deadline ? parseTW(r.deadline) : 0;
+      if (!dl || now.getTime() < dl) await doc.ref.update({ isOpen: true });
     }
   }
   return { success: true };
@@ -7693,10 +7738,14 @@ exports.submitJudgeScore = compAuthCallable("scoring", async (data, request) => 
   const { compId, teamId, cells, items, totalScore, comment } = data;
   if (!compId || !teamId) return { success: false, message: "缺少 compId / teamId" };
   const judgeId = request.authUser.username;
+  // #5-1: 載入量表以對每筆評分 clamp 至該項滿分（並重用於評審分組檢查）。
+  const _cDoc = await db.collection("competitions").doc(compId).get();
+  const _ccfg = _cDoc.exists ? (_cDoc.data().config || {}) : {};
+  const _leafMax = {};
+  (function walk(ns) { (ns || []).forEach(n => { if (n && n.children && n.children.length) walk(n.children); else if (n && n.id != null) _leafMax[String(n.id)] = (Number(n.max) > 0 ? Number(n.max) : null); }); })((_ccfg.scoringRubric && _ccfg.scoringRubric.nodes) || []);
   // Judges may only score teams in a panel they belong to (when panels are defined).
   if (request.memberRoleName === "judge") {
-    const cDoc = await db.collection("competitions").doc(compId).get();
-    const panels = (cDoc.exists && cDoc.data().config && cDoc.data().config.scoringPanels) || [];
+    const panels = _ccfg.scoringPanels || [];
     const myPanels = panels.filter(p => (p.judges || []).indexOf(judgeId) >= 0);
     // UX-019: match by GROUP (dynamic) — same rule as judgeContext so newly-registered
     // teams in the judge's group are scorable without re-editing the panel.
@@ -7714,11 +7763,11 @@ exports.submitJudgeScore = compAuthCallable("scoring", async (data, request) => 
   const rec = { compId, teamId, judgeId, comment: String(comment || '').slice(0, 1000), updatedAt: fmtNow() };
   if (cells && typeof cells === 'object') {
     // New (v3): per-leaf record arrays — { leafId: [v1, v2, ...] }
-    const clean = {}; Object.keys(cells).slice(0, 300).forEach(k => { const arr = Array.isArray(cells[k]) ? cells[k] : [cells[k]]; clean[String(k).slice(0, 40)] = arr.slice(0, 20).map(x => parseFloat(x) || 0); });
+    const clean = {}; Object.keys(cells).slice(0, 300).forEach(k => { const kk = String(k).slice(0, 40); const mx = _leafMax[kk]; const arr = Array.isArray(cells[k]) ? cells[k] : [cells[k]]; clean[kk] = arr.slice(0, 20).map(x => { let v = Math.max(0, parseFloat(x) || 0); if (mx != null) v = Math.min(mx, v); return v; }); });
     rec.cells = clean; rec.schemaVersion = 'v3';
   } else {
     // Legacy (v2): items[] + totalScore
-    rec.items = Array.isArray(items) ? items.slice(0, 40).map(it => ({ key: String(it.key || '').slice(0, 40), label: String(it.label || '').slice(0, 80), score: parseFloat(it.score) || 0, maxScore: parseFloat(it.maxScore) || 100, weight: parseFloat(it.weight) || 1 })) : [];
+    rec.items = Array.isArray(items) ? items.slice(0, 40).map(it => { const mx = parseFloat(it.maxScore) || 100; return { key: String(it.key || '').slice(0, 40), label: String(it.label || '').slice(0, 80), score: Math.max(0, Math.min(mx, parseFloat(it.score) || 0)), maxScore: mx, weight: parseFloat(it.weight) || 1 }; }) : [];
     rec.totalScore = parseFloat(totalScore) || 0; rec.schemaVersion = 'v2';
   }
   await db.collection("scores").doc(docId).set(rec, { merge: true });
@@ -8430,7 +8479,7 @@ exports.getAiInsights = authCallable(["system", "competition"], async (data, req
     const cfg = c.config || {};
     const max = c.maxTeams || c.maxCapacityLimit || 0;
     const team = c.teamCount || 0;
-    const dl = cfg.deadline ? new Date(cfg.deadline).getTime() : 0;
+    const dl = cfg.deadline ? parseTW(cfg.deadline) : 0;
     const daysLeft = dl ? Math.ceil((dl - now) / 86400000) : null;
 
     // Heuristic 1: nearly full + open
@@ -8541,7 +8590,7 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
 
     // Todo 2: deadline approaching
     if (c.isOpen && cfg.deadline) {
-      const dl = new Date(cfg.deadline).getTime();
+      const dl = parseTW(cfg.deadline);
       const daysLeft = Math.ceil((dl - now) / 86400000);
       if (daysLeft >= 0 && daysLeft <= 3) {
         todos.push({
