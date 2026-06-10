@@ -58,7 +58,8 @@
 .quick-chips { max-width:1280px; margin:24px auto 0; display:flex; flex-wrap:wrap; gap:8px; }
 .qchip { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:var(--surface); border:1px solid var(--line); border-radius:999px; font:500 13px/1 var(--f-tc); color:var(--ink-2); cursor:pointer; transition:.15s; }
 .qchip:hover { border-color:var(--ink-3); }
-.qchip.on { background:var(--ink); border-color:var(--ink); color:white; }
+/* color:var(--surface) 而非寫死 white：深色模式 --ink 翻白時文字一起翻深，選中chip才不會白字隱形 */
+.qchip.on { background:var(--ink); border-color:var(--ink); color:var(--surface); }
 .qchip .dot-c { width:8px; height:8px; border-radius:50%; }
 .qchip em { color:var(--muted); font-style:normal; font-weight:500; }
 

@@ -163,6 +163,8 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 /* dark-mode fix: keep inverted CTA band dark so white text stays visible */
 [data-theme="dark"] .cta-strip { background:#0d1638; color:#fff; }
 [data-theme="dark"] .cta-strip .btn-accent { background:#fff; color:#0B1432; border-color:#fff; }
+/* dark-mode fix: AI 示範面板本是深底白字(bg:--ink)；深色模式 --ink 翻白→白字隱形。固定深底。 */
+[data-theme="dark"] .ai-demo { background:#0d1638; }
 </style>
 </head>
 <body>
