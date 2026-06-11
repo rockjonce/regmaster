@@ -180,6 +180,7 @@
     payuniRefundAndDelete:["compId","reqId"],
     getOwnerRefundContext:["compId","teamId"],
     ownerRefund:["compId","teamId","refundAmount","note"],
+    ownerRefundWaitlist:["compId"],
     listPayoutRequests:["status"],
     approvePayout:["reqId"],
     rejectPayout:["reqId","reasonCode","reasonText"],

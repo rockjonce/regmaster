@@ -2856,24 +2856,25 @@ exports.getOwnerRefundContext = compAuthCallable("manage", async (data, request)
 });
 
 // 執行主動退費：PayUNI 已付且未匯出 → 退刷；否則記錄主辦方自行退款。保留報名（標記已退費）。
-exports.ownerRefund = compAuthCallable("manage", async (data, request) => {
-  const compId = data.compId, teamId = data.teamId;
+// R6-4: 主辦方主動退費「核心」— 單筆(ownerRefund)與備取一鍵退款(ownerRefundWaitlist)共用。
+// refundAmountOrNull = null → 全額退（訂單金額 → 折後應付 owedAmount → 活動定價，依序取得）。
+async function _ownerRefundCore(request, compId, teamId, refundAmountOrNull, note) {
   const creator = await _resolveCreator(request, compId);
-  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方退費" };
-  const refundAmt = Math.round(Number(data.refundAmount));
-  const note = String(data.note || "").slice(0, 300);
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
   if (team.status === "已取消") return { success: false, message: "此報名已取消" };
-  if (!(refundAmt > 0)) return { success: false, message: "請輸入有效的退款金額" };
   let paidAmount = 0, order = null, orderRef = null;
   if (team.regPaymentId) {
     orderRef = db.collection("regPayments").doc(team.regPaymentId);
     const rp = await orderRef.get();
     if (rp.exists) { order = rp.data(); paidAmount = parseInt(order.amount, 10) || 0; }
   }
+  // 折後應付（confirmManualPayment 落地）優先於活動定價 — 否則套折扣的隊會被多退
+  if (!paidAmount && team.owedAmount != null && team.owedAmount !== "") paidAmount = parseInt(team.owedAmount, 10) || 0;
   if (!paidAmount) { const comp = (await db.collection("competitions").doc(compId).get()).data() || {}; paidAmount = (computeRefund(comp, team).paidAmount) || 0; }
+  const refundAmt = refundAmountOrNull == null ? paidAmount : refundAmountOrNull;
+  if (!(refundAmt > 0)) return { success: false, message: "請輸入有效的退款金額" };
   if (refundAmt > paidAmount) return { success: false, message: "退款金額不可超過原付款金額 NT$" + paidAmount };
   const compDoc = await db.collection("competitions").doc(compId).get();
   const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
@@ -2917,6 +2918,33 @@ exports.ownerRefund = compAuthCallable("manage", async (data, request) => {
     if (emails.length) await queueMail(emails, "[RegMaster] 退費通知 — " + compName, html);
   } catch (e) {}
   return { success: true, refundedAmount: refundAmt, retainedAmount: retained, channel: channelUsed, payuniRefundNo };
+}
+
+exports.ownerRefund = compAuthCallable("manage", async (data, request) => {
+  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方退費" };
+  return await _ownerRefundCore(request, data.compId, data.teamId, Math.round(Number(data.refundAmount)), String(data.note || "").slice(0, 300));
+});
+
+// R6-4（user 決策）：備取比照正取付款 — 主辦方可一鍵退款全部「已付款且未退費」的備取報名。
+exports.ownerRefundWaitlist = compAuthCallable("manage", async (data, request) => {
+  if (request.authUser.role === "system") return { success: false, message: "系統管理員為檢視模式，無法代主辦方退費" };
+  const compId = data.compId;
+  const snap = await db.collection("teams").where("compId", "==", compId).get();
+  const targets = snap.docs.map(d => d.data()).filter(t =>
+    String(t.status || "").startsWith("備取") &&
+    String(t.paymentStatus || "").includes("已確認") &&
+    !String(t.paymentStatus || "").includes("已退費"));
+  if (!targets.length) return { success: false, message: "沒有已付款的備取報名可退款" };
+  let done = 0, total = 0; const failures = [];
+  for (const t of targets) {
+    try {
+      const r = await _ownerRefundCore(request, compId, t.teamId, null, "備取一鍵退款");
+      if (r && r.success) { done++; total += r.refundedAmount || 0; }
+      else failures.push({ teamId: t.teamId, message: (r && r.message) || "失敗" });
+    } catch (e) { failures.push({ teamId: t.teamId, message: String((e && e.message) || e).slice(0, 80) }); }
+  }
+  await auditLog(request.authUser.username, "備取一鍵退款", compId, "成功 " + done + "/" + targets.length + "，共 NT$" + total);
+  return { success: done > 0, refunded: done, totalAmount: total, attempted: targets.length, failures };
 });
 
 exports.updateRegistration = callable(async (data) => {
@@ -5955,7 +5983,7 @@ exports.confirmManualPayment = callable(async (data) => {
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
   if (team.status === "已取消") return { success: false, message: "此報名已取消" };
-  if (String(team.status || "").startsWith("備取")) return { success: false, code: "WAITLISTED", message: "您目前為備取，暫不需付款。" };
+  // R6-4（user 決策）：備取比照正取付款（完成付款才具備備取資格），不再擋備取。
   if (String(team.paymentStatus || "").includes("已確認")) return { success: false, message: "此報名已完成付款" };
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
   const peopleCount = Math.max(1, memSnap.size);
@@ -5984,13 +6012,7 @@ exports.createRegistrationPayment = callable(async (data) => {
   if (!compDoc.exists) return { success: false, message: "找不到活動" };
   const cfg = compDoc.data().config || {};
   if (!cfg.payuniEnabled) return { success: false, message: "此活動未啟用線上付款" };
-  // #3-6: 備取暫不需付款（遞補為正取會另行通知），不建立付款訂單。
-  {
-    const _tDoc = await db.collection("teams").doc(teamId).get();
-    if (_tDoc.exists && String(_tDoc.data().status || "").startsWith("備取")) {
-      return { success: false, code: "WAITLISTED", message: "您目前為備取，暫不需付款；若遞補為正取會再通知您。" };
-    }
-  }
+  // R6-4（user 決策）：備取比照正取付款（完成付款才具備備取資格）— 不再擋備取建立付款訂單。
 
   // U2 fix: edit.html doesn't expose per-activity PayUNI keys (only the enable toggle), so
   // cfg.payuniMerID/payuniHashKey are almost always empty. Fall back to the system-level

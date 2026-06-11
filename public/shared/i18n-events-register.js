@@ -154,6 +154,8 @@
 
     // ----- dynamic: session / member counts & titles -----
     rgSessionRegistered: ' 已報名',
+    rgSessionFullWl: '已滿，報名將列候補',
+    rgSessionFull: '已額滿',
     rgCountUnit: ' 位',          // used as: 共 N 位
     rgCountPrefix: '共 ',
     rgStudentN: '學員',          // used as: 學員 N
@@ -379,6 +381,8 @@
     rgAtmCardAcc: 'Acct',
 
     rgSessionRegistered: ' registered',
+    rgSessionFullWl: 'Full — you will be waitlisted',
+    rgSessionFull: 'Full',
     rgCountUnit: ' total',
     rgCountPrefix: '',
     rgStudentN: 'Participant',
