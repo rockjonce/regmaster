@@ -562,7 +562,8 @@
         var role = res && res.role;
         if (!role || role === 'owner' || role === 'manager') return;   // full access — show all
         var keep = {};
-        (role === 'staff' ? ['/checkin'] : role === 'judge' ? ['/scoring'] : []).forEach(function (p) { keep[p] = 1; });
+        // R5 H-10: staff 開放證書/名牌（user 決策）
+        (role === 'staff' ? ['/checkin', '/certificates'] : role === 'judge' ? ['/scoring'] : []).forEach(function (p) { keep[p] = 1; });
         document.querySelectorAll('[data-goto]').forEach(function (a) {
           var g = a.getAttribute('data-goto'); if (g && !keep[g]) a.style.display = 'none';
         });

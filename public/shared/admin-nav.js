@@ -80,7 +80,7 @@
         eitem('/payments', 'anEvtBilling', '帳務', 'payments', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', '') +
         eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge', '', 'scoring') +
         eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff', '', 'checkin') +
-        eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager', '', 'certificate') +
+        eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager staff', '', 'certificate') +   /* R5 H-10: staff 開放證書 */
       '</div>';
   }
 

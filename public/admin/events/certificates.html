@@ -369,7 +369,7 @@
 
   function load() {
     Promise.all([
-      callSafe('listCertTemplates', { templates: [], enabled: false }, compId),
+      callSafe('listCertTemplates', { templates: [], enabled: false, noPerm: true }, compId),
       callSafe('getCompetitionConfig', {}, compId),
       callSafe('getCertRecipients', { recipients: [] }, compId),
       callSafe('getLiveLeaderboard', [], compId),
@@ -388,7 +388,16 @@
       $('crumbHub').textContent = (CONFIG && CONFIG.competitionName) || compId;
       $('loadingState').style.display = 'none';
 
-      if (!ENABLED) { $('upgradeState').classList.remove('hidden'); return; }
+      if (!ENABLED) {
+        // R5 H-10: 呼叫被權限拒絕（如 judge）≠ 方案未含 — 顯示「權限不足」而非誤導的升級鎖
+        if (tplRes.noPerm) {
+          var _us = $('upgradeState');
+          var _h2 = _us.querySelector('h2'); if (_h2) { _h2.removeAttribute('data-i18n'); _h2.textContent = window.L('aeCrtNoPermTitle'); }
+          var _p = _us.querySelector('p'); if (_p) { _p.removeAttribute('data-i18n'); _p.textContent = window.L('aeCrtNoPermBody'); }
+          var _a = _us.querySelector('a.cbtn'); if (_a) _a.style.display = 'none';
+        }
+        $('upgradeState').classList.remove('hidden'); return;
+      }
 
       $('content').classList.remove('hidden');
       buildRecipients();

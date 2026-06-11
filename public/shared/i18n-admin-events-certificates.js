@@ -23,6 +23,8 @@
 
     // ----- plan gating -----
     aeCrtUpgradeTitle: '證書 / 名牌為 Pro / Team 方案功能',
+    aeCrtNoPermTitle: '沒有證書 / 名牌的使用權限',
+    aeCrtNoPermBody: '你在此活動的角色沒有證書／名牌製作權限，請聯繫活動擁有者或管理者。',
     aeCrtUpgradeBody: '升級方案即可使用證書與名牌的設計與批次產生功能。',
     aeCrtUpgradeBtn: '查看方案與授權 →',
 
@@ -212,6 +214,8 @@
 
     // ----- plan gating -----
     aeCrtUpgradeTitle: 'Certificates / Badges is a Pro / Team feature',
+    aeCrtNoPermTitle: 'No permission for Certificates / Badges',
+    aeCrtNoPermBody: 'Your role in this event does not include certificate/badge tools. Please contact the event owner or a manager.',
     aeCrtUpgradeBody: 'Upgrade your plan to design and batch-generate certificates and name badges.',
     aeCrtUpgradeBtn: 'View Plans & Licensing →',
 

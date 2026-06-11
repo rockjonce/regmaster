@@ -1629,6 +1629,14 @@
     if (data.openDate && data.deadline && data.openDate >= data.deadline) {
       uiAlert(window.L('aeEditValOpenDeadline')); return;
     }
+    // R5 H-8: 場次結束不可早於開始（後端同樣會擋；這裡先給即時回饋）
+    if (data.dateMode === 'multi') {
+      var _badSes = (data.sessions || []).find(function (s) {
+        if (!s || !s.startDate || !s.endDate) return false;
+        return (s.endDate + 'T' + (s.endTime || '23:59')) < (s.startDate + 'T' + (s.startTime || '00:00'));
+      });
+      if (_badSes) { uiAlert(window.L('aeEditValSessionOrder').replace('{n}', _badSes.name || '')); return; }
+    }
     // #2-6/#2-8: 非阻斷的提醒（活動日早於截止、或可見活動未填活動日）。確認後才繼續存。
     if (!_skipSaveWarn) {
       var _warns = [];

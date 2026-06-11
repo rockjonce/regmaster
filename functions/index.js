@@ -216,8 +216,9 @@ function authCallable(roles, handler) {
 // Owner (competition.creator) & system always have full access (handled below).
 // 'danger' (e.g. delete whole event) is owner-only — granted to no member role.
 const ROLE_CAPS = {
-  manager: ["view", "checkin", "scoring", "manage"],
-  staff:   ["view", "checkin"],
+  // R5 H-10: 證書/名牌另立 "cert" 能力 — staff 開放製作（user 決策），judge 不開。
+  manager: ["view", "checkin", "scoring", "manage", "cert"],
+  staff:   ["view", "checkin", "cert"],
   judge:   ["view", "scoring"]
 };
 // Is `username` an active member of `orgOwner`'s org holding `capability` for `compId`?
@@ -1340,6 +1341,18 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
       tiers: tiers.map(t => ({ daysBefore: parseInt(t.daysBefore, 10) || 0, pct: Number(t.pct) || 0 })).sort((a, b) => b.daysBefore - a.daysBefore),
       note: String(rp.note || "").slice(0, 500)
     };
+  }
+
+  // R5 H-8: 場次結束不可早於開始（公開頁會原樣顯示「6/21 ～ 6/20」荒謬區間）
+  if (Array.isArray(jc.sessions)) {
+    for (const s of jc.sessions) {
+      if (!s || !s.startDate || !s.endDate) continue;
+      const _st = s.startDate + "T" + (s.startTime || "00:00");
+      const _en = s.endDate + "T" + (s.endTime || "23:59");
+      if (_en < _st) {
+        return { success: false, message: "場次「" + (s.name || "") + "」的結束時間早於開始時間，請修正後再儲存。" };
+      }
+    }
   }
 
   // U1: 即日起 — overwrite openDate with the server-side save time so the timestamp
@@ -2467,7 +2480,13 @@ function computeRefund(comp, team) {
   const cfg = comp.config || {};
   const policy = cfg.refundPolicy || null;
   const paid = Number(cfg.registrationFee || 0);
-  const eventDate = cfg.competitionDate || "";
+  let eventDate = cfg.competitionDate || "";
+  // R5 H-11: 多梯次活動沒有單一「活動日」— 以最早場次起日計算退費級距，
+  // 否則退費引擎一律回「未設定活動日期」，多梯次活動退費全斷。
+  if (!eventDate && Array.isArray(cfg.sessions) && cfg.sessions.length) {
+    const ds = cfg.sessions.map(s => String((s && s.startDate) || "")).filter(Boolean).sort();
+    if (ds.length) eventDate = ds[0];
+  }
   const d = daysUntil(eventDate);
   const out = { paidAmount: paid, eventDate, daysBefore: d, pct: null, calcRefund: 0,
     pastStart: false, hasPolicy: !!(policy && Array.isArray(policy.tiers) && policy.tiers.length), eventDateMissing: d === null,
@@ -8106,7 +8125,9 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
   const role = request.memberRoleName, me = request.authUser.username;
 
   if (action === "results") {
-    if (role === "judge" && cfg.judgeSeeLiveRanking !== true) return { hidden: true, results: [] };
+    // R5 M-7: owner/manager 以「評審身分」進評分模式時（asJudge），同樣遵守公平性設定 —
+    // 否則「評審可看到即時排名=關」對切到評審視角的管理者形同虛設。
+    if ((role === "judge" || data.asJudge === true) && cfg.judgeSeeLiveRanking !== true) return { hidden: true, results: [] };
     return await computeScoring(compId);
   }
 
@@ -8114,7 +8135,8 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
     if (!compDoc.exists) return { ok: false };
     const panels = Array.isArray(cfg.scoringPanels) ? cfg.scoringPanels : [];
     const tSnap = await db.collection("teams").where("compId", "==", compId).get();
-    let teams = tSnap.docs.map(d => d.data()).filter(t => t.status !== "已取消");
+    // R5 M-7: 備取隊伍不參賽 — 不進評分名單（遞補為正取後自然納入）
+    let teams = tSnap.docs.map(d => d.data()).filter(t => t.status !== "已取消" && !String(t.status || "").startsWith("備取"));
     if (role === "judge") {
       const myPanels = panels.filter(p => (p.judges || []).indexOf(me) >= 0);
       // UX-019: assign by GROUP (dynamic) — 不指定組別 = 涵蓋全部、之後新報名的隊伍
@@ -8133,7 +8155,9 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
     const myScores = {};
     const ssnap = await db.collection("scores").where("compId", "==", compId).get();
     ssnap.docs.forEach(d => { const s = d.data(); if ((s.judgeId || s.user) === me && s.teamId) myScores[s.teamId] = { cells: s.cells || {}, comment: s.comment || "" }; });
-    return { ok: true, rubric: cfg.scoringRubric || { nodes: [] }, teams: teamsOut, myScores, seeInfo, canSeeRanking: role !== "judge" || cfg.judgeSeeLiveRanking === true };
+    // R5 M-7: 評審主控台（含 owner/manager 的「以評審身分評分」模式）一律遵守
+    // judgeSeeLiveRanking — 管理視角的成績分頁/證書排名不受影響。
+    return { ok: true, rubric: cfg.scoringRubric || { nodes: [] }, teams: teamsOut, myScores, seeInfo, canSeeRanking: cfg.judgeSeeLiveRanking === true };
   }
 
   if (action === "export") {
@@ -9172,7 +9196,7 @@ async function eventHasFeature(compId, key) {
   } catch (e) { return false; }
 }
 
-exports.uploadCertAsset = compAuthCallable("manage", async (data, request) => {
+exports.uploadCertAsset = compAuthCallable("cert", async (data, request) => {
   const compId = String(data.compId || "");
   if (!(await eventHasFeature(compId, "certificate"))) return { success: false, message: "證書功能為 Pro / Team 方案" };
   const base64Data = String(data.base64Data || "");
@@ -9208,7 +9232,7 @@ exports.getCertAssetData = callable(async (data) => {
   return { success: true, dataUri: "data:" + (p.mimeType || "image/png") + ";base64," + full, kind: p.kind || "bg" };
 });
 
-exports.listCertTemplates = compAuthCallable("manage", async (data) => {
+exports.listCertTemplates = compAuthCallable("cert", async (data) => {
   const compId = String(data.compId || "");
   const snap = await db.collection("certTemplates").where("compId", "==", compId).get();
   const templates = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
@@ -9234,7 +9258,7 @@ function sanitizeCertField(f) {
   return out;
 }
 
-exports.saveCertTemplate = compAuthCallable("manage", async (data, request) => {
+exports.saveCertTemplate = compAuthCallable("cert", async (data, request) => {
   const compId = String(data.compId || "");
   if (!(await eventHasFeature(compId, "certificate"))) return { success: false, message: "證書功能為 Pro / Team 方案" };
   const t = data.template || {};
@@ -9266,7 +9290,7 @@ exports.saveCertTemplate = compAuthCallable("manage", async (data, request) => {
   return { success: true, id };
 });
 
-exports.deleteCertTemplate = compAuthCallable("manage", async (data, request) => {
+exports.deleteCertTemplate = compAuthCallable("cert", async (data, request) => {
   const compId = String(data.compId || "");
   const ref = db.collection("certTemplates").doc(String(data.templateId || ""));
   const doc = await ref.get();
