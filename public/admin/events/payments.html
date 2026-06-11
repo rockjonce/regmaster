@@ -311,13 +311,16 @@
       b.addEventListener('click', function () {
         var tid = b.dataset.tid;
         if (b.dataset.act === 'confirm') {
+          // R5 H-9: in-flight 鎖 + 按鈕 disable — 連點不再發出並發確認
+          if (b.dataset.busy === '1') return;
           uiConfirm(window.L('aePayConfirmMsg'), { title: window.L('aePayConfirmTitle') }).then(function (ok) {
             if (!ok) return;
+            b.dataset.busy = '1'; b.disabled = true;
             google.script.run
               // S3-2: surface backend rejection (e.g. PayUNI orders can't be manually confirmed)
               // instead of silently calling load() on {success:false}.
-              .withSuccessHandler(function (res) { if (res && res.success) { load(); } else { uiAlert(window.L('aePayConfirmFailPre') + ((res && res.message) || '')); } })
-              .withFailureHandler(function (err) { uiAlert(window.L('aePayConfirmFailPre') + (err && err.message)); })
+              .withSuccessHandler(function (res) { b.dataset.busy = ''; b.disabled = false; if (res && res.success) { load(); } else { uiAlert(window.L('aePayConfirmFailPre') + ((res && res.message) || '')); } })
+              .withFailureHandler(function (err) { b.dataset.busy = ''; b.disabled = false; uiAlert(window.L('aePayConfirmFailPre') + (err && err.message)); })
               .confirmPayment(tid, me.username);
           });
         } else if (b.dataset.act === 'view') {

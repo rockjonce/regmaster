@@ -3314,6 +3314,10 @@ exports.confirmPayment = compAuthCallable(async (data, request) => {
   if (cfg.payuniEnabled === true) {
     return { success: false, message: "本活動為線上付款，款項由 PayUni 自動對帳，無法手動確認。" };
   }
+  // R5 H-9: 冪等 — 已確認的重複請求直接回成功，不重寫時間戳（連點/併發不再產生不一致）
+  if (String(teamDoc.data().paymentStatus || "").includes("已確認")) {
+    return { success: true, already: true };
+  }
   await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 " + fmtNow() });
   await auditLog(request.authUser.username, "確認付款", teamId, "");
   return { success: true };
@@ -5356,12 +5360,22 @@ async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo)
   await orderRef.update({ status: "paid", paidAt: fmtNow(), payuniTradeNo: tradeNo || "", payoutState: "available", refundState: "none" });
   /* Auto-confirm team payment — 不覆寫 paymentMethod（保留報名時選的 "payuni"），
      付款已由 paymentStatus「已確認(線上付款)」表達，使付款方式欄一致顯示「信用卡（PayUNI）」。 */
-  await db.collection("teams").doc(order.teamId).update({
+  // R5 H-5: 消耗以 team.codeConsumed 為唯一旗標 — 「套用當下」已消耗過的碼，付款成功不再重複扣
+  let _consumeNow = false;
+  if (order.discountCode) {
+    try {
+      const _t = await db.collection("teams").doc(order.teamId).get();
+      _consumeNow = !_t.exists || _t.data().codeConsumed !== order.discountCode;
+    } catch (e) { _consumeNow = false; }
+  }
+  const _teamUpd = {
     paymentStatus: "已確認 (線上付款) " + fmtNow(),
     regPaymentId: orderId
-  });
-  /* Item 10: consume the discount code now that payment succeeded */
-  if (order.discountCode) {
+  };
+  if (_consumeNow) _teamUpd.codeConsumed = order.discountCode;
+  await db.collection("teams").doc(order.teamId).update(_teamUpd);
+  /* Item 10: consume the discount code now that payment succeeded (once per team) */
+  if (_consumeNow) {
     try { await db.collection("discountCodes").doc(compId + "_" + order.discountCode).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
   }
   await auditLog("system", "線上付款成功", order.teamId, "PAYUNi " + orderId);
@@ -5796,7 +5810,7 @@ function applyDisc(base, type, value) {
   return Math.min(base, Math.round(value));
 }
 // Server-authoritative price quote. Group discount is automatic; code is optional.
-async function quoteRegistration(compId, peopleCount, code) {
+async function quoteRegistration(compId, peopleCount, code, heldCode) {
   const compDoc = await db.collection("competitions").doc(compId).get();
   if (!compDoc.exists) return { ok: false, message: "找不到活動" };
   const cfg = compDoc.data().config || {};
@@ -5818,7 +5832,9 @@ async function quoteRegistration(compId, peopleCount, code) {
       const c = cd.data();
       if (c.active === false) codeMsg = "折扣碼已停用";
       else if (c.expiresAt && new Date(c.expiresAt).getTime() < Date.now()) codeMsg = "折扣碼已過期";
-      else if ((parseInt(c.maxUses, 10) || 0) > 0 && (c.usedCount || 0) >= c.maxUses) codeMsg = "折扣碼已用完";
+      // R5 H-5: 本隊已持有(已消耗)的同一碼不受「已用完」限制 — 否則套用即消耗後，重整頁面就被自己佔的名額擋下
+      else if ((parseInt(c.maxUses, 10) || 0) > 0 && (c.usedCount || 0) >= c.maxUses
+               && codeUp !== String(heldCode || "").toUpperCase()) codeMsg = "折扣碼已用完";
       else { codeDiscount = applyDisc(base - groupDiscount, c.type, c.value); codeValid = true; codeMsg = "已套用折扣碼"; }
     }
   }
@@ -5829,11 +5845,12 @@ async function quoteRegistration(compId, peopleCount, code) {
 // Public: registrant previews the discounted total (does NOT consume the code).
 // Counts the team's members server-side so the group discount is accurate.
 exports.validateDiscountCode = callable(async (data) => {
-  let peopleCount = parseInt(data.peopleCount, 10) || 1;
+  let peopleCount = parseInt(data.peopleCount, 10) || 1, heldCode = "";
   if (data.teamId) {
     try { const ms = await db.collection("members").where("teamId", "==", data.teamId).get(); if (ms.size) peopleCount = ms.size; } catch (e) {}
+    try { const td = await db.collection("teams").doc(data.teamId).get(); if (td.exists) heldCode = td.data().discountCode || ""; } catch (e) {}
   }
-  return await quoteRegistration(data.compId, peopleCount, data.code || "");
+  return await quoteRegistration(data.compId, peopleCount, data.code || "", heldCode);
 });
 
 // Organizer: manage discount codes (codes live in their own collection for atomic usedCount).
@@ -5875,15 +5892,19 @@ exports.confirmManualPayment = callable(async (data) => {
   if (String(team.paymentStatus || "").includes("已確認")) return { success: false, message: "此報名已完成付款" };
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
   const peopleCount = Math.max(1, memSnap.size);
-  const q = await quoteRegistration(compId, peopleCount, code || "");
+  const q = await quoteRegistration(compId, peopleCount, code || "", team.discountCode || "");
   if (!q.ok) return { success: false, message: q.codeMsg || "無法計算費用" };
   if (code && !q.codeValid) return { success: false, message: q.codeMsg || "折扣碼無效" };
-  await db.collection("teams").doc(teamId).update({
+  // R5 H-5 不變量：每隊每碼只消耗一次，記在 team.codeConsumed（套用當下消耗——user 決策3；
+  // PayUNI 付款成功的消耗點也以同一旗標防雙扣）。
+  const newlyConsumed = !!(q.codeValid && q.code && team.codeConsumed !== q.code);
+  const tUpd = {
     owedAmount: q.total, base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount,
     discountCode: q.codeValid ? q.code : ""
-  });
-  // 只在「首次套用此碼」時消耗，避免重複呼叫灌爆使用次數。
-  if (q.codeValid && q.code && team.discountCode !== q.code) {
+  };
+  if (newlyConsumed) tUpd.codeConsumed = q.code;
+  await db.collection("teams").doc(teamId).update(tUpd);
+  if (newlyConsumed) {
     try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
   }
   await auditLog("", "套用折扣(銀行轉帳)", teamId, "應付NT$" + q.total + (q.codeValid ? (" 碼:" + q.code) : ""));
@@ -5938,13 +5959,16 @@ exports.createRegistrationPayment = callable(async (data) => {
   // Item 10: server-authoritative total = base − group discount − code discount.
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
   const peopleCount = memSnap.size || 1;
-  const q = await quoteRegistration(compId, peopleCount, data.discountCode || "");
+  const q = await quoteRegistration(compId, peopleCount, data.discountCode || "", team.discountCode || "");
   if (data.discountCode && !q.codeValid) return { success: false, message: q.codeMsg || "折扣碼無效" };
   const fee = q.total;
   if ((q.base || 0) > 0 && fee < 1) {
-    // Fully discounted → no online payment needed; mark paid + consume code.
-    await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 (折扣全免) " + fmtNow(), paymentMethod: "discount", owedAmount: 0, discountCode: q.codeValid ? q.code : "" });
-    if (q.codeValid && q.code) { try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {} }
+    // Fully discounted → no online payment needed; mark paid + consume code (once per team).
+    const _newly = !!(q.codeValid && q.code && team.codeConsumed !== q.code);
+    const _tu = { paymentStatus: "已確認 (折扣全免) " + fmtNow(), paymentMethod: "discount", owedAmount: 0, discountCode: q.codeValid ? q.code : "" };
+    if (_newly) _tu.codeConsumed = q.code;
+    await db.collection("teams").doc(teamId).update(_tu);
+    if (_newly) { try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {} }
     return { success: true, freeAfterDiscount: true };
   }
   if (fee < 1) return { success: false, message: "報名費金額不正確" };
@@ -6156,13 +6180,19 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
         // Require an explicit 已確認 marker
         const ps = String(t.paymentStatus || "");
         if (!ps.includes("已確認")) return;
-        // Confirm date — pulled from the timestamp embedded in the status string
-        const dm = ps.match(/(\d{4})-(\d{2})-(\d{2})/);
+        // Confirm date — pulled from the timestamp embedded in the status string.
+        // R5 H-4: fmtNow() 是 zh-TW「2026/6/10 …」斜線非補零格式 — 舊 regex 只認 YYYY-MM-DD，
+        // 導致 ATM 列全部被日期過濾吃掉。兩種格式都收，並補零正規化。
+        const dm = ps.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
         if (!dm) return;
-        const confirmDate = dm[1] + "-" + dm[2] + "-" + dm[3];
+        const _p2 = n => String(n).padStart(2, "0");
+        const confirmDate = dm[1] + "-" + _p2(dm[2]) + "-" + _p2(dm[3]);
         if (confirmDate < fromDate || confirmDate > toDate) return;
-        if (!atmAmount) return; // skip free events
-        atmNet += atmAmount;
+        // R5 H-4: 折扣後應付存於 team.owedAmount（confirmManualPayment 落地）— 逐隊取值，
+        // 沒有才回退活動定價；否則套折扣的隊在結算永遠以全額計。
+        const _amt = (t.owedAmount != null && t.owedAmount !== "") ? (parseInt(t.owedAmount, 10) || 0) : atmAmount;
+        if (!_amt) return; // skip free events / fully discounted
+        atmNet += _amt;
         orders.push({
           type: "atm",
           compId, compName,
@@ -6172,7 +6202,7 @@ exports.getOrganizerBilling = authCallable(["system", "competition"], async (dat
           teamNameEN: t.teamNameEN || "",
           payuniTradeNo: "",
           paidAt: confirmDate,
-          amount: atmAmount, feePct: 0, fee: 0, net: atmAmount
+          amount: _amt, feePct: 0, fee: 0, net: _amt
         });
       });
     }

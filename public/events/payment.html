@@ -323,6 +323,14 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (code) { msg.textContent = q.codeMsg || ''; msg.style.color = q.codeValid ? 'var(--ok-700)' : 'var(--err-700)'; }
       else { msg.textContent = ''; }
       var ma = document.getElementById('manualAmt'); if (ma) ma.textContent = q.total.toLocaleString();
+      // R5 H-4/H-5（決策3）：折扣碼「套用當下」即消耗並落地 owedAmount/discountCode 到 team —
+      // 與付款方式無關（先選轉帳再套碼、或之後走 PayUNI，帳務應收都一致）。
+      // confirmManualPayment 以 team.codeConsumed 防重複扣；本隊已持有同碼不受「已用完」限制。
+      if (code && q.codeValid) {
+        google.script.run.withSuccessHandler(function (r) {
+          if (r && r.success && r.owed != null) { var ma2 = document.getElementById('manualAmt'); if (ma2) ma2.textContent = r.owed.toLocaleString(); }
+        }).withFailureHandler(function () {}).confirmManualPayment(compId, teamId, q.code);
+      }
     }).withFailureHandler(function () {}).validateDiscountCode(compId, teamId, code || '');
   }
 
