@@ -85,6 +85,7 @@
     // ----- dynamic: tags / facts -----
     edTagOpen: '🎟 報名中',
     edTagClosed: '已截止',
+    edTagNotOpen: '未開放報名',
     edTagSoon: '🔜 即將開放',
     edTagDaysLeft: '⚡ 剩 {n} 天',
     edUntitled: '(未命名活動)',
@@ -273,6 +274,7 @@
     // ----- dynamic: tags / facts -----
     edTagOpen: '🎟 Open',
     edTagClosed: 'Closed',
+    edTagNotOpen: 'Not open',
     edTagSoon: '🔜 Opening soon',
     edTagDaysLeft: '⚡ {n} days left',
     edUntitled: '(Untitled event)',

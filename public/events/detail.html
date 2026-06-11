@@ -471,6 +471,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     var rs = d.regStatus || (d.isOpen ? 'open' : 'closed');   // S2-5
     if (rs === 'open') tags.push({ cls:'acc', label: window.L('edTagOpen') });
     else if (rs === 'not_yet_open') tags.push({ cls:'urgent', label: window.L('edTagSoon') });
+    else if (rs === 'not_open') tags.push({ cls:'', label: window.L('edTagNotOpen') });   // R5 H-3: 未開放 ≠ 已截止
     else tags.push({ cls:'danger', label: window.L('edTagClosed') });
     if (cfg.deadline) {
       var dl = parseDate(cfg.deadline);

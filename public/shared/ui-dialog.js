@@ -75,7 +75,18 @@
     });
   }
 
-  window.uiAlert = function (message, opts) { opts = opts || {}; return dialog({ title: opts.title || '提示', message: message, okText: opts.okText || '知道了', cancelText: null, danger: opts.danger }); };
+  window.uiAlert = function (message, opts) {
+    opts = opts || {};
+    // R5 M-1: identical alert already on screen → don't stack a duplicate behind it
+    var root = document.getElementById('uiDlgRoot');
+    if (root) {
+      var openMsgs = root.querySelectorAll('.ui-dlg-b');
+      for (var i = 0; i < openMsgs.length; i++) {
+        if (openMsgs[i].textContent === String(message == null ? '' : message)) return Promise.resolve();
+      }
+    }
+    return dialog({ title: opts.title || '提示', message: message, okText: opts.okText || '知道了', cancelText: null, danger: opts.danger });
+  };
   window.uiConfirm = function (message, opts) { opts = opts || {}; return dialog({ title: opts.title || '請確認', message: message, okText: opts.okText || '確定', cancelText: opts.cancelText || '取消', danger: opts.danger }); };
   window.uiPrompt = function (message, defaultValue, opts) { opts = opts || {}; return dialog({ title: opts.title || '輸入', message: message, prompt: true, defaultValue: defaultValue || '', placeholder: opts.placeholder || '', okText: opts.okText || '確定', cancelText: opts.cancelText || '取消', inputType: opts.inputType || 'text' }); };
   window.uiToast = function (message, type) { ensureRoot(); var t = document.createElement('div'); t.className = 'ui-toast ' + (type || 'ok'); t.textContent = message; document.getElementById('uiToastWrap').appendChild(t); setTimeout(function () { t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 300); }, 2600); };

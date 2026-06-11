@@ -1348,10 +1348,12 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   let openImmediateRequested = false;
   if (jc.openImmediate === true) {
     openImmediateRequested = true;
-    const now = new Date();
+    // R5: openDate is interpreted as Taipei wall-clock (parseTW) — write it in Taipei,
+    // not the runtime's UTC clock, or the public page shows an open time 8h early.
+    const now = new Date(Date.now() + 8 * 3600000);
     const pad = n => String(n).padStart(2, '0');
-    jc.openDate = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
-      + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+    jc.openDate = now.getUTCFullYear() + '-' + pad(now.getUTCMonth() + 1) + '-' + pad(now.getUTCDate())
+      + 'T' + pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes());
   }
 
   // B.1: AI summary for the public-page hero. Regenerate when description changed
@@ -1410,25 +1412,39 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     ].filter(Boolean);
   }
 
-  // UX-006: block opening registration if the form collects no required email.
-  const willOpen = openImmediateRequested ? true : (config.isOpen === true);
-  if (willOpen && !formHasRequiredEmail(prevCfg)) {
-    return { success: false, code: 'NO_EMAIL',
-      message: "開放報名前，請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），否則無法寄送確認信與通知。" };
+  // UX-006 / R5 H-1+H-3: the email gate must NOT discard the rest of the save (the old
+  // early-return threw away description/sessions/fees every time), and isOpen is
+  // TRI-STATE — untouched unless the caller explicitly sent it. The edit page omitted
+  // isOpen from its payload for years, so the old `isOpen: willOpen` silently closed
+  // the event on every save and the page's separate setRegistrationOpen call swallowed
+  // its own NO_EMAIL failure → "儲存成功" with registration still closed.
+  let wantOpen;
+  if (openImmediateRequested) wantOpen = true;
+  else if (config.isOpen === true) wantOpen = true;
+  else if (config.isOpen === false) wantOpen = false;
+  let openBlocked = "";
+  if (wantOpen === true && !formHasRequiredEmail(prevCfg)) {
+    openBlocked = "NO_EMAIL";
+    wantOpen = false;            // keep registration closed, but still save everything else
+    jc.openImmediate = false;    // don't re-trip the gate on every subsequent save
   }
 
-  await ref.update({
+  const upd = {
     name: config.competitionName || "", category: config.category || "", config: jc,
-    // U1: 即日起 forces isOpen=true regardless of the explicit toggle, so registration
-    // really does open the moment the organiser hits 儲存.
-    isOpen: willOpen,
     isVisible: !!config.isVisible,
     deadline: config.deadline || "", maxTeams: config.maxTeams || 0
-  });
+  };
+  if (wantOpen !== undefined) upd.isOpen = wantOpen;
+  await ref.update(upd);
 
   await auditLog(request.authUser.username, "儲存設定", compId, "");
   cDel("cfg_" + compId);
-  return { success: true, message: "儲存成功！", summaryUpdated, summaryReason,
+  return { success: true,
+    message: openBlocked
+      ? "設定已儲存，但報名尚未開放：請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），再開啟報名。"
+      : "儲存成功！",
+    openBlocked, isOpen: wantOpen,
+    summaryUpdated, summaryReason,
     summaryLength: (jc.descriptionSummary || "").length,
     summaryDraft: !!jc.descriptionSummaryDraft, summaryDraftLength: (jc.descriptionSummaryDraft || "").length,
     summaryDraftText: jc.descriptionSummaryDraft || "" };
@@ -1644,7 +1660,9 @@ exports.getRegistrationBundle = callable(async (data) => {
   // so it can't drift from the backend gate (no more clickable-but-dead pay button).
   const _now = Date.now();
   let regStatus = "open";
-  if (cfg.isOpen !== true) regStatus = "closed";
+  // R5 H-3: 未開放 ≠ 已截止 — an owner-closed event with a future deadline is
+  // "not_open", not "closed", so the public page doesn't lie about the deadline.
+  if (cfg.isOpen !== true) regStatus = (cfg.deadline && _now >= parseTW(cfg.deadline)) ? "closed" : "not_open";
   else if (cfg.openDate && _now < parseTW(cfg.openDate)) regStatus = "not_yet_open";
   else if (cfg.deadline && _now >= parseTW(cfg.deadline)) regStatus = "deadline_passed";
 

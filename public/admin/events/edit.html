@@ -958,7 +958,8 @@
     var arr = readGroups();
     var rs = readGroupAgeRules();
     var name;
-    if (!preset) { uiAlert(window.L('aeEditGroupPickFirst')); return; }
+    // R5 M-1: 下拉新增後會歸位 placeholder，再按「新增」不再彈窗擋人 — 直接給自訂空白列
+    if (!preset) preset = '__custom__';
     if (preset === '__custom__') {
       name = '';
     } else {
@@ -1691,7 +1692,11 @@
       // jk whitelist and gets stripped), and forgot to pass maxTeams. The backend then
       // wrote `maxTeams: config.maxTeams || 0` → top-level became 0 on every save.
       maxTeams: data.maxTeams,
-      maxCapacityLimit: data.maxTeams
+      maxCapacityLimit: data.maxTeams,
+      // R5 H-3: isOpen rides in the config payload (backend treats it as tri-state).
+      // The old flow omitted it here and used a separate setRegistrationOpen call whose
+      // failure (e.g. NO_EMAIL gate) was silently swallowed → 「儲存成功」但仍未開放.
+      isOpen: data.isOpen
     });
     var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditSaveBusy');
     google.script.run
@@ -1702,26 +1707,28 @@
           uiAlert((res && res.message) || window.L('aeEditSaveFail'));
           return;
         }
-        // isOpen lives on the top-level comp doc and has its own callable.
-        // deadline is now included in newCfg above; saveCompetitionConfig writes it to the comp doc.
-        new Promise(function (r) {
-          google.script.run.withSuccessHandler(r).withFailureHandler(r).setRegistrationOpen(compId, data.isOpen);
-        }).then(function () {
-          ORIGINAL_JSON = serialize();
-          markDirty();
-          btn.textContent = window.L('aeEditSaveBtn');
-          var meta = document.getElementById('saveMeta');
-          // P3: surface AI summary status so organiser sees whether the hero text was regenerated
-          var aiNote = '';
-          if (res && res.summaryDraft) {
-            // UX-001: a NEW AI draft was produced — it is NOT public until approved below.
-            aiNote = window.L('aeEditSaveAiDraftPre') + (res.summaryDraftLength || 0) + window.L('aeEditSaveAiDraftSuf');
-            CFG.descriptionSummaryDraft = res.summaryDraftText || '';
-            renderAiDraft();
-          } else if (res && res.summaryReason) { var _sk = { empty: 'aeEditSumEmpty', error: 'aeEditSumError' }[res.summaryReason]; if (_sk) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + window.L(_sk); }
-          meta.textContent = window.L('aeEditSaveOk') + aiNote;
-          meta.className = 'meta saved';
-        });
+        // R5 H-3: isOpen now rides in the config payload — no separate call to swallow.
+        // If the backend kept registration closed (NO_EMAIL), reflect it and tell the user.
+        if (res && res.openBlocked) {
+          document.getElementById('isOpen').classList.remove('on');
+          uiAlert(res.message || window.L('aeEditSaveFail'));
+        }
+        CFG = newCfg;
+        btn.textContent = window.L('aeEditSaveBtn');
+        var meta = document.getElementById('saveMeta');
+        // P3: surface AI summary status so organiser sees whether the hero text was regenerated
+        var aiNote = '';
+        if (res && res.summaryDraft) {
+          // UX-001: a NEW AI draft was produced — it is NOT public until approved below.
+          aiNote = window.L('aeEditSaveAiDraftPre') + (res.summaryDraftLength || 0) + window.L('aeEditSaveAiDraftSuf');
+          CFG.descriptionSummaryDraft = res.summaryDraftText || '';
+          renderAiDraft();
+        } else if (res && res.summaryReason) { var _sk = { empty: 'aeEditSumEmpty', error: 'aeEditSumError' }[res.summaryReason]; if (_sk) aiNote = window.L('aeEditSaveAiSummaryReasonPre') + window.L(_sk); }
+        meta.textContent = window.L('aeEditSaveOk') + aiNote;
+        meta.className = 'meta saved';
+        // R5 M-4: rebase the dirty baseline only after every post-save re-render settled,
+        // otherwise beforeunload keeps warning about「未儲存變更」on a saved page.
+        setTimeout(function () { ORIGINAL_JSON = serialize(); markDirty(); }, 0);
       })
       .withFailureHandler(function (err) {
         btn.disabled = false; btn.textContent = window.L('aeEditSaveBtn');
