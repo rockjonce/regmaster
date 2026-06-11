@@ -996,7 +996,7 @@
   function tdField(scope, mid, who, key, label, value, custom) {
     if (!TD_EDIT) return kv(label, value);
     var v = (value == null) ? '' : String(value);
-    return '<div class="k">' + escapeHtml(label) + '</div><div class="v"><input class="td-in" data-scope="' + scope + '" data-mid="' + escapeHtml(mid || '') + '" data-who="' + escapeHtml(who || '') + '" data-key="' + escapeHtml(key) + '" data-custom="' + (custom ? '1' : '0') + '" value="' + escapeHtml(v) + '" style="width:100%; padding:6px 9px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); font:400 13px/1.4 var(--f-tc)"></div>';
+    return '<div class="k">' + escapeHtml(label) + '</div><div class="v"><input class="td-in" data-scope="' + scope + '" data-mid="' + escapeHtml(mid || '') + '" data-who="' + escapeHtml(who || '') + '" data-key="' + escapeHtml(key) + '" data-custom="' + (custom ? '1' : '0') + '" data-orig="' + escapeHtml(v) + '" value="' + escapeHtml(v) + '" style="width:100%; padding:6px 9px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); font:400 13px/1.4 var(--f-tc)"></div>';
   }
   function renderTeamDetailHtml(t) {
     var html = '';
@@ -1076,32 +1076,48 @@
       return kv(window.LF(key, f[0]), window.LO(val));
     }).join('');
     var ca = (m.customAnswers && typeof m.customAnswers === 'object') ? m.customAnswers : {};
-    if (TD_EDIT) {
-      var seen = {};
-      Object.keys(ca).forEach(function (k) { seen[k] = true; rows += tdField('member', m.id, who, k, k, ca[k], true); });
-      // 表單設計新增、但此報名者尚未作答的自訂題 → 顯示空白供補填
-      sch.customLabels.forEach(function (lbl) { if (!seen[lbl]) { seen[lbl] = true; rows += tdField('member', m.id, who, lbl, lbl, '', true); } });
-    } else {
-      Object.keys(ca).forEach(function (k) { rows += kv(k, window.LO(ca[k])); });
+    // R5 H-7: 自訂成員欄位的值存於 member[f.id]（頂層），不在 customAnswers —
+    // 依 schema 渲染（含 Email/生日/便當等手動新增欄位），並以 id 寫回頂層。
+    var seen = {};
+    function customVal(f) {
+      if (m[f.id] != null && m[f.id] !== '') return m[f.id];
+      if (ca[f.id] != null && ca[f.id] !== '') return ca[f.id];
+      if (ca[f.label] != null) return ca[f.label];
+      return '';
     }
+    (sch.customFields || []).forEach(function (f) {
+      seen[f.id] = true; seen[f.label] = true;
+      if (TD_EDIT) rows += tdField('member', m.id, who, f.id, f.label, customVal(f), false);
+      else rows += kv(f.label, window.LO(customVal(f)));
+    });
+    // 舊資料相容：customAnswers 內 schema 沒有的 key 照樣顯示/可編
+    Object.keys(ca).forEach(function (k) {
+      if (seen[k]) return;
+      if (TD_EDIT) rows += tdField('member', m.id, who, k, k, ca[k], true);
+      else rows += kv(k, window.LO(ca[k]));
+    });
     return rows;
   }
   // 由表單設計 schema 取得某角色(student/teacher)實際設定的內建欄位 keys + 自訂題 labels
   function tdSchemaFields(roleEn) {
-    var builtin = {}, customLabels = [];
+    // R5 H-7: 自訂成員欄位（無 legacyKey）的值存於 member[f.id]（register 端 obj[def.key]）—
+    // 回傳 {id,label} 供渲染/寫回使用；customAnswers 僅為舊資料相容。
+    var builtin = {}, customFields = [];
     var secs = (CFG && CFG.formSchema && CFG.formSchema.sections) || [];
     secs.forEach(function (s) {
       if ((s.role || '') !== roleEn) return;
       (s.fields || []).forEach(function (f) {
         if (f.legacyKey) builtin[f.legacyKey] = true;
-        else if (f.label || f.id) customLabels.push(f.label || f.id);
+        else if (f.id || f.label) customFields.push({ id: f.id || f.label, label: f.label || f.id });
       });
     });
-    return { builtin: builtin, customLabels: customLabels };
+    return { builtin: builtin, customFields: customFields };
   }
   function tdCollect() {
     var team = {}, teamCustom = {}, mmap = {};
     TD_OV.querySelectorAll('.td-in').forEach(function (el) {
+      // R5 H-7: 只送「使用者實際變更」的欄位 — 防止任何顯示缺漏把空白覆寫回真實資料
+      if (el.value === (el.dataset.orig || '')) return;
       var scope = el.dataset.scope, key = el.dataset.key, val = el.value, custom = el.dataset.custom === '1';
       if (scope === 'team') { if (custom) teamCustom[key] = val; else team[key] = val; }
       else {

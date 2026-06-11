@@ -1222,6 +1222,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var specialErr = validateSpecial(def, v);
       if (specialErr) { if (wrap) wrap.classList.add('error'); showErr(who + window.L('rgValSpecialA') + specialErr + window.L('rgValSpecialB')); return false; }
       if (v) obj[def.key] = v;
+      // R5 H-6: 自訂 email 欄位（無 legacyKey）也提升到 obj.email — 確認信與「我的報名」查詢靠它
+      if (v && def.type === 'email' && def.key !== 'email' && !obj.email) obj.email = v;
     }
     // X1: cross-check ID number's gender digit (2nd char) against the gender field.
     //   - TW 國民身分證: position 2 is 1 (男) or 2 (女)

@@ -1900,9 +1900,19 @@ exports.submitRegistration = callable(async (data, request) => {
 
   // Write members outside transaction (not quota-sensitive)
   const members = [];
+  // R5 H-6: 自訂 email 欄位（無 legacyKey）的值存於欄位 id 鍵 — 提升到 m.email，
+  // 否則確認信收件人與「我的報名」查詢都拿不到（表單 gate 放行了、信卻寄不出去）。
+  const _emailFieldIds = [];
+  ((cfg.formSchema && cfg.formSchema.sections) || []).forEach(s => (s.fields || []).forEach(f => {
+    if (f.type === 'email' && !f.legacyKey && f.id) _emailFieldIds.push(f.id);
+  }));
   // #3-3: 正規化成員 email（trim + lowercase）以利「我的報名」查詢比對。
-  (fd.students || []).forEach((s, i) => { const m = { teamId, compId, role: "學生", seq: i + 1, ...s }; if (m.email) m.email = String(m.email).trim().toLowerCase(); members.push(m); });
-  (fd.teachers || []).forEach((t, i) => { const m = { teamId, compId, role: "教練", seq: i + 1, ...t }; if (m.email) m.email = String(m.email).trim().toLowerCase(); members.push(m); });
+  const _liftEmail = (m) => {
+    if (!m.email) { for (const fid of _emailFieldIds) { if (m[fid]) { m.email = m[fid]; break; } } }
+    if (m.email) m.email = String(m.email).trim().toLowerCase();
+  };
+  (fd.students || []).forEach((s, i) => { const m = { teamId, compId, role: "學生", seq: i + 1, ...s }; _liftEmail(m); members.push(m); });
+  (fd.teachers || []).forEach((t, i) => { const m = { teamId, compId, role: "教練", seq: i + 1, ...t }; _liftEmail(m); members.push(m); });
   const memBatch = db.batch();
   members.forEach(m => memBatch.set(db.collection("members").doc(), m));
   await memBatch.commit();
@@ -3203,6 +3213,10 @@ exports.getTeamDetail = compAuthCallable("view", async (data, request) => {
     if (mFields.role === "學生") students.push(member);
     else teachers.push(member);
   });
+  // R5 H-7: Firestore 的 where 查詢不保證順序 — 依報名時寫入的 seq 排序，
+  // 否則詳情/編輯視窗的「學員1/學員2」會隨機對調。
+  students.sort((a, b) => (a.seq || 0) - (b.seq || 0));
+  teachers.sort((a, b) => (a.seq || 0) - (b.seq || 0));
   return { ...safeT, students, teachers };
 });
 
@@ -3228,6 +3242,14 @@ exports.updateTeamDetailOwner = compAuthCallable("manage", async (data, request)
   const teamName = team.teamNameCN || teamId;
   const logs = [];
   const _s = v => String(v == null ? "" : v);
+  // R5 H-7: 表單設計的自訂成員欄位（無 legacyKey）存於 member[f.id] —
+  // 允許以欄位 id 編輯（稽核時記其 label），否則自訂欄位永遠改不了。
+  const _cDoc = await db.collection("competitions").doc(compId).get();
+  const _fs = ((_cDoc.exists && _cDoc.data().config) || {}).formSchema;
+  const schemaFieldLabel = {};
+  (((_fs || {}).sections) || []).forEach(s => (s.fields || []).forEach(f => {
+    if (!f.legacyKey && f.id) schemaFieldLabel[f.id] = f.label || f.id;
+  }));
   // team-level fields
   const teamUpd = {}, teamIn = data.team || {};
   for (const k of Object.keys(TEAM_EDIT_FIELDS)) {
@@ -3257,9 +3279,9 @@ exports.updateTeamDetailOwner = compAuthCallable("manage", async (data, request)
     const who = String(min.label || (m.role === "學生" ? "學員" : "指導者")).slice(0, 20);
     const upd = {}, fin = min.fields || {};
     for (const k of Object.keys(fin)) {
-      if (!MEMBER_EDIT_LABELS[k]) continue;
+      if (!MEMBER_EDIT_LABELS[k] && !schemaFieldLabel[k]) continue;
       const nv = _s(fin[k]).slice(0, 500), ov = _s(m[k]);
-      if (nv !== ov) { upd[k] = nv; logs.push({ who, label: MEMBER_EDIT_LABELS[k], old: ov, neu: nv }); }
+      if (nv !== ov) { upd[k] = nv; logs.push({ who, label: MEMBER_EDIT_LABELS[k] || schemaFieldLabel[k], old: ov, neu: nv }); }
     }
     const mc = min.customAnswers || {};
     if (mc && Object.keys(mc).length) {
@@ -8474,6 +8496,17 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
         first.fields = first.fields.concat(customs[i].fields || []).slice(0, 50);
       }
       cleanSchema.sections = cleanSchema.sections.filter(s => s.role !== 'custom' || s === first);
+    }
+  }
+
+  // R5 H-2: 必填的選擇題（select/radio/checkbox）沒有任何選項 → 報名端永遠過不了必填驗證
+  // （只剩「請選擇」佔位），所有報名者被擋死 — 儲存時直接拒絕。
+  for (const sec of cleanSchema.sections) {
+    for (const f of (sec.fields || [])) {
+      if (f.req && ['select', 'radio', 'checkbox'].includes(f.type) && (!f.opts || !f.opts.length)) {
+        return { success: false, code: 'EMPTY_OPTS',
+          message: "欄位「" + (f.label || f.id) + "」是必填的選擇題，但還沒有任何選項；報名者將無法完成此欄位。請先新增選項再儲存。" };
+      }
     }
   }
 
