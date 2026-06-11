@@ -29,6 +29,8 @@
     evLoadingList: '正在從伺服器載入活動清單⋯⋯',
     // ----- dynamic card / meta strings -----
     evPillOpen: '🎟 報名中',
+    evPillFull: '已額滿',
+    evWaitlistCount: '＋{n} 候補',
     evPillUpcoming: '⏰ 即將開放',
     evPillClosed: '已截止',
     evRegistered: '已報名',
@@ -71,6 +73,8 @@
     evScaleLarge: '500+',
     evLoadingList: 'Loading events from the server…',
     evPillOpen: '🎟 Open',
+    evPillFull: 'Full',
+    evWaitlistCount: '+{n} waitlist',
     evPillUpcoming: '⏰ Opening soon',
     evPillClosed: 'Closed',
     evRegistered: 'Registered',

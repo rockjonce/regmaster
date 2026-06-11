@@ -364,7 +364,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
           : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">'+L('priceForever')+'</span></div><div class="price-foot">'+L('pfNoCard')+'</div>';
         return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">'+L('badgePopular')+'</span>':'')+
           '<h3>'+nameOf(p,t)+'</h3><p class="tag">'+tagOf(p,t)+'</p>'+priceBlock+
-          '<ul><li>'+tpl('tActive',_lim(p.maxActiveEvents))+'</li><li>'+tpl('tReg',_lim(p.maxCapacity))+'</li><li>'+tpl('tFee',(Number(p.feePct)||0))+'</li>'+feat+'</ul>'+
+          '<ul><li>'+tpl((p.maxActiveEvents===1?'tActive1':'tActive'),_lim(p.maxActiveEvents))+'</li><li>'+tpl('tReg',_lim(p.maxCapacity))+'</li><li>'+tpl('tFee',(Number(p.feePct)||0))+'</li>'+feat+'</ul>'+
           '<a href="'+tt[2]+'" class="btn '+tt[1]+' btn-block">'+L(tt[3])+'</a></div>';
       }).join('');
     }

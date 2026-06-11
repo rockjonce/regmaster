@@ -4138,6 +4138,19 @@ exports.askCompetitionAI = callable(async (data, request) => {
   ctx += "\n\n活動名稱：" + (cfg.competitionName || comp.name || "");
   if (cfg.sessions && cfg.sessions.length) { ctx += "\n活動梯次："; cfg.sessions.forEach(function(s, i) { ctx += "\n梯次" + (i+1) + "：" + (s.startDate || "") + " ~ " + (s.endDate || ""); }); }
   if (comp.deadline) ctx += "\n報名截止：" + comp.deadline;
+  // R5 M-6: 報名費也進 AI 脈絡 — 否則 AI 對最常見的「報名費多少」答「未提及」
+  {
+    const _fee = parseInt(cfg.registrationFee, 10) || 0;
+    if (_fee > 0) {
+      ctx += "\n報名費：NT$ " + _fee + "（每隊/每筆報名）";
+      if (Array.isArray(cfg.feeItems) && cfg.feeItems.length > 1) {
+        ctx += "，明細：" + cfg.feeItems.map(it => (it.name || it.label || "") + " NT$" + (parseInt(it.amount, 10) || 0)).join("、");
+      }
+    } else ctx += "\n報名費：免費";
+    if (Array.isArray(cfg.paymentMethods) && cfg.paymentMethods.length) {
+      ctx += "\n付款方式：" + cfg.paymentMethods.map(m => m === 'payuni' ? '線上刷卡（PayUNI）' : m === 'atm' ? '銀行轉帳' : m).join("、");
+    }
+  }
   if (orgName || orgEmail || orgPhone) {
     ctx += "\n\n主辦單位資訊：";
     if (orgName) ctx += "\n單位名稱：" + orgName;

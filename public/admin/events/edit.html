@@ -1214,7 +1214,7 @@
   }
   function readFeeItems() {
     return Array.from(document.querySelectorAll('#feeItemsList .list-row')).map(function (r) {
-      return { name: r.querySelector('[data-ff="name"]').value.trim(), amount: parseInt(r.querySelector('[data-ff="amount"]').value, 10) || 0 };
+      return { name: r.querySelector('[data-ff="name"]').value.trim(), amount: Math.max(0, parseInt(r.querySelector('[data-ff="amount"]').value, 10) || 0) };
     }).filter(function (it) { return it.name; });
   }
   document.getElementById('addFeeCustomBtn').addEventListener('click', function () { var arr = readFeeItems(); arr.push({ name: '', amount: 0 }); renderFeeItems(arr); markDirty(); var inp = document.querySelector('#feeItemsList .list-row:last-of-type [data-ff="name"]'); if (inp) inp.focus(); });

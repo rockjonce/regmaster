@@ -430,6 +430,9 @@
   }
   function markCheckedInLocal(teamId, time) {
     for (var i = 0; i < TEAMS.length; i++) if (TEAMS[i].teamId === teamId) { TEAMS[i].checkedIn = true; if (time) TEAMS[i].checkInTime = time; }
+    // R5 L-4: 報到成功後即時刷新「最近報到紀錄」與統計（原本要重整頁面才會更新）
+    try { renderHistory(); } catch (e) {}
+    try { updateStats(); } catch (e) {}
   }
 
   // ---------------------------------------------------------------------------

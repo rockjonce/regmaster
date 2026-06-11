@@ -256,7 +256,11 @@ aside.filters { padding:24px 0; }
     var now = new Date();
     if (od && now < od) return 'upcoming';
     if (dl && now > dl) return 'closed';
-    if (c.isOpen) return 'open';
+    if (c.isOpen) {
+      // R5 M-5: 額滿（正取已滿）→ 標示額滿/候補，而非「報名中」
+      if (c.maxTeams > 0 && (c.teamCount || 0) >= c.maxTeams) return 'full';
+      return 'open';
+    }
     return 'closed';
   }
 
@@ -278,10 +282,16 @@ aside.filters { padding:24px 0; }
     }
     var statusLabel = status === 'open' ? '<div class="label">' + window.L('evPillOpen') + '</div>'
                      : status === 'upcoming' ? '<div class="label">' + window.L('evPillUpcoming') + '</div>'
+                     : status === 'full' ? '<div class="label closed">' + window.L('evPillFull') + '</div>'
                      : '<div class="label closed">' + window.L('evPillClosed') + '</div>';
+    // R5 M-5: 計數含備取會出現「4/3 超額」— 正取顯示以上限封頂，超出部分標示為候補
+    var _cnt = c.teamCount || 0;
+    var _over = (c.maxTeams > 0 && _cnt > c.maxTeams) ? (_cnt - c.maxTeams) : 0;
+    var _shown = c.maxTeams > 0 ? Math.min(_cnt, c.maxTeams) : _cnt;
+    var _wl = _over > 0 ? ' <span style="font-weight:500; color:var(--muted)">' + window.L('evWaitlistCount').replace('{n}', _over) + '</span>' : '';
     var teamMeta = c.maxTeams > 0
-      ? '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + (c.teamCount||0) + ' / ' + c.maxTeams + '</strong></div><div class="bar ' + barClass + '"><div style="width:' + (ratio*100).toFixed(0) + '%"></div></div></div>'
-      : '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + (c.teamCount||0) + '</strong></div></div>';
+      ? '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + _shown + ' / ' + c.maxTeams + _wl + '</strong></div><div class="bar ' + barClass + '"><div style="width:' + (ratio*100).toFixed(0) + '%"></div></div></div>'
+      : '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + _cnt + '</strong></div></div>';
     var posterImg = c.posterUrl ? '<img class="poster-img" src="' + escapeHtml(c.posterUrl) + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\'">' : '';
     return '<a class="event-card" href="/events/detail.html?id=' + encodeURIComponent(c.compId) + '">' +
       '<div class="ev-cover ' + pickCover(idx) + '">' + posterImg + statusLabel + dateLabel +

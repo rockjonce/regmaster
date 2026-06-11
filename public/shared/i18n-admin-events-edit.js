@@ -286,7 +286,7 @@
     // sessions dynamic
     aeEditSessionNamePlaceholder: '場次名稱（例：第一梯次）',
     aeEditSessionMaxPlaceholder: '名額',
-    aeEditSessionMaxTitle: '該場次名額上限',
+    aeEditSessionMaxTitle: '該場次名額上限（0 = 不限）',
     aeEditSessionStart: '開始',
     aeEditSessionStartDateTitle: '開始日期',
     aeEditSessionStartTimeTitle: '開始時間',
@@ -746,7 +746,7 @@
     // sessions dynamic
     aeEditSessionNamePlaceholder: 'Session name (e.g. Session 1)',
     aeEditSessionMaxPlaceholder: 'Cap',
-    aeEditSessionMaxTitle: 'Capacity for this session',
+    aeEditSessionMaxTitle: 'Capacity for this session (0 = unlimited)',
     aeEditSessionStart: 'Start',
     aeEditSessionStartDateTitle: 'Start date',
     aeEditSessionStartTimeTitle: 'Start time',

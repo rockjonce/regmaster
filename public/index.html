@@ -496,7 +496,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
         <svg data-hero viewBox="0 0 24 24"><path d="M5 3v4M19 17v4M3 5h4M17 19h4M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"/></svg>
       </div>
       <h3 data-i18n="bentoAiH3">AI 助理為你回答報名者問題</h3>
-      <p data-i18n="bentoAiP">內建 GPT-4 級的智慧助理，自動讀懂活動規則並回應報名者。深夜的問題也能秒回，主辦方睡得更安穩。</p>
+      <p data-i18n="bentoAiP">內建 AI 智慧助理，自動讀懂活動規則並回應報名者。深夜的問題也能秒回，主辦方睡得更安穩。</p>
       <div class="chat">
         <span class="msg-u" data-i18n="chatU1">▸ 我是高三學生可以報名嗎？</span>
         <span class="msg-a" data-i18n="chatA1">本活動年齡限制為 18 歲以上，但有開放「青少年組」歡迎報名！</span>
@@ -827,7 +827,7 @@ footer { background: var(--bg); padding: 64px 32px 32px; }
         : '<div class="price"><span class="price-cur">NT$</span><span class="price-num">0</span><span class="price-suf">'+L('priceForever')+'</span></div><div class="price-foot">'+L('pfNoCard')+'</div>';
       return '<div class="plan'+(t==='pro'?' featured':'')+'">'+(t==='pro'?'<span class="badge-feat">'+L('badgePopular')+'</span>':'')+
         '<h3>'+nameOf(p,t)+'</h3><p>'+tagOf(p,t)+'</p>'+priceBlock+
-        '<ul><li>'+tpl('tActive',_lim(p.maxActiveEvents))+'</li><li>'+tpl('tReg',_lim(p.maxCapacity))+'</li><li>'+tpl('tFee',(Number(p.feePct)||0))+'</li>'+feat+'</ul>'+
+        '<ul><li>'+tpl((p.maxActiveEvents===1?'tActive1':'tActive'),_lim(p.maxActiveEvents))+'</li><li>'+tpl('tReg',_lim(p.maxCapacity))+'</li><li>'+tpl('tFee',(Number(p.feePct)||0))+'</li>'+feat+'</ul>'+
         '<a href="'+tt[2]+'" class="btn '+tt[1]+' btn-block">'+L(tt[3])+'</a></div>';
     }).join('');
   }

@@ -561,7 +561,7 @@
             JCTX.myScores = JCTX.myScores || {};
             JCTX.myScores[teamId] = { cells: cells, comment: comment };
             markTeamDone(teamId);
-            (window.uiToast || function (m) { alert(m); })(window.L('aeScoreSavedToast'), 'ok');
+            (window.uiToast || function (m) { alert(m); })(window.L('aeScoreSubmitToast'), 'ok');
             setTimeout(function () { btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn'); }, 800);
           } else {
             btn.disabled = false; btn.textContent = window.L('aeScoreSubmitBtn');
@@ -1289,11 +1289,19 @@
     });
   }
   // #5-1: 評分輸入即時 clamp 至 [0, 滿分]（後端為權威；此為避免畫面顯示超出滿分）。
+  // R5 L-3: clamp 不再靜默 — 提示已自動調整（1.5s 節流避免連續輸入洗版）。
+  var _lastClampToast = 0;
   document.addEventListener('input', function (e) {
     var el = e.target;
     if (el && el.matches && el.matches('input[type=number][data-leaf]')) {
       var mx = parseFloat(el.max), v = parseFloat(el.value);
-      if (!isNaN(v)) { if (!isNaN(mx) && v > mx) el.value = mx; else if (v < 0) el.value = 0; }
+      if (!isNaN(v)) {
+        if (!isNaN(mx) && v > mx) {
+          el.value = mx;
+          var _nowT = Date.now();
+          if (_nowT - _lastClampToast > 1500 && window.uiToast) { _lastClampToast = _nowT; uiToast(window.L('aeScoreClampedToast').replace('{max}', mx), 'err'); }
+        } else if (v < 0) el.value = 0;
+      }
     }
   });
 

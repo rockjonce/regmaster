@@ -439,7 +439,10 @@
 
   // ---- Greeting + sidebar fill ----
   var now = new Date();
-  var hr = now.getHours();
+  // R5 M-3: 問候語以台北時間計（瀏覽器 TZ 非台北時 getHours 會給錯誤時段）
+  var hr;
+  try { hr = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Taipei', hour: '2-digit', hour12: false }).format(now), 10); } catch (e) { hr = now.getHours(); }
+  if (isNaN(hr)) hr = now.getHours();
   var greetWord = hr < 6 ? window.L('adIdxGreetDawn') : hr < 12 ? window.L('adIdxGreetMorning') : hr < 18 ? window.L('adIdxGreetAfternoon') : window.L('adIdxGreetEvening');
   var emoji = hr < 6 ? '🌙' : hr < 12 ? '☀️' : hr < 18 ? '🌤️' : '🌙';
   document.getElementById('greet').textContent = greetWord + window.L('adIdxGreetSep') + (me.displayName || me.username) + ' ' + emoji;
