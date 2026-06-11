@@ -7997,7 +7997,8 @@ exports.getLiveLeaderboard = compAuthCallable("scoring", async (data, request) =
     if (!(d.exists && d.data().config && d.data().config.judgeSeeLiveRanking === true)) return { hidden: true, rows: [] };
   }
   const c = await computeScoring(compId);
-  const rows = c.results.slice().sort((a, b) => (a.rankOverall || 0) - (b.rankOverall || 0)).map(r => ({ teamId: r.teamId, teamNameCN: r.teamNameCN, group: r.group, avg: r.total, judgeCount: r.judgeCount, rank: r.rankOverall, rankInGroup: r.rankInGroup }));
+  // R6-5: 未評分者無名次（rankOverall undefined）→ 排到最後而非最前
+  const rows = c.results.slice().sort((a, b) => (a.rankOverall || 9999) - (b.rankOverall || 9999)).map(r => ({ teamId: r.teamId, teamNameCN: r.teamNameCN, group: r.group, avg: r.total, judgeCount: r.judgeCount, rank: r.rankOverall, rankInGroup: r.rankInGroup }));
   return { rows };
 });
 
@@ -8112,7 +8113,8 @@ async function computeScoring(compId) {
     db.collection("scores").where("compId", "==", compId).get()
   ]);
   const teams = {};
-  tSnap.docs.forEach(d => { const t = d.data(); if (t.status === "已取消") return; teams[t.teamId] = { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
+  // R6-5: 備取不參賽 — 不進成績/排名（遞補為正取後自然納入）
+  tSnap.docs.forEach(d => { const t = d.data(); if (t.status === "已取消" || String(t.status || "").startsWith("備取")) return; teams[t.teamId] = { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
   const teamPanel = {};
   panels.forEach(p => (p.teams || []).forEach(tid => { if (teams[tid]) teamPanel[tid] = "P:" + p.id; }));
   Object.keys(teams).forEach(tid => { if (!teamPanel[tid]) teamPanel[tid] = "G:" + (teams[tid].group || ""); });
@@ -8151,13 +8153,23 @@ async function computeScoring(compId) {
     });
   });
   function nodeScore(node, tid) { if (node.children && node.children.length) { let s = 0; node.children.forEach(c => { s += nodeScore(c, tid) * (Number(c.weightPct) || 0) / 100; }); return s; } const v = norm[tid] && norm[tid][node.id]; return v == null ? 0 : v; }
+  // R6-5: 原始加權分（0–100，葉值÷滿分×權重）— 跨組總排名用；正規化分只在組(panel)內有可比性
+  function rawNodeScore(node, tid) {
+    if (node.children && node.children.length) { let s = 0; node.children.forEach(c => { s += rawNodeScore(c, tid) * (Number(c.weightPct) || 0) / 100; }); return s; }
+    const v = consensus[tid] && consensus[tid][node.id]; if (v == null) return 0;
+    const mx = Number((leafById[node.id] || {}).max) || 100; return mx > 0 ? (v / mx * 100) : 0;
+  }
   const results = Object.keys(teams).map(tid => {
     let total = 0; rubric.nodes.forEach(n => { total += nodeScore(n, tid) * (Number(n.weightPct) || 0) / 100; });
+    let rawTotal = 0; rubric.nodes.forEach(n => { rawTotal += rawNodeScore(n, tid) * (Number(n.weightPct) || 0) / 100; });
     const breakdown = rubric.nodes.map(n => ({ id: n.id, label: n.label, score: Math.round(nodeScore(n, tid) * 100) / 100, weightPct: n.weightPct }));
-    return Object.assign({}, teams[tid], { panelKey: teamPanel[tid], total: Math.round(total * 100) / 100, breakdown, judgeCount: (judgesByTeam[tid] ? judgesByTeam[tid].size : 0), judged: !!(judgesByTeam[tid] && judgesByTeam[tid].size) });
+    return Object.assign({}, teams[tid], { panelKey: teamPanel[tid], total: Math.round(total * 100) / 100, rawTotal: Math.round(rawTotal * 100) / 100, breakdown, judgeCount: (judgesByTeam[tid] ? judgesByTeam[tid].size : 0), judged: !!(judgesByTeam[tid] && judgesByTeam[tid].size) });
   });
-  results.slice().sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankOverall = i + 1; });
-  const byG = {}; results.forEach(r => (byG[r.group] = byG[r.group] || []).push(r)); Object.values(byG).forEach(arr => arr.sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankInGroup = i + 1; }));
+  // R6-5（user 決策）：名次只排「已評分」者（未評分不佔名次→前端顯示「—」，不再跳號）；
+  // 總排名以 rawTotal（原始加權分）計 — 各組各自正規化的分數（100/0 vs 單隊組原始分）不可跨組比大小。
+  results.filter(r => r.judged).sort((a, b) => b.rawTotal - a.rawTotal).forEach((r, i) => { r.rankOverall = i + 1; });
+  const byG = {}; results.filter(r => r.judged).forEach(r => (byG[r.group] = byG[r.group] || []).push(r));
+  Object.values(byG).forEach(arr => arr.sort((a, b) => b.total - a.total).forEach((r, i) => { r.rankInGroup = i + 1; }));
   // #4: per-group spread of each judge's RAW weighted total (0–100, leaf value÷max×weights). Lets
   // the organiser see how judges scored across a group and where that group's judge scores sit.
   const judgeSpreadByGroup = {};

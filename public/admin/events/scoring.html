@@ -946,7 +946,12 @@
     var smallNote = (usesAdvNorm && judgedCount > 0 && judgedCount < 5)
       ? '<div style="background:color-mix(in srgb, var(--amber-500) 10%, transparent); border:1px solid color-mix(in srgb, var(--amber-500) 30%, transparent); border-radius:8px; padding:10px 12px; margin-bottom:10px; color:var(--warn-700); font:400 12.5px/1.5 var(--f-tc)">⚠️ ' + window.L('aeScoreSmallSample') + '</div>'
       : '';
-    var html = smallNote + '<table class="res-table"><thead><tr>' +
+    // R6-5: 跨組口徑註記 — 多組同列時說明總名次與組內名次的計分基準
+    var _gset = {}; rows.forEach(function (r) { _gset[r.group || ''] = 1; });
+    var basisNote = (!RES_GROUP && Object.keys(_gset).length > 1)
+      ? '<div style="color:var(--muted); font:400 11.5px/1.5 var(--f-tc); margin-bottom:8px">ℹ️ ' + window.L('aeScoreRankBasisNote') + '</div>'
+      : '';
+    var html = smallNote + basisNote + '<table class="res-table"><thead><tr>' +
       '<th data-i18n="aeScoreResRank">名次</th>' +
       '<th data-i18n="aeScoreResTeam">隊伍</th>' +
       '<th data-i18n="aeScoreResGroup">組別</th>' +
