@@ -590,7 +590,8 @@
       btn.disabled = false; btn.textContent = orig;
       if (res && res.success) {
         toast(L('aeChkIdDoneToast').replace('{name}', res.teamNameCN || currentTeam.teamNameCN || teamId), 'ok');
-        markCheckedInLocal(teamId, new Date().toISOString().slice(0, 16).replace('T', ' '));
+        // R6-8: 樂觀時間戳用台北時間（toISOString 是 UTC，最近報到紀錄會差 8 小時）
+        markCheckedInLocal(teamId, new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()).replace(',', ''));
         updateStats(); renderHistory();
         refreshSearchRow(teamId);
         closeIdentity();

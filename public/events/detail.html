@@ -602,6 +602,10 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     } else if (rs === 'not_yet_open') {
       ctaTitleEl.textContent = window.L('edCtaSoonTitle');
       ctaSubEl.textContent = cfg.openDate ? (window.L('edCtaSoonSub') + String(cfg.openDate).replace('T', ' ').slice(0, 16)) : window.L('edCtaSoonSub');
+    } else if (rs === 'not_open') {
+      // R6-2: 未開放 ≠ 已截止 — CTA 卡與上方 badge 用同一語意
+      ctaTitleEl.textContent = window.L('edCtaNotOpenTitle');
+      ctaSubEl.textContent = window.L('edCtaNotOpenSub');
     } else {
       ctaTitleEl.textContent = window.L('edCtaClosedTitle');
       ctaSubEl.textContent = window.L('edCtaClosedSub');
@@ -625,14 +629,16 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       registerBtn.removeAttribute('href');
       registerBtn.style.cursor = 'not-allowed';
       registerBtn.style.opacity = '.5';
-      registerBtn.textContent = rs === 'not_yet_open' ? window.L('edRegisteredSoon') : window.L('edRegisteredClosed');
+      registerBtn.textContent = rs === 'not_yet_open' ? window.L('edRegisteredSoon')
+        : rs === 'not_open' ? window.L('edRegisteredNotOpen')   // R6-2
+        : window.L('edRegisteredClosed');
     }
     lookupBtn.href = 'javascript:void(0)';
     lookupBtn.addEventListener('click', function (e) { e.preventDefault(); openManageModal(); });
 
-    // Countdown
+    // Countdown — R6-2: 未開放時不倒數（「未開放」配上截止倒數會誤導民眾）
     var deadDate = parseDate(cfg.deadline);
-    if (deadDate && deadDate > new Date()) {
+    if (deadDate && deadDate > new Date() && rs !== 'not_open') {
       document.getElementById('ctaCountdown').style.display = 'flex';
       tickCountdown(deadDate);
     }
