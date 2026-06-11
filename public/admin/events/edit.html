@@ -1719,8 +1719,13 @@
         // If the backend kept registration closed (NO_EMAIL), reflect it and tell the user.
         if (res && res.openBlocked) {
           document.getElementById('isOpen').classList.remove('on');
+          // R6-7: 「即日起開放」勾選也要取消，否則每次儲存都重新觸發 gate、重複彈同一提示
+          var _oi = document.getElementById('basic-openImmediate');
+          if (_oi && _oi.checked) { _oi.checked = false; if (typeof applyOpenImmediate === 'function') applyOpenImmediate(); }
           uiAlert(res.message || window.L('aeEditSaveFail'));
         }
+        // R6-1 防呆：有年齡規則但表單沒有「生日」欄位 → 提醒（不擋存）
+        if (res && res.ageRuleNoBirthday) uiAlert(window.L('aeEditAgeNoBdayWarn'));
         CFG = newCfg;
         btn.textContent = window.L('aeEditSaveBtn');
         var meta = document.getElementById('saveMeta');

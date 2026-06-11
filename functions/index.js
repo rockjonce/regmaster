@@ -1442,6 +1442,19 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     jc.openImmediate = false;    // don't re-trip the gate on every subsequent save
   }
 
+  // R6-1 防呆：設了年齡規則但表單沒有可辨識的「生日」欄位 → 報名時無從驗證年齡，警示主辦方（不擋存）。
+  let ageRuleNoBirthday = false;
+  {
+    const _rules = jc.groupAgeRules || {};
+    const _hasRule = Object.keys(_rules).some(k => _rules[k] && (_rules[k].type === 'age' || _rules[k].type === 'birth'));
+    if (_hasRule) {
+      const _secs = (prevCfg.formSchema && prevCfg.formSchema.sections) || [];
+      const _hasBday = _secs.some(s => s.role === 'student' && (s.fields || []).some(f =>
+        f.legacyKey === 'birthday' || (f.type === 'date' && /生日|出生|birth|dob/i.test(String(f.label || '')))));
+      ageRuleNoBirthday = !_hasBday;
+    }
+  }
+
   const upd = {
     name: config.competitionName || "", category: config.category || "", config: jc,
     isVisible: !!config.isVisible,
@@ -1456,7 +1469,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     message: openBlocked
       ? "設定已儲存，但報名尚未開放：請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），再開啟報名。"
       : "儲存成功！",
-    openBlocked, isOpen: wantOpen,
+    openBlocked, isOpen: wantOpen, ageRuleNoBirthday,
     summaryUpdated, summaryReason,
     summaryLength: (jc.descriptionSummary || "").length,
     summaryDraft: !!jc.descriptionSummaryDraft, summaryDraftLength: (jc.descriptionSummaryDraft || "").length,
@@ -1742,6 +1755,25 @@ exports.submitRegistration = callable(async (data, request) => {
 
   // #3-1: server-side 組別年齡/生日驗證（主辦方 UI 承諾「報名時自動驗證」；原僅前端可繞過）。
   {
+    // R6-1: 表單欄位身分 lift（驗證前）— 自訂欄位（無 legacyKey）的 email / 生日值存於欄位 id 鍵：
+    // type=email → member.email；type=date 且標籤含「生日/出生/birth/dob」→ member.birthday。
+    // 不先提升，年齡驗證讀 s.birthday 讀不到就跳過（第六輪 10 歲報 13-15 歲國中組通過的根因）。
+    {
+      const _emailIds2 = [], _bdayIds = [];
+      ((cfg.formSchema && cfg.formSchema.sections) || []).forEach(s => (s.fields || []).forEach(f => {
+        if (f.legacyKey || !f.id) return;
+        if (f.type === 'email') _emailIds2.push(f.id);
+        else if (f.type === 'date' && /生日|出生|birth|dob/i.test(String(f.label || ''))) _bdayIds.push(f.id);
+      }));
+      const _liftPerson = (p) => {
+        if (!p || typeof p !== 'object') return;
+        if (!p.email) { for (const fid of _emailIds2) { if (p[fid]) { p.email = p[fid]; break; } } }
+        if (!p.birthday) { for (const fid of _bdayIds) { if (p[fid]) { p.birthday = p[fid]; break; } } }
+      };
+      (Array.isArray(fd.students) ? fd.students : []).forEach(_liftPerson);
+      (Array.isArray(fd.teachers) ? fd.teachers : []).forEach(_liftPerson);
+    }
+
     const ageRule = (cfg.groupAgeRules || {})[fd.group];
     if (ageRule && (ageRule.type === "age" || ageRule.type === "birth")) {
       const students = Array.isArray(fd.students) ? fd.students : [];
