@@ -241,6 +241,7 @@
   document.getElementById('meName').textContent = me.displayName || me.username;
 
   var FEE = 0;
+  var SCHEMA_FIELDS = {};   // R6-11: 自訂成員欄位 id → 標籤
   var TEAMS = [];
   var IS_MANAGER = true; // #4-3/4-4: 僅 owner/manager 可見管理動作（後端已擋，前端隱藏避免誤觸）
 
@@ -252,6 +253,11 @@
     ]).then(function (r) {
       var bundle = r[0] || {}; var cfg = bundle.config || {};
       FEE = parseInt(cfg.registrationFee || 0) || 0;
+      // R6-11: 自訂成員欄位 id→標籤（值存於 member[f.id]）— 查看彈窗與報名管理詳情一致
+      SCHEMA_FIELDS = {};
+      ((cfg.formSchema && cfg.formSchema.sections) || []).forEach(function (s) {
+        (s.fields || []).forEach(function (f) { if (!f.legacyKey && f.id) SCHEMA_FIELDS[f.id] = f.label || f.id; });
+      });
       TEAMS = r[1] || [];
       IS_MANAGER = !(r[2] && (r[2].role === 'staff' || r[2].role === 'judge'));
       document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
@@ -381,6 +387,12 @@
       [window.L('aePayFldDietary'),'dietary'],[window.L('aePayFldDietaryRestriction'),'dietaryRestriction'],[window.L('aePayFldTshirt'),'tshirt'],[window.L('aePayFldAccommodation'),'accommodation']
     ];
     var rows = fields.map(function (f) { return kvHtml(f[0], m[f[1]]); }).join('');
+    // R6-11: 自訂成員欄位（值存於 member[f.id]）依表單設計標籤顯示；email lift 同值去重
+    Object.keys(SCHEMA_FIELDS).forEach(function (fid) {
+      var v = m[fid]; if (v == null || v === '') return;
+      if (m.email && String(v).toLowerCase() === String(m.email).toLowerCase()) return;
+      rows += kvHtml(SCHEMA_FIELDS[fid], v);
+    });
     if (m.customAnswers && typeof m.customAnswers === 'object') {
       Object.keys(m.customAnswers).forEach(function (k) { rows += kvHtml(k, m.customAnswers[k]); });
     }

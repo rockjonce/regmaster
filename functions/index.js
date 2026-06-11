@@ -4015,6 +4015,23 @@ exports.getLicenseStatus = authCallable(["system","competition"], async (data, r
   // the matrix client-side.
   const _plans = await getPlans();
   const features = (_plans[tier] && _plans[tier].features) || {};
+  // R6-12: 組織成員（自己沒有有效授權）顯示「所屬組織擁有者」的方案，而非 FREE —
+  // 功能本就隨擁有者繼承（requireCompFeature 等），這裡讓側欄徽章顯示對齊事實。
+  if (!(subValid || totalRem > 0)) {
+    try {
+      const _ms = await db.collection("orgMembers").where("memberUsername", "==", request.authUser.username).get();
+      const _mem = _ms.docs.map(d => d.data()).find(m => m.status === "active" && m.orgOwner);
+      if (_mem) {
+        const _ot = await getEffectiveTier(_mem.orgOwner);
+        if (_ot && _ot !== "free") {
+          const _plans2 = await getPlans();
+          return { hasValid: true, tier: _ot, planLabel: tierLabel(_ot), expiresAt: "",
+                   inherited: true, inheritedFrom: _mem.orgOwner, message: "隨組織擁有者方案",
+                   history, features: (_plans2[_ot] && _plans2[_ot].features) || {} };
+        }
+      }
+    } catch (e) { /* best-effort — fall through to own status */ }
+  }
   return { hasValid: subValid || totalRem > 0, tier, planLabel: tierLabel(tier), expiresAt, message: msg, history, features };
 });
 

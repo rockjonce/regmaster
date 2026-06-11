@@ -17,6 +17,7 @@
 
     // Greeting (dynamic, by time of day)
     adIdxGreetDawn: '凌晨好',
+    adIdxWlSuffix: '＋{n} 候補',
     adIdxGreetMorning: '早安',
     adIdxGreetAfternoon: '午安',
     adIdxGreetEvening: '晚安',
@@ -119,6 +120,7 @@
     adIdxCreateEvent: 'Create Event',
 
     adIdxGreetDawn: 'Good early morning',
+    adIdxWlSuffix: '+{n} waitlist',
     adIdxGreetMorning: 'Good morning',
     adIdxGreetAfternoon: 'Good afternoon',
     adIdxGreetEvening: 'Good evening',
