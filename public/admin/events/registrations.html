@@ -785,7 +785,7 @@
       var paid = (t.paymentStatus || '').includes('已確認');
       return '<tr>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColId')) + '" style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
-        '<td data-label="' + escapeHtml(window.L('aeRegColNameCN')) + '"><b>' + escapeHtml(t.teamNameCN || window.L('aeRegDash')) + '</b></td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColNameCN')) + '"><b>' + escapeHtml(t.teamNameCN || (t.studentNames && t.studentNames[0]) || window.L('aeRegDash')) + '</b></td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColNameEN')) + '">' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColStatus')) + '">' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +

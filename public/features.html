@@ -166,6 +166,18 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 /* dark-mode fix: AI 示範面板本是深底白字(bg:--ink)；深色模式 --ink 翻白→白字隱形。固定深底。 */
 [data-theme="dark"] .ai-demo { background:#0d1638; }
 .f-inner { max-width:1280px; margin:0 auto; }
+
+/* full footer (同首頁) */
+.f-grid { display:grid; grid-template-columns:2fr repeat(3,1fr); gap:48px; padding-bottom:40px; border-bottom:1px solid var(--line); margin-bottom:0; }
+.f-brand { max-width:320px; }
+.f-brand .logo-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; font:700 16px/1 var(--f-display); }
+.f-brand p { font:400 13.5px/1.6 var(--f-tc); color:var(--muted); }
+.f-brand .chip { display:inline-flex; padding:4px 10px; border:1px solid var(--line); border-radius:999px; font:500 11px/1 var(--f-mono); color:var(--ink-3); }
+.f-col h5 { font:600 12px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:16px; }
+.f-col a { display:block; font:400 14px/2 var(--f-tc); color:var(--ink-3); text-decoration:none; }
+.f-col a:hover { color:var(--ink); }
+@media (max-width:760px){ .f-grid { grid-template-columns:1fr 1fr; gap:28px; } }
+
 </style>
 </head>
 <body>

@@ -40,6 +40,10 @@
     // ----- dynamic: status pills -----
     myPillPast: '已過期',
     myPillPaid: '✓ 已付款',
+    myPillRefunded: '已退費',
+    myStAccPending: '審核中',
+    myStAccepted: '已錄取',
+    myStNotAccepted: '未獲錄取',
     myPillUnpaid: '待付款',
     myPillUpcoming: '即將舉辦',
     // ----- dynamic: date block fallback -----
@@ -133,6 +137,10 @@
     myErrNetwork: 'Network error',
     myPillPast: 'Past',
     myPillPaid: '✓ Paid',
+    myPillRefunded: 'Refunded',
+    myStAccPending: 'Pending review',
+    myStAccepted: 'Accepted',
+    myStNotAccepted: 'Not accepted',
     myPillUnpaid: 'Unpaid',
     myPillUpcoming: 'Upcoming',
     myDateTBA: 'TBA',

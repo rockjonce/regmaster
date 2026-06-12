@@ -255,6 +255,8 @@
     var now = Date.now();
     var dl = parseDate(r.deadline);
     var d = parseDate(r.competitionDate);
+    // R9-2: 已退費（含未獲錄取全額退）不可再被歸類為「待付款」而引導重複付款
+    if (String(r.paymentStatus || '').indexOf('已退費') !== -1) return 'refunded';
     var paid = String(r.paymentStatus || '').indexOf('已確認') !== -1 || String(r.paymentStatus || '').indexOf('paid') !== -1;
     if (d && d.getTime() < now - 86400000) return 'past';
     if (!paid && r.requiresPayment) return 'unpaid';
@@ -266,6 +268,7 @@
     if (cls === 'past') return '<span class="pill">' + window.L('myPillPast') + '</span>';
     if (cls === 'paid') return '<span class="pill ok">' + window.L('myPillPaid') + '</span>';
     if (cls === 'unpaid') return '<span class="pill warn">' + window.L('myPillUnpaid') + '</span>';
+    if (cls === 'refunded') return '<span class="pill">' + window.L('myPillRefunded') + '</span>';
     return '<span class="pill ok">' + window.L('myPillUpcoming') + '</span>';
   }
 
@@ -318,6 +321,12 @@
       if (r.group) meta += '<span class="pill">' + window.L('myMetaGroupPrefix') + escapeHtml(r.group) + '</span>';
       if (r.teamNameCN) meta += '<span class="pill">' + escapeHtml(r.teamNameCN) + '</span>';
       if (r.category) meta += '<span class="pill">' + escapeHtml(r.category) + '</span>';
+      // R9-3: 錄取狀態徽章 — 報名者可自助確認（審核中／已錄取／備取N／未獲錄取）
+      var _st = String(r.status || '');
+      if (cls === 'refunded' && _st === '審核中') meta += '<span class="pill">' + window.L('myStNotAccepted') + '</span>';
+      else if (_st === '審核中') meta += '<span class="pill warn">' + window.L('myStAccPending') + '</span>';
+      else if (_st === '正取') meta += '<span class="pill ok">' + window.L('myStAccepted') + '</span>';
+      else if (_st.indexOf('備取') === 0) meta += '<span class="pill warn">' + escapeHtml(window.LS ? window.LS(_st) : _st) + '</span>';
       meta += statusPill(r, cls);
 
       // 完整權限僅限「社群登入（已驗證 Email）」查得的報名；Email/電話查詢為唯讀。

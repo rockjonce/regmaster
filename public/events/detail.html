@@ -599,6 +599,8 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     if (rs === 'open') {
       ctaTitleEl.textContent = window.L('edCtaOpen');
       ctaSubEl.textContent = cfg.deadline ? window.L('edCtaDeadlinePrefix') + String(cfg.deadline).replace('T', ' ').slice(0, 16) : window.L('edCtaAnytime');
+      // R9: 自訂正取模式 — 預告「報名後由主辦方審核錄取」，避免民眾誤以為先到先得
+      if (cfg.acceptanceMode === 'manual') ctaSubEl.textContent += '　·　' + window.L('edCtaManualNote');
     } else if (rs === 'not_yet_open') {
       ctaTitleEl.textContent = window.L('edCtaSoonTitle');
       ctaSubEl.textContent = cfg.openDate ? (window.L('edCtaSoonSub') + String(cfg.openDate).replace('T', ' ').slice(0, 16)) : window.L('edCtaSoonSub');

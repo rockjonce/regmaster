@@ -140,9 +140,7 @@
     aeRegBtnView: '檢視詳情',
     aeRegBtnAccept: '正取',
     aeRegAcceptTitle: '勾選正取（不可復原）',
-    aeRegAcceptConfirm: '確定將「{name}」勾選為正取？
-
-注意：此操作為單向鎖、不可改回，系統將立即寄出錄取通知信並佔用一個正取名額。你也可以等報名截止後再一次勾選。',
+    aeRegAcceptConfirm: '確定將「{name}」勾選為正取？\n\n注意：此操作為單向鎖、不可改回，系統將立即寄出錄取通知信並佔用一個正取名額。你也可以等報名截止後再一次勾選。',
     aeRegAcceptOk: '已勾選正取，錄取通知已寄出',
     aeRegAcceptFail: '勾選正取失敗',
     aeRegAcceptedCount: '已正取 {n}',
@@ -431,9 +429,7 @@
     aeRegBtnView: 'View Details',
     aeRegBtnAccept: 'Accept',
     aeRegAcceptTitle: 'Accept team (irreversible)',
-    aeRegAcceptConfirm: 'Accept "{name}" as confirmed?
-
-This is one-way and cannot be undone. An acceptance email is sent immediately and one accepted slot is used. You may also wait until after the deadline to accept in one pass.',
+    aeRegAcceptConfirm: 'Accept "{name}" as confirmed?\n\nThis is one-way and cannot be undone. An acceptance email is sent immediately and one accepted slot is used. You may also wait until after the deadline to accept in one pass.',
     aeRegAcceptOk: 'Accepted — notification email sent',
     aeRegAcceptFail: 'Accept failed',
     aeRegAcceptedCount: 'Accepted {n}',

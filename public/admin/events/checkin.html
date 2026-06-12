@@ -428,7 +428,7 @@
     var list = $('historyList');
     if (recent.length === 0) { list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 0">' + escapeHtml(L('aeChkHistoryEmpty')) + '</p>'; return; }
     list.innerHTML = recent.map(function (t) {
-      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || L('aeChkNoName')) + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
+      return '<div class="hist-row"><div class="av">✓</div><div class="body"><div class="nm">' + escapeHtml(t.teamNameCN || (t.studentNames && t.studentNames[0]) || L('aeChkNoName')) + '</div><div class="meta">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.checkInTime || '') + '</div></div></div>';
     }).join('');
   }
   function markCheckedInLocal(teamId, time) {

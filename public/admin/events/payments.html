@@ -241,6 +241,7 @@
   document.getElementById('meName').textContent = me.displayName || me.username;
 
   var FEE = 0;
+  var ACC_MODE = 'auto';
   var SCHEMA_FIELDS = {};   // R6-11: 自訂成員欄位 id → 標籤
   var TEAMS = [];
   var IS_MANAGER = true; // #4-3/4-4: 僅 owner/manager 可見管理動作（後端已擋，前端隱藏避免誤觸）
@@ -253,6 +254,7 @@
     ]).then(function (r) {
       var bundle = r[0] || {}; var cfg = bundle.config || {};
       FEE = parseInt(cfg.registrationFee || 0) || 0;
+      ACC_MODE = cfg.acceptanceMode || (cfg.allowWaitlist === false ? 'none' : 'auto');   // R9-5
       // R6-11: 自訂成員欄位 id→標籤（值存於 member[f.id]）— 查看彈窗與報名管理詳情一致
       SCHEMA_FIELDS = {};
       ((cfg.formSchema && cfg.formSchema.sections) || []).forEach(function (s) {
@@ -284,7 +286,8 @@
       if ((t.paymentStatus || '').includes('已確認')) { paid++; paidAmt += owed; } else { pending++; pendingAmt += owed; }
     });
     var total = paid + pending, totalDue = paidAmt + pendingAmt;
-    var teamsSuf = (window.LANG === 'en' ? ' teams (incl. waitlist)' : ' 筆（含備取）');
+    // R9-5: manual 模式無「備取」概念 → 標籤改「含審核中」
+    var teamsSuf = (ACC_MODE === 'manual') ? (window.LANG === 'en' ? ' teams (incl. pending)' : ' 筆（含審核中）') : (window.LANG === 'en' ? ' teams (incl. waitlist)' : ' 筆（含備取）');
     document.getElementById('sumRow').innerHTML =
       '<div class="sum-card featured"><div class="l">' + window.L('aePaySumTotalDue') + '</div><div class="v">NT$ ' + totalDue.toLocaleString() + '</div><div class="sub">' + total + teamsSuf + '</div></div>' +
       '<div class="sum-card"><div class="l">' + window.L('aePaySumReceived') + '</div><div class="v" style="color:var(--ok-700)">NT$ ' + paidAmt.toLocaleString() + '</div><div class="sub">' + paid + window.L('aePaySumReceivedSub') + '</div></div>' +
@@ -320,7 +323,7 @@
       var paid = (t.paymentStatus || '').includes('已確認');
       return '<tr>' +
         '<td style="font:500 12px/1 var(--f-mono); color:var(--ink)">' + escapeHtml(t.teamId) + '</td>' +
-        '<td><b>' + escapeHtml(t.teamNameCN || t.teamNameEN || window.L('aePayNoName')) + '</b></td>' +
+        '<td><b>' + escapeHtml(t.teamNameCN || t.teamNameEN || (t.studentNames && t.studentNames[0]) || window.L('aePayNoName')) + '</b></td>' +
         '<td>' + escapeHtml(window.LS(t.status || '')) + '</td>' +
         '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus ? window.LS(t.paymentStatus) : window.L('aePayPillDefault')) + '</span></td>' +
         '<td>' + escapeHtml(t.paymentMethod ? window.LS(t.paymentMethod) : '—') + '</td>' +
