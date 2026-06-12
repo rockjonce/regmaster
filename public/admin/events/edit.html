@@ -1729,7 +1729,8 @@
           uiAlert(res.message || window.L('aeEditSaveFail'));
         }
         // R6-1 防呆：有年齡規則但表單沒有「生日」欄位 → 提醒（不擋存）
-        if (res && res.ageRuleNoBirthday) uiAlert(window.L('aeEditAgeNoBdayWarn'));
+        // R7-7: 每頁面工作階段只提醒一次，避免每存必彈轟炸
+        if (res && res.ageRuleNoBirthday && !window.__ageWarnShown) { window.__ageWarnShown = true; uiAlert(window.L('aeEditAgeNoBdayWarn')); }
         CFG = newCfg;
         btn.textContent = window.L('aeEditSaveBtn');
         var meta = document.getElementById('saveMeta');

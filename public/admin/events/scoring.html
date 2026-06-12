@@ -801,7 +801,8 @@
       }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoJudges">尚無可指派的評審成員（僅管理者/評審可被指派）。</div>';
       var teamChecks = teamsInGroup.length ? teamsInGroup.map(function (t) {
         var on = (p.teams || []).indexOf(t.teamId) >= 0;
-        return '<label class="pn-check"><input type="checkbox" data-team="' + escapeHtml(t.teamId) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(t.teamNameCN || t.teamId) + '</span><small>' + escapeHtml(t.teamId) + '</small></label>';
+        // R7-8: 無隊名時 fallback 不再用 teamId（會與 small 編號重複顯示）
+        return '<label class="pn-check"><input type="checkbox" data-team="' + escapeHtml(t.teamId) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(t.teamNameCN || window.L('aeScoreNoTeamName')) + '</span><small>' + escapeHtml(t.teamId) + '</small></label>';
       }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoTeams">此組別尚無隊伍。</div>';
       return '<div class="pn-card" data-pid="' + escapeHtml(p.id) + '">' +
         '<div class="pn-top"><input data-pf="label" value="' + escapeHtml(p.label || '') + '" data-i18n-placeholder="aeScorePanelLabelPh" placeholder="' + escapeHtml(window.L('aeScorePanelLabelPh')) + '">' +

@@ -371,6 +371,11 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
           showErr(window.L('lgMsgGoogleNotEnabled'));
         } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
           /* user closed the popup — stay silent */
+        } else if (code === 'auth/popup-blocked') {
+          // R7-9: 彈窗被瀏覽器攔截 — 原文是英文 Firebase 錯誤，改中文化指引
+          showErr(window.L('lgMsgGooglePopupBlocked'));
+        } else if (code === 'auth/network-request-failed') {
+          showErr(window.L('lgMsgGoogleNetwork'));
         } else if (code === 'auth/unauthorized-domain') {
           showErr(window.L('lgMsgGoogleUnauthDomain'));
         } else {

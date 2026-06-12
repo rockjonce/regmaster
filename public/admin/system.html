@@ -901,7 +901,8 @@ body { background:var(--bg); }
         var lbl = a.organizationName || a.displayName || a.username;
         return '<option value="' + a.username + '">' + lbl + '（' + a.username + ' · ' + a.tier + '）</option>';
       }).join('');
-      document.getElementById('ctBilling').textContent = list.length;
+      // R7-11: 徽章數字=可結算主辦方帳號數 — 補 tooltip 說明意義
+      var _ctB = document.getElementById('ctBilling'); _ctB.textContent = list.length; _ctB.title = window.L('adSysTabBillingCtTitle');
     }).withFailureHandler(function () { toast(window.L('adSysBillOrgListFail'), 'err'); }).listOrganizerAccounts();
   }
   function loadBilling() {

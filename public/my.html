@@ -318,7 +318,8 @@
 
       // 完整權限僅限「社群登入（已驗證 Email）」查得的報名；Email/電話查詢為唯讀。
       var full = !!PWD_BY_TEAM[r.teamId];
-      var dis = ' disabled title="' + escapeHtml(window.L('myLockedTitle')) + '" style="opacity:.45;cursor:not-allowed"';
+      // R7-11: disabled 按鈕在部分瀏覽器不觸發 hover/title — 改為可點、點了用 toast 說明原因
+      var dis = ' data-locked="1" title="' + escapeHtml(window.L('myLockedTitle')) + '" style="opacity:.45;cursor:not-allowed"';
       var actions = '<a class="btn btn-ghost" href="/events/detail.html?id=' + encodeURIComponent(r.compId) + '">' + window.L('myActDetail') + '</a>';
       if (cls === 'unpaid') {
         actions += full
@@ -719,6 +720,9 @@
 
   // ===== 申請退費 (registrant) =====
   document.getElementById('regList').addEventListener('click', function (e) {
+    // R7-11: 鎖定按鈕（弱驗證唯讀）點擊時明確告知原因
+    var lk = e.target.closest('[data-locked]');
+    if (lk) { (window.uiToast || alert)(window.L('myLockedTitle')); return; }
     var eb = e.target.closest('[data-edit]');
     if (eb) {
       var ep = eb.getAttribute('data-edit').split('|');

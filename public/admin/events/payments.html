@@ -387,10 +387,13 @@
       [window.L('aePayFldDietary'),'dietary'],[window.L('aePayFldDietaryRestriction'),'dietaryRestriction'],[window.L('aePayFldTshirt'),'tshirt'],[window.L('aePayFldAccommodation'),'accommodation']
     ];
     var rows = fields.map(function (f) { return kvHtml(f[0], m[f[1]]); }).join('');
-    // R6-11: 自訂成員欄位（值存於 member[f.id]）依表單設計標籤顯示；email lift 同值去重
+    // R6-11/R7-6: 自訂成員欄位（值存於 member[f.id]）依表單設計標籤顯示；
+    // lift 欄位（email/birthday）同值時內建列不重複（這裡內建列先渲染→自訂列為準改跳內建較複雜，
+    // 故改成：自訂列與內建列同值時跳過自訂列，內建列已含標籤語意）
     Object.keys(SCHEMA_FIELDS).forEach(function (fid) {
       var v = m[fid]; if (v == null || v === '') return;
       if (m.email && String(v).toLowerCase() === String(m.email).toLowerCase()) return;
+      if (m.birthday && String(v) === String(m.birthday)) return;   // R7-6: 生日 lift 去重
       rows += kvHtml(SCHEMA_FIELDS[fid], v);
     });
     if (m.customAnswers && typeof m.customAnswers === 'object') {

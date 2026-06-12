@@ -79,6 +79,8 @@
     lgMsgGoogleFailed: 'Google 登入失敗',
     lgMsgGoogleFailedRetry: 'Google 登入失敗，請稍後再試',
     lgMsgGoogleNotEnabled: 'Google 登入尚未在後台啟用，請聯絡管理員',
+    lgMsgGooglePopupBlocked: '登入視窗被瀏覽器攔截了，請允許此網站的彈出視窗後再試一次。',
+    lgMsgGoogleNetwork: '網路連線異常，請檢查網路後再試一次。',
     lgMsgGoogleUnauthDomain: '此網域未授權 Google 登入',
     lgMsgProcessing: '處理中⋯'
   };

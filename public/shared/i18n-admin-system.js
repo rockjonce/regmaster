@@ -31,6 +31,7 @@
     adSysTabRegistrants: '報名帳號',
     adSysTabLicenses: '授權碼',
     adSysTabBilling: '帳務管理',
+    adSysTabBillingCtTitle: '可結算的主辦方帳號數',
     adSysTabAnalytics: '使用者分析',
     adSysTabFeedback: '意見回饋',
     // ---------- overview ----------
@@ -443,6 +444,7 @@
     adSysTabRegistrants: 'Registrant Accounts',
     adSysTabLicenses: 'License Keys',
     adSysTabBilling: 'Billing',
+    adSysTabBillingCtTitle: 'Organizer accounts available for settlement',
     adSysTabAnalytics: 'User Analytics',
     adSysTabFeedback: 'Feedback',
     // ---------- overview ----------

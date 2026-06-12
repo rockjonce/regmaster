@@ -1065,14 +1065,19 @@
     ];
     var roleEn = (m.role === '學生' || m.role === 'student') ? 'student' : 'teacher';
     var sch = tdSchemaFields(roleEn);
-    // R6-9: email lift 後，內建 Email 列與自訂 email 欄位列會顯示同值兩次 —
-    // 表單沒有內建 Email 欄位時，以自訂欄位列（主辦方取的標籤）為準、跳過內建列。
-    var _skipLiftedEmail = !sch.builtin.email && m.email && (sch.customFields || []).some(function (f) {
-      var cv = m[f.id]; return cv != null && cv !== '' && String(cv).toLowerCase() === String(m.email).toLowerCase();
+    // R6-9/R7-6: lift 欄位（email/birthday）通用去重 — 內建列與自訂欄位列會顯示同值兩次，
+    // 表單沒有對應內建欄位時，以自訂欄位列（主辦方取的標籤）為準、跳過內建列。
+    var _skipLifted = {};
+    ['email', 'birthday'].forEach(function (lk) {
+      if (sch.builtin[lk] || m[lk] == null || m[lk] === '') return;
+      var dup = (sch.customFields || []).some(function (f) {
+        var cv = m[f.id]; return cv != null && cv !== '' && String(cv).toLowerCase() === String(m[lk]).toLowerCase();
+      });
+      if (dup) _skipLifted[lk] = true;
     });
     var rows = fields.map(function (f) {
       var key = f[1], val = m[key];
-      if (key === 'email' && _skipLiftedEmail) return '';
+      if (_skipLifted[key]) return '';
       if (TD_EDIT) {
         // 編輯模式：只顯示「表單設計有設定的欄位」或「已填過的欄位」；未設定且空白者不顯示。
         // 表單設計有、但此報名者沒填(空白) → 仍顯示空白輸入框，供管理者補填。
