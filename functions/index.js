@@ -3141,7 +3141,9 @@ exports.getAllTeams = compAuthCallable("view", async (data, request) => {
       paymentStatus: t.paymentStatus, paymentMethod: t.paymentMethod,
       remitterName: t.remitterName, remitterBank: t.remitterBank, remitterAccount: t.remitterAccount,
       creditCardOrderNo: t.creditCardOrderNo || "", fileUrl: t.fileUrl || "",
+      // R7-3: 報到時間有兩套欄位（V1=checkedInAt、V2=checkInTime）— 兩個都回，前端統一讀
       checkedIn: !!t.checkedIn, checkedInAt: t.checkedInAt || "",
+      checkInTime: t.checkInTime || t.checkedInAt || "",
       selectedSession: t.selectedSession || 0,
       selectedSessions: t.selectedSessions || [t.selectedSession || 0],
       // R6-3: 折後應付（confirmManualPayment 落地）— 不回傳的話帳務頁 owedOf() 永遠 fallback 全額
