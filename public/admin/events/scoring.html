@@ -797,7 +797,8 @@
       var judgeChecks = _eligJudges.length ? _eligJudges.map(function (m) {
         var name = m.displayName || m.memberUsername || m.memberEmail || '';
         var on = (p.judges || []).indexOf(m.memberUsername) >= 0;
-        return '<label class="pn-check"><input type="checkbox" data-judge="' + escapeHtml(m.memberUsername) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(name) + '</span><small>' + escapeHtml(m.memberUsername || '') + '</small></label>';
+        // R8-2: 無 displayName 時 name 即帳號 — small 與 name 同值就不重複顯示
+        return '<label class="pn-check"><input type="checkbox" data-judge="' + escapeHtml(m.memberUsername) + '"' + (on ? ' checked' : '') + '><span>' + escapeHtml(name) + '</span>' + (name !== m.memberUsername ? '<small>' + escapeHtml(m.memberUsername || '') + '</small>' : '') + '</label>';
       }).join('') : '<div class="pn-empty" data-i18n="aeScorePanelNoJudges">尚無可指派的評審成員（僅管理者/評審可被指派）。</div>';
       var teamChecks = teamsInGroup.length ? teamsInGroup.map(function (t) {
         var on = (p.teams || []).indexOf(t.teamId) >= 0;

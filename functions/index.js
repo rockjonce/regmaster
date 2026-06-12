@@ -2514,7 +2514,9 @@ function daysUntil(dateStr) {
 function computeRefund(comp, team) {
   const cfg = comp.config || {};
   const policy = cfg.refundPolicy || null;
-  const paid = Number(cfg.registrationFee || 0);
+  // R8-1: 退費基準＝「折後實付」（owedAmount，由 confirmManualPayment/createRegistrationPayment 落地），
+  // 沒有才退回活動定價 — 否則套折扣的隊伍會以原價計算而多退（與 owner 端 _ownerRefundCore 口徑統一）。
+  const paid = Number((team && team.owedAmount != null && team.owedAmount !== "") ? team.owedAmount : (cfg.registrationFee || 0));
   let eventDate = cfg.competitionDate || "";
   // R5 H-11: 多梯次活動沒有單一「活動日」— 以最早場次起日計算退費級距，
   // 否則退費引擎一律回「未設定活動日期」，多梯次活動退費全斷。

@@ -115,7 +115,7 @@
         '<div class="bar"><div id="usageBar" style="width:0%"></div></div>' +
         '<div class="meta-u"><span id="usageText">　</span><span id="usagePct"></span></div>' +
         '<a class="upgrade-link" href="/admin/license.html" data-i18n="anUpgrade">升級方案 →</a></div>') +
-      '<a class="nav-it" id="logoutBtn" href="/login.html">' + IC.out + '<span data-i18n="anLogout">登出</span></a>' +
+      '<a class="nav-it" id="logoutBtn" href="/login.html?logout=1">' + IC.out + '<span data-i18n="anLogout">登出</span></a>' +   /* R8-5: handler 未掛上時原生導航也能登出（login 端處理 ?logout=1） */
     '</div>';
 
   side.innerHTML = html;

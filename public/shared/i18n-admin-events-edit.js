@@ -185,7 +185,7 @@
     aeEditRpAddTier: '＋ 新增級距',
     aeEditFldRpNote: '退費說明（顯示給報名者，可選）',
     aeEditRpNotePlaceholder: '例：報名費不含金流手續費；退款將於審核後 7 個工作天內處理。',
-    aeEditRpFootnote: '活動當天及之後不開放線上退費，報名者須直接聯繫主辦方。退費基準金額＝報名收費總額。',
+    aeEditRpFootnote: '活動當天及之後不開放線上退費，報名者須直接聯繫主辦方。退費基準金額＝該報名的折後實付金額（套用折扣者以折後計）。',
 
     // ----- NOTIFICATION -----
     aeEditSecEmailH: 'Email 通知',
@@ -646,7 +646,7 @@
     aeEditRpAddTier: '＋ Add tier',
     aeEditFldRpNote: 'Refund notes (shown to registrants, optional)',
     aeEditRpNotePlaceholder: 'e.g. The registration fee excludes transaction fees; refunds are processed within 7 business days of review.',
-    aeEditRpFootnote: 'Online refunds are unavailable on and after the event day; registrants must contact the organizer directly. The refund base amount equals the total registration fee.',
+    aeEditRpFootnote: 'Online refunds are unavailable on and after the event day; registrants must contact the organizer directly. The refund base is the amount actually owed after discounts.',
 
     // ----- NOTIFICATION -----
     aeEditSecEmailH: 'Email Notifications',

@@ -425,6 +425,8 @@
   function closeCreateModal() { document.getElementById('createModal').classList.remove('on'); document.getElementById('newName').value = ''; document.getElementById('createErr').style.display = 'none'; }
   document.getElementById('newCompBtn').addEventListener('click', openCreateModal);
   document.getElementById('cancelCreate').addEventListener('click', closeCreateModal);
+  // R8-6 防護：活動名稱欄 Enter 直接送出（偶發「第一次點建立無反應」的替代路徑）
+  document.getElementById('newName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('confirmCreate').click(); } });
   document.getElementById('createModal').addEventListener('click', function (e) { if (e.target === this) closeCreateModal(); });
   document.getElementById('confirmCreate').addEventListener('click', function () {
     var name = document.getElementById('newName').value.trim();

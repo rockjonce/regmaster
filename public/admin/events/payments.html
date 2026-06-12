@@ -345,7 +345,7 @@
             google.script.run
               // S3-2: surface backend rejection (e.g. PayUNI orders can't be manually confirmed)
               // instead of silently calling load() on {success:false}.
-              .withSuccessHandler(function (res) { b.dataset.busy = ''; b.disabled = false; if (res && res.success) { load(); } else { uiAlert(window.L('aePayConfirmFailPre') + ((res && res.message) || '')); } })
+              .withSuccessHandler(function (res) { b.dataset.busy = ''; b.disabled = false; if (res && res.success) { uiToast(window.L('aePayConfirmOkToast')); load(); } else { uiAlert(window.L('aePayConfirmFailPre') + ((res && res.message) || '')); } })   /* R8-4: 成功給明確回饋 */
               .withFailureHandler(function (err) { b.dataset.busy = ''; b.disabled = false; uiAlert(window.L('aePayConfirmFailPre') + (err && err.message)); })
               .confirmPayment(tid, me.username);
           });

@@ -197,6 +197,13 @@ body { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; }
   function showOk(msg) { okBox.textContent = msg; okBox.style.display = 'block'; errBox.style.display = 'none'; }
   function hideAlerts() { errBox.style.display = 'none'; okBox.style.display = 'none'; }
 
+  // R8-5: ?logout=1 — 連結層登出（登出鈕 click handler 未掛上時，原生導航到這裡也能完成登出；
+  // 否則下方「已登入自動跳轉」會把人彈回原頁，看起來像登出鈕沒反應）
+  if (new URLSearchParams(location.search).get('logout') === '1') {
+    try { if (window.AppState) AppState.setMe(null); else localStorage.removeItem('regmaster_me'); } catch (x) {}
+    try { history.replaceState(null, '', '/login.html'); } catch (x) {}
+  }
+
   // If already logged in, redirect away
   if (AppState.getMe() && AppState.getMe().sessionToken) {
     var next = safeNext(new URLSearchParams(location.search).get('next'));
