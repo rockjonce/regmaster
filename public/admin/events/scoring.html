@@ -1315,7 +1315,7 @@
     Promise.all([
       new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({}); }).getCompetitionConfig(compId); }),
       new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res([]); }).getAllTeams(compId); }),
-      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({ members: [] }); }).listOrgMembers(); })
+      new Promise(function (res) { google.script.run.withSuccessHandler(res).withFailureHandler(function () { res({ members: [] }); }).listOrgMembers(compId); })   /* R7-2: 以活動擁有者列名單（manager 也可指派） */
     ]).then(function (r) {
       var cfg = r[0] || {};
       ALL_TEAMS = Array.isArray(r[1]) ? r[1] : (r[1] && r[1].teams) || [];

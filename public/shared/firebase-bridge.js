@@ -245,7 +245,7 @@
     getOnboardingState:["username"],
     saveOnboardingStep:["username","step","data"],
     inviteMember:["email","role","scope"],
-    listOrgMembers:[],
+    listOrgMembers:["compId"],
     updateMemberRole:["memberId","role","scope"],
     revokeMember:["memberId"],
     listMyInvites:[],

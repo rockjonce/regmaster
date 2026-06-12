@@ -1324,7 +1324,10 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   }
 
   // Refund policy: enforce legal floors (organiser may be more generous, never below).
-  if (jc.refundPolicy && typeof jc.refundPolicy === "object") {
+  if (jc.refundPolicy && typeof jc.refundPolicy === "object" && !jc.refundPolicy.template) {
+    // R7-1: {template:''} 哨兵 = 主辦方明確選「不啟用」→ 清除政策
+    jc.refundPolicy = null;
+  } else if (jc.refundPolicy && typeof jc.refundPolicy === "object") {
     const rp = jc.refundPolicy;
     const tmpl = REFUND_TEMPLATES[rp.template] ? rp.template : "general";
     const tiers = Array.isArray(rp.tiers) ? rp.tiers : [];
@@ -9183,7 +9186,21 @@ exports.inviteMember = authCallable(["system", "competition"], async (data, requ
 });
 
 exports.listOrgMembers = authCallable(["system", "competition"], async (data, request) => {
-  const owner = request.authUser.username;
+  // R7-2: 過去一律以「呼叫者」當組織擁有者 — manager 在評分頁開評審指派會拿到空清單
+  // （等於管理者永遠無法指派評審）。傳入 compId 時改以「活動擁有者」為準：
+  // 擁有者本人、系統管理員、或該組織的 active manager 可讀取。
+  let owner = request.authUser.username;
+  if (data && data.compId) {
+    const _cDoc = await db.collection("competitions").doc(String(data.compId)).get();
+    if (_cDoc.exists) {
+      const _creator = _cDoc.data().creator || "";
+      if (_creator && _creator !== owner && request.authUser.role !== "system") {
+        const _role = await memberRoleFor(request.authUser.username, _creator, String(data.compId));
+        if (_role !== "manager") throw new HttpsError("permission-denied", "權限不足");
+      }
+      if (_creator) owner = _creator;
+    }
+  }
   const snap = await db.collection("orgMembers").where("orgOwner", "==", owner).get();
   const members = snap.docs.map(d => { const m = d.data(); return {
     id: d.id, memberEmail: m.memberEmail || "", memberUsername: m.memberUsername || "",

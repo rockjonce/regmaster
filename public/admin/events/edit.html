@@ -1701,6 +1701,10 @@
       // wrote `maxTeams: config.maxTeams || 0` → top-level became 0 on every save.
       maxTeams: data.maxTeams,
       maxCapacityLimit: data.maxTeams,
+      // R7-1: refundPolicy 過去漏列於 newCfg（serialize 有收、後端白名單也有，但 payload 沒送）
+      // → 政策永遠存不進去，報名端一律「尚未設定退費政策」。與 maxTeams/isOpen 同家族 bug。
+      // 「不啟用」用 {template:''} 哨兵明確送達（白名單會略過 null，否則停用清不掉舊政策）。
+      refundPolicy: data.refundPolicy || { template: '' },
       // R5 H-3: isOpen rides in the config payload (backend treats it as tri-state).
       // The old flow omitted it here and used a separate setRegistrationOpen call whose
       // failure (e.g. NO_EMAIL gate) was silently swallowed → 「儲存成功」但仍未開放.
