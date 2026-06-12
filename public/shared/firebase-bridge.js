@@ -164,6 +164,7 @@
     updateTeamDetailOwner:["compId","teamId","team","members","teamCustom"],
     confirmManualPayment:["compId","teamId","code"],
     confirmPayment:["teamId","user"],
+    acceptTeam:["compId","teamId"],
     updateTeamStatus:["teamId","newStatus","user"],
     deleteTeam:["teamId"],
     exportTeamsCSV:["compId"],

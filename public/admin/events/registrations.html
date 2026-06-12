@@ -775,7 +775,8 @@
     // B-4: drop data-i18n so the i18n applier can't overwrite the live count back to the
     // 「共 — 筆」placeholder (renderList re-runs on lang-changed, so it stays translatable).
     lc.removeAttribute('data-i18n');
-    lc.textContent = window.L('aeRegCount').replace('{n}', rows.length);
+    lc.textContent = window.L('aeRegCount').replace('{n}', rows.length)
+      + (CFG.acceptanceMode === 'manual' ? ('　·　' + window.L('aeRegAcceptedCount').replace('{n}', rows.filter(function (t) { return t.status === '正取'; }).length)) : '');
     if (rows.length === 0) {
       document.getElementById('listBody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px">' + window.L('aeRegEmpty') + '</td></tr>';
       return;
@@ -789,6 +790,9 @@
         '<td data-label="' + escapeHtml(window.L('aeRegColStatus')) + '">' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +
         '<td class="td-actions">' +
+          /* 自訂正取（user 決策）：審核中＋已付款才可勾選；單向鎖於 handleAct 確認 */
+          ((CFG.acceptanceMode === 'manual' && IS_MANAGER && t.status === '審核中' && paid)
+            ? '<button class="action-btn primary" data-act="accept" data-tid="' + escapeHtml(t.teamId) + '">✓ ' + window.L('aeRegBtnAccept') + '</button>' : '') +
           '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnView') + '</button>' +
           (IS_MANAGER ? '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' : '') +
           (IS_MANAGER ? '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnDelete') + '</button>' : '') +
@@ -802,6 +806,21 @@
   }
 
   function handleAct(act, tid) {
+    if (act === 'accept') {
+      // 自訂正取：單向鎖 — 確認後呼叫 acceptTeam（後端檢查付款/名額並寄錄取通知）
+      var _t = (TEAMS || []).filter(function (x) { return x.teamId === tid; })[0] || {};
+      uiConfirm(window.L('aeRegAcceptConfirm').replace('{name}', _t.teamNameCN || tid), { title: window.L('aeRegAcceptTitle'), danger: true }).then(function (ok) {
+        if (!ok) return;
+        google.script.run
+          .withSuccessHandler(function (res) {
+            if (res && res.success) { uiToast(window.L('aeRegAcceptOk')); if (typeof reload === 'function') reload(); else location.reload(); }
+            else uiAlert((res && res.message) || window.L('aeRegAcceptFail'));
+          })
+          .withFailureHandler(function (e) { uiAlert(window.L('aeRegAcceptFail') + '：' + ((e && e.message) || '')); })
+          .acceptTeam(compId, tid);
+      });
+      return;
+    }
     if (act === 'view') openTeamDetail(tid);
     else if (act === 'email') openEmailComposer(tid);
     else if (act === 'del') confirmDelete(tid);

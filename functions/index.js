@@ -1304,7 +1304,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     "studentFields", "teacherCount", "teacherFields", "dietaryOptions", "dietaryRestrictionOptions", "tshirtOptions", "customQuestions", "studentCustomQuestions", "teacherCustomQuestions", "paymentMethods", "bankInfo", "creditCardLink",
     "description", "descriptionSummary", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
     "competitionDate", "competitionStartTime", "competitionEndTime", "openImmediate",
-    "sessions", "sessionSelectMode", "allowWaitlist", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
+    "sessions", "sessionSelectMode", "allowWaitlist", "acceptanceMode", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
     "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
     "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts", "refundPolicy"];
 
@@ -1344,6 +1344,17 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
       tiers: tiers.map(t => ({ daysBefore: parseInt(t.daysBefore, 10) || 0, pct: Number(t.pct) || 0 })).sort((a, b) => b.daysBefore - a.daysBefore),
       note: String(rp.note || "").slice(0, 500)
     };
+  }
+
+  // 候補/正取模式（user 決策）：auto=依報名順序正取(現行)、manual=自訂正取(主辦方勾選)、none=額滿停止報名。
+  // 與舊欄位 allowWaitlist 雙向同步：未送 acceptanceMode 的舊呼叫依 allowWaitlist 映射。
+  {
+    const _am = jc.acceptanceMode;
+    if (_am === "auto" || _am === "manual" || _am === "none") {
+      jc.allowWaitlist = (_am !== "none");
+    } else {
+      jc.acceptanceMode = (jc.allowWaitlist === false) ? "none" : "auto";
+    }
   }
 
   // R5 H-8: 場次結束不可早於開始（公開頁會原樣顯示「6/21 ～ 6/20」荒謬區間）
@@ -1891,7 +1902,12 @@ exports.submitRegistration = callable(async (data, request) => {
       });
 
       let txStatus = "正取", txWn = 0;
-      if (perSession) {
+      // 自訂正取（user 決策）：報名＋付款後一律進「審核中」池（無人自動正取），
+      // 正取 100% 由主辦方於報名管理勾選（acceptTeam），名額於勾選時才扣。
+      const _accMode = cfgInTx.acceptanceMode || (cfgInTx.allowWaitlist === false ? "none" : "auto");
+      if (_accMode === "manual") {
+        txStatus = "審核中";
+      } else if (perSession) {
         const selectedSessions = fd.selectedSessions || [fd.selectedSession || 0];
         const sessions = cfgInTx.sessions || [];
         for (const sIdx of selectedSessions) {
@@ -2919,7 +2935,8 @@ async function _ownerRefundCore(request, compId, teamId, refundAmountOrNull, not
     const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
     const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
     const extra = channelUsed === "payuni" ? "退款將退刷至原付款卡，依發卡行作業數個工作日入帳。" : "主辦方將以原付款管道或約定方式退款給您。";
-    const html = emailWrap("您已收到退費", `<p>活動「<b>${escMail(compName)}</b>」主辦方已為您的報名（${escMail(team.teamNameCN || teamId)}）辦理退費。</p><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8"><b>退款金額：</b>NT$${refundAmt}</div><p>${extra}</p>`, contactFooter(contact));
+    const _intro = (note === "未獲正取退費") ? `<p>很抱歉，您的報名未獲主辦方錄取（正取）。主辦方已為您辦理全額退費，明細如下。</p>` : "";
+    const html = emailWrap("您已收到退費", _intro + `<p>活動「<b>${escMail(compName)}</b>」主辦方已為您的報名（${escMail(team.teamNameCN || teamId)}）辦理退費。</p><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8"><b>退款金額：</b>NT$${refundAmt}</div><p>${extra}</p>`, contactFooter(contact));
     if (emails.length) await queueMail(emails, "[RegMaster] 退費通知 — " + compName, html);
   } catch (e) {}
   return { success: true, refundedAmount: refundAmt, retainedAmount: retained, channel: channelUsed, payuniRefundNo };
@@ -2936,14 +2953,14 @@ exports.ownerRefundWaitlist = compAuthCallable("manage", async (data, request) =
   const compId = data.compId;
   const snap = await db.collection("teams").where("compId", "==", compId).get();
   const targets = snap.docs.map(d => d.data()).filter(t =>
-    String(t.status || "").startsWith("備取") &&
+    (String(t.status || "").startsWith("備取") || t.status === "審核中") &&
     String(t.paymentStatus || "").includes("已確認") &&
     !String(t.paymentStatus || "").includes("已退費"));
-  if (!targets.length) return { success: false, message: "沒有已付款的備取報名可退款" };
+  if (!targets.length) return { success: false, message: "沒有已付款的備取／審核中報名可退款" };
   let done = 0, total = 0; const failures = [];
   for (const t of targets) {
     try {
-      const r = await _ownerRefundCore(request, compId, t.teamId, null, "備取一鍵退款");
+      const r = await _ownerRefundCore(request, compId, t.teamId, null, t.status === "審核中" ? "未獲正取退費" : "備取一鍵退款");
       if (r && r.success) { done++; total += r.refundedAmount || 0; }
       else failures.push({ teamId: t.teamId, message: (r && r.message) || "失敗" });
     } catch (e) { failures.push({ teamId: t.teamId, message: String((e && e.message) || e).slice(0, 80) }); }
@@ -3409,6 +3426,42 @@ exports.confirmPayment = compAuthCallable(async (data, request) => {
   }
   await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 " + fmtNow() });
   await auditLog(request.authUser.username, "確認付款", teamId, "");
+  return { success: true };
+});
+
+// 自訂正取（user 決策 2026-06-12）：主辦方勾選正取 — 單向鎖（不可改回備取/審核中）、
+// 付款為前置條件、名額於「勾選當下」檢查與佔用、勾選即寄錄取通知。
+// 名額釋放：正取隊之後退費/取消，正取數自然下降 → 可再勾選他隊（不自動遞補）。
+exports.acceptTeam = compAuthCallable("manage", async (data, request) => {
+  const { compId, teamId } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const team = tDoc.data();
+  if (team.status === "正取") return { success: true, already: true };
+  if (team.status === "已取消") return { success: false, message: "此報名已取消" };
+  if (!(team.status === "審核中" || String(team.status || "").startsWith("備取"))) {
+    return { success: false, message: "此報名狀態不可勾選正取（" + (team.status || "") + "）" };
+  }
+  if (!String(team.paymentStatus || "").includes("已確認")) return { success: false, message: "此隊伍尚未完成付款，不可勾選正取" };
+  if (String(team.paymentStatus || "").includes("已退費")) return { success: false, message: "此隊伍已退費，不可勾選正取" };
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const comp = compDoc.exists ? compDoc.data() : {}; const cfg = comp.config || {};
+  const maxT = comp.maxTeams || 0;
+  if (maxT > 0) {
+    const snap = await db.collection("teams").where("compId", "==", compId).get();
+    const acc = snap.docs.filter(d => d.data().status === "正取").length;
+    if (acc >= maxT) return { success: false, message: "正取名額已滿（" + acc + "/" + maxT + "），如需增加請先調整報名上限" };
+  }
+  await tDoc.ref.update({ status: "正取", waitlistNum: 0, acceptedAt: fmtNow(), acceptedBy: request.authUser.username });
+  await auditLog(request.authUser.username, "勾選正取", teamId, team.teamNameCN || "");
+  try {
+    const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+    const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
+    const compName = cfg.competitionName || comp.name || compId;
+    const contact = await organiserContact(comp.creator || "");
+    const html = emailWrap("錄取通知", `<p>恭喜！您的報名（<b>${escMail(team.teamNameCN || teamId)}</b>）已獲「<b>${escMail(compName)}</b>」主辦方確認<b>正取</b>。</p><p>後續活動資訊請留意主辦方通知，也可於「我的報名」查看狀態。</p>`, contactFooter(contact));
+    if (emails.length) await queueMail(emails, "[RegMaster] 錄取通知 — " + compName, html);
+  } catch (e) {}
   return { success: true };
 });
 
@@ -8138,7 +8191,7 @@ async function computeScoring(compId) {
   ]);
   const teams = {};
   // R6-5: 備取不參賽 — 不進成績/排名（遞補為正取後自然納入）
-  tSnap.docs.forEach(d => { const t = d.data(); if (t.status === "已取消" || String(t.status || "").startsWith("備取")) return; teams[t.teamId] = { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
+  tSnap.docs.forEach(d => { const t = d.data(); if (t.status === "已取消" || t.status === "審核中" || String(t.status || "").startsWith("備取")) return; teams[t.teamId] = { teamId: t.teamId, teamNameCN: t.teamNameCN || "", group: t.group || "", status: t.status || "" }; });
   const teamPanel = {};
   panels.forEach(p => (p.teams || []).forEach(tid => { if (teams[tid]) teamPanel[tid] = "P:" + p.id; }));
   Object.keys(teams).forEach(tid => { if (!teamPanel[tid]) teamPanel[tid] = "G:" + (teams[tid].group || ""); });
@@ -8242,7 +8295,7 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
     const panels = Array.isArray(cfg.scoringPanels) ? cfg.scoringPanels : [];
     const tSnap = await db.collection("teams").where("compId", "==", compId).get();
     // R5 M-7: 備取隊伍不參賽 — 不進評分名單（遞補為正取後自然納入）
-    let teams = tSnap.docs.map(d => d.data()).filter(t => t.status !== "已取消" && !String(t.status || "").startsWith("備取"));
+    let teams = tSnap.docs.map(d => d.data()).filter(t => t.status !== "已取消" && t.status !== "審核中" && !String(t.status || "").startsWith("備取"));
     if (role === "judge") {
       const myPanels = panels.filter(p => (p.judges || []).indexOf(me) >= 0);
       // UX-019: assign by GROUP (dynamic) — 不指定組別 = 涵蓋全部、之後新報名的隊伍

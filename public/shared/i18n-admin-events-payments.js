@@ -549,10 +549,10 @@
 
   Object.assign(Z, {
     aePayBtnRefund: '退費',
-    aePayWlRefundBtn: '備取一鍵退款（{n} 筆）',
+    aePayWlRefundBtn: '備取／未正取 一鍵退款（{n} 筆）',
     aePayWlRefundHint: '備取已付款者全額退款（保留報名與備取順位）',
     aePayWlRefundTitle: '備取一鍵退款',
-    aePayWlRefundConfirm: '將對 {n} 筆「已付款的備取」全額退款：線上付款走 PayUNI 退刷、銀行轉帳由你自行匯退（系統先標記已退費）。確定執行？',
+    aePayWlRefundConfirm: '將對 {n} 筆「已付款的備取／審核中（未正取）」全額退款：線上付款走 PayUNI 退刷、銀行轉帳由你自行匯退（系統先標記已退費）。確定執行？',
     aePayWlRefundDone: '已退款 {n} 筆，共 NT$ {amt}',
     aePayWlRefundFail: '備取退款失敗',
     aePayConfirmOkToast: '已確認付款',
@@ -579,7 +579,7 @@
   });
   Object.assign(E, {
     aePayBtnRefund: 'Refund',
-    aePayWlRefundBtn: 'Refund all waitlist ({n})',
+    aePayWlRefundBtn: 'Refund all waitlisted / pending ({n})',
     aePayWlRefundHint: 'Full refund for paid waitlist registrations (keeps registration & queue position)',
     aePayWlRefundTitle: 'Refund waitlist',
     aePayWlRefundConfirm: 'Refund {n} paid waitlist registration(s) in full: online payments via PayUNI reversal, bank transfers remitted by you (marked refunded). Proceed?',

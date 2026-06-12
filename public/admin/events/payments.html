@@ -291,7 +291,7 @@
       '<div class="sum-card"><div class="l">' + window.L('aePaySumPending') + '</div><div class="v" style="color:var(--warn-700)">NT$ ' + pendingAmt.toLocaleString() + '</div><div class="sub">' + pending + window.L('aePaySumPendingSub') + '</div></div>' +
       '<div class="sum-card"><div class="l">' + window.L('aePaySumRate') + '</div><div class="v">' + (total > 0 ? Math.round(paid / total * 100) : 0) + '<em>%</em></div><div class="sub">' + window.L('aePaySumRateSub') + '</div></div>';
     // R6-4: 備取一鍵退款（存在已付款且未退費的備取時顯示）
-    var wl = TEAMS.filter(function (t) { return isWaitlist(t) && (t.paymentStatus || '').includes('已確認') && !(t.paymentStatus || '').includes('已退費'); });
+    var wl = TEAMS.filter(function (t) { return (isWaitlist(t) || t.status === '審核中') && (t.paymentStatus || '').includes('已確認') && !(t.paymentStatus || '').includes('已退費'); });   /* 自訂正取：審核中未正取者也納入一鍵退費 */
     var bar = document.getElementById('wlRefundBar');
     if (!bar) { bar = document.createElement('div'); bar.id = 'wlRefundBar'; bar.style.cssText = 'margin:10px 0'; document.getElementById('sumRow').insertAdjacentElement('afterend', bar); }
     bar.innerHTML = (IS_MANAGER && !(me && me.role === 'system') && wl.length)

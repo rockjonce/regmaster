@@ -494,7 +494,7 @@
             </div>
             <div class="row2">
               <div class="fld"><div class="lbl" data-i18n="aeEditFldMaxTeams">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="0"><div class="help" id="maxTeamsHelp" data-i18n="aeEditMaxTeamsHelp">0 = 無上限。超過此數將進入候補</div><div id="maxTeamsErr" style="display:none; margin-top:5px; color:var(--err-700); font:600 11.5px/1.45 var(--f-tc)"></div></div>
-              <div class="fld"><div class="lbl" data-i18n="aeEditFldAllowWaitlist">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="true" data-i18n="aeEditWaitlistYes">是（額滿後可候補）</option><option value="false" data-i18n="aeEditWaitlistNo">否（額滿即停止接受報名）</option></select><div id="waitlistHint" style="display:none; margin-top:5px; color:var(--warn-700); font:500 11.5px/1.45 var(--f-tc)"></div></div>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldAllowWaitlist">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="auto" data-i18n="aeEditWaitlistYes">是（額滿後可候補，依報名順序正取）</option><option value="manual" data-i18n="aeEditWaitlistManual">是（額滿後可候補，自訂正取）</option><option value="none" data-i18n="aeEditWaitlistNo">否（額滿即停止報名）</option></select><div id="waitlistHint" style="display:none; margin-top:5px; color:var(--warn-700); font:500 11.5px/1.45 var(--f-tc)"></div></div>
             </div>
           </div>
           <div class="sec">
@@ -686,7 +686,7 @@
     var wlHint = document.getElementById('waitlistHint');
     if (wl) {
       if (!PLAN.features.waitlist) {
-        wl.value = 'false'; wl.disabled = true;
+        wl.value = 'none'; wl.disabled = true;
         if (wlHint) { wlHint.style.display = ''; wlHint.innerHTML = window.L('aeEditWaitlistUpgradeHint'); }
       } else {
         wl.disabled = false;
@@ -853,7 +853,7 @@
     // Populate from the ORGANISER'S setting (top-level maxTeams synced into cfg),
     // not the tier ceiling (maxCapacityLimit) — those two are different concepts.
     document.getElementById('adv-maxTeams').value = COMP.config.maxTeams || 0;
-    document.getElementById('adv-allowWaitlist').value = (CFG.allowWaitlist !== false) ? 'true' : 'false';
+    document.getElementById('adv-allowWaitlist').value = CFG.acceptanceMode || ((CFG.allowWaitlist !== false) ? 'auto' : 'none');
     setToggle('eventAiOn', CFG.enableAI !== false);   // 活動 AI 助理 per-activity toggle (default on)
     updateCapacityField();   // multi mode → overwrite with session sum + lock
     applyPlanGating();        // gate eventAi / waitlist by the caller's plan
@@ -1594,7 +1594,8 @@
         };
       })(),
       maxTeams: parseInt(document.getElementById('adv-maxTeams').value, 10) || 0,
-      allowWaitlist: document.getElementById('adv-allowWaitlist').value === 'true',
+      acceptanceMode: document.getElementById('adv-allowWaitlist').value,
+      allowWaitlist: document.getElementById('adv-allowWaitlist').value !== 'none',
       enableAI: document.getElementById('eventAiOn').classList.contains('on')
     });
   }
@@ -1694,6 +1695,7 @@
         (data.bankEnabled && data.bankInfo.accountNumber ? 'atm' : null)
       ].filter(Boolean),
       allowWaitlist: data.allowWaitlist,
+      acceptanceMode: data.acceptanceMode,   /* 自訂正取模式（newCfg 漏送家族前科：必列！） */
       enableAI: data.enableAI,
       // ROOT-CAUSE FIX for bug "maxTeams 設定後又變 0":
       // We previously only sent maxCapacityLimit (which isn't in the saveCompetitionConfig
