@@ -819,6 +819,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     // Team name fields
     if (!CFG.requireTeamNameCN) document.getElementById('teamNameCNField').style.display = 'none';
     if (!CFG.requireTeamNameEN) document.getElementById('teamNameENField').style.display = 'none';
+    // R7-5(附帶/M-2 殘留): 兩個隊名都不需要 → 整個「隊伍名稱」區塊（含空白標題）一併隱藏
+    if (!CFG.requireTeamNameCN && !CFG.requireTeamNameEN) {
+      var _tnSec = document.getElementById('teamNameCNField');
+      if (_tnSec) { var _sec = _tnSec.closest('.form-section'); if (_sec) _sec.style.display = 'none'; }
+    }
 
     // Members (Step 2) — render from formSchema when present, else legacy fields.
     SCHEMA = (CFG.formSchema && Array.isArray(CFG.formSchema.sections) && CFG.formSchema.sections.length) ? CFG.formSchema : null;

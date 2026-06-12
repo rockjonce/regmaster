@@ -80,6 +80,7 @@
     aeIdxCountdown: '⏰ 還有 {n} 天',
     aeIdxNoDeadline: '尚未設定截止日',
     aeIdxRegSuffix: '報名',
+    aeIdxWlSuffix: '＋{n} 候補',
     aeIdxProgressLabel: '報名進度',
     aeIdxNoLimit: '無上限',
 
@@ -176,6 +177,7 @@
     aeIdxCountdown: '⏰ {n} days left',
     aeIdxNoDeadline: 'No deadline set',
     aeIdxRegSuffix: 'registered',
+    aeIdxWlSuffix: '+{n} waitlist',
     aeIdxProgressLabel: 'Registrations',
     aeIdxNoLimit: 'No limit',
 

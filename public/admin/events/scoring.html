@@ -956,7 +956,8 @@
       '<th data-i18n="aeScoreResTeam">隊伍</th>' +
       '<th data-i18n="aeScoreResGroup">組別</th>' +
       '<th class="num" data-i18n="aeScoreResJudges">評審數</th>' +
-      '<th class="num" data-i18n="aeScoreResTotal">總分</th>' +
+      // R7-4: 總排名以 rawTotal 排序 → 分數欄顯示同一口徑，否則「第1名 88、第2名 100」視覺矛盾
+      '<th class="num">' + window.L(RES_GROUP ? 'aeScoreResTotalNorm' : 'aeScoreResTotalRaw') + '</th>' +
       '</tr></thead><tbody>';
     rows.forEach(function (r, idx) {
       var rk = RES_GROUP ? r.rankInGroup : r.rankOverall;
@@ -966,7 +967,7 @@
         '<td><div class="res-tm">' + escapeHtml(r.teamNameCN || window.L('aeScoreNoTeamName')) + '</div><div class="res-tid">' + escapeHtml(r.teamId) + '</div></td>' +
         '<td>' + escapeHtml(r.group || '') + (r.judged ? '' : ' <span class="res-badge" data-i18n="aeScoreResUnjudged">尚未評分</span>') + '</td>' +
         '<td class="num">' + (r.judgeCount || 0) + '</td>' +
-        '<td class="num"><span class="res-total">' + (r.judged ? Number(r.total || 0).toFixed(1) : '—') + '</span></td>' +
+        '<td class="num"><span class="res-total">' + (r.judged ? Number((RES_GROUP ? r.total : (r.rawTotal != null ? r.rawTotal : r.total)) || 0).toFixed(1) : '—') + '</span></td>' +
         '</tr>';
       // hidden breakdown row
       var bk = (r.breakdown || []).map(function (b) {
@@ -1183,9 +1184,9 @@
     var results = d.results || [];
     var nodeLabels = [];
     if (results.length && results[0].breakdown) nodeLabels = results[0].breakdown.map(function (b) { return b.label; });
-    var resHead = ['rankOverall', 'rankInGroup', 'teamId', 'teamNameCN', 'group', 'judgeCount', 'total'].concat(nodeLabels);
+    var resHead = ['rankOverall', 'rankInGroup', 'teamId', 'teamNameCN', 'group', 'judgeCount', 'rawTotal', 'totalNormalized'].concat(nodeLabels);
     var resRows = results.slice().sort(function (a, b) { return (a.rankOverall || 9999) - (b.rankOverall || 9999); }).map(function (r) {
-      var line = [r.rankOverall || '', r.rankInGroup || '', r.teamId, r.teamNameCN || '', r.group || '', r.judgeCount || 0, r.judged ? (Math.round((r.total || 0) * 10) / 10) : ''];
+      var line = [r.rankOverall || '', r.rankInGroup || '', r.teamId, r.teamNameCN || '', r.group || '', r.judgeCount || 0, r.judged ? (Math.round((r.rawTotal != null ? r.rawTotal : r.total || 0) * 10) / 10) : '', r.judged ? (Math.round((r.total || 0) * 10) / 10) : ''];
       (r.breakdown || []).forEach(function (b) { line.push(Math.round((b.score || 0) * 10) / 10); });
       return line;
     });

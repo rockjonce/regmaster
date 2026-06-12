@@ -348,7 +348,11 @@
     else statusHtml = '<div class="status-c draft"><span class="dot-c"></span>' + window.L('aeIdxStatusDraft') + '</div>';
 
     var max = c.maxTeams || c.maxCapacityLimit || 0;
-    var pct = max > 0 ? Math.min(100, (c.teamCount || 0) / max * 100) : 0;
+    // R6-10(殘留): 計數含備取會顯示 4/3・100% 超額 — 正取封頂、超出標示候補（與探索/儀表板一致）
+    var _cnt = c.teamCount || 0;
+    var _over = (max > 0 && _cnt > max) ? (_cnt - max) : 0;
+    var _shown = max > 0 ? Math.min(_cnt, max) : _cnt;
+    var pct = max > 0 ? Math.min(100, _shown / max * 100) : 0;
     var pctClass = pct > 90 ? 'danger' : pct > 70 ? 'warn' : '';
     var dl = parseDate(c.deadline);
     var daysLeft = dl ? Math.ceil((dl.getTime() - Date.now()) / 86400000) : null;
@@ -378,10 +382,10 @@
         creatorTag +
         '<div class="meta-evt">' +
           '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18"/></svg>' + escapeHtml((c.deadline || '').replace('T', ' ') || window.L('aeIdxNoDeadline')) + '</div>' +
-          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + (c.teamCount || 0) + '</b> ' + window.L('aeIdxRegSuffix') + (max > 0 ? ' / ' + max : '') + '</div>' +
+          '<div><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0"/></svg><b>' + _shown + '</b> ' + window.L('aeIdxRegSuffix') + (max > 0 ? ' / ' + max : '') + (_over ? ' <span style="color:var(--muted)">' + window.L('aeIdxWlSuffix').replace('{n}', _over) + '</span>' : '') + '</div>' +
         '</div>' +
         '<div class="progress">' +
-          '<div class="label-p"><span class="l-p">' + window.L('aeIdxProgressLabel') + '</span><span class="v-p ' + pctClass + '">' + (c.teamCount || 0) + (max > 0 ? ' / ' + max : '') + ' <span class="pct">' + (max > 0 ? Math.round(pct) + '%' : window.L('aeIdxNoLimit')) + '</span></span></div>' +
+          '<div class="label-p"><span class="l-p">' + window.L('aeIdxProgressLabel') + '</span><span class="v-p ' + pctClass + '">' + _shown + (max > 0 ? ' / ' + max : '') + ' <span class="pct">' + (max > 0 ? Math.round(pct) + '%' : window.L('aeIdxNoLimit')) + '</span></span></div>' +
           '<div class="bar-p ' + pctClass + '"><div style="width:' + pct + '%"></div></div>' +
         '</div>' +
       '</div>' +

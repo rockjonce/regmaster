@@ -396,6 +396,9 @@
       ROLE = (r[0] && r[0].role) || null;        // null = owner
       CONFIG = r[1] || {};
       TEAMS = r[2] || [];
+      // R7-3: 後端報到寫 checkedInAt、本頁歷史/統計讀 checkInTime（兩套欄位名並存）
+      // → 重整後「最近報到紀錄」永遠空。載入時統一補上 checkInTime。
+      TEAMS.forEach(function (t) { if (!t.checkInTime && t.checkedInAt) t.checkInTime = t.checkedInAt; });
       $('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
       $('crumbHub').textContent = CONFIG.competitionName || compId;
       $('loadingState').style.display = 'none';
