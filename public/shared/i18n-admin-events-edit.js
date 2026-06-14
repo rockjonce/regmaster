@@ -671,6 +671,7 @@
     aeEditMaxTeamsHelp: '0 = unlimited. Anything beyond this goes to the waitlist',
     aeEditFldAllowWaitlist: 'Allow Waitlist',
     aeEditWaitlistYes: 'Yes (waitlist once full)',
+    aeEditWaitlistManual: 'Yes (waitlist once full, organizer picks accepted): paid teams enter "Pending review"; you accept them in Registrations (uses a slot, sends acceptance email, irreversible)',
     aeEditWaitlistNo: 'No (stop accepting registrations once full)',
     aeEditSecVisibilityH: 'Visibility',
     aeEditVisibleH: 'Show on the public browse page',

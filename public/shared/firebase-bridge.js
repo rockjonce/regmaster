@@ -135,7 +135,6 @@
     listDiscountCodes:["compId"],
     deleteDiscountCode:["compId","code"],
     getRegPaymentStatus:["orderId"],
-    productionReset:["confirmCode"],
     clearExpiredLicenses:[],
     uploadPosterImage:["compId","base64Data","fileName","mimeType"],
     listCompetitions:["role","username"],

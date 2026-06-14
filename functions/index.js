@@ -3434,32 +3434,42 @@ exports.confirmPayment = compAuthCallable(async (data, request) => {
 // 名額釋放：正取隊之後退費/取消，正取數自然下降 → 可再勾選他隊（不自動遞補）。
 exports.acceptTeam = compAuthCallable("manage", async (data, request) => {
   const { compId, teamId } = data;
-  const tDoc = await db.collection("teams").doc(teamId).get();
-  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
-  const team = tDoc.data();
-  if (team.status === "正取") return { success: true, already: true };
-  if (team.status === "已取消") return { success: false, message: "此報名已取消" };
-  if (!(team.status === "審核中" || String(team.status || "").startsWith("備取"))) {
-    return { success: false, message: "此報名狀態不可勾選正取（" + (team.status || "") + "）" };
-  }
-  if (!String(team.paymentStatus || "").includes("已確認")) return { success: false, message: "此隊伍尚未完成付款，不可勾選正取" };
-  if (String(team.paymentStatus || "").includes("已退費")) return { success: false, message: "此隊伍已退費，不可勾選正取" };
+  const teamRef = db.collection("teams").doc(teamId);
   const compDoc = await db.collection("competitions").doc(compId).get();
   const comp = compDoc.exists ? compDoc.data() : {}; const cfg = comp.config || {};
   const maxT = comp.maxTeams || 0;
-  if (maxT > 0) {
-    const snap = await db.collection("teams").where("compId", "==", compId).get();
-    const acc = snap.docs.filter(d => d.data().status === "正取").length;
-    if (acc >= maxT) return { success: false, message: "正取名額已滿（" + acc + "/" + maxT + "），如需增加請先調整報名上限" };
-  }
-  await tDoc.ref.update({ status: "正取", waitlistNum: 0, acceptedAt: fmtNow(), acceptedBy: request.authUser.username });
-  await auditLog(request.authUser.username, "勾選正取", teamId, team.teamNameCN || "");
+  // R10-1: 名額檢查＋狀態翻轉包進 transaction，杜絕兩個主辦方並發勾選造成超收。
+  let txOut;
+  try {
+    txOut = await db.runTransaction(async (tx) => {
+      const tSnap = await tx.get(teamRef);
+      if (!tSnap.exists || tSnap.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+      const t = tSnap.data();
+      if (t.status === "正取") return { success: true, already: true };
+      if (t.status === "已取消") return { success: false, message: "此報名已取消" };
+      if (!(t.status === "審核中" || String(t.status || "").startsWith("備取")))
+        return { success: false, message: "此報名狀態不可勾選正取（" + (t.status || "") + "）" };
+      if (!String(t.paymentStatus || "").includes("已確認")) return { success: false, message: "此隊伍尚未完成付款，不可勾選正取" };
+      if (String(t.paymentStatus || "").includes("已退費")) return { success: false, message: "此隊伍已退費，不可勾選正取" };
+      if (maxT > 0) {
+        // 單欄查詢 + 記憶體過濾（避免 compId+status 複合索引需求）；讀進交易讀集＝序列化並發勾選
+        const accSnap = await tx.get(db.collection("teams").where("compId", "==", compId));
+        const acc = accSnap.docs.filter(d => d.data().status === "正取").length;
+        if (acc >= maxT) return { success: false, message: "正取名額已滿（" + acc + "/" + maxT + "），如需增加請先調整報名上限" };
+      }
+      tx.update(teamRef, { status: "正取", waitlistNum: 0, acceptedAt: fmtNow(), acceptedBy: request.authUser.username });
+      return { success: true, _accepted: true, teamNameCN: t.teamNameCN || "" };
+    });
+  } catch (e) { return { success: false, message: "勾選失敗，請稍後再試" }; }
+  if (!txOut.success || txOut.already) return txOut;
+
+  await auditLog(request.authUser.username, "勾選正取", teamId, txOut.teamNameCN || "");
   try {
     const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
     const emails = [...new Set(memSnap.docs.map(d => d.data().email).filter(e => e))];
     const compName = cfg.competitionName || comp.name || compId;
     const contact = await organiserContact(comp.creator || "");
-    const html = emailWrap("錄取通知", `<p>恭喜！您的報名（<b>${escMail(team.teamNameCN || teamId)}</b>）已獲「<b>${escMail(compName)}</b>」主辦方確認<b>正取</b>。</p><p>後續活動資訊請留意主辦方通知，也可於「我的報名」查看狀態。</p>`, contactFooter(contact));
+    const html = emailWrap("錄取通知", `<p>恭喜！您的報名（<b>${escMail(txOut.teamNameCN || teamId)}</b>）已獲「<b>${escMail(compName)}</b>」主辦方確認<b>正取</b>。</p><p>後續活動資訊請留意主辦方通知，也可於「我的報名」查看狀態。</p>`, contactFooter(contact));
     if (emails.length) await queueMail(emails, "[RegMaster] 錄取通知 — " + compName, html);
   } catch (e) {}
   return { success: true };
@@ -5012,7 +5022,9 @@ exports.batchImportTeams = compAuthCallable(async (data) => {
   const comp = compDoc.data();
   const cfg = comp ? comp.config || {} : {};
   const stats = await getCompStats(compId);
-  
+  // R10-2: 匯入須與報名一致遵守 acceptanceMode — manual 模式一律進「審核中」池（不自動正取）
+  const _accMode = cfg.acceptanceMode || (cfg.allowWaitlist === false ? "none" : "auto");
+
   let imported = 0, errors = [];
   const perSession = isPerSessionQuota(cfg);
   
@@ -5050,7 +5062,10 @@ exports.batchImportTeams = compAuthCallable(async (data) => {
       extraColOffset = 1; // account for session column in CSV
     }
     
-    if (perSession) {
+    if (_accMode === "manual") {
+      // R10-2: 自訂正取 — 匯入一律「審核中」，由主辦方於報名管理勾選正取（與線上報名一致）
+      status = "審核中";
+    } else if (perSession) {
       // Per-session quota check
       for (const sIdx of teamSessions) {
         const s = sessions[sIdx];
@@ -5925,43 +5940,6 @@ exports.reconcileRegPayment = callable(async (data) => {
   return { success: true, status: order.status || "pending" };
 });
 
-// ===== Production Reset: Clear all data except config + system admin =====
-exports.productionReset = authCallable(["system"], async (data) => {
-  const { confirmCode } = data;
-  if (confirmCode !== "RESET-PRODUCTION-2026") return { success: false, message: "確認碼錯誤" };
-  
-  const collectionsToWipe = [
-    "competitions", "teams", "members", "announcements", "emailTemplates",
-    "emailLogs", "payments", "notifications", "scores", "posterFiles",
-    "pdfFiles", "auditLogs", "licenses", "orders", "coupons", "mail",
-    "accountRequests", "regPayments", "feedback", "feedbackFiles", "visitors"
-  ];
-  
-  let totalDeleted = 0;
-  for (const col of collectionsToWipe) {
-    const snap = await db.collection(col).get();
-    for (let i = 0; i < snap.docs.length; i += 400) {
-      const batch = db.batch();
-      snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      totalDeleted += Math.min(400, snap.docs.length - i);
-    }
-  }
-  
-  /* Delete non-system accounts — batched to stay under Firestore 500 limit */
-  const acctSnap = await db.collection("accounts").get();
-  const toDelete = acctSnap.docs.filter(d => d.data().role !== "system");
-  for (let i = 0; i < toDelete.length; i += 400) {
-    const batch = db.batch();
-    toDelete.slice(i, i + 400).forEach(d => batch.delete(d.ref));
-    await batch.commit();
-  }
-  const acctDeleted = toDelete.length;
-  totalDeleted += acctDeleted;
-  
-  await auditLog("system", "production_reset", "", "deleted " + totalDeleted + " docs");
-  return { success: true, message: "清除完成！共刪除 " + totalDeleted + " 筆資料。保留了系統設定與管理員帳號。" };
-});
 
 // ===== PAYUNi Registration Payment (活動管理者自己的金流) =====
 // ===== Discounts (item 10): group-tier auto discounts + discount codes =====
@@ -9517,84 +9495,3 @@ exports.getPublicCertTemplates = callable(async (data) => {
 });
 
 
-// ===== TEMPORARY: QA test-account seeding (remove after pre-launch UX testing) =====
-// Secret-guarded. action 'seed' creates qa_* test accounts/licenses/orgMembers (idempotent);
-// action 'cleanup' deletes everything tagged _qatest plus any events created by qa_* accounts.
-exports.qaSeed = callable(async (data) => {
-  if (!data || data.secret !== "QA-SEED-2026-RM") return { error: "forbidden" };
-  const PW = "55a6c5114d06d567db099acc175dde58ffed80ac65fc0988fd4e48c38ce4846f"; // sha256("QAtest2026!")
-  const QA_USERS = ["qa_free", "qa_starter", "qa_pro", "qa_team", "qa_sys", "qa_manager", "qa_judge", "qa_staff"];
-
-  if (data.action === "cleanup") {
-    let n = 0;
-    const delWhere = async (col, field, op, val) => {
-      const s = await db.collection(col).where(field, op, val).get();
-      for (let i = 0; i < s.docs.length; i += 400) { const b = db.batch(); s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); n += Math.min(400, s.docs.length - i); }
-    };
-    await delWhere("accounts", "_qatest", "==", true);
-    await delWhere("licenses", "_qatest", "==", true);
-    await delWhere("orgMembers", "_qatest", "==", true);
-    // events created by qa_* accounts + their dependent docs
-    const compSnap = await db.collection("competitions").where("creator", "in", QA_USERS.slice(0, 10)).get();
-    for (const c of compSnap.docs) {
-      const cid = c.id;
-      for (const col of ["teams", "members", "scores", "regPayments", "announcements", "campaigns", "posterFiles", "pdfFiles", "certAssets", "teamFiles", "notifications"]) {
-        await delWhere(col, "compId", "==", cid);
-      }
-      await c.ref.delete(); n++;
-    }
-    await delWhere("notifPrefs", "_qatest", "==", true);
-    return { success: true, cleaned: n };
-  }
-
-  // ---- seed ----
-  const created = [], skipped = [];
-  const ensureAccount = async (username, role, displayName, org) => {
-    const ex = await db.collection("accounts").where("username", "==", username).limit(1).get();
-    if (!ex.empty) { skipped.push(username); return; }
-    await db.collection("accounts").add({
-      username, passwordHash: PW, role, displayName, email: username + "@qa.test", emailVerified: true,
-      organizationName: org || "", intendedPlan: role === "system" ? "" : "free",
-      createdAt: fmtNow(), loginFails: 0, lockedUntil: "", _qatest: true
-    });
-    created.push(username);
-  };
-  await ensureAccount("qa_free", "competition", "QA Free 主辦", "QA Free 機構");
-  await ensureAccount("qa_starter", "competition", "QA Starter 主辦", "QA Starter 機構");
-  await ensureAccount("qa_pro", "competition", "QA Pro 主辦", "QA Pro 機構");
-  await ensureAccount("qa_team", "competition", "QA Team 主辦", "QA Team 機構");
-  await ensureAccount("qa_sys", "system", "QA 系統管理員", "");
-  await ensureAccount("qa_manager", "competition", "QA 管理者", "");
-  await ensureAccount("qa_judge", "competition", "QA 評審", "");
-  await ensureAccount("qa_staff", "competition", "QA 工作人員", "");
-
-  const ensureLicense = async (code, tier, owner) => {
-    const ex = await db.collection("licenses").doc(code).get();
-    if (ex.exists) { skipped.push(code); return; }
-    await db.collection("licenses").doc(code).set({
-      code, type: "subscription", tier, status: "已啟用", activatedBy: owner, purchasedBy: owner,
-      years: 1, maxCount: 0, usedCount: 0,
-      activatedAt: fmtNow(), createdAt: fmtNow(),
-      expiresAt: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(), _qatest: true
-    });
-    created.push(code);
-  };
-  await ensureLicense("QA-STARTER", "starter", "qa_starter");
-  await ensureLicense("QA-PRO", "pro", "qa_pro");
-  await ensureLicense("QA-TEAM", "team", "qa_team");
-
-  const ensureMember = async (memberUsername, role) => {
-    const ex = await db.collection("orgMembers").where("memberUsername", "==", memberUsername).where("orgOwner", "==", "qa_team").get();
-    if (!ex.empty) { skipped.push("member:" + memberUsername); return; }
-    await db.collection("orgMembers").add({
-      orgOwner: "qa_team", memberEmail: memberUsername + "@qa.test", memberUsername, role, scope: "all",
-      status: "active", invitedBy: "qa_team", invitedAt: fmtNow(), acceptedAt: fmtNow(), token: "", _qatest: true
-    });
-    created.push("member:" + memberUsername);
-  };
-  await ensureMember("qa_manager", "manager");
-  await ensureMember("qa_judge", "judge");
-  await ensureMember("qa_staff", "staff");
-
-  return { success: true, created, skipped };
-});

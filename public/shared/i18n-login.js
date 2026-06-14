@@ -152,6 +152,8 @@
     lgMsgGoogleFailed: 'Google sign-in failed',
     lgMsgGoogleFailedRetry: 'Google sign-in failed, please try again later',
     lgMsgGoogleNotEnabled: 'Google sign-in isn\'t enabled in the console yet, please contact your administrator',
+    lgMsgGooglePopupBlocked: 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.',
+    lgMsgGoogleNetwork: 'Network error. Please check your connection and try again.',
     lgMsgGoogleUnauthDomain: 'This domain is not authorized for Google sign-in',
     lgMsgProcessing: 'Processing⋯'
   };

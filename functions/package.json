@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "echo ok",
+    "test": "node test/acceptance.test.js",
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"
   },
