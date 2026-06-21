@@ -19,16 +19,16 @@
 <link rel="stylesheet" href="/shared/styles.css">
 <style>
 body{background:var(--bg)}
-/* NAV */
-.nav{position:sticky;top:0;z-index:50;height:62px;display:flex;align-items:center;padding:0 32px;border-bottom:1px solid var(--hairline);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px)}
-.nav .brand{display:flex;align-items:center;gap:10px;font:700 16px/1 var(--f-display);color:var(--ink)}
-.nav .brand .logo{width:28px;height:28px;border-radius:7px;overflow:hidden;display:grid;place-items:center}
-.nav .links{display:flex;gap:4px;margin-left:44px;flex:1}
-.nav .links a{padding:8px 14px;font:500 13.5px/1 var(--f-tc);color:var(--ink-3);border-radius:6px}
-.nav .links a:hover,.nav .links a.on{color:var(--ink);background:var(--surface-2)}
-.nav .actions{display:flex;gap:10px;align-items:center}
-.theme-btn{padding:7px 10px;background:var(--surface);border:1px solid var(--line);border-radius:7px;cursor:pointer;font:600 12px/1 var(--f-tc);color:var(--ink-2)}
-.theme-btn:hover{border-color:var(--ink-3)}
+/* NAV — identical to homepage */
+.nav{position:sticky;top:0;z-index:50;height:64px;display:flex;align-items:center;padding:0 32px;border-bottom:1px solid var(--hairline);background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:saturate(1.4) blur(12px)}
+.nav .brand{display:flex;align-items:center;gap:10px;font:700 16px/1 var(--f-display);letter-spacing:-.014em;color:var(--ink)}
+.nav .brand .logo{width:28px;height:28px;border-radius:7px;overflow:hidden;background:var(--ink);color:var(--surface);display:grid;place-items:center;font:800 13px/1 var(--f-display)}
+.nav .links{display:flex;gap:4px;margin-left:48px;flex:1}
+.nav .links a{padding:8px 14px;font:500 13.5px/1 var(--f-tc);color:var(--ink-3);border-radius:6px;transition:.12s}
+.nav .links a:hover{color:var(--ink);background:var(--surface-2)}
+.nav .actions{display:flex;align-items:center;gap:10px}
+.theme-toggle{padding:6px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font:500 12px/1 var(--f-tc);cursor:pointer;transition:.12s}
+.theme-toggle:hover{background:var(--surface-3)}
 
 /* HERO */
 .hero{padding:60px 32px 44px;border-bottom:1px solid var(--hairline);position:relative;overflow:hidden;background:radial-gradient(900px 420px at 50% -10%,color-mix(in srgb,var(--acc) 8%,transparent),transparent 60%)}
@@ -221,18 +221,23 @@ footer{background:var(--bg);padding:48px 32px 24px}
 <body>
 
 <nav class="nav">
-  <a class="brand" href="/"><span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover"></span><span data-i18n="brandName">RegMaster</span></a>
+  <a class="brand" href="/">
+    <span class="logo"><img src="/favicon.png" alt="RegMaster" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></span>
+    <span data-i18n="brandName">RegMaster</span>
+  </a>
   <div class="links">
     <a href="/events/" data-i18n="navExplore">探索活動</a>
     <a href="/pricing.html" data-i18n="navPricing">方案</a>
     <a href="/features.html" data-i18n="navFeatures">功能</a>
-    <a href="/Manual.html" data-i18n="ftManual">說明文件</a>
     <a href="/about.html" data-i18n="navAbout">關於</a>
+    <a href="/contact.html" data-i18n="navContact">聯絡</a>
   </div>
   <div class="actions">
-    <button class="theme-btn" id="themeToggle">🌗</button>
-    <button class="theme-btn" id="langToggle">中/EN</button>
+    <button class="theme-toggle" id="themeToggle" aria-label="切換明暗模式">🌗</button>
+    <button class="theme-toggle" id="langToggle" aria-label="切換語言">中/EN</button>
+    <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
     <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
+    <a href="/signup.html?plan=free" class="btn btn-primary btn-sm" data-i18n="navTrial">免費開始</a>
   </div>
 </nav>
 
@@ -323,7 +328,7 @@ footer{background:var(--bg);padding:48px 32px 24px}
       <div class="f-col">
         <h5 data-i18n="ftColSupport">支援</h5>
         <a href="/Manual.html" data-i18n="ftManual">說明文件</a>
-        <a href="/tutorials/" data-i18n="ftTutorials" style="color:var(--ink)">教學影片</a>
+        <a href="/tutorials/" data-i18n="ftTutorials" style="color:var(--ink)">教學中心</a>
         <a href="/contact.html" data-i18n="ftContact">聯絡我們</a>
       </div>
     </div>
