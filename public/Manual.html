@@ -975,7 +975,7 @@ body[data-lang="en"] .zh{display:none !important}
   </div><!-- /.m-layout -->
 
   <footer class="m-foot">
-    <p><b>RegMaster v3</b> · <span class="zh">主辦方操作手冊</span><span class="en">Organiser Operation Manual</span> · 2026</p>
+    <p><b>RegMaster v3</b> · <span class="zh">主辦方操作手冊</span><span class="en">Organiser Operation Manual</span> · 2026 · <a href="/tutorials/" style="color:var(--acc);font-weight:600"><span class="zh">▶ 教學影片</span><span class="en">▶ Video Tutorials</span></a></p>
     <p><span class="zh">© 廣天國際有限公司 Kuang-Tien International Co., Ltd. — 本手冊僅涵蓋主辦方端功能。</span><span class="en">© Kuang-Tien International Co., Ltd. — This manual covers organiser-side features only.</span></p>
   </footer>
 
@@ -1130,6 +1130,62 @@ body[data-lang="en"] .zh{display:none !important}
     var saved = localStorage.getItem('rm_manual_lang');
     if(saved === 'en' || saved === 'zh') switchLang(saved); else updatePlaceholders(curLang());
   }catch(e){ updatePlaceholders(curLang()); }
+})();
+</script>
+
+<style>
+.m-video{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.m-vid{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:10px;
+  background:color-mix(in srgb, var(--acc) 9%, var(--surface));border:1px solid color-mix(in srgb, var(--acc) 28%, var(--line));
+  color:var(--acc);font:600 12.5px/1.3 var(--f-display);text-decoration:none;transition:.14s}
+.m-vid:hover{background:color-mix(in srgb, var(--acc) 16%, var(--surface));border-color:var(--acc);box-shadow:var(--sh-sm)}
+.m-vid svg{width:15px;height:15px;flex-shrink:0}
+</style>
+<script>
+/* Inject "watch the matching tutorial video" links into each manual section.
+   Runs after the main script has wrapped each section's content into .m-body. */
+(function () {
+  var MAP = {
+    's-intro':[1], 's-login':[1], 's-dashboard':[1],
+    's-create':[2], 's-hub':[2], 's-basic':[2],
+    's-groups':[3], 's-form':[4], 's-valid':[4],
+    's-fees':[5,6], 's-advanced':[6], 's-open':[7],
+    's-reg':[8], 's-accept':[8], 's-billing':[9,10,11],
+    's-announce':[12], 's-checkin':[13], 's-score':[14,15],
+    's-cert':[16], 's-ai':[17], 's-plan':[20], 's-account':[18,19],
+    's-registrant':[21,22,23,24,25]
+  };
+  var T = {
+    1:['註冊登入與後台導覽','Sign-up, Login & Console Tour'], 2:['建立你的第一場活動','Create Your First Event'],
+    3:['報名組別、年齡規則與隊名','Categories, Age Rules & Team Names'], 4:['表單設計器','Form Designer'],
+    5:['收費設定','Fees & Payments'], 6:['退費政策、上限與錄取模式','Refunds, Capacity & Acceptance'],
+    7:['開放報名與公開頁分享','Open Registration & Sharing'], 8:['報名名單管理','Registrant Management'],
+    9:['確認付款與對帳','Confirm Payments & Reconcile'], 10:['處理退費申請','Handle Refund Requests'],
+    11:['平台代收轉付','Platform Collection & Payout'], 12:['群發通知與行銷','Notifications & Marketing'],
+    13:['QR 報到與物資','QR Check-in & Supplies'], 14:['評分系統設定','Scoring Setup'],
+    15:['即時排行榜與結算','Leaderboard & Results'], 16:['證書製作','Certificates'],
+    17:['AI 助手','AI Assistant'], 18:['團隊成員與權限','Team Members & Permissions'],
+    19:['帳號安全','Account Security'], 20:['個資、收款與方案','Profile, Payout & Plan'],
+    21:['找到並瀏覽活動','Find & Browse Events'], 22:['完成線上報名','Complete Registration'],
+    23:['線上付款與銀行轉帳','Online Payment & Transfer'], 24:['「我的報名」全攻略','"My Registration" Guide'],
+    25:['報到當天 QR','Check-in Day QR']
+  };
+  var PLAY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg>';
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  Object.keys(MAP).forEach(function (id) {
+    var sec = document.getElementById(id); if (!sec) return;
+    var body = sec.querySelector('.m-body') || sec;
+    var box = document.createElement('div'); box.className = 'm-video';
+    MAP[id].forEach(function (n) {
+      var t = T[n] || ['', ''];
+      var a = document.createElement('a'); a.className = 'm-vid'; a.href = '/tutorials/?p=' + n;
+      a.innerHTML = PLAY +
+        '<span class="zh">教學影片 ' + pad(n) + '：' + t[0] + '</span>' +
+        '<span class="en">Tutorial ' + pad(n) + ': ' + t[1] + '</span>';
+      box.appendChild(a);
+    });
+    body.insertBefore(box, body.firstChild);
+  });
 })();
 </script>
 </body>

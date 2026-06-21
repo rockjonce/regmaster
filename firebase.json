@@ -24,6 +24,11 @@
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
       },
       {
+        "_comment": "Tutorial videos are immutable — cache aggressively to cut Hosting egress.",
+        "source": "**/*.@(mp4|webm)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }]
+      },
+      {
         "_comment": "HTML / JS / CSS must always revalidate so fixes ship immediately (304 when unchanged). Prevents stale cached pages.",
         "source": "**/*.@(html|js|css)",
         "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]

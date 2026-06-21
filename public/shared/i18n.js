@@ -83,7 +83,7 @@
       // ----- shared footer -----
       ftTagline: '為認真辦活動的人，打造的線上報名系統。', ftColProduct: '產品', ftColCompany: '公司', ftColSupport: '支援',
       ftFeatures: '功能', ftPricing: '方案定價', ftExplore: '探索活動', ftAbout: '關於我們', ftPrivacy: '隱私權政策',
-      ftTerms: '服務條款', ftManual: '說明文件', ftContact: '聯絡我們', ftSupport: '客戶支援',
+      ftTerms: '服務條款', ftManual: '說明文件', ftTutorials: '教學影片', ftContact: '聯絡我們', ftSupport: '客戶支援',
       ftCopyright: '© 2026 RegMaster · 廣天國際有限公司', ftCopyrightPre: '© 2026 RegMaster · ', ftCompany: '廣天國際有限公司', ftCompliance: 'SSL 加密傳輸 · 個資法合規',
       // ----- hero -----
       heroBadge: 'v3 · AI 智慧助理已上線',
@@ -189,7 +189,7 @@
       // ----- shared footer -----
       ftTagline: 'The online registration platform built for people who take their events seriously.', ftColProduct: 'Product', ftColCompany: 'Company', ftColSupport: 'Support',
       ftFeatures: 'Features', ftPricing: 'Pricing', ftExplore: 'Explore Events', ftAbout: 'About Us', ftPrivacy: 'Privacy Policy',
-      ftTerms: 'Terms of Service', ftManual: 'Documentation', ftContact: 'Contact Us', ftSupport: 'Customer Support',
+      ftTerms: 'Terms of Service', ftManual: 'Documentation', ftTutorials: 'Video Tutorials', ftContact: 'Contact Us', ftSupport: 'Customer Support',
       ftCopyright: '© 2026 RegMaster · Kuang-Tien International Co., Ltd.', ftCopyrightPre: '© 2026 RegMaster · ', ftCompany: 'Kuang-Tien International Co., Ltd.', ftCompliance: 'SSL encrypted · PDPA compliant',
       // ----- hero -----
       heroBadge: 'v3 · AI Assistant now live',

@@ -92,3 +92,7 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Tutorial videos — deployed to Hosting but too large for git (~325MB).
+# Thumbnails (public/tutorials/thumbs) and the page ARE committed.
+public/tutorials/videos/
