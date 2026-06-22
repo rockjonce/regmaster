@@ -97,9 +97,20 @@
 
 @media (max-width:760px) {
   .nav .links { display:none; }
-  .reg-card { grid-template-columns:60px 1fr; }
-  .reg-card .actions { grid-column:1 / -1; flex-direction:row; justify-content:flex-end; }
+  .reg-card { grid-template-columns:56px 1fr; padding:16px; gap:14px; }
+  .reg-card .body h4 { font-size:15px; }
+  /* 動作鈕：可換行、平均填滿寬度，避免擠成一排溢出畫面 */
+  .reg-card .actions { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; justify-content:flex-start; align-items:stretch; gap:8px; }
+  .reg-card .actions .btn { flex:1 1 auto; min-width:104px; text-align:center; justify-content:center; white-space:nowrap; }
+  .reg-card .actions .cert-slot { flex:1 1 100%; }
+  .reg-card .actions .cert-slot:empty { display:none; }
+  .reg-card .actions .cert-slot .btn { width:100%; }
+  .reg-card .actions .teamid { flex:1 1 100%; text-align:right; align-self:center; margin-top:2px; }
   .kpi-row { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:360px) {
+  .reg-card { padding:14px; gap:12px; }
+  .reg-card .actions .btn { font-size:12px; padding:8px 10px; }
 }
 
 /* ===== Check-in QR Code modal ===== */
