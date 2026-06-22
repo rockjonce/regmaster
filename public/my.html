@@ -398,8 +398,9 @@
 
       // 完整權限僅限「社群登入（已驗證 Email）」查得的報名；Email/電話查詢為唯讀。
       var full = !!PWD_BY_TEAM[r.teamId];
-      // R7-11: disabled 按鈕在部分瀏覽器不觸發 hover/title — 改為可點、點了用 toast 說明原因
-      var dis = ' data-locked="1" title="' + escapeHtml(window.L('myLockedTitle')) + '" style="opacity:.45;cursor:not-allowed"';
+      // 修改報名／申請退費／前往付款 需 Google/LINE 登入才能用：維持「可點且不像 disabled」，
+      // 點了直接彈出登入對話框（與報到 QR 同一套 UX，較直觀）。
+      var dis = ' data-needlogin="1" title="' + escapeHtml(window.L('myLoginNeedTitle')) + '"';
       var actions = '<a class="btn btn-ghost" href="/events/detail.html?id=' + encodeURIComponent(r.compId) + '">' + window.L('myActDetail') + '</a>';
       // Check-in QR button — visible on every card; "armed" (primary style) only
       // when the user is OAuth-verified AND their verified email matches this
@@ -810,9 +811,9 @@
 
   // ===== 申請退費 (registrant) =====
   document.getElementById('regList').addEventListener('click', function (e) {
-    // R7-11: 鎖定按鈕（弱驗證唯讀）點擊時明確告知原因
-    var lk = e.target.closest('[data-locked]');
-    if (lk) { (window.uiToast || alert)(window.L('myLockedTitle')); return; }
+    // 需登入的動作鈕（修改報名／申請退費／前往付款）→ 直接彈出 Google/LINE 登入對話框（同報到 QR）
+    var nl = e.target.closest('[data-needlogin]');
+    if (nl) { openCheckinLoginPrompt('myLoginNeedHint'); return; }
     // Check-in QR — armed path opens modal; otherwise prompt to sign in.
     var qrb = e.target.closest('[data-qr]');
     if (qrb) {
@@ -961,7 +962,7 @@
     document.addEventListener('keydown', onKey);
   }
 
-  function openCheckinLoginPrompt() {
+  function openCheckinLoginPrompt(hintKey) {
     var ov = document.createElement('div');
     ov.className = 'qr-overlay on';
     var hasFirebase = (typeof firebase !== 'undefined' && firebase.auth);
@@ -981,7 +982,7 @@
         '<div class="qr-prompt-icon">🔒</div>' +
         '<div class="qr-head">' +
           '<h3>' + escapeHtml(_oauthOK() ? window.L('myQrEmailMismatchTitle') : window.L('myQrLoginTitle')) + '</h3>' +
-          (_oauthOK() ? '' : '<p>' + escapeHtml(window.L('myQrLoginHint')) + '</p>') +
+          (_oauthOK() ? '' : '<p>' + escapeHtml(window.L(hintKey || 'myQrLoginHint')) + '</p>') +
         '</div>' +
         mismatchNote +
         '<div style="display:flex;flex-direction:column;gap:10px">' +
