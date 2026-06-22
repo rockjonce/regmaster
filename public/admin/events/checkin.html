@@ -437,6 +437,21 @@
     try { renderHistory(); } catch (e) {}
     try { updateStats(); } catch (e) {}
   }
+  // Signed QR payload (RMQR1.<b64url json>.<sig>) → extract teamId for display/search.
+  // The signature is verified SERVER-SIDE on check-in; here we only need the teamId.
+  function rmExtractTeamId(s) {
+    s = String(s || '').trim();
+    if (s.indexOf('RMQR1.') === 0) {
+      try {
+        var b = s.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b.length % 4) b += '=';
+        return String((JSON.parse(atob(b)) || {}).t || '').toUpperCase();
+      } catch (e) { return ''; }
+    }
+    var mm = s.match(/[A-Z]\w{5,}/i);   // tolerate a URL wrapper around a bare teamId
+    return (mm ? mm[0] : s).toUpperCase();
+  }
+  var kioskScanPayload = null;   // raw signed payload from the most recent kiosk scan
 
   // ---------------------------------------------------------------------------
   // Mode tabs.
@@ -564,18 +579,18 @@
     $('idPanel').classList.add('on');
   }
   // Always fetch the full Team record (roster, paymentStatus) before opening.
-  function openByTeamId(teamId, fallbackRow) {
+  function openByTeamId(teamId, fallbackRow, signedPayload) {
     teamId = String(teamId || '').trim().toUpperCase();
     if (!teamId) return;
     google.script.run.withSuccessHandler(function (res) {
       var rows = (res && res.rows) || [];
       var full = null;
       for (var i = 0; i < rows.length; i++) if (String(rows[i].teamId).toUpperCase() === teamId) { full = rows[i]; break; }
-      if (full) openIdentityPanel(full);
-      else if (fallbackRow) openIdentityPanel(fallbackRow);
+      if (full) { full._scanPayload = signedPayload || null; openIdentityPanel(full); }
+      else if (fallbackRow) { fallbackRow._scanPayload = signedPayload || null; openIdentityPanel(fallbackRow); }
       else toast(L('aeChkUnknownErr'), 'err');
     }).withFailureHandler(function () {
-      if (fallbackRow) openIdentityPanel(fallbackRow); else toast(L('aeChkNetworkErr'), 'err');
+      if (fallbackRow) { fallbackRow._scanPayload = signedPayload || null; openIdentityPanel(fallbackRow); } else toast(L('aeChkNetworkErr'), 'err');
     }).checkinSearch(compId, teamId);
   }
   function closeIdentity() { $('idPanel').classList.remove('on'); currentTeam = null; }
@@ -588,6 +603,7 @@
     document.querySelectorAll('#idRoster input[type=checkbox]:checked').forEach(function (cb) { checked.push(cb.getAttribute('data-mid')); });
     var btn = $('idConfirm'); var orig = btn.textContent; btn.disabled = true; btn.textContent = L('aeChkIdSubmitting');
     var teamId = currentTeam.teamId;
+    var ciInput = currentTeam._scanPayload || teamId;   // verified signed payload when scanned, else bare teamId
     // Roster check-in: extras=null, attendedMembers=[present ids]; backend sets count.
     google.script.run.withSuccessHandler(function (res) {
       btn.disabled = false; btn.textContent = orig;
@@ -605,7 +621,7 @@
     }).withFailureHandler(function (err) {
       btn.disabled = false; btn.textContent = orig;
       toast((err && err.message) || L('aeChkNetworkErr'), 'err');
-    }).checkInTeamV2(teamId, null, checked);
+    }).checkInTeamV2(ciInput, null, checked);
   });
 
   // ===========================================================================
@@ -639,12 +655,13 @@
     if (!html5Qr) html5Qr = new Html5Qrcode('qrReader');
     html5Qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 240 },
       function (decoded) {
-        // The registration QR encodes the team ID directly
-        var tid = String(decoded || '').trim();
-        var mm = tid.match(/[A-Z]\w{5,}/i);   // tolerate a URL wrapper
-        tid = (mm ? mm[0] : tid).toUpperCase();
+        // QR may be a signed payload (RMQR1.…) or a bare teamId. Extract the teamId
+        // for the identity panel; carry the signed payload so check-in verifies it.
+        var raw = String(decoded || '').trim();
+        var signed = (raw.indexOf('RMQR1.') === 0) ? raw : null;
+        var tid = rmExtractTeamId(raw);
         stopScan();
-        openByTeamId(tid);   // route into identity panel
+        openByTeamId(tid, null, signed);   // route into identity panel
       },
       function () { /* per-frame decode errors: ignore */ }
     ).then(function () { scanning = true; updateScanBtn(); })
@@ -744,23 +761,25 @@
   function kioskSubmit() {
     var tid = $('kioskIdInput').value.trim().toUpperCase();
     if (!tid) { toast(L('aeChkKioskEmptyId'), 'err'); return; }
+    var sub = kioskScanPayload || tid;   // signed payload if this submit came from a scan, else bare teamId
+    kioskScanPayload = null;             // consume once
     var geo = selfCfg().geofence || {};
     if (geo.enabled && navigator.geolocation) {
       $('kioskResultMsg');
       $('kioskSubmitBtn').textContent = L('aeChkKioskLocating');
       navigator.geolocation.getCurrentPosition(
-        function (pos) { $('kioskSubmitBtn').textContent = L('aeChkKioskSubmit'); doSelfCheckIn(tid, pos.coords.latitude, pos.coords.longitude); },
+        function (pos) { $('kioskSubmitBtn').textContent = L('aeChkKioskSubmit'); doSelfCheckIn(sub, pos.coords.latitude, pos.coords.longitude); },
         function () { $('kioskSubmitBtn').textContent = L('aeChkKioskSubmit'); kioskShowResult(false, { msg: L('aeChkKioskGeoFail') }); },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
       );
     } else {
-      doSelfCheckIn(tid, null, null);
+      doSelfCheckIn(sub, null, null);
     }
   }
   function doSelfCheckIn(tid, lat, lng) {
     google.script.run.withSuccessHandler(function (res) {
       if (res && res.success) {
-        kioskShowResult(true, { team: res.teamNameCN || tid, group: res.group || '', msg: res.alreadyCheckedIn ? L('aeChkKioskAlready') : L('aeChkKioskWelcome') });
+        kioskShowResult(true, { team: res.teamNameCN || '', group: res.group || '', msg: res.alreadyCheckedIn ? L('aeChkKioskAlready') : L('aeChkKioskWelcome') });
       } else {
         kioskShowResult(false, { msg: (res && res.message) || L('aeChkUnknownErr') });
       }
@@ -778,8 +797,9 @@
     if (!kioskQr) kioskQr = new Html5Qrcode('kioskReader');
     kioskQr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 },
       function (decoded) {
-        var tid = String(decoded || '').trim(); var mm = tid.match(/[A-Z]\w{5,}/i); tid = (mm ? mm[0] : tid).toUpperCase();
-        $('kioskIdInput').value = tid; stopKioskScan(); kioskSubmit();
+        var raw = String(decoded || '').trim();
+        kioskScanPayload = (raw.indexOf('RMQR1.') === 0) ? raw : null;   // verify server-side
+        $('kioskIdInput').value = rmExtractTeamId(raw); stopKioskScan(); kioskSubmit();
       }, function () {}
     ).then(function () { kioskScanning = true; $('kioskScanBtn').textContent = L('aeChkKioskScanStop'); })
      .catch(function (e) { reader.style.display = 'none'; alert(L('aeChkCameraFail').replace('{err}', (e && e.message) || e)); });

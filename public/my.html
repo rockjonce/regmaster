@@ -898,7 +898,7 @@
     try {
       var qr = new QRious({
         element: canvas,
-        value: String(r.teamId || ''),
+        value: String(r.checkinToken || r.teamId || ''),   // signed payload when available
         size: 640,                // logical pixels; CSS scales it down to fit
         level: 'M',
         background: '#ffffff',
@@ -911,7 +911,7 @@
       canvas.style.display = 'none';
       var img = document.createElement('img');
       img.alt = 'QR Code';
-      img.src = 'https://quickchart.io/qr?text=' + encodeURIComponent(String(r.teamId || '')) + '&size=400&margin=2';
+      img.src = 'https://quickchart.io/qr?text=' + encodeURIComponent(String(r.checkinToken || r.teamId || '')) + '&size=400&margin=2';
       canvas.parentNode.appendChild(img);
       dataUrl = img.src;
     }
