@@ -12,6 +12,7 @@
   if (!window.I18N) return;
   var Z = {
     adAudTitle: '操作日誌 / Audit Trail',
+    adAudCrumbHome: '主辦後台', adAudCrumbHere: '操作日誌',
     adAudSub: '所有重要操作都會記錄於此 — 誰、何時、做了什麼。',
     adAudSearchPh: '搜尋使用者 / 操作 / 目標...',
     adAudFilterAll: '全部',
@@ -29,6 +30,7 @@
   };
   var E = {
     adAudTitle: 'Audit Log',
+    adAudCrumbHome: 'Organizer Console', adAudCrumbHere: 'Audit Log',
     adAudSub: 'Every important action is logged here — who, when, and what they did.',
     adAudSearchPh: 'Search user / action / target...',
     adAudFilterAll: 'All',

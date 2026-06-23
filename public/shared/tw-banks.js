@@ -5,7 +5,7 @@ window.TWBankUI = (function () {
   var D = window.TW_BANKS || { banks: [], branches: {} };
   function fillBanks(sel, selectedCode) {
     if (!sel) return;
-    var html = '<option value="">— 請選擇銀行 —</option>';
+    var html = '<option value="">' + (window.L ? window.L('twSelectBank') : '— 請選擇銀行 —') + '</option>';
     for (var i = 0; i < D.banks.length; i++) {
       var b = D.banks[i];
       html += '<option value="' + b.c + '"' + (b.c === selectedCode ? ' selected' : '') + '>' + b.c + ' ' + b.n + '</option>';
@@ -15,7 +15,7 @@ window.TWBankUI = (function () {
   function fillBranches(sel, bankCode, selectedCode) {
     if (!sel) return;
     var list = D.branches[bankCode] || [];
-    var html = '<option value="">' + (bankCode ? '— 請選擇分行 —' : '— 請先選擇銀行 —') + '</option>';
+    var html = '<option value="">' + (window.L ? (bankCode ? window.L('twSelectBranch') : window.L('twSelectBankFirst')) : (bankCode ? '— 請選擇分行 —' : '— 請先選擇銀行 —')) + '</option>';
     for (var i = 0; i < list.length; i++) {
       var full = bankCode + list[i][0];           // reconstruct 7-digit code
       html += '<option value="' + full + '"' + (full === selectedCode ? ' selected' : '') + '>' + full + ' ' + list[i][1] + '</option>';

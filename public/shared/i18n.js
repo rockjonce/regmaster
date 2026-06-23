@@ -40,7 +40,8 @@
       analyze: '分析', aiAnalyze: 'AI 分析規則自動填入', aiColor: 'AI配色',
       catAll: '全部類別', catSeminar: '研討會', catCamp: '夏令營', catWorkshop: '工作坊', catExhibition: '展覽會', catCompetition: '競賽', catTraining: '教育訓練',
       dateAll: '全部日期', dateOpen: '報名開放', dateDeadline: '報名截止', dateComp: '活動日期', clearFilter: '清除',
-      customQs: '其他資訊', pleaseSelect: '請選擇', need: '需要'
+      customQs: '其他資訊', pleaseSelect: '請選擇', need: '需要',
+      twSelectBank: '— 請選擇銀行 —', twSelectBranch: '— 請選擇分行 —', twSelectBankFirst: '— 請先選擇銀行 —'
     },
     en: {
       sysTitle: 'RegMaster', homeTitle: 'RegMaster Online Registration', homeSub: 'All-in-one event registration & management solution', noComp: 'No events yet', noCompSub: 'Events will appear here once available',
@@ -65,7 +66,8 @@
       analyze: 'Analyze', aiAnalyze: 'AI Analyze Rules', aiColor: 'AI Colors',
       catAll: 'All Categories', catSeminar: 'Seminar', catCamp: 'Camp', catWorkshop: 'Workshop', catExhibition: 'Exhibition', catCompetition: 'Competition', catTraining: 'Training',
       dateAll: 'All Dates', dateOpen: 'Registration Open', dateDeadline: 'Deadline', dateComp: 'Event Date', clearFilter: 'Clear',
-      customQs: 'Additional Info', pleaseSelect: 'Select', need: 'Required'
+      customQs: 'Additional Info', pleaseSelect: 'Select', need: 'Required',
+      twSelectBank: '— Select a bank —', twSelectBranch: '— Select a branch —', twSelectBankFirst: '— Select a bank first —'
     }
   };
 

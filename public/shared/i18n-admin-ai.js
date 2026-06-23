@@ -37,6 +37,7 @@
     // ----- right column: scope + knowledge base -----
     adAiScopeTitle: '查詢範圍',
     adAiScopeAdmin: '主辦後台',
+    adAiCrumbHome: '主辦後台', adAiCrumbHere: 'AI 助理',
     adAiScopeComp: '特定活動',
     adAiSelectComp: '選擇活動⋯',
     adAiKbTitle: '知識庫',
@@ -104,6 +105,7 @@
     // ----- right column: scope + knowledge base -----
     adAiScopeTitle: 'Query Scope',
     adAiScopeAdmin: 'Organizer Console',
+    adAiCrumbHome: 'Organizer Console', adAiCrumbHere: 'AI Assistant',
     adAiScopeComp: 'Specific Event',
     adAiSelectComp: 'Select an event…',
     adAiKbTitle: 'Knowledge Base',
