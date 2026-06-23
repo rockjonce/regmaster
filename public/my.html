@@ -97,6 +97,10 @@
 
 @media (max-width:760px) {
   .nav .links { display:none; }
+  /* 手機統一左右內距 16px：避免 KPI／篩選列「貼邊看似溢出」，且讓內容用到更多寬度 */
+  .hero { padding:40px 16px 24px; }
+  .shell { padding:24px 16px; }
+  .kpi-row { grid-template-columns:1fr 1fr; margin:24px 16px 0; }
   .reg-card { grid-template-columns:56px 1fr; padding:16px; gap:14px; }
   .reg-card .body h4 { font-size:15px; }
   /* 動作鈕：可換行、平均填滿寬度，避免擠成一排溢出畫面 */
@@ -106,7 +110,11 @@
   .reg-card .actions .cert-slot:empty { display:none; }
   .reg-card .actions .cert-slot .btn { width:100%; }
   .reg-card .actions .teamid { flex:1 1 100%; text-align:right; align-self:center; margin-top:2px; }
-  .kpi-row { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:420px) {
+  .hero { padding:36px 14px 22px; }
+  .shell { padding:20px 14px; }
+  .kpi-row { margin:20px 14px 0; }
 }
 @media (max-width:360px) {
   .reg-card { padding:14px; gap:12px; }
