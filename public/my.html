@@ -25,6 +25,9 @@
 <script src="/shared/firebase-bridge.js"></script>
 
 <style>
+/* 防止 iOS Safari 自動放大文字 → 標題撐爆容器造成手機橫向溢出；body 再加一道防護 */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body { overflow-x:hidden; }
 .nav { position:sticky; top:0; z-index:50; height:60px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
 .nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); text-decoration:none; color:inherit; }
 .nav .brand .logo { width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:800 13px/1 var(--f-display); }
@@ -99,6 +102,8 @@
   .nav .links { display:none; }
   /* 手機統一左右內距 16px：避免 KPI／篩選列「貼邊看似溢出」，且讓內容用到更多寬度 */
   .hero { padding:40px 16px 24px; }
+  .hero h1 { font-size:28px; line-height:1.12; }   /* 40px 在手機會撐爆 → 縮小 */
+  .hero p.lead { font-size:14.5px; }
   .shell { padding:24px 16px; }
   .kpi-row { grid-template-columns:1fr 1fr; margin:24px 16px 0; }
   .reg-card { grid-template-columns:56px 1fr; padding:16px; gap:14px; }
@@ -113,6 +118,7 @@
 }
 @media (max-width:420px) {
   .hero { padding:36px 14px 22px; }
+  .hero h1 { font-size:25px; }
   .shell { padding:20px 14px; }
   .kpi-row { margin:20px 14px 0; }
 }
