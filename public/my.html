@@ -436,21 +436,15 @@ html, body { max-width:100%; overflow-x:hidden; }
       actions += '<button class="btn btn-qr' + (qrArmed ? '' : ' dim') + '" data-qr="' + escapeHtml(r.compId) + '|' + escapeHtml(r.teamId) + '"'
         + (qrArmed ? '' : ' title="' + escapeHtml(window.L('myQrLoginHint')) + '"')
         + '>' + window.L('myActQr') + '</button>';
-      // 修改／退費／付款「可用」條件＝社群登入已驗證身分（_emailMatches，與報到 QR 同一道閘）
-      // 或舊資料帶回明文密碼。OAuth 解鎖者改帶「管理 token」授權，不需明文密碼。
-      var armed = full || qrArmed;
+      // 修改／退費／付款：對所有查得者開放。社群登入者帶 manage token 無縫；其餘導向已內建
+      // 密碼輸入的流程（退費 modal 有密碼欄、編輯頁有密碼閘、付款頁本就免密碼）。動作本身仍受
+      // 密碼/token 保護，故安全性不變。報到 QR 例外，維持需社群登入（身分制、無密碼概念）。
       if (cls === 'unpaid') {
-        actions += armed
-          ? '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">' + window.L('myActPay') + '</a>'
-          : '<button class="btn btn-primary"' + dis + '>' + window.L('myActPay') + '</button>';
+        actions += '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">' + window.L('myActPay') + '</a>';
       }
       if (r.status !== '已取消') {
-        actions += armed
-          ? '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">' + window.L('myActEdit') + '</button>'
-          : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActEdit') + '</button>';
-        actions += armed
-          ? '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">' + window.L('myActRefund') + '</button>'
-          : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActRefund') + '</button>';
+        actions += '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">' + window.L('myActEdit') + '</button>';
+        actions += '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">' + window.L('myActRefund') + '</button>';
       }
       return '<div class="reg-card" data-comp="' + escapeHtml(r.compId) + '" data-team="' + escapeHtml(r.teamId) + '">' +
         date +
