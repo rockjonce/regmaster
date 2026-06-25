@@ -112,8 +112,12 @@ _dev/deploy_*.bat
 # Scratch / sync-test files
 /_test_sync*.txt
 public/_*.txt
-# Local audit / code-review / UX-test reports, playbooks & cowork prompts (not shipped)
+# Archived dev-history docs (audits, UX reports, cowork prompts, planning) — local reference only,
+# some sensitive (vulnerability reports). Organized under _archive/ on 2026-06-25.
+_archive/
+# Loose dev docs at root (defensive — keep them out of git; archive them under _archive/)
 /REGMASTER_*.md
 /REGMASTER_*.pdf
 /RegMaster-V3_*.md
 /COWORK_*.md
+/UI_REDESIGN_PLAN.md
