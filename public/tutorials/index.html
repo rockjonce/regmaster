@@ -429,6 +429,7 @@ footer{background:var(--bg);padding:48px 32px 24px}
   function L(k){ return window.L ? window.L(k) : k; }
   function title(ep){ return lang() === 'en' ? ep.tEn : ep.tZh; }
   function desc(ep){ return lang() === 'en' ? ep.dEn : ep.dZh; }
+  function thumbBase(){ return lang()==='en' ? 'thumbs/en/' : 'thumbs/'; }
   function ep(nn){ for (var i=0;i<EP.length;i++) if (EP[i].nn===nn) return EP[i]; return null; }
   function idx(nn){ for (var i=0;i<EP.length;i++) if (EP[i].nn===nn) return i; return -1; }
   function roleLabel(e){ return e.role==='host' ? L('tuRoleHost') : L('tuRoleReg'); }
@@ -490,7 +491,7 @@ footer{background:var(--bg);padding:48px 32px 24px}
     FEAT_SIDE.forEach(function(nn){
       var e = ep(nn);
       var c = el('<div class="feat-card"></div>');
-      c.innerHTML = '<div class="num-b"><img loading="lazy" src="thumbs/'+nn+'.png" alt=""><span class="nn">'+nn+'</span></div>'+
+      c.innerHTML = '<div class="num-b"><img loading="lazy" src="'+thumbBase()+nn+'.png" alt=""><span class="nn">'+nn+'</span></div>'+
         '<div class="b"><h4>'+title(e)+'</h4><div class="meta"><span class="lvl '+lvlCls(e)+'">'+lvlLabel(e)+'</span><span>'+clock()+e.dur+'</span></div></div>';
       c.addEventListener('click', function(){ openByNn(nn); });
       side.appendChild(c);
@@ -529,7 +530,7 @@ footer{background:var(--bg);padding:48px 32px 24px}
     var g = document.getElementById('allGrid'); g.innerHTML='';
     EP.forEach(function(e){
       var card = el('<div class="art" data-nn="'+e.nn+'"></div>');
-      card.innerHTML = '<div class="thumb"><img loading="lazy" src="thumbs/'+e.nn+'.png" alt="">'+
+      card.innerHTML = '<div class="thumb"><img loading="lazy" src="'+thumbBase()+e.nn+'.png" alt="">'+
         '<span class="nn">'+e.nn+'</span><span class="done">✓</span>'+
         '<div class="play-ov"><span><svg fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></div>'+
         '<span class="duration">'+clock()+e.dur+'</span></div>'+
@@ -568,11 +569,15 @@ footer{background:var(--bg);padding:48px 32px 24px}
   var nowKick=document.getElementById('nowKick'),nowTitle=document.getElementById('nowTitle'),nowDesc=document.getElementById('nowDesc');
   var prevBtn=document.getElementById('prevBtn'),nextBtn=document.getElementById('nextBtn'),dlLink=document.getElementById('dlLink'),dlText=document.getElementById('dlText');
   var cur=-1, ctd=null;
+  // When an EN video file is missing (404), the <video> fires 'error' → show coming-soon.
+  video.addEventListener('error', function(){
+    if (cur>=0 && lang()==='en' && video.getAttribute('src')) showComingSoon();
+  });
   function cancelCtd(){ if(ctd){clearInterval(ctd);ctd=null;} }
   function setMeta(e){
     nowKick.textContent = (lang()==='en'?('EP '+e.nn):('第 '+parseInt(e.nn,10)+' 部'))+' · '+roleLabel(e);
     nowTitle.textContent = title(e); nowDesc.textContent = desc(e);
-    dlLink.href='videos/'+e.nn+'.mp4'; dlLink.setAttribute('download','RegMaster_'+e.nn+'.mp4'); dlText.textContent=L('tuDownload');
+    dlLink.href=(lang()==='en'?'videos/en/':'videos/')+e.nn+'.mp4'; dlLink.setAttribute('download','RegMaster_'+e.nn+'.mp4'); dlText.textContent=L('tuDownload');
     prevBtn.disabled=(cur===0); prevBtn.textContent='← '+L('tuPrev'); nextBtn.textContent=L('tuNext')+' →';
   }
   function showComingSoon(){
@@ -585,7 +590,7 @@ footer{background:var(--bg);padding:48px 32px 24px}
     cur=i; var e=EP[i];
     modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
     cancelCtd(); cover.classList.remove('show'); setMeta(e);
-    if (lang()==='en'){ video.removeAttribute('src'); video.load(); showComingSoon(); }
+    if (lang()==='en'){ video.src='videos/en/'+e.nn+'.mp4'; video.currentTime=0; video.play().catch(function(){}); }
     else { video.src='videos/'+e.nn+'.mp4'; video.currentTime=0; video.play().catch(function(){}); }
     var u=new URL(location.href); u.searchParams.set('p',parseInt(e.nn,10)); history.replaceState(null,'',u);
   }

@@ -1,593 +1,268 @@
 {
-  "_meta": {
-    "rate": "+8%",
-    "voice": "zh-TW-HsiaoChenNeural",
-    "target_seconds": [
-      100,
-      140
-    ],
-    "comment": "narration is per-segment; build_ep_v2.py TTS each, pad video clip to match, splices intro+segs+outro.",
-    "voice_en": "en-US-AriaNeural",
-    "rate_en": "+0%"
+ "_meta": {
+  "rate": "+8%",
+  "voice": "zh-TW-HsiaoChenNeural",
+  "target_seconds": [
+   100,
+   140
+  ],
+  "comment": "narration is per-segment; build_ep_v2.py TTS each, pad video clip to match, splices intro+segs+outro.",
+  "voice_en": "en-US-AriaNeural",
+  "rate_en": "+0%"
+ },
+ "02": {
+  "title": "建立你的第一場活動",
+  "next_nn": "03",
+  "next_title": "報名組別、年齡規則與隊名",
+  "kicker": "下一部 · 03",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=3",
+  "narration": {
+   "v1": "建立一場活動非常簡單。從主辦後台左側選『所有活動』，再點右上角的『建立活動』按鈕，建立流程立刻啟動。RegMaster 的設計理念是：先把活動骨架建好，再慢慢補資料。每一步系統都會自動存檔，不怕中途離開，回來繼續編輯也不會掉資料。",
+   "v2": "在彈出視窗，先填活動名稱，例如『RegMaster 示範春季賽』。選擇活動類別，這裡選競賽。再選活動形式為個人報名。下方的容量上限可以先留空，之後再到設定頁細調。確認資料後按下『建立』，系統會立刻產生活動，並把你帶到詳細設定頁，整個流程不到十秒。",
+   "v3": "詳細設定頁的『基本資訊』，活動名稱已自動帶入。下方的活動描述支援基本 HTML，會直接顯示在公開頁的『關於這場活動』，方便報名者了解活動主題與規則。建議寫清楚活動緣起、報名對象、聯絡資訊，能大幅減少報名者來信詢問，省下大量客服時間。",
+   "v4": "接著設定關鍵時間：開放報名時間是活動可以被報名的起點；報名截止時間到了會自動關閉新報名；活動日則是實際舉行的日期。RegMaster 會根據時間自動切換活動狀態，從草稿到開放，再到截止，全程不必手動切換按鈕，省心又安全。",
+   "v5": "最後右下角按下『儲存變更』，所有設定立刻生效。回到『所有活動』清單，剛建立的活動已顯示在列表上，狀態是草稿，隨時可以繼續編輯。骨架完成後，下一步就是設定組別與規則，繼續往下走。"
   },
-  "02": {
-    "title": "建立你的第一場活動",
-    "next_nn": "03",
-    "next_title": "報名組別、年齡規則與隊名",
-    "kicker": "下一部 · 03",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=3",
-    "narration": {
-      "v1": "建立一場活動非常簡單。從主辦後台左側選『所有活動』，再點右上角的『建立活動』按鈕，建立流程立刻啟動。RegMaster 的設計理念是：先把活動骨架建好，再慢慢補資料。每一步系統都會自動存檔，不怕中途離開，回來繼續編輯也不會掉資料。",
-      "v2": "在彈出視窗，先填活動名稱，例如『RegMaster 示範春季賽』。選擇活動類別，這裡選競賽。再選活動形式為個人報名。下方的容量上限可以先留空，之後再到設定頁細調。確認資料後按下『建立』，系統會立刻產生活動，並把你帶到詳細設定頁，整個流程不到十秒。",
-      "v3": "詳細設定頁的『基本資訊』，活動名稱已自動帶入。下方的活動描述支援基本 HTML，會直接顯示在公開頁的『關於這場活動』，方便報名者了解活動主題與規則。建議寫清楚活動緣起、報名對象、聯絡資訊，能大幅減少報名者來信詢問，省下大量客服時間。",
-      "v4": "接著設定關鍵時間：開放報名時間是活動可以被報名的起點；報名截止時間到了會自動關閉新報名；活動日則是實際舉行的日期。RegMaster 會根據時間自動切換活動狀態，從草稿到開放，再到截止，全程不必手動切換按鈕，省心又安全。",
-      "v5": "最後右下角按下『儲存變更』，所有設定立刻生效。回到『所有活動』清單，剛建立的活動已顯示在列表上，狀態是草稿，隨時可以繼續編輯。骨架完成後，下一步就是設定組別與規則，繼續往下走。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『報名組別、年齡規則與隊名』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Creating an event is simple. In the organizer dashboard, choose 'All Events' on the left, then click the 'Create Event' button in the top-right, and the process begins instantly. RegMaster's philosophy is to build the skeleton of your event first, then fill in the details bit by bit. Every step saves automatically, so you can leave partway through and pick up right where you left off without losing anything.",
-      "v2": "In the pop-up window, start with the event name, for example 'RegMaster Spring Showcase.' Choose the event type, here we'll pick 'Competition.' Then set the registration format to 'Individual.' You can leave the capacity limit blank for now and fine-tune it later in settings. Confirm the details and click 'Create,' and the system creates the event right away and takes you to the detailed settings page, all in under ten seconds.",
-      "v3": "On the detailed settings page, under 'Basic Information,' the event name is already filled in. The description field below supports basic HTML and appears directly in the 'About this event' section of your public page, helping registrants understand the theme and rules. We recommend clearly describing the event's background, who it's for, and contact details. It greatly reduces inquiry emails and saves you a lot of support time.",
-      "v4": "Next, set the key dates: the registration open date is when people can start signing up; when the registration deadline arrives, new registrations close automatically; and the event date is when it actually takes place. RegMaster switches the event status automatically based on these times, from draft to open to closed, with no manual buttons to toggle. It's effortless and reliable.",
-      "v5": "Finally, click 'Save Changes' in the bottom-right, and all your settings take effect immediately. Back in the 'All Events' list, the event you just created appears with a 'Draft' status, ready to keep editing anytime. With the skeleton in place, the next step is setting up divisions and rules. Let's keep going."
-    },
-    "title_en": "Create Your First Event",
-    "kicker_en": "Next · 03",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Divisions, Age Rules & Team Names",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Divisions, Age Rules & Team Names.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "03": {
-    "title": "報名組別、年齡規則與隊名",
-    "next_nn": "04",
-    "next_title": "表單設計器：自訂報名欄位",
-    "kicker": "下一部 · 04",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=4",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片我們聚焦在『報名組別』。組別是活動結構的骨架，設計得好，後面整套金流、評分、證書都能順著跑。活動建立完成後，下一步是設定報名組別。在『設定』的『組別』分頁，你可以區隔不同年齡層、能力等級或主題的選手分組。系統內建了常見組別預設，例如國小、國中、高中、社會組，可以直接選用，省去逐一輸入的時間。組別越清楚，後續評分、排名、發證書就越順。",
-      "v2": "點選『新增組別』，輸入組別名稱，例如『公開組』。每個組別都可以單獨設定年齡規則：選擇『不限年齡』、依『年齡區間』、或依『出生日期區間』。設好之後，系統會在報名時自動驗證選手的生日。這對於常見的『未滿幾歲不得報名』或『跨組混報』糾紛特別有用。",
-      "v3": "下方的『隊伍命名』區塊，讓你決定報名時是否要求填寫隊伍名稱。可以分別開啟『要求中文隊名』顯示為公開頁的隊伍識別，或『要求英文隊名』用於國際性活動或證書印製。團體賽通常兩者都打開，個人賽則可以全部關閉。組別與隊名設定好之後，下一步是調整報名表單。組別與隊名設定完成，活動的人員分層就架好了。下一部我們會繼續往表單設計器走，把每位選手要填的欄位也客製化。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『表單設計器:自訂報名欄位』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode focuses on registration divisions. Divisions are the backbone of your event's structure; design them well, and payments, scoring, and certificates all flow smoothly afterward. Once your event is created, the next step is setting up divisions. In the 'Divisions' tab under 'Settings,' you can separate participants by age group, skill level, or theme. The system comes with common presets, like Elementary, Junior High, High School, and Open, that you can select directly, saving you from typing each one. The clearer your divisions, the smoother scoring, ranking, and certificates will be.",
-      "v2": "Click 'Add Division' and enter a name, such as 'Open Division.' Each division can have its own age rule: choose no age limit, an age range, or a date-of-birth range. Once set, the system automatically validates each participant's birth date at registration. This is especially useful for the common 'must be over a certain age' requirement, or for preventing disputes over cross-division entries.",
-      "v3": "In the 'Team Naming' section below, you decide whether a team name is required at registration. You can separately enable a required Chinese team name, shown as the team's public identifier, or a required English team name, used for international events or certificate printing. Team competitions usually turn on both, while individual events can leave them off. With divisions and team names in place, your event's participant structure is set. In the next episode, we'll move on to the form designer and customize the fields each participant fills in."
-    },
-    "title_en": "Divisions, Age Rules & Team Names",
-    "kicker_en": "Next · 04",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Form Designer: Custom Registration Fields",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Form Designer: Custom Registration Fields.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "04": {
-    "title": "表單設計器：自訂報名欄位",
-    "next_nn": "05",
-    "next_title": "收費設定：費用、付款、折扣碼",
-    "kicker": "下一部 · 05",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=5",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片主題是『表單設計器』。表單蒐集到的資料品質，直接決定報到、配對、結算這些後段環節的順暢度，值得花時間調好。進入表單設計器，你會看到 RegMaster 已經預先放好『內建欄位』，包含姓名、Email、電話、生日、緊急聯絡人等基本資料。這些欄位不必重做，可以直接調整顯示順序，或關掉用不到的項目。內建欄位的好處是格式、驗證、隱私處理都已經做完，主辦不必再煩惱。",
-      "v2": "左側面板提供多種自訂欄位元件：單行文字、多行文字、單選、複選、下拉、檔案上傳，還有日期、時間。把元件拖到表單區域，立刻新增；每個欄位都可以打開『必填』開關，並寫提示文字幫報名者填對資料。建議把容易填錯的欄位都加上一句簡短說明，能顯著降低報名失敗率。",
-      "v3": "對需要審查的活動，建議加上『隊長身分證明』或『教練同意書』上傳欄位；藝文類活動可以加『作品連結』與『創作說明』。表單做好後按右上角『儲存』，公開頁就會即時更新欄位。表單會直接寫進每筆報名紀錄，後續匯出、結算、評分都用得到。報名表單調整好，收到的資料才會乾淨、可用。下一部我們把焦點轉到收費，看看怎麼把費用、付款、折扣碼一次設好。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『收費設定:費用、付款、折扣碼』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode is all about the form designer. The quality of the data your form collects directly determines how smoothly later stages, check-in, matching, and final results, will run, so it's worth taking the time to get right. When you open the form designer, you'll see RegMaster has already placed built-in fields for you, including name, email, phone, date of birth, and emergency contact. You don't need to rebuild these, just reorder them or switch off the ones you don't need. The beauty of built-in fields is that formatting, validation, and privacy handling are all done for you.",
-      "v2": "The left panel offers a variety of custom field components: single-line text, multi-line text, single choice, multiple choice, dropdown, file upload, plus date and time. Drag a component onto the form area to add it instantly. Each field has a 'required' toggle, and you can add hint text to help registrants fill it in correctly. We recommend adding a short note to any field that's easy to get wrong, which noticeably lowers your registration failure rate.",
-      "v3": "For events that need vetting, consider adding upload fields like 'team captain ID' or 'coach consent form.' For arts events, you might add 'portfolio link' and 'artist statement.' Once your form is ready, click 'Save' in the top-right, and the public page updates its fields instantly. The form writes directly into every registration record, ready for export, results, and scoring later. Get your registration form right, and the data you collect stays clean and usable. In the next episode, we'll turn to fees and set up pricing, payments, and discount codes all at once."
-    },
-    "title_en": "Form Designer: Custom Registration Fields",
-    "kicker_en": "Next · 05",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Fee Settings: Fees, Payments & Discount Codes",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Fee Settings: Fees, Payments & Discount Codes.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "05": {
-    "title": "收費設定:費用、付款、折扣碼",
-    "next_nn": "06",
-    "next_title": "退費政策、報名上限與三種錄取模式",
-    "kicker": "下一部 · 06",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=6",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片講『收費設定』，從費用項目、付款方式到折扣碼，三個區塊配合得好，營收結構就立得起來。回到活動設定，切到『收費』分頁。RegMaster 支援多項費用，例如報名費、保險費、餐點費，每一項都可以單獨命名、設金額，並決定是否必選。系統會在報名最後一步自動加總，不必手算。對於有早鳥、優惠、學生票的活動，可以建多個項目並用條件控制。",
-      "v2": "付款方式區可以同時打開『銀行轉帳』與『PayUNI 線上付款』。銀行轉帳適合熟悉對帳的主辦方，PayUNI 則支援信用卡與超商代碼，報名者體驗最順。兩者也可以同時開放，由報名者自己選。如果是高金額活動，PayUNI 線上付款能大幅降低未繳費的流失。",
-      "v3": "下方『折扣碼』區，可以建立早鳥碼、團報碼或推廣合作碼。每個碼可以設定折抵金額或折扣百分比，以及可使用次數上限。折扣碼非常適合分階段行銷，例如三月前用 EARLY200 折兩百元、四月團報碼 GROUP500 帶五人享優惠，效果立竿見影。收費架構打好，活動的營收基礎就穩了。下一部我們處理退費政策、上限與三種錄取模式，把營運邊界完整劃清楚。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『退費政策、報名上限與三種錄取模式』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers fee settings, from fee items and payment methods to discount codes. Get these three areas working together, and your revenue structure stands on solid ground. Back in event settings, switch to the 'Fees' tab. RegMaster supports multiple fee items, such as a registration fee, insurance fee, or meal fee, each of which you can name, price, and mark as required or optional. The system totals everything automatically at the final step of registration, so there's no manual math. For events with early-bird, promotional, or student pricing, you can create multiple items and control them with conditions.",
-      "v2": "In the payment methods area, you can enable both bank transfer and PayUNI online payment. Bank transfer suits organizers comfortable with reconciliation, while PayUNI supports credit cards and convenience-store codes for the smoothest registrant experience. You can also enable both and let registrants choose. For high-value events, PayUNI online payment greatly reduces drop-off from unpaid registrations.",
-      "v3": "In the 'Discount Codes' area below, you can create early-bird codes, group codes, or partner promo codes. Each code can be set to a fixed discount amount or a percentage, along with a usage limit. Discount codes are perfect for phased marketing, for example EARLY200 for 200 off before March, then a GROUP500 group code in April for parties of five. The results are immediate. With your fee structure in place, your event's revenue foundation is solid. In the next episode, we'll handle refund policies, caps, and the three acceptance modes, drawing your operational boundaries clearly."
-    },
-    "title_en": "Fee Settings: Fees, Payments & Discount Codes",
-    "kicker_en": "Next · 06",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Refund Policy, Caps & Three Acceptance Modes",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Refund Policy, Caps & Three Acceptance Modes.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "06": {
-    "title": "退費政策、報名上限與三種錄取模式",
-    "next_nn": "07",
-    "next_title": "開放報名與公開頁分享",
-    "kicker": "下一部 · 07",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=7",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片把『退費政策、報名上限、錄取模式』三件事一次講清楚，這些是常見糾紛來源，預先設定好能省下後續大量客服。退費政策區，建議直接套用 RegMaster 提供的標準範本，再依活動性質調整。常見規則是:活動前十天全額退、十天內七折退、三天內不退。寫清楚可以避免後續糾紛，公開頁也會自動顯示這段條款。退費條款是消保法的重點，把它寫好就少一半的客服爭議。",
-      "v2": "報名上限提供總額上限、各組別上限、以及候補名單功能。打開候補後，達到上限時報名者可以排隊，前面有人取消會自動遞補並寄信通知，特別適合熱門賽事。候補機制讓你不必反覆手動調整名額，名額用滿到開賽的這段時間，系統會幫你顧好。",
-      "v3": "RegMaster 提供三種錄取模式:『先到先得』適合公開賽事;『主辦審核』適合需要審資格的競賽，所有報名先進待審清單;『自訂正取』則讓主辦完整掌控錄取名單，適合邀請賽或國家隊選拔。三選一後儲存，整個活動的營運邏輯就定案了。三大政策一旦定案，活動的營運邏輯就明確了。下一部我們會把活動推上線，正式開放報名。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『開放報名與公開頁分享』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode explains three things at once: refund policy, registration caps, and acceptance modes. These are common sources of disputes, and setting them up in advance saves you a lot of support work later. In the refund policy area, we recommend applying RegMaster's standard template directly, then adjusting it to fit your event. A common rule is: full refund up to ten days before the event, 70% within ten days, and no refund within three days. Spelling it out prevents disputes, and your public page displays the terms automatically. Refund terms are a key point under consumer protection law; get them right, and you'll cut customer-service disputes in half.",
-      "v2": "Registration caps offer a total cap, per-division caps, and a waitlist feature. With the waitlist on, registrants can queue once the cap is reached; when someone ahead cancels, the next person is promoted automatically and notified by email, perfect for popular events. The waitlist means you don't have to keep adjusting capacity by hand; from the moment you're full until the event begins, the system looks after it for you.",
-      "v3": "RegMaster offers three acceptance modes. First-come, first-served suits open events. Organizer review suits competitions that require vetting, where every registration goes into a pending-review list first. And Manual selection gives the organizer full control over the accepted list, ideal for invitationals or national-team trials. Pick one and save, and your event's operating logic is settled. With these three policies locked in, your operational logic is clear. In the next episode, we'll take the event live and officially open registration."
-    },
-    "title_en": "Refund Policy, Caps & Three Acceptance Modes",
-    "kicker_en": "Next · 07",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Opening Registration & Sharing Your Public Page",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Opening Registration & Sharing Your Public Page.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "07": {
-    "title": "開放報名與公開頁分享",
-    "next_nn": "08",
-    "next_title": "報名名單管理:CSV 匯入匯出",
-    "kicker": "下一部 · 08",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=8",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片走『開放報名與公開頁分享』，把先前所有設定推上線、面對真實報名者，這是活動的關鍵時刻。活動骨架、組別、表單、收費都設好之後，回到活動設定。開放報名前 RegMaster 會做一道把關:報名表單裡必須至少有一個必填的 Email 欄位，否則無法寄送確認信與通知;如果還沒設，系統會擋下並提示你先到『表單設計』補上。把這個前提準備好，活動就達到可以公開的最低標準。",
-      "v2": "檢查通過後，按下『開放報名』，活動狀態立刻切換為『接受報名中』。系統會把公開連結與 QR Code 一起呈現，公開連結就是分享網址，QR Code 可以印在海報或文宣上，掃碼直達報名頁。開放後，所有來自公開頁的報名都會即時進入後台。",
-      "v3": "點『預覽公開頁』，可以從報名者視角檢查呈現結果:封面、簡介、組別、收費、報名按鈕全部到位。建議把這個連結傳給同事或合作夥伴試用一次，再做最後微調，正式開賣後就可以放心宣傳了。公開頁的所有資訊都來自前面設定，改回後台儲存後公開頁會即時同步。活動上線之後，真正的營運挑戰才剛開始。下一部我們進入報名名單管理，看看名單怎麼整、怎麼匯出匯入。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『報名名單管理:CSV 匯入匯出』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers opening registration and sharing your public page, pushing all your earlier settings live and facing real registrants. This is a pivotal moment for your event. Once the skeleton, divisions, form, and fees are all set, head back to event settings. Before opening registration, RegMaster runs one safeguard: your registration form must include at least one required email field, otherwise confirmation emails and notifications can't be sent. If you haven't added one, the system blocks you and prompts you to add it in the form designer first. With that in place, your event meets the minimum bar to go public.",
-      "v2": "Once the check passes, click 'Open Registration,' and the event status switches to 'Accepting Registrations' immediately. The system presents a public link alongside a QR code: the public link is your share URL, and the QR code can be printed on posters or flyers so people can scan straight to the registration page. After opening, every registration from the public page flows into your dashboard in real time.",
-      "v3": "Click 'Preview Public Page' to check how everything looks from the registrant's point of view: cover image, summary, divisions, fees, and the register button all in place. We recommend sending this link to a colleague or partner for a quick test run, then making final tweaks before you start promoting with confidence. Everything on the public page comes from your earlier settings, and it syncs instantly whenever you save changes in the dashboard. Once your event is live, the real operational challenge is just beginning. In the next episode, we'll move on to managing your registration list, how to organize it and import and export it."
-    },
-    "title_en": "Opening Registration & Sharing Your Public Page",
-    "kicker_en": "Next · 08",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Registration List Management: CSV Import/Export",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Registration List Management: CSV Import/Export.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "08": {
-    "title": "報名名單管理:CSV 匯入匯出",
-    "next_nn": "09",
-    "next_title": "確認付款與銀行轉帳對帳",
-    "kicker": "下一部 · 09",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=9",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片走『報名名單管理』，列表的查找與大量處理能力，決定了主辦在尖峰時段的工作節奏。從活動中心進入『報名管理』，所有報名資料以列表呈現。頂端的篩選器可以依組別、狀態、付款情況快速過濾，搜尋框支援姓名、Email 或電話模糊搜尋，幾秒鐘就能定位到某個報名者。報名人數一多，這個列表的工作效率直接決定整場活動的營運順暢度。",
-      "v2": "點任一筆進入詳細頁，可以檢視完整表單內容、附件、報名軌跡。右上角的『編輯』讓你修正錯字或補資料;下方的『備註』則是內部筆記，只有主辦團隊看得到，方便交班與紀錄聯繫。每一次編輯都會寫入操作紀錄，事後可追溯。",
-      "v3": "需要大量處理時，請用『CSV 匯出』下載報名清單，可在試算表整理後再匯入。新增報名也可以直接上傳 CSV，系統會依欄位對應自動建立。常見場景是線下繳費的學員直接匯入，省下手動輸入的時間。匯入前建議先下載範本檔，確保欄位名稱與順序對齊。報名列表掌握度高，後續結算才會順。下一部我們處理付款的確認與對帳。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『確認付款與銀行轉帳對帳』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers registration list management. How well you can search and process the list in bulk sets your working rhythm during peak periods. From the event hub, open 'Registration Management,' where all registration data appears as a list. The filters at the top let you quickly narrow by division, status, or payment situation, and the search box supports fuzzy matching by name, email, or phone, so you can pinpoint a registrant in seconds. As registration numbers grow, the efficiency of this list directly determines how smoothly your whole event runs.",
-      "v2": "Click any entry to open its detail page, where you can review the full form content, attachments, and registration history. 'Edit' in the top-right lets you fix typos or add information; the 'Notes' field below is for internal notes visible only to your team, handy for handovers and keeping a record of contact. Every edit is written to the activity log, so it's always traceable.",
-      "v3": "For bulk work, use 'Export CSV' to download the registration list, organize it in a spreadsheet, and import it back. You can also add registrations by uploading a CSV directly, and the system creates them automatically by matching the columns. A common case is importing students who paid offline, saving you manual entry. Before importing, we recommend downloading the template file to make sure column names and order line up. The better you know your registration list, the smoother your final results will be. In the next episode, we'll handle confirming payments and reconciliation."
-    },
-    "title_en": "Registration List Management: CSV Import/Export",
-    "kicker_en": "Next · 09",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Confirming Payments & Bank-Transfer Reconciliation",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Confirming Payments & Bank-Transfer Reconciliation.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "09": {
-    "title": "確認付款與銀行轉帳對帳",
-    "next_nn": "10",
-    "next_title": "處理退費申請",
-    "kicker": "下一部 · 10",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=10",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片講『確認付款與銀行轉帳對帳』，這是金流的命脈，搞錯一次就會影響後續所有作業，務必走熟。從活動中心進入『金流管理』，預設顯示待付款清單，每筆會列出姓名與應付金額。當報名者用銀行或 ATM 轉帳繳費後，你在對帳工具輸入對方轉出帳號的後幾碼，系統就會把帳號對得上的報名自動標記為已付款，不必逐筆手動比對。這套機制讓沒有信用卡或不想線上付款的學員，也能用最簡單的方式繳費。",
-      "v2": "從銀行對帳單複製到帳金額後，回到 RegMaster，比對最後對帳碼。對到了，就點該筆右側的『確認付款』，狀態立刻變成已付款，報名者也會收到確認信，整個對帳流程就完成了。對帳通常每天傍晚集中處理一次，效率最高，也不會打擾到正在報名的人。",
-      "v3": "如果款項不在預設清單，可以用上方搜尋框輸入姓名或 Email 找到對應報名。對於零星款項或多筆合併匯款，使用『手動標記付款』填入金額與備註即可。每一筆異動都會寫入操作紀錄，事後可追查。金流是主辦最在意的環節，這套對帳邏輯就是 RegMaster 累積多年實戰經驗的成果。對帳熟練之後，金流就不會再失控。下一部會處理退費申請，看看怎麼把退費流程也標準化。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『處理退費申請』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers confirming payments and bank-transfer reconciliation. This is the lifeblood of your cash flow; one mistake ripples through everything afterward, so it's worth mastering. From the event hub, open 'Payment Management,' which shows the pending-payment list by default, with each entry listing the name and amount due. When a registrant pays by bank or ATM transfer, you enter the last few digits of their transfer-out account into the reconciliation tool, and the system automatically marks any registration whose account matches as paid, with no need to compare entries one by one. This lets students who don't have a credit card, or prefer not to pay online, settle up in the simplest way.",
-      "v2": "After copying the received amount from your bank statement, return to RegMaster and check it against the reconciliation details. When it matches, click 'Confirm Payment' on the right of that entry; the status changes to paid instantly, the registrant receives a confirmation email, and the reconciliation is complete. Reconciliation is usually most efficient done once in the early evening, and it won't disturb anyone in the middle of registering.",
-      "v3": "If a payment isn't in the default list, use the search box at the top to find the matching registration by name or email. For occasional payments or combined transfers, just use 'Manually Mark as Paid' and fill in the amount and a note. Every change is written to the activity log for later review. Cash flow is what organizers care about most, and this reconciliation logic is the result of RegMaster's years of real-world experience. Once you're fluent with reconciliation, your cash flow stays under control. In the next episode, we'll handle refund requests and standardize that process too."
-    },
-    "title_en": "Confirming Payments & Bank-Transfer Reconciliation",
-    "kicker_en": "Next · 10",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Handling Refund Requests",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Handling Refund Requests.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "10": {
-    "title": "處理退費申請",
-    "next_nn": "11",
-    "next_title": "平台代收轉付（PayUNI 撥款）",
-    "kicker": "下一部 · 11",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=11",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片處理『退費申請』，從接收申請到實際完成退款，每個步驟都串在同一個面板，操作邏輯極清楚。切到『退費申請』分頁，所有報名者提出的退費請求會集中在這裡。每筆都會顯示申請時間、原因說明，以及依退費政策自動計算的可退金額，避免主辦逐筆翻條款手算。系統把麻煩的條款判斷自動化，主辦只剩下『是否同意』這個業務決定，把心力放在判斷上。",
-      "v2": "點開一筆查看詳情，確認原因合理後按『核准』，可以微調最終退費金額並填上內部備註。若不符政策，可按『駁回』並寫明理由，系統會自動寄信通知申請人，整個流程公開透明。寄信內容包含拒絕理由與退費條款連結，避免進一步爭議。",
-      "v3": "核准後，請依照公司流程實際匯款給報名者，匯款完成後回到該筆退費單按下『標記已退費』，狀態即進入完成。同時系統會自動更新付款紀錄與會計報表，方便月結。如果你的活動使用 PayUNI 收款，這部分還能搭配下一部的代收轉付，連匯款都不必自己手動處理。退費流程閉環，主辦就能輕鬆很多。下一部我們進入代收轉付，看 PayUNI 怎麼把款項撥回主辦帳戶。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『平台代收轉付,PayUNI 撥款』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode handles refund requests. From receiving a request to actually completing the refund, every step lives in the same panel, with crystal-clear logic. Switch to the 'Refund Requests' tab, where all the requests submitted by registrants are gathered. Each shows the request time, the stated reason, and the refundable amount calculated automatically from your refund policy, so you don't have to flip through the terms and do the math yourself. The system automates the tricky policy judgment, leaving you with just one business decision: approve or not. You get to put your energy into judgment.",
-      "v2": "Click a request to view its details. Once you've confirmed the reason is reasonable, click 'Approve,' where you can fine-tune the final refund amount and add an internal note. If it doesn't meet the policy, click 'Reject' and state the reason; the system automatically emails the applicant, keeping the whole process open and transparent. The email includes the rejection reason and a link to the refund terms, heading off further disputes.",
-      "v3": "After approving, transfer the money to the registrant following your company's process. Once that's done, return to the refund request and click 'Mark as Refunded,' which moves the status to complete. At the same time, the system updates the payment record and accounting report, making month-end close easier. If your event collects payments through PayUNI, this pairs with the payout flow in the next episode, so you don't even have to transfer the money by hand. With the refund loop closed, an organizer's job gets a lot easier. In the next episode, we'll move into payouts and see how PayUNI returns funds to the organizer's account."
-    },
-    "title_en": "Handling Refund Requests",
-    "kicker_en": "Next · 11",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Platform-Collected Payouts (PayUNI)",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Platform-Collected Payouts (PayUNI).' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "11": {
-    "title": "平台代收轉付（PayUNI 撥款）",
-    "next_nn": "12",
-    "next_title": "群發通知與 Email 行銷活動",
-    "kicker": "下一部 · 12",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=12",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片講『平台代收轉付』，這是把 PayUNI 收到的款項撥回主辦帳戶的標準流程，月結時最關鍵。如果你的活動透過 PayUNI 線上付款收款，款項會先進入 RegMaster 的代收轉付帳戶。進入『金流』的『可撥款項目』，會列出所有已收款、扣手續費後的可撥款金額。每筆都標示活動、收款日、淨額，數字一目了然，讓主辦清楚知道哪些錢是真的可以動用的。",
-      "v2": "選定要撥款的範圍，按下『提出撥款申請』。系統會匯總金額、列出明細，並要求你確認預設的收款銀行帳戶。確認無誤後送出，申請會進入待審核狀態，由 RegMaster 平台處理。這個流程把繁瑣的請款動作標準化，避免主辦在月底匆忙整理時出錯。",
-      "v3": "切到『撥款紀錄』分頁，可以追蹤每次撥款的進度:申請日、預計入帳、實際入帳、實付金額。每筆都會留下對應的明細表，可以下載作為公司會計憑證，月結與報稅時直接用。代收轉付讓主辦不必自己面對信用卡風險與請款流程，平台幫你扛掉合規與資安的負擔。代收轉付走完，整條金流鏈就完整了。下一部我們轉場到行銷與通知，看看怎麼經營你的會員。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『群發通知與 Email 行銷活動』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers platform-collected payouts, the standard process for returning the money PayUNI collects to the organizer's account, which is crucial at month-end. If your event collects payments through PayUNI online payment, the funds first enter RegMaster's collect-and-disburse account. Open 'Payable Items' under 'Cash Flow,' and you'll see every amount that's been collected and is payable after fees. Each entry shows the event, collection date, and net amount, so the numbers are crystal clear, and you know exactly which money is truly available to use.",
-      "v2": "Select the range you want to pay out, and click 'Request Payout.' The system totals the amount, lists the details, and asks you to confirm your default payout bank account. Once you've confirmed it's correct and submitted, the request enters a pending-review state, handled by the RegMaster platform. This process standardizes the tedious work of requesting funds, preventing mistakes during the month-end rush.",
-      "v3": "Switch to the 'Payout Records' tab to track the progress of each payout: request date, expected deposit, actual deposit, and the amount paid. Each entry keeps a corresponding statement you can download as an accounting voucher, ready to use at month-end and tax time. With collect-and-disburse, organizers don't have to face credit-card risk or the requesting process themselves; the platform shoulders the compliance and security burden for you. With payouts complete, your entire cash-flow chain is in place. In the next episode, we'll shift to marketing and notifications, and see how to nurture your members."
-    },
-    "title_en": "Platform-Collected Payouts (PayUNI)",
-    "kicker_en": "Next · 12",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Broadcast Notifications & Email Marketing",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Broadcast Notifications & Email Marketing.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "12": {
-    "title": "群發通知與 Email 行銷活動",
-    "next_nn": "13",
-    "next_title": "QR 報到與物資配發",
-    "kicker": "下一部 · 13",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=13",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片處理『群發通知與 Email 行銷』，把賽事通知與行銷活動分清楚，能讓你發信收信都更精準。進入『通知公告』，可以對特定活動發布公告。打開『同步寄送 Email』，公告會立即進到所有報名者信箱，也會顯示在公開頁與報名者的『我的報名』頁，三方同步避免訊息漏接。對於賽程異動、場地變更、雨備啟動這類重要通知，這個功能特別關鍵，能在十分鐘內把所有人通知到位。",
-      "v2": "如果是行銷導購而不是賽事通知，請用『行銷活動』模組。可以選擇收件對象:所有舊報名者、特定活動報名者、或自訂條件。可以自訂主旨與內容，套用後即可發送。對於常辦活動的主辦，這個模組就是最便宜的會員行銷工具。",
-      "v3": "設定排程寄送時間，系統會在指定時刻自動送出，不必守著電腦。Email 會套用 RegMaster 的標題列與頁尾，外觀專業一致。能寫、能排、能對指定對象群發，整套通知與行銷流程就齊全了。通知與行銷雙軌並進，回購與資訊傳遞都顧到。下一部我們走入活動當天，從 QR 報到開始。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『QR 報到與物資配發』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode handles broadcast notifications and email marketing. Keeping event notices and marketing campaigns clearly separated makes both your sending and your tracking more precise. Open 'Announcements,' where you can publish a notice for a specific event. Turn on 'Send by email,' and the notice goes straight to every registrant's inbox, and also appears on the public page and on each registrant's 'My Registrations' page, synced across all three so no message slips through. For important notices like schedule changes, venue changes, or rain plans, this feature is especially crucial, getting everyone informed within ten minutes.",
-      "v2": "If it's marketing rather than an event notice, use the 'Campaigns' module instead. You can choose your recipients: all past registrants, registrants of a specific event, or custom conditions. You can customize the subject and content, then send. For organizers who run events regularly, this module is the cheapest member-marketing tool there is.",
-      "v3": "Set a scheduled send time, and the system sends it automatically at the appointed moment, with no need to sit by your computer. The email applies RegMaster's header and footer for a consistent, professional look. Being able to write, schedule, and broadcast to a chosen audience completes the whole notification-and-marketing flow. With notifications and marketing running on parallel tracks, both repeat business and information delivery are covered. In the next episode, we step into event day, starting with QR check-in."
-    },
-    "title_en": "Broadcast Notifications & Email Marketing",
-    "kicker_en": "Next · 13",
-    "btn_label_en": "Watch next",
-    "next_title_en": "QR Check-in & Supply Distribution",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'QR Check-in & Supply Distribution.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "13": {
-    "title": "QR 報到與物資配發",
-    "next_nn": "14",
-    "next_title": "評分系統設定:量表與評審分派",
-    "kicker": "下一部 · 14",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=14",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片走『QR 報到與物資配發』，把現場排隊壓到最短，是良好參賽體驗的第一印象。進入『活動報到』，畫面正中央是 QR Code 掃描器，工作人員用手機或平板就能即時掃描報名者的 QR。每位完成報名者的『我的報名』頁都有專屬 QR，現場掃一下就完成報到，平均不到三秒一人。這套流程讓百人活動的報到時間從一小時壓縮到十分鐘以內。",
-      "v2": "右側即時統計區，會顯示已報到人數、未報到人數、各組別到場進度。如果某個時段湧入大量人潮，這裡可以即時看出瓶頸，方便指揮現場動線。對於需要分時段安排的活動，主辦能依照即時進度做出最即時的人力調度，不至於現場慌亂。",
-      "v3": "下方的『物資配發』，可以勾選報到後該領的物資，例如選手包、紀念衫、餐券，物資狀態也會記錄在報名者資料。離開現場後，這份報到紀錄可以匯出 CSV 作為結案附件。物資配發與報到結合在同一個操作步驟，現場工作人員不會漏發，也不會重複發，是少數能徹底解決物資爭議的設計。報到與物資搞定，現場節奏就穩了。下一部我們進入評分系統，看看怎麼讓比賽公平又數位化。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『評分系統設定:量表與評審分派』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers QR check-in and supply distribution. Cutting on-site queues to a minimum is the first impression of a great participant experience. Open 'Event Check-in,' and front and center is a QR code scanner; staff can scan registrants' QR codes in real time using a phone or tablet. Every registrant who's completed registration has a personal QR code on their 'My Registrations' page; a quick scan on-site completes check-in, averaging under three seconds per person. This flow compresses check-in for a hundred-person event from an hour to under ten minutes.",
-      "v2": "The live statistics area on the right shows the number checked in, not yet checked in, and each division's arrival progress. If a large crowd arrives in one time slot, you can spot the bottleneck instantly and direct the flow on-site. For events that need time-slot scheduling, organizers can make real-time staffing decisions based on live progress, avoiding chaos at the venue.",
-      "v3": "The 'Supply Distribution' section below lets you check off the items a registrant should receive after check-in, such as a participant pack, commemorative shirt, or meal voucher, and the supply status is recorded in the registrant's data. After the event, this check-in record can be exported as a CSV to attach to your wrap-up report. Combining supply distribution and check-in into a single step means staff won't miss anyone or hand out duplicates, one of the few designs that truly resolves supply disputes. With check-in and supplies sorted, your on-site rhythm is steady. In the next episode, we'll move into the scoring system and see how to make competitions fair and fully digital."
-    },
-    "title_en": "QR Check-in & Supply Distribution",
-    "kicker_en": "Next · 14",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Scoring Setup: Rubrics & Judge Assignment",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Scoring Setup: Rubrics & Judge Assignment.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "14": {
-    "title": "評分系統設定:量表與評審分派",
-    "next_nn": "15",
-    "next_title": "即時排行榜與成績結算",
-    "kicker": "下一部 · 15",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=15",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片講『評分系統設定』，量表與分派沒做好，比賽結果就很難服眾，這一步要特別認真。進入『評分系統』，先建立評分量表。每個項目可以設名稱、滿分、權重，例如創意四十分、執行三十分、表達三十分。系統會依權重自動加總，主辦不必手算總分。量表是評分公平性的根本，建議在比賽前先把量表給評審看過，並做一次空白演練。",
-      "v2": "建好量表後，到『評審分派』把評審分組指派給對應的賽事組別。每位評審只看到自己負責的選手，避免互相影響;同一組可以分派多位評審，系統會自動取平均，提升公平性。對於跨城市的線上比賽，分派可以依照評審時區與空檔做最佳化安排。",
-      "v3": "評審用你邀請他加入的帳號在手機上登入評分頁，就能評分，介面是大型按鈕與滑桿，現場操作快速直覺。每筆評分送出後即時寫入後台，結算階段就不必再手動匯整，是完全數位化的評分流程。評審不必準備紙本量表，主辦也不必事後輸入分數，從評分到結算一氣呵成。量表與評審分派就緒，評分公平性的根基就穩了。下一部我們看評分結果如何即時呈現與結算。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『即時排行榜與成績結算』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers setting up the scoring system. If the rubric and assignments aren't done well, it's hard for the results to win everyone over, so take this step seriously. Open the 'Scoring System' and first build your scoring rubric. Each item can have a name, maximum score, and weight, for example creativity 40 points, execution 30, and presentation 30. The system totals everything by weight automatically, so there's no manual math. The rubric is the foundation of scoring fairness; we recommend showing it to your judges before the competition and doing a blank dry run.",
-      "v2": "Once the rubric is built, go to 'Judge Assignment' and assign judges to the corresponding event divisions. Each judge sees only the participants they're responsible for, preventing mutual influence; you can assign multiple judges to the same division, and the system averages their scores automatically to improve fairness. For online competitions spanning cities, assignments can be optimized around judges' time zones and availability.",
-      "v3": "Judges sign in to the scoring page on their phone using the account you invited them with, and they're ready to score; the interface uses large buttons and sliders for fast, intuitive on-site use. Each score writes to the backend the moment it's submitted, so there's no manual consolidation at the results stage, a fully digital scoring flow. Judges don't need paper rubrics, and organizers don't need to enter scores afterward; it flows straight from scoring to results. With the rubric and judge assignments ready, the foundation of scoring fairness is solid. In the next episode, we'll see how scoring results are displayed and finalized in real time."
-    },
-    "title_en": "Scoring Setup: Rubrics & Judge Assignment",
-    "kicker_en": "Next · 15",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Live Leaderboard & Results",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Live Leaderboard & Results.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "15": {
-    "title": "即時排行榜與成績結算",
-    "next_nn": "16",
-    "next_title": "證書製作與發放",
-    "kicker": "下一部 · 16",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=16",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片走『即時排行榜與成績結算』，從評分輸入到名次出爐，整段流程數位化、零失真。進入『評分系統』的『結果排名』分頁，會看到 ACM 風格的即時排行榜，依各隊得分自動排序。按一下『重新整理』就會載入最新送出的分數，把畫面投影到主舞台螢幕，營造現場氣氛，也讓選手與觀眾隨時看到目前進度，現場參與感大幅提升。",
-      "v2": "排行榜的名次是依你設定的量表權重自動計算，去極值與正規化也都已內建，主辦不必自己手算總分。如果某筆分數有誤需要更正，評審或主辦修改後，重新整理排名就會即時反映，全程數位化、零失真。",
-      "v3": "確認名次後，可以一鍵『匯出 CSV』或『匯出 Excel』作為成績冊。到下一部製作證書時，把對象範圍選『得獎者』，名單、組別、名次就會自動帶入版型，全程不必複製貼上。整個比賽從報名、評分到頒獎，資料一路串通，沒有手動轉檔的麻煩，也沒有人工輸入的誤差。成績一旦結算完成，下一步就是把榮譽傳遞給選手。下一部我們進入證書製作。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『證書製作與發放』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers the live leaderboard and results. From score entry to final standings, the whole flow is digital and distortion-free. Open the 'Results & Rankings' tab in the scoring system, and you'll see an ACM-style live leaderboard that sorts teams automatically by their scores. Click 'Refresh' to load the latest submitted scores, project the screen onto the main stage to build atmosphere, and let participants and the audience see the current standings anytime, greatly boosting the sense of participation.",
-      "v2": "The leaderboard's standings are calculated automatically from the weights you set in your rubric, with outlier removal and normalization built in, so you never have to total scores by hand. If a score is wrong and needs correcting, the judge or organizer edits it, and refreshing the rankings reflects the change instantly, fully digital and distortion-free.",
-      "v3": "Once you've confirmed the standings, you can export them to CSV or Excel as a results sheet with one click. When you make certificates in the next episode, set the recipient scope to 'Winners,' and the names, divisions, and rankings flow into the template automatically, with no copy-pasting at all. From registration and scoring to the awards, the data connects all the way through, with no manual file conversion and no human-entry errors. With the results organized, the next step is passing the honor on to the participants. In the next episode, we move into certificate creation."
-    },
-    "title_en": "Live Leaderboard & Results",
-    "kicker_en": "Next · 16",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Creating & Distributing Certificates",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Creating & Distributing Certificates.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "16": {
-    "title": "證書製作與發放",
-    "next_nn": "17",
-    "next_title": "AI 助手:規則分析與智能問答",
-    "kicker": "下一部 · 17",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=17",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片處理『證書製作與發放』，比賽落幕的最後一里路，做得漂亮選手會記得很久。進入『證書製作』，選一款內建版型開始。每張版型都有預留欄位:姓名、組別、名次、活動名稱、日期，這些都是動態欄位，會在批次產生時自動帶入結算結果，不必逐張填寫。內建版型可以直接用，也可以複製後改成主辦單位的專屬版型。",
-      "v2": "點『編輯版型』可以調整文字大小、位置、顏色，並上傳主辦單位的章戳與簽名圖。預覽區會即時顯示效果，確認排版美觀後儲存，整批證書就會套用這個風格。對需要法定授權字樣的版型，編輯器也支援多行段落與固定字串，方便符合各種規範。",
-      "v3": "按下『批次產生』，系統會依名單自動生成所有證書;對象範圍可以選全部、指定組別、僅正取、僅已報到或得獎者。產生完成可一鍵下載合併 PDF，或每人單獨 PDF 的 ZIP;也可以勾選『開放報名者自行下載』，得獎者就能在『我的報名』自行下載自己的證書，還能限定已報到者才可下載。從評分到證書到手，整段流程不到幾分鐘，傳統做法可能要好幾天。得獎者拿到證書，這場活動就算完整收尾。下一部我們會介紹 AI 助手，讓主辦的後續活動更省力。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『AI 助手:規則分析與智能問答』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode handles creating and distributing certificates, the final mile after a competition wraps, and one that participants remember for a long time when it's done well. Open 'Certificate Creation' and start from a built-in template. Each template has dynamic fields, name, division, ranking, event name, and date, that fill in automatically from your list during batch generation, so there's no filling them in one by one. You can use the built-in templates directly, or copy one and customize it into your organization's own design.",
-      "v2": "Click 'Edit Template' to adjust text size, position, and color, and upload your organization's seal and signature image. The preview area shows the effect in real time; once you're happy with the layout, save, and the whole batch of certificates applies that style. For templates that need specific legal authorization wording, the editor also supports multi-line paragraphs and fixed text, making it easy to meet various requirements.",
-      "v3": "Click 'Batch Generate,' and the system generates all the certificates from your list automatically; the recipient scope can be set to everyone, a specific division, accepted only, checked-in only, or winners. Once generated, you can download a merged PDF, or a ZIP of individual PDFs, with one click. You can also check 'Allow registrants to download,' so winners can download their own certificate from 'My Registrations,' and you can even limit it to those who checked in. From scoring to certificate-in-hand, the whole process takes just minutes, where the traditional approach might take days. Once winners receive their certificates, your event is fully wrapped. In the next episode, we'll introduce the AI assistant to make your future events even easier."
-    },
-    "title_en": "Creating & Distributing Certificates",
-    "kicker_en": "Next · 17",
-    "btn_label_en": "Watch next",
-    "next_title_en": "AI Assistant: Rule Analysis & Smart Q&A",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'AI Assistant: Rule Analysis & Smart Q&A.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "17": {
-    "title": "AI 助手:規則分析與智能問答",
-    "next_nn": "18",
-    "next_title": "團隊成員與權限,Pro 或 Team",
-    "kicker": "下一部 · 18",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=18",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片聚焦『AI 助手』，讓 AI 幫你檢視規則、回覆常見問題，把主辦從重複勞動裡解放出來。進入『AI 助手』，第一步把活動規則或競賽辦法 PDF 上傳到知識庫。之後 AI 回答問題時就會以這份文件為依據，等於把規則助理放進後台。對於從紙本沿用多年的辦法，先讓 AI 讀過，後續查詢與回覆都會更快。",
-      "v2": "上傳之後，你可以直接用聊天視窗問 AI 與這份規則有關的問題，例如請它幫你整理重點、或檢查某個情境規則有沒有寫到。對話歷史會保留在左側，方便日後回看與交接。",
-      "v3": "你可以直接問 AI 與規則相關的問題，例如『未成年選手可以單獨報名嗎』，AI 會根據你上傳的規則文件回答，省下大量重複客服時間。對於常被同類問題打擾的主辦，這個工具可以把回覆時間從十分鐘壓到幾秒。AI 助手把規則與客服自動化之後，主辦就能專注在策略。下一部我們處理團隊協作與權限。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『團隊成員與權限,Pro 或 Team』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode focuses on the AI assistant, which helps you review rules and answer common questions, freeing you from repetitive work. Open the 'AI Assistant' and, as a first step, upload your event rules or competition guidelines PDF to the knowledge base. From then on, when the AI answers questions, it bases them on this document, like putting a rules assistant in your backend. For guidelines carried over from paper for years, let the AI read them first, and later lookups and replies all get faster.",
-      "v2": "After uploading, you can simply use the chat window to ask the AI questions about these rules, for example asking it to summarize the key points, or to check whether a particular scenario is covered. Your conversation history is kept on the left, making it easy to look back and hand over later.",
-      "v3": "You can ask the AI questions related to the rules directly, for example, 'Can a minor register on their own?' and the AI answers based on the rules document you uploaded, saving a great deal of repetitive customer-service time. For organizers constantly hit with the same questions, this tool can cut reply time from ten minutes to a few seconds. With the AI assistant automating rule lookups and support, organizers can focus on strategy. In the next episode, we'll handle team collaboration and permissions."
-    },
-    "title_en": "AI Assistant: Rule Analysis & Smart Q&A",
-    "kicker_en": "Next · 18",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Team Members & Permissions (Pro/Team)",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Team Members & Permissions (Pro/Team).' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "18": {
-    "title": "團隊成員與權限,Pro 或 Team",
-    "next_nn": "19",
-    "next_title": "帳號安全:2FA 與裝置管理",
-    "kicker": "下一部 · 19",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=19",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片講『團隊成員與權限』，從單兵作業升級到團隊協作，權限設計就是分工的根本。進入『設定』的『團隊』分頁，可以邀請夥伴一起管理活動。輸入對方 Email 後寄出邀請，對方收信點連結就能加入你的工作區，分工再也不必共享主帳號密碼。共享密碼是常見的資安漏洞，團隊功能讓每個人都有獨立帳號與操作紀錄，責任歸屬清楚。",
-      "v2": "每位成員都可以指派角色:『管理者』擁有檢視、報到、評分、管理等完整權限;『工作人員』負責檢視、報到與證書名牌，帳務為唯讀;『評審』則只看被指派的隊伍並評分。權限切得越細，操作越安全，分工越清楚。同一場活動可以同時有多位不同角色的成員協作，避免出現一個人卡關全公司停擺的情況。",
-      "v3": "團隊清單顯示每位成員目前所屬角色與最後登入時間。如果有人離職或不再參與，可以隨時撤回邀請或停用帳號，所有變動都會寫入操作紀錄，事後可審計。對於需要符合內部稽核或外部合規的單位，這份紀錄是不可或缺的證據。團隊權限設好，分工就清楚。下一部我們把焦點轉到帳號安全，學習怎麼把帳號保護到最緊。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『帳號安全,兩步驟驗證與裝置管理』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode is about team members and permissions, upgrading from a one-person operation to team collaboration, where permission design is the foundation of dividing the work. Open the 'Team' tab under 'Settings' to invite partners to help manage your events. Enter their email and send an invitation; they click the link in the email to join your workspace, so you no longer have to share a master account password. Shared passwords are a common security hole; the team feature gives everyone their own account and activity record, with clear accountability.",
-      "v2": "Each member can be assigned a role: an Administrator has full permissions covering viewing, check-in, scoring, and management; Staff handles viewing, check-in, and certificates and name badges, with billing read-only; and a Judge sees only the teams assigned to them and scores. The finer you slice permissions, the safer operations are and the clearer the division of labor. The same event can have multiple members in different roles collaborating at once, avoiding the situation where one person being stuck brings the whole operation to a halt.",
-      "v3": "The team list shows each member's current role and last login time. If someone leaves or is no longer involved, you can revoke the invitation or deactivate the account anytime, and every change is written to the activity log for later review. For organizations that need to meet internal audits or external compliance, this record is indispensable evidence. With team permissions set, the division of labor is clear. In the next episode, we'll turn our attention to account security and learn how to lock your account down tight."
-    },
-    "title_en": "Team Members & Permissions (Pro/Team)",
-    "kicker_en": "Next · 19",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Account Security: 2FA & Sessions",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Account Security: 2FA & Sessions.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "19": {
-    "title": "帳號安全:2FA 與裝置管理",
-    "next_nn": "20",
-    "next_title": "個人資料、收款帳戶與方案授權",
-    "kicker": "下一部 · 20",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=20",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片處理『帳號安全』，金流、會員資料都在這裡，安全防線多一層就少一夜失眠。進入『設定』的『安全』分頁，第一個重點是兩步驟驗證。打開後選擇驗證 App，掃描 QR Code 綁定 Google Authenticator 或 Authy，未來登入就需要輸入六位動態碼，大幅提升帳號安全。對於管理員帳號，建議強制啟用 2FA，避免單一密碼洩漏就導致整個工作區風險。",
-      "v2": "下方『登入裝置』可以查看目前的登入狀態與工作階段。如果你曾在公用電腦登入、或懷疑帳號被他人使用，可以在這裡把其他工作階段登出，讓只有你目前的裝置保有存取權。搭配 2FA，帳號安全就多了好幾道防線。",
-      "v3": "對主辦團隊而言，建議所有成員都打開 2FA，並養成定期檢查登入裝置的習慣。金流、會員資料、評分結果都集中在 RegMaster，多一道驗證就少一道風險。安全這件事不是出事才做，事前的小投資能換來事後的大安心。帳號安全做好，整個工作區就是有鎖的保險箱。下一部我們處理個資、收款帳戶與方案授權。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『個人資料、收款帳戶與方案授權』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode handles account security. Your cash flow and member data all live here, and one more layer of defense means one less sleepless night. Open the 'Security' tab under 'Settings,' and the first priority is two-factor authentication. Turn it on, choose an authenticator app, and scan the QR code to bind Google Authenticator or Authy; from then on, logging in requires a six-digit one-time code, greatly improving account security. For administrator accounts, we recommend making 2FA mandatory, so a single leaked password doesn't put the whole workspace at risk.",
-      "v2": "Below, 'Login Sessions' lets you see your current login status and active sessions. If you've ever signed in on a public computer, or you suspect someone else is using your account, you can sign out the other sessions here, so only your current device keeps access. Paired with 2FA, your account security gains several more layers of defense.",
-      "v3": "For an organizing team, we recommend everyone turn on 2FA and get into the habit of regularly signing out sessions they no longer use. Cash flow, member data, and scoring results are all concentrated in RegMaster, so one more verification step means one less risk. Security isn't something to do only after an incident; a small investment up front buys a lot of peace of mind afterward. With account security in place, your whole workspace is a locked safe. In the next episode, we'll handle profiles, payout accounts, and plan licensing."
-    },
-    "title_en": "Account Security: 2FA & Sessions",
-    "kicker_en": "Next · 20",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Profile, Payout Account & Plan License",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Profile, Payout Account & Plan License.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "20": {
-    "title": "個人資料、收款帳戶與方案授權",
-    "next_nn": "21",
-    "next_title": "找到並瀏覽活動,報名者",
-    "kicker": "下一部 · 21",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=21",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學。本部影片走『個人資料、收款帳戶與方案授權』，這些設定看似日常，但每一項都關係到活動的對外形象與營運額度。切回『設定』的『個人資料』，填好顯示名稱、聯絡 Email、單位資訊。這些資訊會顯示在你建立的所有活動公開頁的『主辦單位』欄位，是報名者建立信任的第一印象。填得完整、清楚，能讓報名者第一眼就知道這是專業可靠的單位，提高願意報名的比例。",
-      "v2": "下方『收款帳戶』，填入主辦單位銀行帳號。這個帳號是後續所有銀行轉帳的收款帳戶，也是 PayUNI 平台撥款的目標。請確認分行、戶名、帳號完全正確，撥款發生錯誤會延遲入帳，所以第一次設定請特別小心核對。",
-      "v3": "進入『方案授權』頁，可以看到目前的方案層級、可用額度與到期日。從 Free、Starter、Pro 到 Team，方案差別主要在活動數、報名人數、團隊席次，以及 AI 助理、評分、證書等進階功能。需要升級時點『升級方案』就可以線上完成。建議在額度用完前提前升級，避免活動進行到一半才卡關。主辦端到這裡完整收尾。下一部我們切換到報名者視角，看看一般人怎麼找到並參加活動。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『找到並瀏覽活動,報名者篇』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back to the RegMaster tutorials. This episode covers profile, payout account, and plan licensing. These settings may seem routine, but each one affects your event's public image and operating capacity. Switch to the 'Profile' tab under 'Settings' and fill in your display name, contact email, and organization details. This information appears in the 'Organizer' section of every public page you create, the first impression that builds a registrant's trust. Filling it in completely and clearly lets registrants see at a glance that you're a professional, reliable organization, raising their willingness to register.",
-      "v2": "Below, under 'Payout Account,' enter your organization's bank account. This account is the destination for all subsequent bank transfers, as well as the target for PayUNI platform payouts. Please make sure the branch, account name, and account number are completely correct, as a payout error will delay your deposit, so take extra care when setting it up the first time.",
-      "v3": "On the 'Plan & License' page, you can see your current plan tier, available quota, and expiry date. From Free, Starter, and Pro to Team, the plans differ mainly in number of events, number of registrants, team seats, and advanced features like the AI assistant, scoring, and certificates. When you need to upgrade, just click 'Upgrade Plan' to do it online. We recommend upgrading ahead of time before your quota runs out, so you don't get stuck halfway through an event. That wraps up the organizer side. In the next episode, we'll switch to the registrant's perspective and see how people find and join events."
-    },
-    "title_en": "Profile, Payout Account & Plan License",
-    "kicker_en": "Next · 21",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Finding & Browsing Events",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Finding & Browsing Events.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "21": {
-    "title": "找到並瀏覽活動",
-    "next_nn": "22",
-    "next_title": "完成線上報名",
-    "kicker": "下一部 · 22",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=22",
-    "narration": {
-      "v1": "歡迎來到報名者端的教學。本部影片從『找到並瀏覽活動』開始，介紹如何用最少的點擊找到符合需求的活動。打開 RegMaster 公開頁，首頁是活動列表。最上方有搜尋框，也可以用『類別』下拉快速切換不同類型的活動，並用『熱門 / 最近開賣 / 即將舉辦』排序。對於剛接觸平台的報名者，建議先用排序與類別瀏覽，比直接搜尋更容易找到適合的活動。",
-      "v2": "左側篩選器可以依『狀態』、『類別』、『規模』篩選，每勾一個條件就即時刷新清單，不必反覆按搜尋。卡片上會顯示活動封面、日期與基本費用，資訊一目了然，讓你快速比較。",
-      "v3": "點任一張卡片進入活動詳細頁，可以看到完整介紹、組別、收費、退費規則，以及主辦單位資訊。確認活動符合需求後，按右上角的『立即報名』，就會進入報名流程。詳細頁的所有資訊都來自主辦設定，內容會即時更新，可以放心參考。找到活動只是開始，下一部我們會走完整段線上報名流程。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『完成線上報名』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome to the registrant side of the tutorials. This episode starts with finding and browsing events, covering how to find the right event with the fewest clicks. Open the RegMaster public page, and the homepage is a list of events. At the top there's a search box, and you can use the 'Category' dropdown to quickly switch between different types of events, plus sort by 'Popular,' 'Recently Opened,' or 'Upcoming.' For registrants new to the platform, we recommend browsing by sort and category first; it's easier to find a suitable event than searching directly.",
-      "v2": "The filters on the left let you narrow by 'Status,' 'Category,' and 'Scale,' and each box you check refreshes the list instantly, so there's no repeatedly pressing search. Each card shows the event's cover image, date, and base fee, so the information is clear at a glance and easy to compare quickly.",
-      "v3": "Click any card to enter the event detail page, where you can see the full description, divisions, fees, refund policy, and organizer information. Once you've confirmed the event fits your needs, click 'Register Now' in the top-right to enter the registration flow. All the information on the detail page comes from the organizer's settings and updates in real time, so you can rely on it. Finding an event is just the beginning; in the next episode, we'll walk through the whole online registration process."
-    },
-    "title_en": "Finding & Browsing Events",
-    "kicker_en": "Next · 22",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Completing Online Registration",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Completing Online Registration.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "22": {
-    "title": "完成線上報名",
-    "next_nn": "23",
-    "next_title": "線上付款與銀行轉帳",
-    "kicker": "下一部 · 23",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=23",
-    "narration": {
-      "v1": "歡迎回來。本部影片走『完成線上報名』，三個步驟從選組別到確認送出，幫你避開最常見的填表坑。進入報名流程第一步，選擇組別。每個組別會顯示限制條件，例如年齡區間、能力等級，下方還有剩餘名額。確認自己符合資格後點『下一步』。組別選錯是常見的退費爭議來源，系統的自動驗證能在報名當下擋下大部分錯誤組別的情況。",
-      "v2": "第二步是報名表單。基本欄位例如姓名、生日、Email、電話請逐一填寫;自訂欄位例如餐點偏好、上傳同意書，依主辦設定逐一填寫。必填欄位漏填時會即時提示，不必送出後才修正。建議仔細閱讀每個欄位的提示文字，能少踩很多小坑。",
-      "v3": "第三步是費用結算。系統會依組別與選項自動加總，若有早鳥碼或團報碼可以在此輸入立刻折抵。最後一頁是確認頁，請仔細檢查資料無誤後送出，系統會立即產生報名紀錄並寄送確認信。確認信也包含後續付款說明，請務必保留信件以便查詢。報名送出後，下一步通常是付款。下一部我們會聚焦在『線上付款與銀行轉帳』的細節。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『線上付款與銀行轉帳』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back. This episode walks through completing your online registration, three steps from choosing a division to confirming and submitting, helping you avoid the most common form pitfalls. At the first step of registration, choose your division. Each division shows its conditions, like an age range or skill level, along with the remaining spots below. Once you've confirmed you're eligible, click 'Next.' Choosing the wrong division is a common source of refund disputes, and the system's automatic validation catches most wrong-division cases right at registration.",
-      "v2": "The second step is the registration form. Basic fields like name, date of birth, email, and phone are filled in one by one; custom fields, such as meal preference or a consent-form upload, are completed as set by the organizer. If you miss a required field, you'll be prompted right away, so there's no fixing it after submitting. We recommend reading each field's hint text carefully; it'll save you from a lot of small mistakes.",
-      "v3": "The third step is fee settlement. The system totals everything automatically based on your division and options, and if you have an early-bird or group code, you can enter it here for an instant discount. The final page is the confirmation page; please check your details carefully before submitting, and the system immediately creates a registration record and sends a confirmation email. The confirmation email also includes payment instructions, so be sure to keep it for reference. After submitting, the next step is usually payment. In the next episode, we'll focus on the details of online payment and bank transfer."
-    },
-    "title_en": "Completing Online Registration",
-    "kicker_en": "Next · 23",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Online Payment & Bank Transfer",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Online Payment & Bank Transfer.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "23": {
-    "title": "線上付款與銀行轉帳",
-    "next_nn": "24",
-    "next_title": "我的報名全攻略",
-    "kicker": "下一部 · 24",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=24",
-    "narration": {
-      "v1": "歡迎回來。本部影片講『線上付款與銀行轉帳』，兩種付款方式怎麼選、怎麼匯款最不會出錯，一次說清楚。送出報名後，付款頁面會列出應付總額。如果主辦同時開放 PayUNI 線上付款與銀行轉帳，這裡可以自由選擇。線上付款支援信用卡、超商代碼、ATM 虛擬帳號，付款完成自動更新狀態，整個流程在五分鐘內就能搞定。線上付款對主辦也比較好對帳，建議優先選擇。",
-      "v2": "選擇銀行轉帳時，系統會顯示主辦的收款帳號與應匯金額，請按金額完成轉帳。完成轉帳後，主辦方會在 1 到 3 個工作天內人工核對你的款項並更新付款狀態，狀態會變更為已付款。請保留轉帳紀錄，若超過時間仍未更新，可以聯絡主辦協助確認。",
-      "v3": "完成付款後，可以隨時回到『我的報名』查看狀態。狀態欄位會顯示『待付款』、『已付款』、『已完成』。若是線下付款例如現場繳費，主辦核對後也會在這裡同步更新，全程透明。任何狀態異動都會自動寄信通知，不必反覆登入查詢。付款完成之後，所有資訊都集中在『我的報名』。下一部我們會把這個頁面的所有功能逐一拆解。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『我的報名全攻略』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back. This episode covers online payment and bank transfer, how to choose between the two and how to transfer with the fewest mistakes, all explained at once. After submitting your registration, the payment page lists the total due. If the organizer has enabled both PayUNI online payment and bank transfer, you can choose freely here. Online payment supports credit cards, convenience-store codes, and ATM virtual accounts, with the status updating automatically once paid, the whole process done in under five minutes. Online payment is also easier for organizers to reconcile, so we recommend choosing it first.",
-      "v2": "When you choose bank transfer, the system shows the organizer's payout account and the amount due; just transfer the exact amount. After you've transferred, the organizer manually verifies your payment within one to three business days and updates the payment status to paid. Please keep your transfer record, and if the status still hasn't updated after that time, you can contact the organizer for help confirming it.",
-      "v3": "Once payment is complete, you can return to 'My Registrations' anytime to check the status. The status field shows 'Awaiting Payment,' 'Paid,' or 'Completed.' For offline payments, such as paying on-site, the organizer updates it here after verifying, fully transparent throughout. Any status change automatically sends an email notification, so there's no repeatedly logging in to check. After payment is complete, all your information is gathered in 'My Registrations.' In the next episode, we'll break down every feature of that page one by one."
-    },
-    "title_en": "Online Payment & Bank Transfer",
-    "kicker_en": "Next · 24",
-    "btn_label_en": "Watch next",
-    "next_title_en": "The Complete Guide to My Registrations",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'The Complete Guide to My Registrations.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "24": {
-    "title": "我的報名全攻略",
-    "next_nn": "25",
-    "next_title": "報到當天:出示 QR Code",
-    "kicker": "下一部 · 25",
-    "btn_label": "看下一部",
-    "url_tail": "/教學影片/?p=25",
-    "narration": {
-      "v1": "歡迎回來。本部影片處理『我的報名全攻略』，把進度查詢、補件、退費這些事情通通串在一個頁面解決。在 RegMaster 公開頁右上角點『我的報名』，輸入報名時使用的 Email 或電話，就能查到名下所有歷史報名，不必另外申請帳號，操作很輕量。這套設計是為了讓只想偶爾報名一場活動的人，不必為了一場活動建立會員，門檻盡量低。",
-      "v2": "每張報名卡片都顯示活動名稱、組別、付款狀態、退費可行性。點開可以查看完整資訊，包含原始表單內容、繳費對帳碼、活動聯絡資訊。資料有錯時，用 Google 或 LINE 登入驗證身分後，就能直接『修改報名』更新欄位，每次修改都會留下紀錄。",
-      "v3": "卡片右側的『申請退費』，會依照主辦設定的退費政策自動計算可退金額。送出申請後，主辦會收到通知，核准後依公司流程撥款。整個流程不必反覆寫信來回，效率高，紀錄也完整。對於需要證明已經退款的會計或保險理賠，這份紀錄可以直接列印當作憑證。『我的報名』熟練之後，最後就剩活動當天的最後一哩。下一部我們處理現場 QR Code 出示。"
-    },
-    "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『報到當天:出示 QR Code』。或進入 regmaster-pro.web.app 看完整教學系列。",
-    "narration_en": {
-      "v1": "Welcome back. This episode covers the complete guide to My Registrations, bringing progress tracking, edits, and refunds together to handle on one page. Click 'My Registrations' in the top-right of the RegMaster public page, enter the email or phone you registered with, and you can look up all your past registrations, with no separate account needed, keeping it lightweight. This design is meant for people who only register for an event now and then, so they don't have to create a membership just for one event, keeping the barrier as low as possible.",
-      "v2": "Each registration card shows the event name, division, payment status, and refund eligibility. Click to open the full details, including the original form content, the payment reconciliation code, and the event's contact information. If there's an error in your data, verify your identity by signing in with Google or LINE, and then you can directly use 'Edit Registration' to update the fields, with every edit leaving a record.",
-      "v3": "On the right side of the card, 'Request Refund' automatically calculates the refundable amount based on the organizer's refund policy. After you submit the request, the organizer is notified, and once approved, they transfer the money per their company's process. The whole process needs no back-and-forth emails; it's efficient, with a complete record. For accounting or insurance claims that need proof of a refund, this record can be printed directly as a voucher. Once you're comfortable with 'My Registrations,' all that's left is the last mile on event day. In the next episode, we'll handle showing your QR code on-site."
-    },
-    "title_en": "The Complete Guide to My Registrations",
-    "kicker_en": "Next · 25",
-    "btn_label_en": "Watch next",
-    "next_title_en": "Event Day: Showing Your QR Code",
-    "outro_en": "That's it for this episode. Tap the button below to watch the next one: 'Event Day: Showing Your QR Code.' Or visit regmaster-pro.web.app for the full tutorial series."
-  },
-  "25": {
-    "title": "報到當天:出示 QR Code",
-    "next_nn": "01",
-    "next_title": "RegMaster Pro 教學系列 回到第 1 部重溫",
-    "kicker": "系列完結",
-    "btn_label": "回到第 1 部重溫",
-    "url_tail": "/教學影片/?p=1",
-    "narration": {
-      "v1": "歡迎回到 RegMaster 教學的最後一部。本部影片走完『報到當天 QR Code』之後，整個系列就完成了。活動當天，提早把報到 QR Code 準備好，能讓現場流程順暢很多。打開『我的報名』查到當天要參加的報名，用 Google 或 LINE 登入驗證後，點卡片上綠色的『報到 QR』按鈕，就會跳出大型 QR Code，背景單純、對比強烈，掃描器一掃就過。建議出門前先把 QR Code 截圖存到手機相簿，遇到訊號不穩也能順利報到。",
-      "v2": "工作人員會用手機或平板掃你的 QR，系統即時辨識身分並完成報到。如果有物資配發，掃完之後現場會直接把選手包、紀念衫或餐券給你，整個動線一氣呵成。報到完成後系統會即時同步狀態，你不會因為現場混亂而被誤判為未報到。",
-      "v3": "如果現場訊號不穩，可以提早把 QR Code 截圖存到手機相簿，或印成紙本帶在身上備用。掃描完成後，狀態頁會即時顯示『已報到』，到這裡，整個 RegMaster 教學系列就完整走完了。從建立活動到當天報到，這套系統把活動營運的每一個環節都串起來，讓主辦與報名者都更輕鬆。感謝你一路看到最後。整個 RegMaster 教學系列到此完整收尾。"
-    },
-    "outro": "RegMaster Pro 教學系列到這裡完整結束。感謝你的觀看。直接點下方按鈕,回到第 1 部重溫。或進入 regmaster-pro.web.app 探索更多功能。",
-    "narration_en": {
-      "v1": "Welcome back to the final episode of the RegMaster tutorials. Once we've walked through showing your QR code on event day, the whole series is complete. On event day, having your check-in QR code ready ahead of time makes the on-site flow much smoother. Open 'My Registrations,' find the registration for the event you're attending that day, verify your identity by signing in with Google or LINE, then tap the green 'Check-in QR' button on the card, and a large QR code pops up, clean background, high contrast, so the scanner reads it in one pass. We recommend taking a screenshot to your photo album before you head out, so you can still check in smoothly even if the signal is weak.",
-      "v2": "Staff scan your QR with a phone or tablet, and the system instantly recognizes your identity and completes check-in. If there's supply distribution, after scanning, the venue hands you your participant pack, commemorative shirt, or meal voucher right there, so the whole flow moves seamlessly. Once check-in is done, the system syncs the status in real time, so you won't be mistakenly marked as absent amid the on-site bustle.",
-      "v3": "If the signal at the venue is unstable, you can take a screenshot of your QR code to your photo album ahead of time, or print it out as a paper backup. Once the scan is complete, the status page instantly shows 'Checked In.' And with that, the entire RegMaster tutorial series is complete. From creating an event to checking in on the day, this system connects every part of running an event, making things easier for organizers and registrants alike. Thank you for watching all the way to the end. That brings the entire RegMaster tutorial series to a complete close."
-    },
-    "title_en": "Event Day: Showing Your QR Code",
-    "kicker_en": "Series complete",
-    "btn_label_en": "Back to Episode 1",
-    "next_title_en": "Register, Log In & Dashboard Tour",
-    "outro_en": "That brings the RegMaster Pro tutorial series to a complete close. Thank you for watching. Tap the button below to revisit Episode 1, or visit regmaster-pro.web.app to explore more features."
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『報名組別、年齡規則與隊名』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Creating an event is simple. In the organizer dashboard, choose 'All Events' on the left, then click the 'Create Event' button in the top-right, and the process begins instantly. RegMaster's philosophy is to build the skeleton of your event first, then fill in the details bit by bit. Every step saves automatically, so you can leave partway through and pick up right where you left off without losing anything.",
+   "v2": "In the pop-up window, start with the event name, for example 'RegMaster Spring Showcase.' Choose the event type, here we'll pick 'Competition.' Then set the registration format to 'Individual.' You can leave the capacity limit blank for now and fine-tune it later in settings. Confirm the details and click 'Create,' and the system creates the event right away and takes you to the detailed settings page, all in under ten seconds.",
+   "v3": "On the detailed settings page, under 'Basic Information,' the event name is already filled in. The description field below supports basic HTML and appears directly in the 'About this event' section of your public page, helping registrants understand the theme and rules. We recommend clearly describing the event's background, who it's for, and contact details. It greatly reduces inquiry emails and saves you a lot of support time.",
+   "v4": "Next, set the key dates: the registration open date is when people can start signing up; when the registration deadline arrives, new registrations close automatically; and the event date is when it actually takes place. RegMaster switches the event status automatically based on these times, from draft to open to closed, with no manual buttons to toggle. It's effortless and reliable.",
+   "v5": "Finally, click 'Save Changes' in the bottom-right, and all your settings take effect immediately. Back in the 'All Events' list, the event you just created appears with a 'Draft' status, ready to keep editing anytime. With the skeleton in place, the next step is setting up divisions and rules. Let's keep going."
   }
+ },
+ "03": {
+  "title": "報名組別、年齡規則與隊名",
+  "next_nn": "04",
+  "next_title": "表單設計器：自訂報名欄位",
+  "kicker": "下一部 · 04",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=4",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片我們聚焦在『報名組別』。組別是活動結構的骨架，設計得好，後面整套金流、評分、證書都能順著跑。活動建立完成後，下一步是設定報名組別。在『設定』的『組別』分頁，你可以區隔不同年齡層、能力等級或主題的選手分組。系統內建了常見組別預設，例如國小、國中、高中、社會組，可以直接選用，省去逐一輸入的時間。組別越清楚，後續評分、排名、發證書就越順。",
+   "v2": "點選『新增組別』，輸入組別名稱，例如『公開組』。每個組別都可以單獨設定年齡規則：選擇『不限年齡』、依『年齡區間』、或依『出生日期區間』。設好之後，系統會在報名時自動驗證選手的生日。這對於常見的『未滿幾歲不得報名』或『跨組混報』糾紛特別有用。",
+   "v3": "下方的『隊伍命名』區塊，讓你決定報名時是否要求填寫隊伍名稱。可以分別開啟『要求中文隊名』顯示為公開頁的隊伍識別，或『要求英文隊名』用於國際性活動或證書印製。團體賽通常兩者都打開，個人賽則可以全部關閉。組別與隊名設定好之後，下一步是調整報名表單。組別與隊名設定完成，活動的人員分層就架好了。下一部我們會繼續往表單設計器走，把每位選手要填的欄位也客製化。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『表單設計器:自訂報名欄位』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode focuses on registration divisions. Divisions are the backbone of your event's structure; design them well, and payments, scoring, and certificates all flow smoothly afterward. Once your event is created, the next step is setting up divisions. In the 'Divisions' tab under 'Settings,' you can separate participants by age group, skill level, or theme. The system comes with common presets, like Elementary, Junior High, High School, and Open, that you can select directly, saving you from typing each one. The clearer your divisions, the smoother scoring, ranking, and certificates will be.",
+   "v2": "Click 'Add Division' and enter a name, such as 'Open Division.' Each division can have its own age rule: choose no age limit, an age range, or a date-of-birth range. Once set, the system automatically validates each participant's birth date at registration. This is especially useful for the common 'must be over a certain age' requirement, or for preventing disputes over cross-division entries.",
+   "v3": "In the 'Team Naming' section below, you decide whether a team name is required at registration. You can separately enable a required Chinese team name, shown as the team's public identifier, or a required English team name, used for international events or certificate printing. Team competitions usually turn on both, while individual events can leave them off. With divisions and team names in place, your event's participant structure is set. In the next episode, we'll move on to the form designer and customize the fields each participant fills in."
+  }
+ },
+ "04": {
+  "title": "表單設計器：自訂報名欄位",
+  "next_nn": "05",
+  "next_title": "收費設定：費用、付款、折扣碼",
+  "kicker": "下一部 · 05",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=5",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片主題是『表單設計器』。報名表單蒐集到的資料，直接決定後續報到、分組、結算的順暢度。RegMaster 的表單設計器採用拖拉式介面：左側是欄位面板，中間是表單畫布，點選任何一個欄位，就能在設定區調整細節，全程不用寫程式。",
+   "v2": "左側欄位面板分成兩區。上方『基本欄位』提供多種型別：單行文字適合姓名或單位，多行文字適合自我介紹，下拉選單和單選讓報名者多選一，複選可以勾選多個項目，另外還有日期、數字、以及上傳檔案。下方『內建欄位』是已經內建格式驗證的常用欄位，像中文姓名、Email、電話、性別、生日、學校、教育階段，拖進來就會自動套用檢查。",
+   "v3": "要新增欄位，把元件從面板拖到畫布就完成，欄位順序也能再拖曳調整。點選一個欄位後，可以修改標題、加上提示文字幫報名者填對、切換『必填』開關；選項類的欄位還能逐一編輯選項內容。實務建議：容易填錯的欄位都加一句說明，必填只留真正需要的，表單越精簡完成率越高。設計好按右上角『儲存』，公開報名頁就即時套用。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『收費設定:費用、付款、折扣碼』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode is all about the form designer. The quality of the data your form collects directly determines how smoothly later stages, check-in, matching, and final results, will run, so it's worth taking the time to get right. When you open the form designer, you'll see RegMaster has already placed built-in fields for you, including name, email, phone, date of birth, and emergency contact. You don't need to rebuild these, just reorder them or switch off the ones you don't need. The beauty of built-in fields is that formatting, validation, and privacy handling are all done for you.",
+   "v2": "The left panel offers a variety of custom field components: single-line text, multi-line text, single choice, multiple choice, dropdown, file upload, plus date and time. Drag a component onto the form area to add it instantly. Each field has a 'required' toggle, and you can add hint text to help registrants fill it in correctly. We recommend adding a short note to any field that's easy to get wrong, which noticeably lowers your registration failure rate.",
+   "v3": "For events that need vetting, consider adding upload fields like 'team captain ID' or 'coach consent form.' For arts events, you might add 'portfolio link' and 'artist statement.' Once your form is ready, click 'Save' in the top-right, and the public page updates its fields instantly. The form writes directly into every registration record, ready for export, results, and scoring later. Get your registration form right, and the data you collect stays clean and usable. In the next episode, we'll turn to fees and set up pricing, payments, and discount codes all at once."
+  }
+ },
+ "05": {
+  "title": "收費設定:費用、付款、折扣碼",
+  "next_nn": "06",
+  "next_title": "退費政策、報名上限與三種錄取模式",
+  "kicker": "下一部 · 06",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=6",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片講『收費設定』，從費用項目、付款方式到折扣碼，三個區塊配合得好，營收結構就立得起來。回到活動設定，切到『收費』分頁。RegMaster 支援多項費用，例如報名費、保險費、餐點費，每一項都可以單獨命名、設金額，並決定是否必選。系統會在報名最後一步自動加總，不必手算。對於有早鳥、優惠、學生票的活動，可以建多個項目並用條件控制。",
+   "v2": "付款方式區可以同時打開『銀行轉帳』與『PayUNI 線上付款』。銀行轉帳適合熟悉對帳的主辦方，PayUNI 則支援信用卡與超商代碼，報名者體驗最順。兩者也可以同時開放，由報名者自己選。如果是高金額活動，PayUNI 線上付款能大幅降低未繳費的流失。",
+   "v3": "下方『折扣碼』區，可以建立早鳥碼、團報碼或推廣合作碼。每個碼可以設定折抵金額或折扣百分比，以及可使用次數上限。折扣碼非常適合分階段行銷，例如三月前用 EARLY200 折兩百元、四月團報碼 GROUP500 帶五人享優惠，效果立竿見影。收費架構打好，活動的營收基礎就穩了。下一部我們處理退費政策、上限與三種錄取模式，把營運邊界完整劃清楚。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『退費政策、報名上限與三種錄取模式』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode covers fee settings, from fee items and payment methods to discount codes. Get these three areas working together, and your revenue structure stands on solid ground. Back in event settings, switch to the 'Fees' tab. RegMaster supports multiple fee items, such as a registration fee, insurance fee, or meal fee, each of which you can name, price, and mark as required or optional. The system totals everything automatically at the final step of registration, so there's no manual math. For events with early-bird, promotional, or student pricing, you can create multiple items and control them with conditions.",
+   "v2": "In the payment methods area, you can enable both bank transfer and PayUNI online payment. Bank transfer suits organizers comfortable with reconciliation, while PayUNI supports credit cards and convenience-store codes for the smoothest registrant experience. You can also enable both and let registrants choose. For high-value events, PayUNI online payment greatly reduces drop-off from unpaid registrations.",
+   "v3": "In the 'Discount Codes' area below, you can create early-bird codes, group codes, or partner promo codes. Each code can be set to a fixed discount amount or a percentage, along with a usage limit. Discount codes are perfect for phased marketing, for example EARLY200 for 200 off before March, then a GROUP500 group code in April for parties of five. The results are immediate. With your fee structure in place, your event's revenue foundation is solid. In the next episode, we'll handle refund policies, caps, and the three acceptance modes, drawing your operational boundaries clearly."
+  }
+ },
+ "06": {
+  "title": "退費政策、報名上限與三種錄取模式",
+  "next_nn": "07",
+  "next_title": "開放報名與公開頁分享",
+  "kicker": "下一部 · 07",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=7",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片把『退費政策、報名上限、錄取模式』三件事一次講清楚，這些是常見糾紛來源，預先設定好能省下後續大量客服。退費政策區，建議直接套用 RegMaster 提供的標準範本，再依活動性質調整。常見規則是:活動前十天全額退、十天內七折退、三天內不退。寫清楚可以避免後續糾紛，公開頁也會自動顯示這段條款。退費條款是消保法的重點，把它寫好就少一半的客服爭議。",
+   "v2": "報名上限提供總額上限、各組別上限、以及候補名單功能。打開候補後，達到上限時報名者可以排隊，前面有人取消會自動遞補並寄信通知，特別適合熱門賽事。候補機制讓你不必反覆手動調整名額，名額用滿到開賽的這段時間，系統會幫你顧好。",
+   "v3": "RegMaster 提供三種錄取模式:『先到先得』適合公開賽事;『主辦審核』適合需要審資格的競賽，所有報名先進待審清單;『自訂正取』則讓主辦完整掌控錄取名單，適合邀請賽或國家隊選拔。三選一後儲存，整個活動的營運邏輯就定案了。三大政策一旦定案，活動的營運邏輯就明確了。下一部我們會把活動推上線，正式開放報名。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『開放報名與公開頁分享』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode explains three things at once: refund policy, registration caps, and acceptance modes. These are common sources of disputes, and setting them up in advance saves you a lot of support work later. In the refund policy area, we recommend applying RegMaster's standard template directly, then adjusting it to fit your event. A common rule is: full refund up to ten days before the event, 70% within ten days, and no refund within three days. Spelling it out prevents disputes, and your public page displays the terms automatically. Refund terms are a key point under consumer protection law; get them right, and you'll cut customer-service disputes in half.",
+   "v2": "Registration caps offer a total cap, per-division caps, and a waitlist feature. With the waitlist on, registrants can queue once the cap is reached; when someone ahead cancels, the next person is promoted automatically and notified by email, perfect for popular events. The waitlist means you don't have to keep adjusting capacity by hand; from the moment you're full until the event begins, the system looks after it for you.",
+   "v3": "RegMaster offers three acceptance modes. First-come, first-served suits open events. Organizer review suits competitions that require vetting, where every registration goes into a pending-review list first. And Manual selection gives the organizer full control over the accepted list, ideal for invitationals or national-team trials. Pick one and save, and your event's operating logic is settled. With these three policies locked in, your operational logic is clear. In the next episode, we'll take the event live and officially open registration."
+  }
+ },
+ "07": {
+  "title": "開放報名與公開頁分享",
+  "next_nn": "08",
+  "next_title": "報名名單管理:CSV 匯入匯出",
+  "kicker": "下一部 · 08",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=8",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片走『開放報名與公開頁分享』，把先前所有設定推上線、面對真實報名者，這是活動的關鍵時刻。活動骨架、組別、表單、收費都設好之後，回到活動設定。開放報名前 RegMaster 會做一道把關:報名表單裡必須至少有一個必填的 Email 欄位，否則無法寄送確認信與通知;如果還沒設，系統會擋下並提示你先到『表單設計』補上。把這個前提準備好，活動就達到可以公開的最低標準。",
+   "v2": "檢查通過後，按下『開放報名』，活動狀態立刻切換為『報名中』。系統會在活動工具區提供公開頁連結，你可以按『複製公開連結』取得分享網址，再貼到海報、官網或社群上宣傳，讓報名者一鍵直達報名頁。開放後，所有來自公開頁的報名都會即時進入後台。",
+   "v3": "點『預覽公開頁』，可以從報名者視角檢查呈現結果:封面、簡介、組別、收費、報名按鈕全部到位。建議把這個連結傳給同事或合作夥伴試用一次，再做最後微調，正式開賣後就可以放心宣傳了。公開頁的所有資訊都來自前面設定，改回後台儲存後公開頁會即時同步。活動上線之後，真正的營運挑戰才剛開始。下一部我們進入報名名單管理，看看名單怎麼整、怎麼匯出匯入。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『報名名單管理:CSV 匯入匯出』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode covers opening registration and sharing your public page, pushing all your earlier settings live and facing real registrants. This is a pivotal moment for your event. Once the skeleton, divisions, form, and fees are all set, head back to event settings. Before opening registration, RegMaster runs one safeguard: your registration form must include at least one required email field, otherwise confirmation emails and notifications can't be sent. If you haven't added one, the system blocks you and prompts you to add it in the form designer first. With that in place, your event meets the minimum bar to go public.",
+   "v2": "Once the check passes, click 'Open Registration,' and the event status switches to 'Accepting Registrations' immediately. The system presents a public link alongside a QR code: the public link is your share URL, and the QR code can be printed on posters or flyers so people can scan straight to the registration page. After opening, every registration from the public page flows into your dashboard in real time.",
+   "v3": "Click 'Preview Public Page' to check how everything looks from the registrant's point of view: cover image, summary, divisions, fees, and the register button all in place. We recommend sending this link to a colleague or partner for a quick test run, then making final tweaks before you start promoting with confidence. Everything on the public page comes from your earlier settings, and it syncs instantly whenever you save changes in the dashboard. Once your event is live, the real operational challenge is just beginning. In the next episode, we'll move on to managing your registration list, how to organize it and import and export it."
+  }
+ },
+ "08": {
+  "title": "報名名單管理:搜尋、詳情與匯出",
+  "next_nn": "09",
+  "next_title": "確認付款與銀行轉帳對帳",
+  "kicker": "下一部 · 09",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=9",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片走「報名名單管理」，列表的查找與處理效率，決定主辦在尖峰時段的工作節奏。從活動中心進入「報名管理」，頁面分成兩個分頁:「報名統計」用圖表呈現報名趨勢與時段熱點，「報名列表」把每一筆報名以表格列出，欄位有編號、中文與英文隊名、狀態與付款狀態。上方的搜尋框支援以編號、隊名、狀態或付款狀態做模糊比對，幾秒鐘就能定位到某一筆報名。報名人數一多，這個列表的工作效率就直接決定整場活動的營運順暢度。",
+   "v2": "點任一筆的「查看」進入詳情，可以檢視完整表單內容、上傳的附件檔案、報名時間，以及同意條款的簽署紀錄。具編輯權限的管理者能直接修正錯字或補資料;下方的「備註」欄則是內部筆記，只有主辦團隊看得到，方便交班與聯繫紀錄。每個欄位都有逐項稽核，事後可追溯誰在何時改了什麼。",
+   "v3": "需要整批處理或備份時，點右上角「匯出所有報名資料」，系統會跳出視窗讓你選擇 CSV 或 Excel 格式;檔案帶有 UTF-8 編碼，中文在試算表裡不會變成亂碼。匯出後就能在試算表自由排序、篩選、製作名牌或核對名單。列表上的「退費申請」按鈕則集中顯示待處理的退費，方便快速切換。報名列表掌握度高，後續結算才會順。下一部，我們處理付款的確認與對帳。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『確認付款與銀行轉帳對帳』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode covers registration list management. How well you can search and process the list in bulk sets your working rhythm during peak periods. From the event hub, open 'Registration Management,' where all registration data appears as a list. The filters at the top let you quickly narrow by division, status, or payment situation, and the search box supports fuzzy matching by name, email, or phone, so you can pinpoint a registrant in seconds. As registration numbers grow, the efficiency of this list directly determines how smoothly your whole event runs.",
+   "v2": "Click any entry to open its detail page, where you can review the full form content, attachments, and registration history. 'Edit' in the top-right lets you fix typos or add information; the 'Notes' field below is for internal notes visible only to your team, handy for handovers and keeping a record of contact. Every edit is written to the activity log, so it's always traceable.",
+   "v3": "For bulk work, use 'Export CSV' to download the registration list, organize it in a spreadsheet, and import it back. You can also add registrations by uploading a CSV directly, and the system creates them automatically by matching the columns. A common case is importing students who paid offline, saving you manual entry. Before importing, we recommend downloading the template file to make sure column names and order line up. The better you know your registration list, the smoother your final results will be. In the next episode, we'll handle confirming payments and reconciliation."
+  }
+ },
+ "09": {
+  "title": "確認付款與銀行轉帳對帳",
+  "next_nn": "10",
+  "next_title": "處理退費申請",
+  "kicker": "下一部 · 10",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=10",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片講『確認付款與銀行轉帳對帳』，這是金流的命脈，搞錯一次就會影響後續所有作業，務必走熟。從活動中心進入『帳務』，預設顯示待付款清單，每筆會列出姓名與應付金額。當報名者用銀行或 ATM 轉帳繳費後，你在對帳工具輸入對方轉出帳號的後幾碼，系統就會把帳號對得上的報名自動標記為已付款，不必逐筆手動比對。這套機制讓沒有信用卡或不想線上付款的學員，也能用最簡單的方式繳費。",
+   "v2": "從銀行對帳單複製到帳金額後，回到 RegMaster，比對最後對帳碼。對到了，就點該筆右側的『確認付款』，狀態立刻變成已付款，報名者也會收到確認信，整個對帳流程就完成了。對帳通常每天傍晚集中處理一次，效率最高，也不會打擾到正在報名的人。",
+   "v3": "清單裡每一筆都看得到付款方式與付款狀態，待付款的會標成『待確認』，方便你一眼掌握進度。需要逐筆人工核對時，點該筆的『查看』可以打開完整報名詳情再做判斷，確認無誤就按『確認付款』，那一列就會轉為已付款。每一筆金流異動，系統都會記進左側的『操作紀錄』，事後要追查有憑有據。金流是主辦最在意的環節，這套對帳邏輯就是 RegMaster 累積多年實戰經驗的成果。對帳熟練之後，金流就不會再失控。下一部會處理退費申請，看看怎麼把退費流程也標準化。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『處理退費申請』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode covers confirming payments and bank-transfer reconciliation. This is the lifeblood of your cash flow; one mistake ripples through everything afterward, so it's worth mastering. From the event hub, open 'Payment Management,' which shows the pending-payment list by default, with each entry listing the name and amount due. When a registrant pays by bank or ATM transfer, you enter the last few digits of their transfer-out account into the reconciliation tool, and the system automatically marks any registration whose account matches as paid, with no need to compare entries one by one. This lets students who don't have a credit card, or prefer not to pay online, settle up in the simplest way.",
+   "v2": "After copying the received amount from your bank statement, return to RegMaster and check it against the reconciliation details. When it matches, click 'Confirm Payment' on the right of that entry; the status changes to paid instantly, the registrant receives a confirmation email, and the reconciliation is complete. Reconciliation is usually most efficient done once in the early evening, and it won't disturb anyone in the middle of registering.",
+   "v3": "If a payment isn't in the default list, use the search box at the top to find the matching registration by name or email. For occasional payments or combined transfers, just use 'Manually Mark as Paid' and fill in the amount and a note. Every change is written to the activity log for later review. Cash flow is what organizers care about most, and this reconciliation logic is the result of RegMaster's years of real-world experience. Once you're fluent with reconciliation, your cash flow stays under control. In the next episode, we'll handle refund requests and standardize that process too."
+  }
+ },
+ "10": {
+  "title": "處理退費申請",
+  "next_nn": "11",
+  "next_title": "平台代收轉付（PayUNI 撥款）",
+  "kicker": "下一部 · 11",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=11",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片處理『退費申請』，從接收申請到實際完成退款，每個步驟都串在同一個面板，操作邏輯極清楚。切到『退費申請』分頁，所有報名者提出的退費請求會集中在這裡。每筆都會顯示申請時間、原因說明，以及依退費政策自動計算的可退金額，避免主辦逐筆翻條款手算。系統把麻煩的條款判斷自動化，主辦只剩下『是否同意』這個業務決定，把心力放在判斷上。",
+   "v2": "點開一筆查看詳情，確認原因合理後按『核准』，可以微調最終退費金額並填上內部備註。若不符政策，可按『駁回』並寫明理由，系統會自動寄信通知申請人，整個流程公開透明。寄信內容包含拒絕理由與退費條款連結，避免進一步爭議。",
+   "v3": "核准後，請依照公司流程實際匯款給報名者，匯款完成後回到該筆退費單按下『標記已退費』，狀態即進入完成。同時系統會自動更新付款紀錄與會計報表，方便月結。如果你的活動使用 PayUNI 收款，這部分還能搭配下一部的代收轉付，連匯款都不必自己手動處理。退費流程閉環，主辦就能輕鬆很多。下一部我們進入代收轉付，看 PayUNI 怎麼把款項撥回主辦帳戶。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『平台代收轉付,PayUNI 撥款』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode handles refund requests. From receiving a request to actually completing the refund, every step lives in the same panel, with crystal-clear logic. Switch to the 'Refund Requests' tab, where all the requests submitted by registrants are gathered. Each shows the request time, the stated reason, and the refundable amount calculated automatically from your refund policy, so you don't have to flip through the terms and do the math yourself. The system automates the tricky policy judgment, leaving you with just one business decision: approve or not. You get to put your energy into judgment.",
+   "v2": "Click a request to view its details. Once you've confirmed the reason is reasonable, click 'Approve,' where you can fine-tune the final refund amount and add an internal note. If it doesn't meet the policy, click 'Reject' and state the reason; the system automatically emails the applicant, keeping the whole process open and transparent. The email includes the rejection reason and a link to the refund terms, heading off further disputes.",
+   "v3": "After approving, transfer the money to the registrant following your company's process. Once that's done, return to the refund request and click 'Mark as Refunded,' which moves the status to complete. At the same time, the system updates the payment record and accounting report, making month-end close easier. If your event collects payments through PayUNI, this pairs with the payout flow in the next episode, so you don't even have to transfer the money by hand. With the refund loop closed, an organizer's job gets a lot easier. In the next episode, we'll move into payouts and see how PayUNI returns funds to the organizer's account."
+  }
+ },
+ "11": {
+  "title": "平台代收轉付（PayUNI 撥款）",
+  "next_nn": "12",
+  "next_title": "群發通知與 Email 行銷活動",
+  "kicker": "下一部 · 12",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=12",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。這一部講『平台代收轉付』，把 PayUNI 線上收到的款項撥回主辦自己銀行帳戶的標準流程，月結時最關鍵。如果你的活動透過 PayUNI 線上付款收款，款項會先由平台代收。進入活動帳務頁的『平台代收轉付』分頁，最上方先確認兩件事：『收款帳戶』顯示平台要把錢匯進去的銀行帳號，這裡已經填好中國信託的帳戶；右邊『轉帳週期』則標示匯款頻率、下次平台匯款日，以及 PayUNI 手續費，數字一目了然。",
+   "v2": "往下看『各報名收款明細』。實際營運時，每一筆線上付款都會列在這裡，標示報名隊伍、收款金額、扣除的手續費，以及你實際可領到的淨額；勾選想撥款的款項，系統會即時加總實領合計，再扣掉每批 NT$15 的匯費，算出真正會匯入的金額，最後按『申請匯款』送出。這個示範活動目前還沒有已完成的線上付款待撥，所以明細暫時是空的。這個流程把月底繁瑣的請款動作標準化，避免主辦自己對帳出錯。",
+   "v3": "申請送出後，會出現在最下方的『我的匯款申請 / 紀錄』。每一筆都看得到申請編號、申請時間、實付金額、預計匯款日與目前狀態，從待審核、已核准到已匯款，進度清清楚楚，月結對帳時直接參照。代收轉付讓主辦不必自己面對信用卡風險與請款流程，平台幫你扛掉合規與資安的負擔。代收轉付走完，整條金流鏈就完整了。下一部我們轉到行銷與通知，看看怎麼經營你的會員。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『群發通知與 Email 行銷活動』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode covers platform-collected payouts, the standard process for returning the money PayUNI collects online back to the organizer's own bank account, crucial at month-end. If your event collects payments through PayUNI, the funds are first held by the platform. Open the 'Platform Payouts' tab on the event's billing page and confirm two things at the top: the 'Payout Account' shows the bank account the platform will remit to — already filled in here — and 'Transfer Cycle' shows the remittance frequency, the next payout date, and the PayUNI fee.",
+   "v2": "Below is the 'Per-Registration Collection Detail'. In live operation, every online payment is listed here with the team, the amount collected, the fee deducted, and the net you actually receive; tick the items you want to pay out and the system totals the net, deducts the NT$15 wire fee per batch, and shows the amount that will actually be remitted, then you click 'Request Payout'. This demo event has no completed online payments awaiting payout yet, so the list is currently empty. The flow standardizes the tedious month-end requesting work and prevents reconciliation mistakes.",
+   "v3": "Once submitted, the request appears at the bottom under 'My Payout Requests / Records'. Each one shows the request ID, request time, amount paid, expected deposit date, and current status — from pending to approved to remitted — so progress is crystal clear for month-end reconciliation. Collect-and-disburse means organizers never face credit-card risk or the requesting process themselves; the platform shoulders compliance and security. With payouts complete, your entire cash-flow chain is in place. Next, we shift to marketing and notifications."
+  }
+ },
+ "12": {
+  "title": "群發通知與 Email 行銷活動",
+  "next_nn": "13",
+  "next_title": "QR 報到與物資配發",
+  "kicker": "下一部 · 13",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=13",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片處理『群發通知與 Email 行銷』，把賽事通知與行銷活動分清楚，能讓你發信收信都更精準。進入『通知公告』，可以對特定活動發布公告。打開『同步寄送 Email』，公告會立即進到所有報名者信箱，也會顯示在公開頁與報名者的『我的報名』頁，三方同步避免訊息漏接。對於賽程異動、場地變更、雨備啟動這類重要通知，這個功能特別關鍵，能在十分鐘內把所有人通知到位。",
+   "v2": "如果是行銷導購而不是賽事通知，請用『行銷活動』模組。可以選擇收件對象:所有舊報名者、特定活動報名者、或自訂條件。可以自訂主旨與內容，套用後即可發送。對於常辦活動的主辦，這個模組就是最便宜的會員行銷工具。",
+   "v3": "設定排程寄送時間，系統會在指定時刻自動送出，不必守著電腦。Email 會套用 RegMaster 的標題列與頁尾，外觀專業一致。能寫、能排、能對指定對象群發，整套通知與行銷流程就齊全了。通知與行銷雙軌並進，回購與資訊傳遞都顧到。下一部我們走入活動當天，從 QR 報到開始。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕,看下一部:『QR 報到與物資配發』。或進入 regmaster-pro.web.app 看完整教學系列。",
+  "narration_en": {
+   "v1": "Welcome back to the RegMaster tutorials. This episode handles broadcast notifications and email marketing. Keeping event notices and marketing campaigns clearly separated makes both your sending and your tracking more precise. Open 'Announcements,' where you can publish a notice for a specific event. Turn on 'Send by email,' and the notice goes straight to every registrant's inbox, and also appears on the public page and on each registrant's 'My Registrations' page, synced across all three so no message slips through. For important notices like schedule changes, venue changes, or rain plans, this feature is especially crucial, getting everyone informed within ten minutes.",
+   "v2": "If it's marketing rather than an event notice, use the 'Campaigns' module instead. You can choose your recipients: all past registrants, registrants of a specific event, or custom conditions. You can customize the subject and content, then send. For organizers who run events regularly, this module is the cheapest member-marketing tool there is.",
+   "v3": "Set a scheduled send time, and the system sends it automatically at the appointed moment, with no need to sit by your computer. The email applies RegMaster's header and footer for a consistent, professional look. Being able to write, schedule, and broadcast to a chosen audience completes the whole notification-and-marketing flow. With notifications and marketing running on parallel tracks, both repeat business and information delivery are covered. In the next episode, we step into event day, starting with QR check-in."
+  }
+ },
+ "15": {
+  "title": "即時排行榜與成績結算",
+  "next_nn": "16",
+  "next_title": "證書製作與發放",
+  "kicker": "下一部 · 16",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=16",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片走『即時排行榜與成績結算』，從評分輸入到名次出爐，整段流程數位化、零失真。進入『評分系統』的『結果排名』分頁，會看到 ACM 風格的即時排行榜，依各隊得分自動排序。按一下『重新整理』就會載入最新送出的分數，把畫面投影到主舞台螢幕，營造現場氣氛，也讓選手與觀眾隨時看到目前進度，現場參與感大幅提升。",
+   "v2": "排行榜的名次是依你設定的量表權重自動計算，去極值與正規化也都已內建，主辦不必自己手算總分。如果某筆分數有誤需要更正，評審或主辦修改後，重新整理排名就會即時反映，全程數位化、零失真。",
+   "v3": "確認名次後，可以一鍵『匯出 CSV』或『匯出 Excel』作為成績冊。到下一部製作證書時，把對象範圍選『得獎者』，名單、組別、名次就會自動帶入版型，全程不必複製貼上。整個比賽從報名、評分到頒獎，資料一路串通，沒有手動轉檔的麻煩，也沒有人工輸入的誤差。成績一旦結算完成，下一步就是把榮譽傳遞給選手。下一部我們進入證書製作。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕，看下一部:『證書製作與發放』。或進入 regmaster-v3.web.app 看完整教學系列。"
+ },
+ "16": {
+  "title": "證書製作與發放",
+  "next_nn": "17",
+  "next_title": "AI 助手:規則分析與智能問答",
+  "kicker": "下一部 · 17",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=17",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片處理『證書製作與發放』，比賽落幕的最後一里路，做得漂亮選手會記得很久。進入『證書製作』，選一款內建版型開始。每張版型都有預留欄位:姓名、組別、名次、活動名稱、日期，這些都是動態欄位，會在批次產生時自動帶入結算結果，不必逐張填寫。內建版型可以直接用，也可以複製後改成主辦單位的專屬版型。",
+   "v2": "點『編輯版型』可以調整文字大小、位置、顏色，並上傳主辦單位的章戳與簽名圖。預覽區會即時顯示效果，確認排版美觀後儲存，整批證書就會套用這個風格。對需要法定授權字樣的版型，編輯器也支援多行段落與固定字串，方便符合各種規範。",
+   "v3": "按下『批次產生』，系統會依名單自動生成所有證書;對象範圍可以選全部、指定組別、僅正取、僅已報到或得獎者。產生完成可一鍵下載合併 PDF，或每人單獨 PDF 的 ZIP;也可以勾選『開放報名者自行下載』，得獎者就能在『我的報名』自行下載自己的證書，還能限定已報到者才可下載。從評分到證書到手，整段流程不到幾分鐘，傳統做法可能要好幾天。得獎者拿到證書，這場活動就算完整收尾。下一部我們會介紹 AI 助手，讓主辦的後續活動更省力。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕，看下一部:『AI 助手:規則分析與智能問答』。或進入 regmaster-v3.web.app 看完整教學系列。"
+ },
+ "17": {
+  "title": "AI 助手:規則分析與智能問答",
+  "next_nn": "18",
+  "next_title": "團隊成員與權限",
+  "kicker": "下一部 · 18",
+  "btn_label": "看下一部",
+  "url_tail": "/教學影片/?p=18",
+  "narration": {
+   "v1": "歡迎回到 RegMaster 教學。本部影片聚焦『AI 助手』，讓 AI 幫你檢視規則、回覆常見問題，把主辦從重複勞動裡解放出來。進入『AI 助手』，第一步把活動規則或競賽辦法 PDF 上傳到知識庫。之後 AI 回答問題時就會以這份文件為依據，等於把規則助理放進後台。對於從紙本沿用多年的辦法，先讓 AI 讀過，後續查詢與回覆都會更快。",
+   "v2": "上傳之後，你可以直接用聊天視窗問 AI 與這份規則有關的問題，例如請它幫你整理重點、或檢查某個情境規則有沒有寫到。對話歷史會保留在左側，方便日後回看與交接。",
+   "v3": "你可以直接問 AI 與規則相關的問題，例如『未成年選手可以單獨報名嗎』，AI 會根據你上傳的規則文件回答，省下大量重複客服時間。對於常被同類問題打擾的主辦，這個工具可以把回覆時間從十分鐘壓到幾秒。AI 助手把規則與客服自動化之後，主辦就能專注在策略。下一部我們處理團隊協作與權限。"
+  },
+  "outro": "本部影片到這裡。直接點下方按鈕，看下一部:『團隊成員與權限』。或進入 regmaster-v3.web.app 看完整教學系列。"
+ }
 }
