@@ -2911,6 +2911,11 @@ exports.payuniRefundAndDelete = compAuthCallable("manage", async (data, request)
   const order = oDoc.data();
   if (order.payoutState === "paid_out") return { success: false, code: "ALREADY_PAID_OUT", message: "款項已匯出至主辦方，平台無法退刷；請自行向報名者索取銀行帳戶辦理退款。" };
   if (order.status !== "paid") return { success: false, message: "訂單未完成付款" };
+  // (a) 防重複退款：訂單已退款、且非本申請所退（被主辦方退費或其他申請先處理）→ 擋下，不假成功、不刪報名。
+  // 同一申請的冪等重試（order.refundReqId === reqId）則放行，以完成中斷的刪除/通知。
+  if (order.refundState === "refunded" && order.refundReqId !== reqId) {
+    return { success: false, code: "ALREADY_REFUNDED", message: "此訂單款項已退款完成" + (order.refundedAmount ? "（NT$" + order.refundedAmount + "）" : "") + "，無法重複退刷。如需取消報名，請至「報名管理」操作。" };
+  }
   const refundAmt = Math.round(Number(r.calcRefund) || 0);
   if (refundAmt <= 0) return { success: false, message: "退款金額為 0" };
   const amt = parseInt(order.amount, 10) || 0;

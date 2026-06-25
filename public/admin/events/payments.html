@@ -560,7 +560,7 @@
               : '<button class="btn btn-ghost btn-sm po-refund" data-req="' + escapeHtml(x.reqId) + '" data-team="' + escapeHtml(x.teamNameCN || '') + '" data-refund="' + x.calcRefund + '" data-ret="' + x.retained + '">' + T('aePayPoRefundBtn') + '</button>');
           return '<tr><td><b>' + escapeHtml(x.teamNameCN || '—') + '</b></td><td class="right">' + fmtMoney(x.calcRefund) + '</td><td class="right">' + fmtMoney(x.retained) + '</td><td class="right">' + act + '</td></tr>';
         }).join('') + '</tbody></table></div>';
-      rfDiv.querySelectorAll('.po-refund').forEach(function (b) { b.addEventListener('click', function () { doRefund(b.dataset.req, b.dataset.team, b.dataset.refund, b.dataset.ret); }); });
+      rfDiv.querySelectorAll('.po-refund').forEach(function (b) { b.addEventListener('click', function () { doRefund(b.dataset.req, b.dataset.team, b.dataset.refund, b.dataset.ret, b); }); });
     }
 
     var rq = document.getElementById('payoutRequests');
@@ -629,18 +629,20 @@
     });
   }
 
-  function doRefund(reqId, team, refund, retained) {
+  function doRefund(reqId, team, refund, retained, btn) {
     var T = window.L;
     var msg = T('aePayPoRefundC1') + team + T('aePayPoRefundC2') + refund + T('aePayPoRefundC3') + retained + T('aePayPoRefundC4');
     uiConfirm(msg, { title: T('aePayPoRefundTitle'), okText: T('aePayPoRefundOk'), danger: true }).then(function (ok) {
       if (!ok) return;
+      if (btn) btn.disabled = true;   // 防連點：避免快速重複送出
       google.script.run
         .withSuccessHandler(function (res) {
-          if (res && res.success) uiAlert(T('aePayPoRefundOkPre') + res.refundedAmount + (res.retainedAmount > 0 ? (T('aePayPoRefundOkRetPre') + res.retainedAmount + T('aePayPoRefundOkRetSuf')) : '') + T('aePayPoRefundOkSuf')).then(loadPayout);
-          else if (res && res.code === 'ALREADY_PAID_OUT') uiAlert(res.message);
+          if (res && res.success) { uiAlert(T('aePayPoRefundOkPre') + res.refundedAmount + (res.retainedAmount > 0 ? (T('aePayPoRefundOkRetPre') + res.retainedAmount + T('aePayPoRefundOkRetSuf')) : '') + T('aePayPoRefundOkSuf')).then(loadPayout); return; }
+          if (btn) btn.disabled = false;
+          if (res && res.code === 'ALREADY_PAID_OUT') uiAlert(res.message);
           else uiAlert((res && res.message) || T('aePayPoRefundFail'));
         })
-        .withFailureHandler(function (e) { uiAlert(T('aePayPoRefundFailPre') + ((e && e.message) || '')); })
+        .withFailureHandler(function (e) { if (btn) btn.disabled = false; uiAlert(T('aePayPoRefundFailPre') + ((e && e.message) || '')); })
         .payuniRefundAndDelete(compId, reqId);
     });
   }
@@ -715,11 +717,14 @@
     var msg = T('aePayRefundConfirmPre') + ORF.name + '　' + T('aePayRefundActualPre') + 'NT$ ' + v + '\n' + (ORF.channel === 'payuni' ? T('aePayRefundViaPayuniMsg') : T('aePayRefundManualMsg'));
     uiConfirm(msg, { title: T('aePayRefundConfirm'), okText: T('aePayRefundConfirm') }).then(function (ok) {
       if (!ok) return;
+      var btn = document.getElementById('orfConfirm');
+      if (btn) btn.disabled = true;   // 防連點：避免快速重複送出
       google.script.run.withSuccessHandler(function (res) {
+        if (btn) btn.disabled = false;
         orfHide();
         if (res && res.success) uiAlert(T('aePayRefundDonePre') + 'NT$ ' + res.refundedAmount + (res.channel === 'payuni' ? '' : ('\n' + T('aePayRefundManualDone')))).then(load);
         else uiAlert((res && res.message) || T('aePayRefundFail'));
-      }).withFailureHandler(function (e) { uiAlert(T('aePayRefundFail') + '：' + ((e && e.message) || '')); }).ownerRefund(compId, ORF.teamId, v, '');
+      }).withFailureHandler(function (e) { if (btn) btn.disabled = false; uiAlert(T('aePayRefundFail') + '：' + ((e && e.message) || '')); }).ownerRefund(compId, ORF.teamId, v, '');
     });
   }
 
