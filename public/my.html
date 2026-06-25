@@ -171,6 +171,7 @@ html, body { max-width:100%; overflow-x:hidden; }
   </div>
   <div class="actions">
     <button class="theme-toggle" id="themeToggle">🌗</button>
+    <button class="theme-toggle" id="langToggle">中/EN</button>
     <a href="/my.html" class="btn btn-quiet btn-sm" data-i18n="navMy">我的報名</a>
     <a href="/login.html" class="btn btn-quiet btn-sm" data-i18n="navLogin">主辦方登入</a>
   </div>
@@ -237,6 +238,7 @@ html, body { max-width:100%; overflow-x:hidden; }
 (function () {
   AppState.init();
   document.getElementById('themeToggle').addEventListener('click', function () { AppState.setTheme(AppState.getTheme() === 'dark' ? 'light' : 'dark'); });
+  document.getElementById('langToggle').addEventListener('click', function () { var cur = AppState.getLang(); AppState.setLang(cur === 'en' ? 'zh' : 'en'); });
 
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function parseDate(s) {

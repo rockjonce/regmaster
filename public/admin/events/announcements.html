@@ -37,11 +37,12 @@
 .camp .meta { font:500 11px/1.4 var(--f-mono); color:var(--muted); }
 
 .center-c { display:flex; flex-direction:column; min-height:0; background:var(--bg); }
-.editor-h { padding:18px 28px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; }
-.editor-h h2 { font:700 18px/1.2 var(--f-display); flex:1; }
+.editor-h { padding:18px 28px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.editor-h h2 { font:700 18px/1.2 var(--f-display); flex:1 1 200px; min-width:0; }
 .editor-h h2 input { width:100%; max-width:500px; border:0; background:transparent; font:inherit; padding:4px 6px; border-radius:5px; }
 .editor-h h2 input:hover, .editor-h h2 input:focus { background:var(--surface-2); outline:0; }
-.editor-h .actions { display:flex; gap:8px; }
+.editor-h .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+@media (max-width:640px){ .editor-h{padding:14px 16px} .editor-h .actions{width:100%} .editor-h .actions .btn,.editor-h .actions input{flex:1 1 auto} }
 .compose { flex:1; overflow-y:auto; padding:24px 28px; }
 .cmp-meta { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:10px; margin-bottom:14px; }
 .cmp-meta .r { display:flex; gap:14px; padding:8px 0; border-bottom:1px solid var(--line-2); align-items:center; }
