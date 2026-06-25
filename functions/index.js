@@ -3023,20 +3023,30 @@ async function _ownerRefundCore(request, compId, teamId, refundAmountOrNull, not
   } else if (order && order.payoutState === "paid_out") {
     channelUsed = "manual_paid_out";
   }
-  // 保留報名，標記已退費（壓金/賽後退還情境：報名者仍參賽，不刪報名、不釋名額）
-  await db.collection("teams").doc(teamId).update({
+  // 自動判斷：原本就有「報名者退費申請」（＝想退出）→ 視為取消報名並釋出名額；
+  // 否則為主辦純主動退費（退押金等）→ 保留報名。兩者都標記 refundStatus=refunded、收斂申請單。
+  const hadRequest = ["requested", "approved"].includes(team.refundStatus || "") || team.status === "退費申請中";
+  const teamUpd = {
     paymentStatus: "已退費 NT$" + refundAmt + (retained > 0 ? "（保留NT$" + retained + "）" : "") + " " + fmtNow(),
-    ownerRefundedAmount: refundAmt, ownerRefundedAt: fmtNow(), ownerRefundChannel: channelUsed
-  });
-  const reqId = generateId("RF");
-  await db.collection("refundRequests").doc(reqId).set({
-    reqId, compId, creator, teamId, teamNameCN: team.teamNameCN || "", requesterName: "(主辦方主動退費)",
-    refundAccount: "", reason: note || "主辦方主動退費", status: "refunded",
+    ownerRefundedAmount: refundAmt, ownerRefundedAt: fmtNow(), ownerRefundChannel: channelUsed,
+    refundStatus: "refunded"
+  };
+  if (hadRequest) teamUpd.status = "已取消";   // 報名者申請退費＝退出 → 取消報名
+  await db.collection("teams").doc(teamId).update(teamUpd);
+  if (hadRequest && team.status !== "已取消") {   // 釋出名額（由申請退費轉為已取消時）
+    try { await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(-1) }); } catch (e) {}
+  }
+  // 收斂申請單：若已有報名者的退費申請就更新它（避免重複開單、並移出「可退刷」清單）；否則新建。
+  const reqId = team.refundReqId || generateId("RF");
+  const reqPayload = {
+    reqId, compId, creator, teamId, teamNameCN: team.teamNameCN || "", status: "refunded",
     channel: channelUsed === "payuni" ? "payuni_refund" : "owner_bank", paymentMethod: team.paymentMethod || "",
-    policyPct: 0, paidAmount, calcRefund: refundAmt, actualRefund: refundAmt, refundedAmount: refundAmt, retainedAmount: retained,
-    payuniRefundNo, refundMethod: channelUsed === "payuni" ? "PayUNI 退刷" : "主辦方自行退款", operator: request.authUser.username,
-    initiatedBy: "owner", createdAt: fmtNow(), refundedAt: fmtNow(), decidedAt: fmtNow()
-  });
+    calcRefund: refundAmt, actualRefund: refundAmt, refundedAmount: refundAmt, retainedAmount: retained,
+    payuniRefundNo, refundMethod: channelUsed === "payuni" ? "PayUNI 退刷" : "主辦方自行退款",
+    operator: request.authUser.username, refundedAt: fmtNow(), decidedAt: fmtNow()
+  };
+  if (!team.refundReqId) { reqPayload.requesterName = "(主辦方主動退費)"; reqPayload.refundAccount = ""; reqPayload.reason = note || "主辦方主動退費"; reqPayload.policyPct = 0; reqPayload.paidAmount = paidAmount; reqPayload.initiatedBy = "owner"; reqPayload.createdAt = fmtNow(); }
+  await db.collection("refundRequests").doc(reqId).set(reqPayload, { merge: true });
   await auditLog(request.authUser.username, "主辦方主動退費", teamId, "退NT$" + refundAmt + " via " + channelUsed);
   try {
     const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
