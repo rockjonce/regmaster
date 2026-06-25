@@ -77,7 +77,15 @@ a.btn-back { display:inline-block; margin-top:18px; padding:10px 18px; backgroun
     // 報名者用 LINE 查詢所有報名 → 結果暫存 sessionStorage，回 my.html 呈現
     google.script.run
       .withSuccessHandler(function (res) {
-        if (res && res.success) { try { sessionStorage.setItem('rm_social_regs', JSON.stringify(res.registrations || [])); } catch (e) {} location.href = '/my.html?social=line'; }
+        if (res && res.success) {
+          try {
+            sessionStorage.setItem('rm_social_regs', JSON.stringify(res.registrations || []));
+            // LINE-verified email — needed by /my.html to enable the check-in QR button
+            if (res.email) sessionStorage.setItem('rm_social_email', String(res.email).toLowerCase());
+            sessionStorage.setItem('rm_social_provider', 'line');
+          } catch (e) {}
+          location.href = '/my.html?social=line';
+        }
         else fail((res && res.message) || 'LINE 查詢失敗', '/my.html', '返回我的報名');
       })
       .withFailureHandler(function (e) { fail((e && e.message) || 'LINE 查詢失敗', '/my.html', '返回我的報名'); })

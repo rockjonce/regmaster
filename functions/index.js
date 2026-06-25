@@ -175,6 +175,71 @@ function generateSessionToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
+// ===== Check-in QR signing (HMAC-SHA256) — anti-forgery for scanned QR =====
+// QR payload format:  RMQR1.<base64url(JSON {c:compId,t:teamId})>.<base64url(hmac)[:24]>
+// The signature proves the QR was issued by the server (you can't fabricate a
+// scannable QR for a teamId you don't legitimately hold a token for). There is
+// intentionally NO expiry (per product: issued at registration, scanned much later).
+// The HMAC secret lives in a Firestore doc that client rules deny (read/write:false),
+// so only the Admin SDK (these functions) can read it.
+let _checkinSecretCache = null;
+async function getCheckinSecret() {
+  if (_checkinSecretCache) return _checkinSecretCache;
+  const ref = db.collection("appSecrets").doc("checkinHmac");
+  const key = await db.runTransaction(async (tx) => {
+    const d = await tx.get(ref);
+    if (d.exists && d.data().key) return d.data().key;
+    const k = crypto.randomBytes(32).toString("hex");
+    tx.set(ref, { key: k, createdAt: new Date().toISOString() });
+    return k;
+  });
+  _checkinSecretCache = key;
+  return key;
+}
+function _b64url(buf) {
+  return Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function _b64urlToBuf(s) {
+  s = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  return Buffer.from(s, "base64");
+}
+async function _checkinSig(body) {
+  const secret = await getCheckinSecret();
+  return _b64url(crypto.createHmac("sha256", secret).update(body).digest()).slice(0, 24);
+}
+// Returns the signed QR payload string for a registration.
+async function signCheckin(compId, teamId) {
+  const body = _b64url(JSON.stringify({ c: String(compId || ""), t: String(teamId || "") }));
+  return "RMQR1." + body + "." + (await _checkinSig(body));
+}
+// Verify a signed payload → { compId, teamId } if genuine, else null.
+async function verifyCheckin(payload) {
+  const m = String(payload || "").trim();
+  if (m.indexOf("RMQR1.") !== 0) return null;
+  const parts = m.split(".");
+  if (parts.length !== 3) return null;
+  const expect = await _checkinSig(parts[1]);
+  const got = parts[2];
+  if (got.length !== expect.length) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expect))) return null;
+  try { const o = JSON.parse(_b64urlToBuf(parts[1]).toString("utf8")); return { compId: String(o.c || ""), teamId: String(o.t || "") }; }
+  catch (e) { return null; }
+}
+// Resolve a check-in input that may be a signed payload OR a bare teamId (manual
+// entry / kiosk typing, intentionally kept working). Returns:
+//   { teamId, compId|null, signed:true|false }   on success
+//   { invalid:true }                              when a signed payload is forged/tampered
+async function resolveCheckinInput(input, fallbackCompId) {
+  const raw = String(input || "").trim();
+  if (raw.indexOf("RMQR1.") === 0) {
+    const v = await verifyCheckin(raw);
+    if (!v) return { invalid: true };
+    return { teamId: String(v.teamId || "").trim().toUpperCase(), compId: v.compId || (fallbackCompId || null), signed: true };
+  }
+  return { teamId: raw.toUpperCase(), compId: fallbackCompId || null, signed: false };
+}
+
 /**
  * authCallable(roles, handler)
  * - roles: array of allowed roles, e.g. ["system"], ["system","competition"]
@@ -1988,7 +2053,9 @@ exports.submitRegistration = callable(async (data, request) => {
     const emailList = [...new Set(members.map(m => m.email).filter(e => e))];
     if (emailList.length > 0) {
       const subject = `[RegMaster] 報名成功通知 - ${cfg.competitionName || ''}`;
-      const qrUrl = `https://quickchart.io/qr?text=${teamId}&size=150`;
+      // Signed check-in QR (HMAC) — anti-forgery; verified when scanned at check-in.
+      const checkinPayload = await signCheckin(compId, teamId);
+      const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(checkinPayload)}&size=150`;
       const activityUrl = `${EMAIL_HOST}/?comp=${compId}`;
       const calStart = (cfg.sessions && cfg.sessions[0] && cfg.sessions[0].startDate) ? new Date(cfg.sessions[0].startDate) : null;
       const calEnd = calStart ? (cfg.sessions[0].endDate ? new Date(cfg.sessions[0].endDate) : new Date(calStart.getTime() + 28800000)) : null;
@@ -5336,7 +5403,10 @@ exports.duplicateCompetition = compAuthCallable(async (data, request) => {
 // ===== QR Code Check-in =====
 exports.checkInTeam = compAuthCallable("checkin", async (data, request) => {
   await requireCompFeature(request, "checkin");
-  const { teamId } = data;
+  // Accept signed QR payload (verified) or bare teamId (staff manual entry).
+  const _ci = await resolveCheckinInput(data.teamId, data.compId);
+  if (_ci.invalid) return { success: false, message: "報到碼驗證失敗：無效或已被竄改" };
+  const teamId = _ci.teamId;
   if (!teamId) return { success: false, message: "missing teamId" };
   const ref = db.collection("teams").doc(teamId);
   const doc = await ref.get();
@@ -8316,7 +8386,11 @@ exports.scoringApi = compAuthCallable("scoring", async (data, request) => {
 // callable that records extras separately so the legacy field stays clean.
 exports.checkInTeamV2 = compAuthCallable("checkin", async (data, request) => {
   await requireCompFeature(request, "checkin");
-  const { teamId, extras, attendedMembers, attendedCount } = data;
+  const { extras, attendedMembers, attendedCount } = data;
+  // Accept signed QR payload (verified) or bare teamId (staff manual entry).
+  const _ci = await resolveCheckinInput(data.teamId, data.compId);
+  if (_ci.invalid) return { success: false, message: "報到碼驗證失敗：無效或已被竄改" };
+  const teamId = _ci.teamId;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists) return { success: false, message: "找不到隊伍" };
   const t = tDoc.data();
@@ -8410,7 +8484,11 @@ function _haversineM(lat1, lng1, lat2, lng2) {
 // Public: registrant self check-in (kiosk or personal device). Enforces enable + time window +
 // optional GPS geofence server-side. Identity = teamId (same as the QR). Marks whole team present.
 exports.selfCheckIn = callable(async (data) => {
-  const compId = String(data.compId || ""), teamId = String(data.teamId || "").trim().toUpperCase();
+  const compId = String(data.compId || "");
+  // Accept either a signed QR payload (verified) or a bare 報名編號 (manual entry kept).
+  const _ci = await resolveCheckinInput(data.teamId, compId);
+  if (_ci.invalid) return { success: false, message: "報到碼驗證失敗：無效或已被竄改", reason: "sig" };
+  const teamId = _ci.teamId;
   if (!teamId) return { success: false, message: "請輸入報名編號" };
   const cDoc = await db.collection("competitions").doc(compId).get();
   const sc = (cDoc.exists && cDoc.data().config && cDoc.data().config.selfCheckin) || {};
@@ -9081,6 +9159,8 @@ exports.listMyRegistrationsBySocial = callable(async (data) => {
   if (!s.email) return { success: false, message: "無法取得此社群帳號的 Email，請改用報名編號+密碼登入。" };
   await upsertRegistrant(s);
   const regs = await regsByEmail(s.email, true);
+  // OAuth-verified owner → attach the signed check-in token (gates QR issuance).
+  for (const r of regs) { try { r.checkinToken = await signCheckin(r.compId, r.teamId); } catch (e) {} }
   return { success: true, email: s.email, registrations: regs };
 });
 // Bind status for a set of emails (for 已綁定 display in the team manage view).
@@ -9493,5 +9573,3 @@ exports.getPublicCertTemplates = callable(async (data) => {
   }));
   return { templates };
 });
-
-
