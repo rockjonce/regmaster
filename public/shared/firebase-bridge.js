@@ -108,6 +108,7 @@
     getMyAuditLogs:["limit"],
     clearAuditLogs:[],
     getRefundTemplates:[],
+    getCheckinToken:["compId","teamId","password","manageToken"],
     getRefundPreview:["compId","teamId","password","manageToken"],
     requestRefund:["compId","teamId","password","refundAccount","reason","manageToken"],
     withdrawRefund:["teamId","password"],

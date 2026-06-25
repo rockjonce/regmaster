@@ -843,8 +843,8 @@ html, body { max-width:100%; overflow-x:hidden; }
       var r = null;
       for (var i = 0; i < ALL.length; i++) { if (ALL[i].compId === qComp && ALL[i].teamId === qTeam) { r = ALL[i]; break; } }
       if (!r) return;
-      if (_emailMatches(r)) openCheckinQrModal(r);
-      else openCheckinLoginPrompt();
+      if (_emailMatches(r) || r.checkinToken) openCheckinQrModal(r);
+      else openQrPwdPrompt(r);   // 非社群登入 → 用報名密碼換取已簽章的 QR（免被迫社群登入）
       return;
     }
     var eb = e.target.closest('[data-edit]');
@@ -1031,6 +1031,41 @@ html, body { max-width:100%; overflow-x:hidden; }
         return;
       }
     });
+  }
+
+  // 非社群登入者：輸入報名密碼 → 後端驗證後發已簽章的 QR token → 顯示報到 QR
+  function openQrPwdPrompt(r) {
+    var ov = document.createElement('div');
+    ov.className = 'qr-overlay on';
+    ov.innerHTML =
+      '<div class="qr-card" style="max-width:380px" role="dialog" aria-modal="true">' +
+        '<button class="qr-x" data-qrclose="1" aria-label="close">×</button>' +
+        '<div class="qr-prompt-icon">🔒</div>' +
+        '<div class="qr-head"><h3>' + escapeHtml(window.L('myQrModalTitle')) + '</h3>' +
+          '<p>' + escapeHtml(window.L('myQrPwdHint')) + '</p></div>' +
+        '<div style="display:flex;flex-direction:column;gap:10px">' +
+          '<input id="qpPwd" type="password" placeholder="' + escapeHtml(window.L('myRfPwdPh')) + '" style="padding:10px 12px;border:1px solid var(--hairline);border-radius:9px;font:400 14px/1.4 var(--f-tc)">' +
+          '<button class="btn btn-primary btn-block" data-qpgo="1">' + escapeHtml(window.L('myQrPwdGo')) + '</button>' +
+          '<button class="btn btn-quiet btn-block" data-qrclose="1">' + escapeHtml(window.L('myQrLoginCancel')) + '</button>' +
+          '<div id="qpErr" style="font:500 12.5px/1.6 var(--f-tc);color:var(--err-700, #b91c1c)"></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    var pEl = ov.querySelector('#qpPwd'), err = ov.querySelector('#qpErr');
+    function go() {
+      var pwd = pEl.value; if (!pwd) { err.textContent = window.L('myRfErrNeedPwd'); return; }
+      err.textContent = window.L('myRfChecking');
+      google.script.run.withSuccessHandler(function (res) {
+        if (res && res.success) { r.checkinToken = res.token; close(); openCheckinQrModal(r); }
+        else { err.textContent = (res && res.message) || window.L('myRfErrCheckFail'); }
+      }).withFailureHandler(function (e) { err.textContent = (e && e.message) || window.L('myRfErrCheckFail'); }).getCheckinToken(r.compId, r.teamId, pwd);
+    }
+    ov.addEventListener('click', function (e) {
+      if (e.target === ov || e.target.closest('[data-qrclose]')) return close();
+      if (e.target.closest('[data-qpgo]')) return go();
+    });
+    pEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
   }
 
   function openRefundModal(compId, teamId, name, knownPwd, manageToken) {

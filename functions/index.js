@@ -2705,6 +2705,18 @@ exports.getRefundTemplates = callable(async () => {
 });
 
 // Registrant: preview refund policy + any existing request (teamId + password).
+// Issue the signed check-in QR token after verifying ownership (password OR manage token).
+// Lets non-social registrants show the SAME anti-forgery QR as the email/social flow,
+// instead of being forced through Google/LINE login.
+exports.getCheckinToken = callable(async (data) => {
+  const { compId, teamId, password, manageToken } = data;
+  const tDoc = await db.collection("teams").doc(teamId).get();
+  if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
+  const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
+  if (!_mgr && !verifyTeamPwd(tDoc.data(), password)) return { success: false, message: "密碼錯誤" };
+  return { success: true, token: await signCheckin(compId, teamId) };
+});
+
 exports.getRefundPreview = callable(async (data) => {
   const { compId, teamId, password, manageToken } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();

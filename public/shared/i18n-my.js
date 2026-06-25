@@ -74,6 +74,8 @@
     myQrLoginCancel: '取消',
     myQrEmailMismatchTitle: '帳號不符',
     myQrEmailMismatchHint: '此報名的 Email 與您目前登入的 {provider} 帳號 Email 不一致。請改用報名時對應的社群帳號登入。',
+    myQrPwdHint: '輸入報名時取得的登入密碼，即可顯示報到 QR Code（也可改用社群登入）。',
+    myQrPwdGo: '顯示報到 QR',
     // ----- dynamic: self-serve certificate download -----
     myCertDownload: '下載證書',
     myCertNeedCheckin: '報到後可下載',
@@ -187,6 +189,8 @@
     myQrLoginCancel: 'Cancel',
     myQrEmailMismatchTitle: 'Account does not match',
     myQrEmailMismatchHint: 'This registration belongs to a different email than the {provider} account you signed in with. Please sign in with the matching social account.',
+    myQrPwdHint: 'Enter the login password from your registration to show the check-in QR code (or sign in with a social account instead).',
+    myQrPwdGo: 'Show check-in QR',
     myCertDownload: 'Download certificate',
     myCertNeedCheckin: 'Available after check-in',
     myCertGenerating: 'Generating…',
