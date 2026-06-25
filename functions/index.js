@@ -370,6 +370,24 @@ function compAuthCallable(capabilityOrHandler, maybeHandler) {
   });
 }
 
+// 對「以 reqId 等非 comp/team 鍵為唯一輸入」的 compAuthCallable 補歸屬檢查。
+// compAuthCallable 的 wrapper 只能由 data.compId / data.teamId 解出 compId；兩者皆缺時整段歸屬檢查
+// 會被靜默跳過（只剩「是某主辦帳號」被驗證）。這類函式須在載入目標文件後，改用文件上的 compId
+// 自行重跑「擁有者或具該能力的成員」檢查，否則造成跨主辦方 IDOR。system 角色維持原檢視/操作行為。
+async function assertCompCapability(request, compId, capability) {
+  if (request.authUser.role !== "competition") return; // system god-mode：由各函式自行決定檢視/操作
+  if (!compId) throw new HttpsError("permission-denied", "缺少活動歸屬，無法驗證權限");
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  if (!compDoc.exists) throw new HttpsError("not-found", "活動不存在");
+  const comp = compDoc.data();
+  request.compOwner = comp.creator;
+  if (comp.creator === request.authUser.username) return; // owner
+  const role = await memberRoleFor(request.authUser.username, comp.creator, compId);
+  if ((ROLE_CAPS[role] || []).indexOf(capability) < 0) throw new HttpsError("permission-denied", "權限不足：只能操作自己的活動");
+  request.memberRole = true;
+  request.memberRoleName = role;
+}
+
 // 帳務重構：解析活動「擁有者」username。owner/manager 由 request.compOwner 取得；
 // 系統管理員(system role)的 request.compOwner 未設 → 由活動文件的 creator 補上（god-mode 檢視）。
 async function _resolveCreator(request, compId) {
@@ -2816,6 +2834,7 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
   const rDoc = await rRef.get();
   if (!rDoc.exists) return { success: false, message: "找不到申請" };
   const r = rDoc.data();
+  await assertCompCapability(request, r.compId, "manage");   // 防跨主辦方 IDOR：以申請上的 compId 重驗歸屬
   if (r.status !== "requested") return { success: false, message: "此申請已處理" };
   const tDoc = await db.collection("teams").doc(r.teamId).get();
   const compDoc = await db.collection("competitions").doc(r.compId).get();
@@ -2863,6 +2882,7 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
   const rDoc = await rRef.get();
   if (!rDoc.exists) return { success: false, message: "找不到申請" };
   const r = rDoc.data();
+  await assertCompCapability(request, r.compId, "manage");   // 防跨主辦方 IDOR：以申請上的 compId 重驗歸屬
   if (!["requested", "approved"].includes(r.status)) return { success: false, message: "此申請狀態無法註記退款" };
   // 帳務重構 S4：PayUNI 線上付款不可線下註記，須至「平台代收轉付」分頁退刷（系統自動退款）。
   if (r.channel === "payuni_refund") return { success: false, message: "此為 PayUNI 線上付款，請至「平台代收轉付」分頁執行退刷，系統將自動退款並取消報名。" };
@@ -6060,15 +6080,14 @@ exports.reconcilePlanOrder = callable(async (data) => {
   const orderDoc = await orderRef.get();
   if (!orderDoc.exists) return { success: false, status: "unknown" };
   const order = orderDoc.data();
-  if (order.status === "paid") return { success: true, status: "paid", licenseCodes: order.licenseCodes || [] };
+  if (order.status === "paid") return { success: true, status: "paid" };   // N-2：不回授權碼（已 email 給購買者；配可猜 orderId 會外洩已購碼）
   const salesDoc = await db.collection("config").doc("sales").get();
   const sales = salesDoc.exists ? salesDoc.data() : {};
   if (!sales.payuniHashKey || !sales.payuniHashIV) return { success: true, status: order.status || "pending" };
   const inq = await payuniInquiry(orderId, { merID: sales.payuniMerID, key: sales.payuniHashKey, iv: sales.payuniHashIV, mode: sales.payuniMode });
   if (inq.verdict === "paid") {
     await activatePlanOrderPaid(orderRef, order, orderId, inq.tradeNo);
-    const fresh = await orderRef.get();
-    return { success: true, status: "paid", licenseCodes: (fresh.exists && fresh.data().licenseCodes) || [] };
+    return { success: true, status: "paid" };   // N-2：不回授權碼（已 email 給購買者）
   }
   return { success: true, status: order.status || "pending", inquiry: inq.verdict };
 });
@@ -6196,7 +6215,9 @@ exports.deleteDiscountCode = compAuthCallable(async (data, request) => {
 });
 
 // #3-2: 銀行轉帳套用折扣 — 把折後應付金額落地到 team 並消耗折扣碼（一次），使帳務應收正確。
-exports.confirmManualPayment = callable(async (data) => {
+exports.confirmManualPayment = callable(async (data, request) => {
+  const _rl = await checkRateLimit("cmp_ip_" + clientIp(request), 40, 600000);  // 40 / 10 min / IP：節流折扣碼套用，防列舉/灌量耗用碼次
+  if (!_rl.ok) return { success: false, message: "操作過於頻繁，請稍後再試" };
   const { compId, teamId, code } = data || {};
   if (!compId || !teamId) return { success: false, message: "缺少參數" };
   const tDoc = await db.collection("teams").doc(teamId).get();

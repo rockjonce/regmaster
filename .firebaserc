@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "regmaster-v3",
+    "default": "regmaster-pro",
     "v3": "regmaster-v3",
     "prod": "regmaster-pro"
   },

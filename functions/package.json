@@ -10,7 +10,7 @@
     "deploy": "firebase deploy --only functions"
   },
   "engines": {
-    "node": "22"
+    "node": "20"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
