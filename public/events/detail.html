@@ -925,7 +925,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
       try { sessionStorage.setItem('line_oauth_state', state); sessionStorage.setItem('line_oauth_mode', 'lookupReg'); } catch (e) {}
       location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
-        encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
+        encodeURIComponent(location.origin + '/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
     });
     ov.querySelector('#mGo').addEventListener('click', function () {
       var teamId = tEl.value.trim().toUpperCase(), pwd = pEl.value;
@@ -999,7 +999,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         sessionStorage.setItem('rm_bind_comp', compId); sessionStorage.setItem('rm_bind_team', teamId); sessionStorage.setItem('rm_bind_pwd', pwd);
       } catch (e) {}
       location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
-        encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
+        encodeURIComponent(location.origin + '/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
     });
   }
   function renderRefund(box, teamId, pwd) {

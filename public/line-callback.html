@@ -31,7 +31,7 @@ a.btn-back { display:inline-block; margin-top:18px; padding:10px 18px; backgroun
 <script>
 (function () {
   AppState.init();   // sets window.ME so authCallable (link flow) gets _auth
-  var LINE_REDIRECT = 'https://regmaster-v3.web.app/line-callback.html';
+  var LINE_REDIRECT = location.origin + '/line-callback.html';
   var box = document.getElementById('box');
   function fail(msg, backHref, backText) {
     box.innerHTML = '<div class="err-ic">!</div><h1>登入失敗</h1><p>' +

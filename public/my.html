@@ -1150,7 +1150,7 @@ html, body { max-width:100%; overflow-x:hidden; }
     var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
     try { sessionStorage.setItem('line_oauth_state', state); sessionStorage.setItem('line_oauth_mode', 'lookupReg'); } catch (e) {}
     location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2010261408&redirect_uri=' +
-      encodeURIComponent('https://regmaster-v3.web.app/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
+      encodeURIComponent(location.origin + '/line-callback.html') + '&state=' + encodeURIComponent(state) + '&scope=' + encodeURIComponent('openid profile email');
   });
 
   // Re-render JS-built list (weekday labels, status pills, action buttons) on language switch
