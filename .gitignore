@@ -93,6 +93,27 @@ node_modules/
 # dataconnect generated files
 .dataconnect
 
-# Tutorial videos — deployed to Hosting but too large for git (~325MB).
-# Thumbnails (public/tutorials/thumbs) and the page ARE committed.
+# Tutorial videos — deployed to Hosting but too large for git (~325MB zh + ~516MB en).
+# Thumbnails (public/tutorials/thumbs, incl. en/) and the page ARE committed.
 public/tutorials/videos/
+
+# ── Local working artifacts — not project source (added 2026-06-25) ──
+# Tutorial-video production pipeline + caches + source media.
+# (Already-tracked exceptions stay tracked: _pipeline/episodes_v2.json, narration_en_01-25.md)
+教學影片/
+# Recording control panel + cleanup scripts (contain now-defunct recording secret)
+outputs/
+# Pre-V3 full site backup snapshot
+V1_backup/
+# Video-progress watcher state
+.video-progress-watcher/
+# Ad-hoc local deploy scripts
+_dev/deploy_*.bat
+# Scratch / sync-test files
+/_test_sync*.txt
+public/_*.txt
+# Local audit / code-review / UX-test reports, playbooks & cowork prompts (not shipped)
+/REGMASTER_*.md
+/REGMASTER_*.pdf
+/RegMaster-V3_*.md
+/COWORK_*.md
