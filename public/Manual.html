@@ -317,6 +317,23 @@ body[data-lang="en"] .zh{display:none !important}
   .m-ui-cols{grid-template-columns:1fr}
   .m-q .qa{padding-left:14px}
 }
+
+/* refund flowchart (s-billing) */
+.rflow{display:flex;flex-direction:column;align-items:center;gap:7px;margin:16px 0}
+.rflow .rstep{width:100%;max-width:600px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font:500 12.8px/1.55 var(--f-tc);color:var(--ink-2)}
+.rflow .rstep b{color:var(--ink)}
+.rflow .rstep .tag{display:block;font:700 10.5px/1.3 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--acc);margin-bottom:3px}
+.rflow .rstep.start{background:var(--acc-soft);border-color:var(--acc);color:var(--ink)}
+.rflow .rstep.dec{background:var(--warn-100);border-color:var(--warn-500);color:var(--warn-700)}
+.rflow .rstep.dec b,.rflow .rstep.dec .tag{color:var(--warn-700)}
+.rflow .rstep.end{background:var(--ok-100);border-color:var(--ok-500);color:var(--ok-700)}
+.rflow .rstep.end b,.rflow .rstep.end .tag{color:var(--ok-700)}
+.rflow .rdown{color:var(--ink-3);font:700 13px/1 var(--f-mono)}
+.rflow .clab{font:700 10.5px/1.3 var(--f-mono);letter-spacing:.04em;color:var(--muted);text-align:center}
+.rflow .rbranch{display:flex;gap:14px;width:100%;max-width:600px;align-items:flex-start}
+.rflow .rbranch>.rcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px}
+.rflow .rbranch .rstep{max-width:none}
+@media (max-width:640px){.rflow .rbranch{flex-direction:column;gap:7px}}
 </style>
 </head>
 <body data-lang="zh">
@@ -797,6 +814,45 @@ body[data-lang="en"] .zh{display:none !important}
       <h3 class="en">Platform payouts (PayUNI only)</h3>
       <p><span class="zh">PayUNI 線上付款由平台代收，扣除方案手續費後依週期匯款給你。你可在帳務頁勾選各報名收款明細、申請匯款；<b>銀行轉帳不在此列</b>（款項已直接進你的帳戶）。</span><span class="en">PayUNI payments are collected by the platform and paid out on a cycle after plan fees. Pick collected items and request a payout in Billing; <b>bank transfers are excluded</b> (funds already reach you directly).</span></p>
       <div class="m-note"><span class="zh">應收統計會依錄取模式標示「含審核中」或「含備取」。匯款週期與下次匯款日可在帳務頁查看。</span><span class="en">The receivable label reads "incl. pending" or "incl. waitlist" by mode. The payout cycle and next date are shown in Billing.</span></div>
+
+      <h3 class="zh">退費機制與流程（設計說明）</h3>
+      <h3 class="en">How refunds work (the design)</h3>
+      <p><span class="zh">退費可能由<b>報名者線上申請</b>、或由<b>主辦方主動發起</b>。系統會依「原付款方式」與「PayUNI 關帳狀態」自動選擇正確的退款動作，並依「是否有報名者申請」自動決定要不要取消報名、釋出名額。整體流程如下：</span><span class="en">A refund can start from a <b>registrant's online request</b> or from <b>you (the organiser)</b>. The system automatically picks the correct reversal action based on the original payment method and PayUNI's settlement state, and decides whether to cancel the registration and free its slot based on whether a registrant request existed. The full flow:</span></p>
+
+      <div class="rflow">
+        <div class="rstep start"><span class="tag">Start</span><span class="zh"><b>退費啟動</b>　① 報名者線上「申請退費」　② 主辦在帳務「主動退費／退刷」</span><span class="en"><b>Refund triggered</b> — ① registrant requests online, or ② you refund in Billing</span></div>
+        <div class="rdown">▼</div>
+        <div class="rstep"><span class="tag"><span class="zh">計算</span><span class="en">Compute</span></span><span class="zh"><b>試算退款金額</b>＝折後實付 × 退費比例（依「距活動天數」的政策級距）</span><span class="en"><b>Refund amount</b> = paid-after-discount × refund % (by the days-to-event policy tier)</span></div>
+        <div class="rdown">▼</div>
+        <div class="clab"><span class="zh">依原付款方式分流 ↓</span><span class="en">Split by original payment method ↓</span></div>
+        <div class="rbranch">
+          <div class="rcol">
+            <div class="rstep dec"><span class="tag">PayUNI</span><span class="zh"><b>線上刷卡（平台代收）</b><br>先查 PayUNI 關帳狀態</span><span class="en"><b>Online card (platform-collected)</b><br>check PayUNI settlement first</span></div>
+            <div class="rdown">▼</div>
+            <div class="rstep"><span class="zh"><b>已關帳</b> → 退款（可全額／部分）<br><b>未關帳</b>（當日剛付）→ 全額「取消請款」<br><span style="color:var(--muted)">未關帳無法部分退，系統提示「隔日關帳後再退」</span></span><span class="en"><b>Settled</b> → refund (full / partial)<br><b>Unsettled</b> (paid today) → full "cancel capture"<br><span style="color:var(--muted)">no partial until next-day settlement — the system says so</span></span></div>
+          </div>
+          <div class="rcol">
+            <div class="rstep dec"><span class="tag"><span class="zh">銀行／ATM</span><span class="en">Bank / ATM</span></span><span class="zh"><b>轉帳付款</b><br>款項已直接在你的帳戶</span><span class="en"><b>Bank transfer</b><br>funds are already in your account</span></div>
+            <div class="rdown">▼</div>
+            <div class="rstep"><span class="zh">系統標記「<b>已退費</b>」，<br>由你自行匯退給報名者</span><span class="en">System marks "<b>Refunded</b>";<br>you remit to the registrant</span></div>
+          </div>
+        </div>
+        <div class="rdown">▼</div>
+        <div class="rstep"><span class="tag"><span class="zh">更新狀態（自動判斷）</span><span class="en">Update status (auto)</span></span><span class="zh"><b>原本有報名者退費申請</b>（＝想退出）→ 報名轉「<b>已取消</b>」、<b>釋出名額</b>；<b>純主辦主動退費</b>（退押金等，人續留）→ <b>保留報名</b>。部分退的<b>保留款</b>轉入帳務可日後申請匯出。</span><span class="en"><b>If a registrant request existed</b> (wants out) → registration becomes "<b>Cancelled</b>" and the <b>slot is freed</b>; <b>owner-initiated only</b> (e.g. deposit refund, still attending) → registration is <b>kept</b>. Any <b>retained amount</b> becomes a payout-able balance.</span></div>
+        <div class="rdown">▼</div>
+        <div class="rstep end"><span class="tag">Done</span><span class="zh"><b>寄出退費通知信</b>　退費申請收斂為「已退款」，自動移出「可退刷」清單（避免重複退款）</span><span class="en"><b>Refund email sent</b>; the request is closed as "Refunded" and leaves the refundable list (prevents double refunds)</span></div>
+      </div>
+
+      <h3 class="zh">兩個退費入口的差別</h3>
+      <h3 class="en">Two refund entry points</h3>
+      <table class="m-tbl">
+        <tr><th><span class="zh">入口</span><span class="en">Entry</span></th><th><span class="zh">位置</span><span class="en">Where</span></th><th><span class="zh">行為</span><span class="en">Behaviour</span></th></tr>
+        <tr><td><span class="zh"><b>主動退費</b></span><span class="en"><b>Owner refund</b></span></td><td><span class="zh">帳務 → 報名費 →「退費」</span><span class="en">Billing → Fees → "Refund"</span></td><td><span class="zh">全額或部分。自動判斷：有報名者申請→取消＋釋名額；無申請→保留報名。</span><span class="en">Full or partial. Auto-judged: with a registrant request → cancel + free slot; without → keep registration.</span></td></tr>
+        <tr><td><span class="zh"><b>退刷並刪除</b></span><span class="en"><b>Refund &amp; remove</b></span></td><td><span class="zh">帳務 → 平台代收轉付 →「退刷」</span><span class="en">Billing → Payouts → "Refund"</span></td><td><span class="zh">對應報名者的退費申請，PayUNI 退刷後刪除報名、釋出名額。</span><span class="en">Acts on a registrant request; PayUNI-reverses, then deletes the registration and frees the slot.</span></td></tr>
+        <tr><td><span class="zh"><b>一鍵退款</b></span><span class="en"><b>Bulk refund</b></span></td><td><span class="zh">帳務（有未錄取／備取時出現）</span><span class="en">Billing (when not-accepted entries exist)</span></td><td><span class="zh">一次全額退款所有「已付款但未獲正取／備取」者。</span><span class="en">Fully refunds all paid-but-not-accepted / waitlisted entries at once.</span></td></tr>
+      </table>
+      <div class="m-warn"><span class="zh"><b>PayUNI 退款受「關帳」影響：</b>信用卡交易需<b>已關帳</b>才能退款（含部分退）；<b>當日剛付、尚未關帳</b>的交易只能「取消請款」做<b>全額</b>取消，無法部分退。關帳多為<b>隔日批次</b>，因此部分退款請於付款<b>隔日後</b>再操作。系統會自動判斷並選擇正確動作，不需你手動分辨。</span><span class="en"><b>PayUNI refunds depend on settlement:</b> a card charge must be <b>settled</b> before it can be refunded (including partial); a <b>same-day, unsettled</b> charge can only be <b>fully</b> reversed via "cancel capture", not partially. Settlement is usually a <b>next-day batch</b>, so do partial refunds <b>the day after</b> payment. The system detects this and picks the right action for you.</span></div>
+      <div class="m-ok"><span class="zh"><b>防重複退款：</b>一筆退款完成後，系統會把對應的退費申請收斂為「已退款」並移出「可退刷」清單；即使再次嘗試，後端也會以「此訂單款項已退款完成」擋下，不會重複退、也不會誤刪報名。</span><span class="en"><b>No double refunds:</b> once a refund completes, its request is closed as "Refunded" and removed from the refundable list; even a repeat attempt is blocked server-side with "this order is already refunded", so funds are never reversed twice and the registration isn't wrongly deleted.</span></div>
     </section>
 
     <section class="m-sec" id="s-announce">
