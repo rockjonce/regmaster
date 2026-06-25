@@ -662,6 +662,7 @@
         '<div class="modal-h"><h3>' + T('aePayRefundTitle') + '</h3><button class="action-btn" id="orfClose">✕</button></div>' +
         '<div class="modal-body">' +
           '<div id="orfInfo" style="font:400 13px/1.8 var(--f-tc); color:var(--ink-2)"></div>' +
+          '<div id="orfWarn" style="display:none; margin-top:10px; padding:9px 12px; border-radius:8px; background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.3); color:var(--warn-700,#b45309); font:500 12.5px/1.6 var(--f-tc)"></div>' +
           '<label style="display:block; margin:14px 0 6px; font:600 11px/1 var(--f-mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted)">' + T('aePayRefundAmtLbl') + '</label>' +
           '<div style="display:flex; gap:8px; align-items:center">' +
             '<span style="color:var(--muted)">NT$</span>' +
@@ -670,6 +671,7 @@
           '</div>' +
           '<div id="orfCalc" style="margin-top:14px; font:600 15px/1.5 var(--f-tc)"></div>' +
           '<div id="orfHint" style="margin-top:8px; font:400 12px/1.6 var(--f-tc); color:var(--muted)"></div>' +
+          '<div style="margin-top:10px; font:400 12px/1.6 var(--f-tc); color:var(--muted)">' + T('aePayRefundKeepNote') + '</div>' +
         '</div>' +
         '<div class="modal-h" style="border-top:1px solid var(--line); border-bottom:none; justify-content:flex-end; gap:8px">' +
           '<button class="action-btn" id="orfCancel">' + T('aePayRefundCancel') + '</button>' +
@@ -695,6 +697,14 @@
       document.getElementById('orfHint').innerHTML = chHint;
       document.getElementById('orfAmt').value = ctx.paidAmount;
       orfRecalc();
+      // 防呆：此報名者已申請退費 → 警示（不阻擋），引導改用「平台代收轉付 → 退刷」依政策處理。
+      var _t = TEAMS.filter(function (t) { return t.teamId === tid; })[0];
+      var _rs = _t && _t.refundStatus;
+      var _w = document.getElementById('orfWarn');
+      if (_w) {
+        if (_rs === 'requested' || _rs === 'approved') { _w.innerHTML = T('aePayRefundReqWarn'); _w.style.display = ''; }
+        else { _w.style.display = 'none'; }
+      }
       document.getElementById('ownerRefundModal').style.display = '';
     }).withFailureHandler(function (e) { uiAlert(T('aePayRefundLoadFail') + ((e && e.message) || '')); }).getOwnerRefundContext(compId, tid);
   }
