@@ -5541,13 +5541,50 @@ async function resolvePayuniCreds(order) {
   const sales = s.exists ? s.data() : {};
   return { merID: sales.payuniMerID, key: sales.payuniHashKey, iv: sales.payuniHashIV, mode: sales.payuniMode };
 }
-// 信用卡退刷（trade_close, CloseType=2）。部分退帶 TradeAmt（一次付清/國外卡支援；分期/銀聯僅全額，
-// 由 PayUNI 端把關，失敗則回錯誤訊息）。回 { ok, tradeNo, message, code }。
+// 查 PayUNI 該筆交易的關帳狀態(CloseStatus)與可退金額。回 null = 查不到（呼叫端沿用退款行為）。
+//   CloseStatus: "2"=已關帳(可退款) / "1"=等待關帳 / "0"=未請款(預授權) / "3"=等待退款 / "4"=已退款
+async function payuniQueryClose(order, creds) {
+  try {
+    const mtn = order.orderId || "";
+    if (!mtn) return null;
+    const enc = payuniEncrypt({ MerID: creds.merID, MerTradeNo: mtn, Timestamp: Math.floor(Date.now() / 1000) }, creds.key, creds.iv);
+    const resp = await fetch((creds.mode === "t" ? "https://sandbox-" : "https://") + "api.payuni.com.tw/api/trade/query", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ MerID: creds.merID, Version: "1.0", EncryptInfo: enc, HashInfo: payuniHash(enc, creds.key, creds.iv) })
+    });
+    if (!resp.ok) return null;
+    const json = await resp.json().catch(() => null);
+    if (!json || !json.EncryptInfo) return null;
+    const r = payuniDecrypt(json.EncryptInfo, creds.key, creds.iv);
+    const g = k => r["Result[0][" + k + "]"];
+    return { closeStatus: String(g("CloseStatus") || ""), tradeAmt: parseInt(g("TradeAmt"), 10) || 0, remainAmt: parseInt(g("RemainAmt"), 10) || 0 };
+  } catch (e) { return null; }
+}
+
+// 信用卡退刷（狀態感知）：依 PayUNI 關帳狀態自動選對的操作 —
+//   已關帳(CloseStatus=2) → 退款(CloseType=2)，支援部分退。
+//   等待關帳/未請款(CloseStatus=1/0) → PayUNI 不接受退款，只能「全額取消請款」(CloseType=1,Cancel=1)；
+//                                     若請求的是部分退 → 回明確訊息（請等隔日關帳後再退，或改全額）。
+//   查不到狀態 → 沿用退款(CloseType=2)行為（不破壞既有已關帳退款）。
+// 回 { ok, tradeNo, message, code }。
 async function payuniRefund(order, refundAmt) {
   const creds = await resolvePayuniCreds(order);
   if (!creds.merID || !creds.key || !creds.iv) return { ok: false, message: "金流金鑰未設定" };
   if (!order.payuniTradeNo) return { ok: false, message: "缺少 PayUNI 交易序號(TradeNo)" };
-  const info = { MerID: creds.merID, TradeNo: order.payuniTradeNo, Timestamp: Math.floor(Date.now() / 1000), CloseType: 2, TradeAmt: Math.round(refundAmt) };
+  refundAmt = Math.round(refundAmt);
+  const st = await payuniQueryClose(order, creds);
+  let info;
+  if (st && (st.closeStatus === "1" || st.closeStatus === "0")) {
+    // 未關帳：只能全額取消請款（取消授權），PayUNI 不支援未關帳的部分退。
+    const full = st.remainAmt || st.tradeAmt || 0;
+    if (full > 0 && refundAmt < full) {
+      return { ok: false, code: "NOT_SETTLED_PARTIAL",
+        message: "PayUNI 當日交易尚未關帳，無法部分退款（此狀態僅能全額退 NT$" + full + "）。請於隔日 PayUNI 關帳後再退部分款，或改為全額退款。" };
+    }
+    info = { MerID: creds.merID, TradeNo: order.payuniTradeNo, Timestamp: Math.floor(Date.now() / 1000), CloseType: 1, Cancel: 1, TradeAmt: refundAmt };
+  } else {
+    info = { MerID: creds.merID, TradeNo: order.payuniTradeNo, Timestamp: Math.floor(Date.now() / 1000), CloseType: 2, TradeAmt: refundAmt };
+  }
   const enc = payuniEncrypt(info, creds.key, creds.iv);
   const hash = payuniHash(enc, creds.key, creds.iv);
   const prefix = creds.mode === "t" ? "https://sandbox-" : "https://";
