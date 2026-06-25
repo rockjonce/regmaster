@@ -18,4 +18,4 @@ Disallow: /my.html
 Disallow: /events/register.html
 Disallow: /events/payment.html
 
-Sitemap: https://regmaster-v3.web.app/sitemap.xml
+Sitemap: https://regmaster-pro.web.app/sitemap.xml

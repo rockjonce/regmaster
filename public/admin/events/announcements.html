@@ -526,7 +526,7 @@
     // Render inline HTML as-is (matches the actual send, which wraps the raw body); plain
     // text just gets newline → <br>. Outlook compatibility is enforced separately on save/send.
     var body = String(bodyText || '').replace(/\n/g, '<br>');
-    var LOGO = 'https://regmaster-v3.web.app/favicon.png';
+    var LOGO = 'https://regmaster-pro.web.app/favicon.png';
     var nameBand = COMP_NAME
       ? '<tr><td style="background:#eef3fb;border-bottom:1px solid #dbe6f5;padding:9px 24px;text-align:center;font-size:13px;color:#0A437A;font-weight:600">' + escapeHtml(window.L('aeAnnPvBandPre')) + escapeHtml(COMP_NAME) + '</td></tr>'
       : '';

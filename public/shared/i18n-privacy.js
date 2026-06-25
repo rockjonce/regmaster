@@ -34,7 +34,7 @@
 
     // ----- 一、適用範圍 -----
     pvS1H: '一、適用範圍',
-    pvS1P: '本隱私權政策適用於您在 regmaster-v3.web.app 及本平台相關網域使用服務、註冊帳號、建立活動、進行報名或與本平台互動時，所涉及之個人資料蒐集、處理及利用。當您連結至本平台以外的第三方網站（如金流服務 PayUNI、外部連結等），各該網站之隱私權政策不適用於本平台，本公司亦不負相關責任。',
+    pvS1P: '本隱私權政策適用於您在 regmaster-pro.web.app 及本平台相關網域使用服務、註冊帳號、建立活動、進行報名或與本平台互動時，所涉及之個人資料蒐集、處理及利用。當您連結至本平台以外的第三方網站（如金流服務 PayUNI、外部連結等），各該網站之隱私權政策不適用於本平台，本公司亦不負相關責任。',
 
     // ----- 二、蒐集、處理與利用 -----
     pvS2H: '二、個人資料的蒐集、處理與利用方式',
@@ -111,7 +111,7 @@
 
     // ----- 一、適用範圍 -----
     pvS1H: '1. Scope of Application',
-    pvS1P: 'This Privacy Policy applies to the collection, processing and use of personal data involved when you use the services, register an account, create an event, complete a registration, or otherwise interact with the Platform at regmaster-v3.web.app and the Platform’s related domains. Where you follow a link to a third-party website outside the Platform (such as the payment service provider PayUNI, external links and the like), the privacy policy of each such website does not apply to the Platform, and the Company shall bear no responsibility in connection therewith.',
+    pvS1P: 'This Privacy Policy applies to the collection, processing and use of personal data involved when you use the services, register an account, create an event, complete a registration, or otherwise interact with the Platform at regmaster-pro.web.app and the Platform’s related domains. Where you follow a link to a third-party website outside the Platform (such as the payment service provider PayUNI, external links and the like), the privacy policy of each such website does not apply to the Platform, and the Company shall bear no responsibility in connection therewith.',
 
     // ----- 二、蒐集、處理與利用 -----
     pvS2H: '2. Manner of Collection, Processing and Use of Personal Data',
