@@ -532,8 +532,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     .getRegistrationBundle(compId);
 
   // ===== 編輯模式：報名編號+密碼 → 預填 → 以 updateRegistration 儲存（不重新付款）=====
-  function applyEdit(pwd, res) {
-    EDIT = { teamId: editTeamId, pwd: pwd }; IS_EDIT = true;
+  function applyEdit(pwd, res, tok) {
+    EDIT = { teamId: editTeamId, pwd: pwd, tok: tok || '' }; IS_EDIT = true;
     NEEDS_PAYMENT = false;
     try { prefillFromTeam(res.team || {}, res.students || [], res.teachers || []); } catch (e) {}
     document.title = window.L('rgEditTitleDoc') + ' · ' + (CFG.competitionName || '');
@@ -541,14 +541,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     updateSubmitButtonLabel();
   }
   function enterEditMode() {
-    // 若由「我的報名」社群登入帶入已驗證密碼 → 直接靜默載入，免再輸入
-    var carried = '';
+    // 由「我的報名」社群登入帶入已驗證密碼或管理 token → 直接靜默載入，免再輸入
+    var carried = '', carriedTok = '';
     try { carried = sessionStorage.getItem('rm_edit_' + editTeamId) || ''; sessionStorage.removeItem('rm_edit_' + editTeamId); } catch (e) {}
-    if (carried) {
+    try { carriedTok = sessionStorage.getItem('rm_edit_tok_' + editTeamId) || ''; sessionStorage.removeItem('rm_edit_tok_' + editTeamId); } catch (e) {}
+    if (carried || carriedTok) {
       google.script.run.withSuccessHandler(function (res) {
-        if (res && res.success) applyEdit(carried, res);
-        else showEditGate();   // 密碼失效 → 回到輸入閘
-      }).withFailureHandler(function () { showEditGate(); }).loginTeam(compId, editTeamId, carried);
+        if (res && res.success) applyEdit(carried, res, carriedTok);
+        else showEditGate();   // 驗證失效 → 回到輸入閘
+      }).withFailureHandler(function () { showEditGate(); }).loginTeam(compId, editTeamId, carried, carriedTok);
       return;
     }
     showEditGate();
@@ -1461,7 +1462,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           else { btn.disabled = false; updateSubmitButtonLabel(); showErr((res && res.message) || window.L('rgEditFail')); }
         })
         .withFailureHandler(function (err) { btn.disabled = false; updateSubmitButtonLabel(); showErr((err && err.message) || window.L('rgErrNetwork')); })
-        .updateRegistration(compId, EDIT.teamId, EDIT.pwd, fd);
+        .updateRegistration(compId, EDIT.teamId, EDIT.pwd, fd, EDIT.tok || '');
       return;
     }
     google.script.run

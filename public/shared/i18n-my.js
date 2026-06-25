@@ -73,7 +73,7 @@
     myQrLoginLine: '用 LINE 登入',
     myQrLoginCancel: '取消',
     myQrEmailMismatchTitle: '帳號不符',
-    myQrEmailMismatchHint: '此報名的 Email 與您目前登入的 {provider} 帳號 Email 不一致，無法顯示報到 QR。請改用對應的社群帳號登入。',
+    myQrEmailMismatchHint: '此報名的 Email 與您目前登入的 {provider} 帳號 Email 不一致。請改用報名時對應的社群帳號登入。',
     // ----- dynamic: self-serve certificate download -----
     myCertDownload: '下載證書',
     myCertNeedCheckin: '報到後可下載',

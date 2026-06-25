@@ -252,6 +252,7 @@ html, body { max-width:100%; overflow-x:hidden; }
   var STATE_FILTER = 'all';
   var lookupMode = 'email';
   var PWD_BY_TEAM = {};   // 社群登入查得的報名 → 其團隊密碼（憑此免再輸密碼即可改/退）
+  var MANAGE_BY_TEAM = {};  // 社群登入查得的報名 → 短效管理 token（新報名已無明文密碼，憑此 OAuth 身分即可改/退）
 
   // OAuth-verified identity for this page session. Set ONLY when the user has
   // proven ownership of an email via Google or LINE — gates the "Check-in QR"
@@ -310,7 +311,7 @@ html, body { max-width:100%; overflow-x:hidden; }
       .withSuccessHandler(function (res) {
         btn.disabled = false; btn.textContent = oldText;
         if (res && res.success) {
-          PWD_BY_TEAM = {};   // Email/電話查詢屬弱驗證 → 唯讀（只有活動詳情可點）
+          PWD_BY_TEAM = {}; MANAGE_BY_TEAM = {};   // Email/電話查詢屬弱驗證 → 唯讀（只有活動詳情可點）
           // Remember which email these cards came from — used by the check-in QR
           // button to test against the user's OAuth-verified email at render time.
           LOOKUP_EMAIL = (lookupMode === 'email') ? String(v).trim().toLowerCase() : '';
@@ -435,16 +436,19 @@ html, body { max-width:100%; overflow-x:hidden; }
       actions += '<button class="btn btn-qr' + (qrArmed ? '' : ' dim') + '" data-qr="' + escapeHtml(r.compId) + '|' + escapeHtml(r.teamId) + '"'
         + (qrArmed ? '' : ' title="' + escapeHtml(window.L('myQrLoginHint')) + '"')
         + '>' + window.L('myActQr') + '</button>';
+      // 修改／退費／付款「可用」條件＝社群登入已驗證身分（_emailMatches，與報到 QR 同一道閘）
+      // 或舊資料帶回明文密碼。OAuth 解鎖者改帶「管理 token」授權，不需明文密碼。
+      var armed = full || qrArmed;
       if (cls === 'unpaid') {
-        actions += full
+        actions += armed
           ? '<a class="btn btn-primary" href="/events/payment.html?id=' + encodeURIComponent(r.compId) + '&team=' + encodeURIComponent(r.teamId) + '">' + window.L('myActPay') + '</a>'
           : '<button class="btn btn-primary"' + dis + '>' + window.L('myActPay') + '</button>';
       }
       if (r.status !== '已取消') {
-        actions += full
+        actions += armed
           ? '<button class="btn btn-ghost" data-edit="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '">' + window.L('myActEdit') + '</button>'
           : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActEdit') + '</button>';
-        actions += full
+        actions += armed
           ? '<button class="btn btn-ghost" data-refund="' + encodeURIComponent(r.compId) + '|' + encodeURIComponent(r.teamId) + '|' + escapeHtml(r.competitionName || '') + '">' + window.L('myActRefund') + '</button>'
           : '<button class="btn btn-ghost"' + dis + '>' + window.L('myActRefund') + '</button>';
       }
@@ -853,8 +857,9 @@ html, body { max-width:100%; overflow-x:hidden; }
     if (eb) {
       var ep = eb.getAttribute('data-edit').split('|');
       var ecomp = decodeURIComponent(ep[0]), eteam = decodeURIComponent(ep[1]);
-      // 社群登入已驗證身分 → 帶入密碼讓編輯頁免再輸入
+      // 社群登入已驗證身分 → 帶入密碼或管理 token 讓編輯頁免再驗證
       if (PWD_BY_TEAM[eteam]) { try { sessionStorage.setItem('rm_edit_' + eteam, PWD_BY_TEAM[eteam]); } catch (x) {} }
+      else if (MANAGE_BY_TEAM[eteam]) { try { sessionStorage.setItem('rm_edit_tok_' + eteam, MANAGE_BY_TEAM[eteam]); } catch (x) {} }
       location.href = '/events/register.html?id=' + encodeURIComponent(ecomp) + '&edit=' + encodeURIComponent(eteam);
       return;
     }
@@ -862,7 +867,7 @@ html, body { max-width:100%; overflow-x:hidden; }
     if (!btn) return;
     var parts = btn.getAttribute('data-refund').split('|');
     var tid = decodeURIComponent(parts[1]);
-    openRefundModal(decodeURIComponent(parts[0]), tid, parts.slice(2).join('|'), PWD_BY_TEAM[tid] || '');
+    openRefundModal(decodeURIComponent(parts[0]), tid, parts.slice(2).join('|'), PWD_BY_TEAM[tid] || '', MANAGE_BY_TEAM[tid] || '');
   });
   // ===========================================================================
   // CHECK-IN QR — modal + login prompt
@@ -1034,7 +1039,7 @@ html, body { max-width:100%; overflow-x:hidden; }
     });
   }
 
-  function openRefundModal(compId, teamId, name, knownPwd) {
+  function openRefundModal(compId, teamId, name, knownPwd, manageToken) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:16px';
     ov.innerHTML =
@@ -1060,17 +1065,17 @@ html, body { max-width:100%; overflow-x:hidden; }
     var msg = ov.querySelector('#rfMsg');
     function setMsg(t, ok) { msg.textContent = t || ''; msg.style.color = ok ? 'var(--ok-700, #047857)' : 'var(--err-700, #b91c1c)'; }
 
-    // 社群登入已帶出密碼 → 自動填入並查詢，免再輸入
-    if (knownPwd) {
-      ov.querySelector('#rfPwd').value = knownPwd;
-      ov.querySelector('#rfPwd').closest('div').querySelector('#rfPwd').style.display = 'none';
+    // 社群登入已驗證身分（帶出密碼或管理 token）→ 隱藏密碼欄、自動查詢，免再輸入
+    if (knownPwd || manageToken) {
+      if (knownPwd) ov.querySelector('#rfPwd').value = knownPwd;
+      ov.querySelector('#rfPwd').style.display = 'none';
       var hint = ov.querySelector('p'); if (hint) hint.innerHTML = escapeHtml(name) + '<br>' + window.L('myRfIntroSocial');
       setTimeout(function () { ov.querySelector('#rfCheck').click(); }, 0);
     }
 
     ov.querySelector('#rfCheck').addEventListener('click', function () {
       var pwd = ov.querySelector('#rfPwd').value;
-      if (!pwd) { setMsg(window.L('myRfErrNeedPwd')); return; }
+      if (!pwd && !manageToken) { setMsg(window.L('myRfErrNeedPwd')); return; }
       setMsg(window.L('myRfChecking'), true);
       google.script.run.withSuccessHandler(function (res) {
         if (!res || !res.success) { setMsg((res && res.message) || window.L('myRfErrCheckFail')); return; }
@@ -1082,7 +1087,7 @@ html, body { max-width:100%; overflow-x:hidden; }
         ov.querySelector('#rfPreview').innerHTML = window.L('myRfPreviewA') + c.daysBefore + window.L('myRfPreviewB') + c.pct + window.L('myRfPreviewC') + c.paidAmount + window.L('myRfPreviewD') + c.pct + window.L('myRfPreviewE') + c.calcRefund + window.L('myRfPreviewF');
         ov.querySelector('#rfForm').style.display = 'flex';
         setMsg('');
-      }).withFailureHandler(function (e) { setMsg(e && e.message || window.L('myRfErrCheckFail')); }).getRefundPreview(compId, teamId, pwd);
+      }).withFailureHandler(function (e) { setMsg(e && e.message || window.L('myRfErrCheckFail')); }).getRefundPreview(compId, teamId, pwd, manageToken || '');
     });
 
     ov.querySelector('#rfSubmit').addEventListener('click', function () {
@@ -1098,15 +1103,15 @@ html, body { max-width:100%; overflow-x:hidden; }
           ov.querySelector('#rfPreview').innerHTML = window.L('myRfDoneA') + res.pct + window.L('myRfDoneB') + res.calcRefund + window.L('myRfDoneC');
           setMsg('');
         } else setMsg((res && res.message) || window.L('myRfErrSubmitFail'));
-      }).withFailureHandler(function (e) { b.disabled = false; setMsg(e && e.message || window.L('myRfErrSubmitFail')); }).requestRefund(compId, teamId, pwd, acct, reason);
+      }).withFailureHandler(function (e) { b.disabled = false; setMsg(e && e.message || window.L('myRfErrSubmitFail')); }).requestRefund(compId, teamId, pwd, acct, reason, manageToken || '');
     });
   }
 
   // ===== 社群登入查詢 =====
   function showSocialRegs(regs, verifiedEmail, provider) {
     regs = regs || [];
-    PWD_BY_TEAM = {};
-    regs.forEach(function (r) { if (r.password) PWD_BY_TEAM[r.teamId] = r.password; });
+    PWD_BY_TEAM = {}; MANAGE_BY_TEAM = {};
+    regs.forEach(function (r) { if (r.password) PWD_BY_TEAM[r.teamId] = r.password; if (r.manageToken) MANAGE_BY_TEAM[r.teamId] = r.manageToken; });
     // Record the OAuth-verified identity — this is what gates the check-in QR
     // button on each registration card. We rely on the server-returned email
     // (or the stashed LINE callback email) rather than firebase.auth().currentUser,

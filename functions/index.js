@@ -213,6 +213,26 @@ async function signCheckin(compId, teamId) {
   const body = _b64url(JSON.stringify({ c: String(compId || ""), t: String(teamId || "") }));
   return "RMQR1." + body + "." + (await _checkinSig(body));
 }
+// ===== Management token (refund / modify) — issued ONLY after server-verified social login =====
+// Binds {compId, teamId, email} with a short expiry, so the OAuth-verified registration owner can
+// refund/modify without the plaintext password (no longer stored — only bcrypt). Possession proves
+// ownership because it is signed solely inside listMyRegistrationsBySocial after email verification.
+async function signManage(compId, teamId, email, ttlSec) {
+  const exp = Math.floor(Date.now() / 1000) + (ttlSec || 1800);
+  const body = _b64url(JSON.stringify({ c: String(compId || ""), t: String(teamId || ""), e: String(email || "").toLowerCase(), x: exp }));
+  return "RMMG1." + body + "." + (await _checkinSig(body));
+}
+// → { email } if genuine, matches comp/team, and unexpired; else null.
+async function verifyManage(token, compId, teamId) {
+  if (typeof token !== "string" || token.indexOf("RMMG1.") !== 0) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  if ((await _checkinSig(parts[1])) !== parts[2]) return null;
+  let p; try { p = JSON.parse(_b64urlToBuf(parts[1]).toString("utf8")); } catch (e) { return null; }
+  if (p.c !== String(compId) || p.t !== String(teamId)) return null;
+  if (!p.x || Math.floor(Date.now() / 1000) > Number(p.x)) return null;
+  return { email: p.e || "" };
+}
 // Verify a signed payload → { compId, teamId } if genuine, else null.
 async function verifyCheckin(payload) {
   const m = String(payload || "").trim();
@@ -2404,7 +2424,7 @@ exports.resendVerification = callable(async (data, request) => {
 });
 
 exports.loginTeam = callable(async (data, request) => {
-  const { compId, teamId, password } = data;
+  const { compId, teamId, password, manageToken } = data;
   // N-6: per-IP throttle (team passwords are low-entropy and previously had NO lockout at all).
   const _rl = await checkRateLimit("loginteam_ip_" + clientIp(request), 30, 600000);
   if (!_rl.ok) return { success: false, message: "嘗試過於頻繁，請稍後再試" };
@@ -2412,16 +2432,20 @@ exports.loginTeam = callable(async (data, request) => {
   if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "找不到" };
   // N-6: per-team failure lockout (mirrors loginAccount) — stops brute-forcing one team's password.
   const _t = doc.data();
-  if (_t.lockedUntil && new Date() < new Date(_t.lockedUntil)) return { success: false, message: "嘗試過多，請稍後再試" };
-  if (!verifyTeamPwd(_t, password)) {
-    const fails = (_t.loginFails || 0) + 1;
-    const upd = { loginFails: fails };
-    if (fails >= 8) upd.lockedUntil = new Date(Date.now() + 900000).toISOString();  // 15-min lock after 8 misses
-    await doc.ref.update(upd).catch(() => {});
-    return { success: false, message: fails >= 8 ? "嘗試過多，鎖定 15 分鐘" : "密碼錯誤" };
+  // Auth: an OAuth-verified manage token (social login) bypasses the password + lockout path.
+  const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
+  if (!_mgr) {
+    if (_t.lockedUntil && new Date() < new Date(_t.lockedUntil)) return { success: false, message: "嘗試過多，請稍後再試" };
+    if (!verifyTeamPwd(_t, password)) {
+      const fails = (_t.loginFails || 0) + 1;
+      const upd = { loginFails: fails };
+      if (fails >= 8) upd.lockedUntil = new Date(Date.now() + 900000).toISOString();  // 15-min lock after 8 misses
+      await doc.ref.update(upd).catch(() => {});
+      return { success: false, message: fails >= 8 ? "嘗試過多，鎖定 15 分鐘" : "密碼錯誤" };
+    }
+    if (_t.loginFails || _t.lockedUntil) { await doc.ref.update({ loginFails: 0, lockedUntil: "" }).catch(() => {}); }
+    await upgradeTeamPwd(doc.ref, doc.data(), password);
   }
-  if (_t.loginFails || _t.lockedUntil) { await doc.ref.update({ loginFails: 0, lockedUntil: "" }).catch(() => {}); }
-  await upgradeTeamPwd(doc.ref, doc.data(), password);
   const team = doc.data();
   const { password: _, ...safeTeam } = team;
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
@@ -2682,11 +2706,13 @@ exports.getRefundTemplates = callable(async () => {
 
 // Registrant: preview refund policy + any existing request (teamId + password).
 exports.getRefundPreview = callable(async (data) => {
-  const { compId, teamId, password } = data;
+  const { compId, teamId, password, manageToken } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
-  if (!verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
+  // Auth: OAuth-verified manage token (social login) OR the registration password.
+  const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
+  if (!_mgr && !verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
   const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
   const calc = computeRefund(comp, team);
   let request = null;
@@ -2696,11 +2722,13 @@ exports.getRefundPreview = callable(async (data) => {
 
 // Registrant: submit a refund/withdrawal request.
 exports.requestRefund = callable(async (data) => {
-  const { compId, teamId, password, refundAccount, reason } = data;
+  const { compId, teamId, password, refundAccount, reason, manageToken } = data;
   const tDoc = await db.collection("teams").doc(teamId).get();
   if (!tDoc.exists || tDoc.data().compId !== compId) return { success: false, message: "找不到報名資料" };
   const team = tDoc.data();
-  if (!verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
+  // Auth: OAuth-verified manage token (social login) OR the registration password.
+  const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
+  if (!_mgr && !verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
   if (team.status === "已取消") return { success: false, message: "此報名已取消" };
   if (["requested", "approved"].includes(team.refundStatus || "")) return { success: false, message: "已有退費申請處理中" };
   const comp = (await db.collection("competitions").doc(compId).get()).data() || {};
@@ -3037,9 +3065,12 @@ exports.ownerRefundWaitlist = compAuthCallable("manage", async (data, request) =
 });
 
 exports.updateRegistration = callable(async (data) => {
-  const { compId, teamId, pwd, fd } = data;
+  const { compId, teamId, pwd, fd, manageToken } = data;
   const doc = await db.collection("teams").doc(teamId).get();
-  if (!doc.exists || doc.data().compId !== compId || !verifyTeamPwd(doc.data(), pwd)) return { success: false, message: "驗證失敗" };
+  if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "驗證失敗" };
+  // Auth: OAuth-verified manage token (social login) OR the registration password.
+  const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
+  if (!_mgr && !verifyTeamPwd(doc.data(), pwd)) return { success: false, message: "驗證失敗" };
   
   await doc.ref.update({
     group: fd.group || "", teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
@@ -9159,8 +9190,9 @@ exports.listMyRegistrationsBySocial = callable(async (data) => {
   if (!s.email) return { success: false, message: "無法取得此社群帳號的 Email，請改用報名編號+密碼登入。" };
   await upsertRegistrant(s);
   const regs = await regsByEmail(s.email, true);
-  // OAuth-verified owner → attach the signed check-in token (gates QR issuance).
-  for (const r of regs) { try { r.checkinToken = await signCheckin(r.compId, r.teamId); } catch (e) {} }
+  // OAuth-verified owner → attach the signed check-in token (gates QR issuance) and a
+  // short-lived manage token (authorises refund/modify without the plaintext password).
+  for (const r of regs) { try { r.checkinToken = await signCheckin(r.compId, r.teamId); r.manageToken = await signManage(r.compId, r.teamId, s.email); } catch (e) {} }
   return { success: true, email: s.email, registrations: regs };
 });
 // Bind status for a set of emails (for 已綁定 display in the team manage view).
