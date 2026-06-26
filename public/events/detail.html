@@ -87,6 +87,7 @@
 .tabs-bar a:hover { color:var(--ink-2); }
 
 .body-shell { max-width:1280px; margin:0 auto; padding:48px 32px; display:grid; grid-template-columns:1fr 320px; gap:48px; }
+.body-shell > section { min-width:0; }   /* 內聯 HTML 雙保險：讓內容欄可縮，避免寬表格在手機把版面撐破 */
 
 section.block { padding-bottom:40px; margin-bottom:40px; border-bottom:1px solid var(--line); }
 section.block:last-child { border:0; }
@@ -105,7 +106,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 .side-card { padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:14px; }
 .side-card h4 { font:600 12px/1 var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2); margin-bottom:14px; }
 .side-card .share-row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-.side-card .share-row button { padding:9px; border:1px solid var(--line); border-radius:8px; background:var(--surface); cursor:pointer; font:500 12px/1 var(--f-tc); color:var(--ink-2); transition:.15s; }
+.side-card .share-row button { display:flex; align-items:center; justify-content:center; white-space:nowrap; padding:8px 6px; border:1px solid var(--line); border-radius:8px; background:var(--surface); cursor:pointer; font:500 12px/1 var(--f-tc); color:var(--ink-2); transition:.15s; }
 .side-card .share-row button:hover { background:var(--surface-2); border-color:var(--ink-3); }
 .side-card .pdf-link { display:flex; gap:10px; align-items:center; padding:12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; text-decoration:none; color:var(--ink-2); font:500 13.5px/1.4 var(--f-tc); }
 .side-card .pdf-link:hover { background:var(--surface); border-color:var(--ink-3); }

@@ -1776,7 +1776,7 @@ exports.getRegistrationBundle = callable(async (data) => {
   }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   // B.2: best-effort host display (organizationName preferred, fall back to displayName / username)
   let hostName = "";
-  const createdBy = r.createdBy || "";
+  const createdBy = r.createdBy || r.creator || "";   // 多數活動只有 creator；用它查主辦帳號的機構名稱/帳號名
   if (createdBy) {
     try {
       const accSnap = await db.collection("accounts").where("username", "==", createdBy).limit(1).get();
