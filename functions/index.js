@@ -5485,6 +5485,67 @@ exports.detectPosterFocus = compAuthCallable(async (data, request) => {
   } catch (e) { await rotateGeminiKey(); return { success: false, message: "AI 暫時無法使用：" + (e && e.message) }; }
 });
 
+// regmaster-inline-html：把 AI/任意 HTML 收斂成「可貼進公開頁、手機不破版」的嵌入式內聯 HTML。
+// 強制硬規則：去 doctype/html/head/body 外層、去 <script>/<style>、去 class 與 on* 事件、表格移除 min-width。
+function sanitizeInlineHtml(raw) {
+  let h = String(raw || "");
+  h = h.replace(/```html?/gi, "").replace(/```/g, "").trim();                 // 去 markdown code fence
+  const bodyM = h.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyM) h = bodyM[1];                                                    // 若回了完整文件，只取 body 內容
+  h = h.replace(/<head[\s\S]*?<\/head>/gi, "").replace(/<!DOCTYPE[^>]*>/gi, "").replace(/<\/?(?:html|head|body)[^>]*>/gi, "");
+  h = h.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "");   // 去 script/style
+  h = h.replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, "").replace(/\son[a-z]+\s*=\s*'[^']*'/gi, "");    // 去事件處理器
+  h = h.replace(/\sclass\s*=\s*"[^"]*"/gi, "").replace(/\sclass\s*=\s*'[^']*'/gi, "");          // 去 class
+  h = h.replace(/<table[^>]*>/gi, function (tag) { return tag.replace(/min-width\s*:[^;"']+;?/gi, ""); });  // 行動安全：表格不得 min-width
+  return h.trim();
+}
+
+// 一鍵轉內聯 HTML（AI）：依 regmaster-inline-html 規則，把活動描述改寫成嵌入式內聯 HTML。
+exports.convertDescToInlineHtml = compAuthCallable(async (data, request) => {
+  const _rl = await checkRateLimit("inlinehtml_ip_" + clientIp(request), 30, 600000);  // 30/10min/IP：節流 Gemini
+  if (!_rl.ok) return { success: false, message: "操作過於頻繁，請稍後再試" };
+  const { compId } = data;
+  const desc = String(data.description || "").slice(0, 8000).trim();
+  if (!desc) return { success: false, message: "活動描述為空" };
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { success: false, message: "請先設定 Gemini API Key" };
+  const compDoc = await db.collection("competitions").doc(compId).get();
+  const cd = compDoc.exists ? compDoc.data() : {};
+  const cfg = cd.config || {};
+  const name = cfg.competitionName || cd.name || "活動";
+  const date = cfg.competitionDate || "";
+  const deadline = cfg.deadline || "";
+  let accent = ""; try { const tc = cd.themeColors ? JSON.parse(cd.themeColors) : null; accent = (tc && (tc.accent || tc.primary)) || ""; } catch (e) {}
+  const prompt =
+    "你是 RegMaster 內聯 HTML 排版器。把主辦方的「活動描述」改寫成可直接貼進 RegMaster 公開頁「關於這場活動」區塊、手機不破版的內聯 HTML。\n\n" +
+    "【硬規則，絕不可違反】\n" +
+    "1. 只用 inline style（每個元素 style=\"...\"）。禁止 <style>、class、外部 CSS、CDN。有 padding＋寬度者加 box-sizing:border-box。\n" +
+    "2. 禁止 <script> 與 onclick 等事件處理器。\n" +
+    "3. 表格 <table> 一律 width:100%、font-size 12–13px、cell padding≈8px 5px，且【絕對不可】設 min-width；寬表用 overflow-x:auto 外層包住。\n" +
+    "4. 不用 media query。RWD 靠：卡片用 display:flex;flex-wrap:wrap;gap，子層 flex:1 1 <basis>;min-width:<basis>(basis<300px)；流體尺寸用 clamp()；全部包在一個 width:100%;max-width:880px;margin:0 auto 的置中容器。\n" +
+    "5. 不做任何 JS 按鈕；報名引導改用靜態提示框，指向本頁右上角的「立即報名」。\n" +
+    "6. 只輸出嵌入用內容：不要 <!DOCTYPE>/<html>/<head>/<body>，直接從置中容器 <div> 開始。\n" +
+    "7. 最前面放一個 AEO 隱藏摘要 div：style 含 position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); aria-hidden=\"true\"，內含關鍵字、日期、地點、價格、聯絡。\n\n" +
+    "【結構】置中容器 → hero band(漸層底＋黃色底線，標題 clamp) → body padding 容器(clamp) → 區段標題(emoji＋中文＋英文小標＋底線) → 資訊框/黃色提醒框/規則卡片/流動表格/flex卡片 → 指向「立即報名」的靜態 CTA → 頁尾。雙語：hero 與每個區段標題附英文小標，內文中文即可。\n\n" +
+    "【主題色】" + (accent ? ("以強調色 " + accent + " 作為主色(替換深藍系)，黃色保留。") : "用 energy-run 藍黃：深藍 #0a6cb6、天藍 #1f9fe2、海軍藍 #10357e、淺藍底 #eef6fb/#e1f1fb、斑馬列 #f5fafd、黃 #f6c11e、淺黃 #fff6da。") + " 內文色 #15263b/#444/#999；細線 rgba(31,159,226,0.15)；字體 'Noto Sans TC','Helvetica Neue',Arial,'微軟正黑體',sans-serif。\n\n" +
+    "【活動資訊】名稱：" + name + "｜日期：" + (date || "(未填)") + "｜報名截止：" + (deadline || "(未填)") + "\n\n" +
+    "【主辦方原始描述】（把內容重新編排成上述結構；不要杜撰沒提到的事實，缺的資訊就省略對應區塊）：\n" + desc + "\n\n" +
+    "只回傳 HTML，不要 Markdown code fence、不要任何解說文字。";
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 8192, temperature: 0.4 } })
+    });
+    const json = await res.json();
+    let text = ""; try { json.candidates[0].content.parts.forEach(p => { if (p.text) text += p.text; }); } catch (e) {}
+    if (!text.trim()) return { success: false, message: "AI 無回應，請重試" };
+    const html = sanitizeInlineHtml(text);
+    if (!html || html.length < 30) return { success: false, message: "產生結果異常，請重試" };
+    await auditLog(request.authUser.username, "AI轉內聯HTML", compId, "len:" + html.length);
+    return { success: true, html };
+  } catch (e) { await rotateGeminiKey(); return { success: false, message: "AI 暫時無法使用：" + (e && e.message) }; }
+});
+
 // ===== Delete Rules PDF =====
 exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
   const { compId } = data;

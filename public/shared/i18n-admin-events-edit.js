@@ -360,9 +360,12 @@
 
     // description → HTML converter
     aeEditConvertNeedText: '請先在活動描述貼上文字',
-    aeEditConvertHasHtmlConfirm: '內容看起來已包含 HTML，仍要以純文字重新轉換嗎？（會移除既有標籤）',
+    aeEditConvertHasHtmlConfirm: '內容看起來已包含 HTML，要讓 AI 重新排版整段內容嗎？',
     aeEditConvertHtmlTitle: '一鍵轉 HTML',
     aeEditConvertLinkText: '前往連結 →',
+    aeEditConvertBusy: '🤖 AI 排版中…',
+    aeEditConvertDone: '✓ 已產生內聯 HTML（記得按儲存）',
+    aeEditConvertFallbackAsk: '要改用簡易轉換（無 AI）嗎？',
 
     // media modal
     aeEditModalDefaultTitle: '預覽',
@@ -839,9 +842,12 @@
 
     // description → HTML converter
     aeEditConvertNeedText: 'Please paste text into the event description first',
-    aeEditConvertHasHtmlConfirm: 'The content looks like it already contains HTML. Reconvert it as plain text anyway? (This removes existing tags.)',
+    aeEditConvertHasHtmlConfirm: 'The content already contains HTML. Let AI re-lay-out the whole thing?',
     aeEditConvertHtmlTitle: 'Convert to HTML',
     aeEditConvertLinkText: 'Go to link →',
+    aeEditConvertBusy: '🤖 AI laying out…',
+    aeEditConvertDone: '✓ Inline HTML generated (remember to Save)',
+    aeEditConvertFallbackAsk: 'Use the simple converter (no AI) instead?',
 
     // media modal
     aeEditModalDefaultTitle: 'Preview',

@@ -1346,11 +1346,19 @@
   document.getElementById('convertHtmlBtn').addEventListener('click', function () {
     var ta = document.getElementById('basic-description'), v = ta.value.trim();
     if (!v) { uiAlert(window.L('aeEditConvertNeedText')); return; }
-    if (/<[a-z][\s\S]*>/i.test(v)) {
-      uiConfirm(window.L('aeEditConvertHasHtmlConfirm'), { title: window.L('aeEditConvertHtmlTitle') }).then(function (ok) { if (ok) { ta.value = convertDescToHtml(v.replace(/<[^>]+>/g, '')); markDirty(); } });
-      return;
+    var btn = this, orig = btn.textContent;
+    function localFallback() { ta.value = convertDescToHtml(v.replace(/<[^>]+>/g, '')); markDirty(); }  // AI 失敗時的簡易本地轉換
+    function runAI() {
+      btn.disabled = true; btn.textContent = window.L('aeEditConvertBusy');
+      google.script.run.withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = orig;
+        if (res && res.success && res.html) { ta.value = res.html; markDirty(); uiAlert(window.L('aeEditConvertDone')); }
+        else uiConfirm(((res && res.message) ? res.message + '\n\n' : '') + window.L('aeEditConvertFallbackAsk'), { title: window.L('aeEditConvertHtmlTitle') }).then(function (ok) { if (ok) localFallback(); });
+      }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = orig; uiConfirm(((e && e.message) ? e.message + '\n\n' : '') + window.L('aeEditConvertFallbackAsk'), { title: window.L('aeEditConvertHtmlTitle') }).then(function (ok) { if (ok) localFallback(); }); }).convertDescToInlineHtml(compId, v);
     }
-    ta.value = convertDescToHtml(v); markDirty();
+    if (/<[a-z][\s\S]*>/i.test(v)) {  // 已含 HTML → 確認後讓 AI 重新排版
+      uiConfirm(window.L('aeEditConvertHasHtmlConfirm'), { title: window.L('aeEditConvertHtmlTitle') }).then(function (ok) { if (ok) runAI(); });
+    } else { runAI(); }
   });
 
   // ===== UX-001: AI summary draft review =====

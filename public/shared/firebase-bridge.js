@@ -213,6 +213,7 @@
     setPosterTheme:["compId","accent"],
     setPosterFocus:["compId","focus"],
     detectPosterFocus:["compId"],
+    convertDescToInlineHtml:["compId","description"],
     deleteRulesPdf:["compId"],
     createLicense:["tier","years"],
     deleteLicense:["code"],
