@@ -5442,6 +5442,24 @@ exports.setPosterTheme = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
+// #3: 設定整組主題 5 色（逐色編輯與預設主題共用）— 公開頁整頁套用。
+exports.setThemeColors = compAuthCallable(async (data, request) => {
+  const { compId, colors } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+  let obj; try { obj = JSON.parse(String(colors || "{}")); } catch (e) { return { success: false, message: "顏色格式錯誤" }; }
+  if (!obj || typeof obj !== "object") return { success: false, message: "顏色格式錯誤" };
+  const out = {};
+  ["primary", "secondary", "accent", "background", "text"].forEach(function (k) {
+    if (typeof obj[k] === "string" && /^#[0-9a-fA-F]{6}$/.test(obj[k].trim())) out[k] = obj[k].trim();
+  });
+  if (!Object.keys(out).length) return { success: false, message: "沒有有效的顏色" };
+  await ref.update({ themeColors: JSON.stringify(out) });
+  await auditLog(request.authUser.username, "set theme colors", compId, Object.keys(out).join(","));
+  return { success: true };
+});
+
 // Q1: 海報焦點（object-position）— 控制公開頁方形封面顯示哪一塊。focus 例："50% 30%"。
 exports.setPosterFocus = compAuthCallable(async (data, request) => {
   const { compId, focus } = data;

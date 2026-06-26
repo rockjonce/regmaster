@@ -211,6 +211,7 @@
     deletePosterImage:["compId"],
     clearPosterTheme:["compId"],
     setPosterTheme:["compId","accent"],
+    setThemeColors:["compId","colors"],
     setPosterFocus:["compId","focus"],
     detectPosterFocus:["compId"],
     convertDescToInlineHtml:["compId","description"],

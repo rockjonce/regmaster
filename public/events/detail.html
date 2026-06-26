@@ -509,27 +509,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         var origInk = cs.getPropertyValue('--ink').trim();
         if (origInk) rsHead.setProperty('--brand-ink', origInk);
         var t = (typeof themeRaw === 'string') ? JSON.parse(themeRaw) : themeRaw;
-        // Q2: 只套用「強調色」到 --acc，並夾住亮度確保對比；不再覆蓋文字(--ink*)與底色(--bg)，
-        // 避免整頁配色走鐘、可讀性變差（舊活動的多色 palette 也只取 accent）。
-        var clampAccent = function (hex) {
-          var mm = String(hex || '').trim().match(/^#?([0-9a-fA-F]{6})$/); if (!mm) return '';
-          var nn = parseInt(mm[1], 16), r = (nn >> 16) & 255, g = (nn >> 8) & 255, b = nn & 255;
-          var lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-          if (lum > 0.62) { var f = (0.62 / lum) * 0.92; r = Math.round(r * f); g = Math.round(g * f); b = Math.round(b * f); }
-          return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-        };
-        var acc = clampAccent(t && (t.accent || t.primary || t.color));
-        if (acc) {
-          rsHead.setProperty('--acc', acc);
-          // Q2: 讓「強調色」確實看得到 — 套到報名 CTA 按鈕與（無海報時的）封面漸層，
-          // 但仍不動文字/底色（避免走鐘）。
-          var _ts = document.createElement('style');
-          _ts.textContent =
-            '#registerBtn,#registerBtn:link,#registerBtn:visited{background:' + acc + ' !important;border-color:' + acc + ' !important;color:#fff !important}' +
-            '#registerBtn:hover{filter:brightness(.93)}' +
-            '.cover:not(.has-poster){background:linear-gradient(135deg,' + acc + ',color-mix(in srgb,' + acc + ' 60%,#000)) !important}';
-          document.head.appendChild(_ts);
-        }
+        // #3：整頁套用 AI／主辦設定的 5 色（主辦可在後台逐色微調修正走鐘的色）。
+        if (t.primary)    rsHead.setProperty('--ink',   t.primary);
+        if (t.secondary)  rsHead.setProperty('--ink-2', t.secondary);
+        if (t.accent)     rsHead.setProperty('--acc',   t.accent);
+        if (t.background) rsHead.setProperty('--bg',    t.background);
+        if (t.text)       rsHead.setProperty('--ink-3', t.text);
       } catch (e) { /* ignore malformed theme */ }
     }
 
