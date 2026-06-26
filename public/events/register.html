@@ -367,31 +367,36 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           <div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:6px" data-i18n="rgQrHint">活動當天出示此 QR 即可報到</div>
         </div>
 
-        <!-- 加入行事曆（無可解析活動日則隱藏） -->
-        <div id="rgCalBox" style="display:none; margin-top:22px">
-          <div style="font:700 12px/1.4 var(--f-display); margin-bottom:8px; text-align:center" data-i18n="rgCalTitle">📅 加入行事曆</div>
-          <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap">
-            <a id="rgCalGoogle" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Google</a>
-            <a id="rgCalIcs" href="#" class="btn btn-ghost btn-sm" data-i18n="rgCalIcs">Apple／Outlook (.ics)</a>
+        <!-- 完成頁動作：統一尺寸、等寬網格，避免忽大忽小 -->
+        <div style="max-width:420px; margin:0 auto">
+          <!-- 加入行事曆（無可解析活動日則隱藏） -->
+          <div id="rgCalBox" style="display:none; margin-top:22px">
+            <div style="font:700 12px/1.4 var(--f-display); margin-bottom:8px; text-align:center" data-i18n="rgCalTitle">📅 加入行事曆</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+              <a id="rgCalGoogle" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-block">Google</a>
+              <a id="rgCalIcs" href="#" class="btn btn-ghost btn-block" data-i18n="rgCalIcs">Apple／Outlook</a>
+            </div>
           </div>
-        </div>
 
-        <!-- 分享 / 邀請（只帶公開活動連結，不含編號·密碼·QR） -->
-        <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:22px">
-          <button type="button" id="rgShareBtn" class="btn btn-ghost" data-i18n="rgShareBtn">🔗 分享我報名了</button>
-          <button type="button" id="rgInviteBtn" class="btn btn-ghost" data-i18n="rgInviteBtn">👥 邀請朋友揪團</button>
-        </div>
-        <div id="rgShareFallback" style="display:none; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px">
-          <button type="button" id="rgShareLine" class="btn btn-ghost btn-sm">LINE</button>
-          <button type="button" id="rgShareFb" class="btn btn-ghost btn-sm">Facebook</button>
-          <button type="button" id="rgShareCopy" class="btn btn-ghost btn-sm" data-i18n="rgShareCopy">複製連結</button>
-        </div>
+          <!-- 分享 / 邀請（只帶公開活動連結，不含編號·密碼·QR） -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px">
+            <button type="button" id="rgShareBtn" class="btn btn-ghost btn-block" data-i18n="rgShareBtn">🔗 分享我報名了</button>
+            <button type="button" id="rgInviteBtn" class="btn btn-ghost btn-block" data-i18n="rgInviteBtn">👥 邀請朋友揪團</button>
+          </div>
+          <div id="rgShareFallback" style="display:none; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px">
+            <button type="button" id="rgShareLine" class="btn btn-ghost btn-block">LINE</button>
+            <button type="button" id="rgShareFb" class="btn btn-ghost btn-block">Facebook</button>
+            <button type="button" id="rgShareCopy" class="btn btn-ghost btn-block" data-i18n="rgShareCopy">複製連結</button>
+          </div>
 
-        <!-- 導覽 -->
-        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:24px">
-          <a href="/my.html" class="btn btn-primary btn-lg" data-i18n="rgViewMy">查看我的報名 →</a>
-          <a id="rgBackEvent" href="#" class="btn btn-ghost" data-i18n="rgBackEvent">返回活動頁</a>
-          <a href="/events/" class="btn btn-ghost" data-i18n="rgExploreMore">探索更多活動</a>
+          <!-- 主要動作（整列） -->
+          <a href="/my.html" class="btn btn-primary btn-block" style="margin-top:16px" data-i18n="rgViewMy">查看我的報名 →</a>
+
+          <!-- 次要導覽 -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px">
+            <a id="rgBackEvent" href="#" class="btn btn-ghost btn-block" data-i18n="rgBackEvent">返回活動頁</a>
+            <a href="/events/" class="btn btn-ghost btn-block" data-i18n="rgExploreMore">探索更多活動</a>
+          </div>
         </div>
       </div>
     </div>
@@ -1636,7 +1641,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     // ── Feature 2 + 5：分享 / 邀請（Web Share API，否則展開 LINE/FB/複製）──
     function _share(text) {
       if (navigator.share) { navigator.share({ title: eventName, text: text, url: link }).catch(function () {}); }
-      else { var fb = document.getElementById('rgShareFallback'); if (fb) fb.style.display = 'flex'; }
+      else { var fb = document.getElementById('rgShareFallback'); if (fb) fb.style.display = 'grid'; }
     }
     var sB = document.getElementById('rgShareBtn'); if (sB) sB.addEventListener('click', function () { _share(window.L('rgShareText').replace('{n}', eventName)); });
     var iB = document.getElementById('rgInviteBtn'); if (iB) iB.addEventListener('click', function () { _share(window.L('rgInviteText').replace('{n}', eventName)); });
