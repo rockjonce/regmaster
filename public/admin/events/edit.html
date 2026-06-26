@@ -270,20 +270,13 @@
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
               <div><h3 data-i18n="aeEditSecPosterH">活動海報</h3><p data-i18n="aeEditSecPosterP">上傳海報圖片，並可用 AI 自動擷取主視覺配色，套用到公開頁的主題色</p></div>
             </div>
-            <div id="posterPreview" style="display:none; margin-bottom:14px; position:relative; width:fit-content">
-              <img id="posterImg" alt="海報" style="max-width:240px; max-height:320px; border-radius:10px; border:1px solid var(--line); display:block">
-              <button type="button" id="posterRemoveBtn" data-i18n-title="aeEditPosterRemove" title="移除海報" aria-label="移除海報" style="position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:1px solid rgba(255,255,255,.6); background:rgba(0,0,0,.55); color:#fff; font:700 13px/1 system-ui; cursor:pointer; display:grid; place-items:center">✕</button>
-            </div>
-            <!-- Q1: 海報焦點（拖曳焦點 + AI 對焦），控制公開頁方形封面顯示區域 -->
-            <div id="focalBox" style="display:none; margin-bottom:14px">
-              <div style="font:600 12px/1.4 var(--f-tc); color:var(--muted); margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
-                <span data-i18n="aeEditFocalLbl">公開頁顯示範圍（拖曳焦點調整）</span>
-                <button type="button" class="btn btn-ghost btn-sm" id="aiFocusBtn" style="display:none" data-i18n="aeEditAiFocus">🎯 AI 對焦</button>
-              </div>
+            <!-- Q1（簡化）：海報縮圖本身即「拖曳焦點」面；右側同行顯示公開頁封面預覽 -->
+            <div id="posterPreview" style="display:none; margin-bottom:14px">
               <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap">
-                <div id="focalStage" style="position:relative; width:160px; touch-action:none; user-select:none; cursor:crosshair; border-radius:10px; overflow:hidden; border:1px solid var(--line)">
-                  <img id="focalImg" alt="" style="display:block; width:100%; height:auto; pointer-events:none">
+                <div id="focalStage" style="position:relative; width:fit-content; max-width:240px; touch-action:none; user-select:none; cursor:crosshair; border-radius:10px; overflow:hidden; border:1px solid var(--line)">
+                  <img id="posterImg" alt="海報" style="display:block; max-width:240px; max-height:320px; pointer-events:none">
                   <div id="focalDot" style="position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.55); background:rgba(255,255,255,.25); pointer-events:none"></div>
+                  <button type="button" id="posterRemoveBtn" data-i18n-title="aeEditPosterRemove" title="移除海報" aria-label="移除海報" style="position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:1px solid rgba(255,255,255,.6); background:rgba(0,0,0,.55); color:#fff; font:700 13px/1 system-ui; cursor:pointer; display:grid; place-items:center; z-index:2">✕</button>
                 </div>
                 <div style="text-align:center">
                   <div style="width:120px; aspect-ratio:1/1.1; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2)">
@@ -291,6 +284,10 @@
                   </div>
                   <div style="font:400 10px/1.4 var(--f-mono); color:var(--muted); margin-top:4px" data-i18n="aeEditFocalPreviewLbl">公開頁封面</div>
                 </div>
+              </div>
+              <div style="font:600 11px/1.4 var(--f-tc); color:var(--muted); margin-top:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                <span data-i18n="aeEditFocalLbl">公開頁顯示範圍（拖曳焦點調整）</span>
+                <button type="button" class="btn btn-ghost btn-sm" id="aiFocusBtn" style="display:none" data-i18n="aeEditAiFocus">🎯 AI 對焦</button>
               </div>
             </div>
             <input type="file" id="posterFile" accept="image/*" style="display:none">
@@ -1546,15 +1543,13 @@
       .withFailureHandler(function () {}).setPosterFocus(compId, Math.round(FOCUS.x) + '% ' + Math.round(FOCUS.y) + '%');
   }
   function showFocal(src) {
-    var box = document.getElementById('focalBox'); if (!box) return;
-    if (!src) { box.style.display = 'none'; return; }
-    document.getElementById('focalImg').src = src;
-    document.getElementById('focalPreview').src = src;
+    if (!src) return;   // 移除海報時 posterPreview 整塊隱藏，焦點 UI 隨之消失
+    var pv = document.getElementById('focalPreview'); if (!pv) return;
+    pv.src = src;
     var raw = String((typeof COMP === 'object' && COMP && COMP.posterFocus) || CFG.posterFocus || '');
     var pf = raw.match(/(\d{1,3})% (\d{1,3})%/);
     FOCUS = pf ? { x: +pf[1], y: +pf[2] } : { x: 50, y: 50 };
     _applyFocusUI();
-    box.style.display = '';
   }
   (function () {
     var stage = document.getElementById('focalStage'); if (!stage) return;
@@ -1566,7 +1561,7 @@
       FOCUS.y = Math.max(0, Math.min(100, ((cy - r.top) / r.height) * 100));
       _applyFocusUI();
     }
-    stage.addEventListener('pointerdown', function (e) { dragging = true; try { stage.setPointerCapture(e.pointerId); } catch (x) {} fromEvt(e); });
+    stage.addEventListener('pointerdown', function (e) { if (e.target.closest && e.target.closest('#posterRemoveBtn')) return; dragging = true; try { stage.setPointerCapture(e.pointerId); } catch (x) {} fromEvt(e); });
     stage.addEventListener('pointermove', function (e) { if (dragging) fromEvt(e); });
     stage.addEventListener('pointerup', function () { if (dragging) { dragging = false; _saveFocus(); } });
     stage.addEventListener('pointercancel', function () { dragging = false; });
