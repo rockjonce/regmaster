@@ -97,6 +97,9 @@
     aeEditPosterRemoveFail: '移除海報失敗',
     aeEditThemeCleared: '✓ 已還原預設配色',
     aeEditClearThemeFail: '還原配色失敗',
+    aeEditManualColorLbl: '手動強調色',
+    aeEditAccentSet: '✓ 已套用強調色',
+    aeEditAccentFail: '套用強調色失敗',
 
     // ----- BASIC: 活動簡章 PDF -----
     aeEditSecPdfH: '活動簡章 (PDF)',
@@ -566,6 +569,9 @@
     aeEditPosterRemoveFail: 'Failed to remove poster',
     aeEditThemeCleared: '✓ Reverted to default colors',
     aeEditClearThemeFail: 'Failed to revert colors',
+    aeEditManualColorLbl: 'Accent color',
+    aeEditAccentSet: '✓ Accent applied',
+    aeEditAccentFail: 'Failed to apply accent',
 
     // ----- BASIC: 活動簡章 PDF -----
     aeEditSecPdfH: 'Event Brochure (PDF)',

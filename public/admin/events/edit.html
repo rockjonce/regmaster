@@ -284,6 +284,12 @@
             </div>
             <div id="posterMsg" class="help" style="margin-top:8px"></div>
             <div id="colorSwatches" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap"></div>
+            <!-- Q2: 手動強調色 + 預設主題（與 AI 配色並存；公開頁只用強調色） -->
+            <div style="display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap">
+              <span style="font:600 12px/1 var(--f-tc); color:var(--muted)" data-i18n="aeEditManualColorLbl">手動強調色</span>
+              <input type="color" id="accentPicker" value="#0A437A" style="width:42px; height:32px; border:1px solid var(--line); border-radius:8px; background:none; cursor:pointer; padding:2px">
+              <div id="themePresets" style="display:flex; gap:6px"></div>
+            </div>
           </div>
 
           <!-- 活動簡章 PDF + AI 知識庫 -->
@@ -1431,6 +1437,7 @@
     try { c = (typeof theme === 'string') ? JSON.parse(theme) : theme; } catch (e) { c = null; }
     if (!c || typeof c !== 'object') { if (_ct) _ct.style.display = 'none'; return; }
     if (_ct) _ct.style.display = '';   // Q3: 有配色才顯示「✕ 不採用配色」
+    var _ap = document.getElementById('accentPicker'); var _ac = c.accent || c.primary; if (_ap && _ac && /^#[0-9a-fA-F]{6}$/.test(_ac)) _ap.value = _ac;   // Q2: 同步手動色票
     document.getElementById('colorSwatches').innerHTML = Object.keys(c).map(function (k) {
       return '<div style="text-align:center"><div style="width:42px;height:42px;border-radius:8px;border:1px solid var(--line);background:' + escapeHtml(c[k]) + '"></div><div style="font:400 9.5px/1.4 var(--f-mono);color:var(--muted);margin-top:3px">' + escapeHtml(k) + '</div></div>';
     }).join('');
@@ -1482,6 +1489,29 @@
         document.getElementById('posterMsg').textContent = window.L('aeEditThemeCleared');
       } else uiAlert((res && res.message) || window.L('aeEditClearThemeFail'));
     }).withFailureHandler(function (e) { b.disabled = false; uiAlert(window.L('aeEditClearThemeFail') + '：' + ((e && e.message) || '')); }).clearPosterTheme(compId);
+  });
+
+  // Q2: 手動強調色 + 預設主題（存成 {accent}；公開頁只用強調色當 --acc）
+  var THEME_PRESETS = ['#2F5BD9', '#15803D', '#EA580C', '#DB2777', '#334155'];
+  (function () {
+    var box = document.getElementById('themePresets');
+    if (box) box.innerHTML = THEME_PRESETS.map(function (c) {
+      return '<button type="button" class="theme-preset" data-c="' + c + '" title="' + c + '" style="width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:' + c + ';cursor:pointer;padding:0"></button>';
+    }).join('');
+  })();
+  function applyAccent(hex) {
+    google.script.run.withSuccessHandler(function (res) {
+      if (res && res.success) {
+        CFG.themeColors = JSON.stringify({ accent: hex }); if (typeof COMP === 'object' && COMP) COMP.themeColors = CFG.themeColors;
+        renderPaletteFromTheme(CFG.themeColors);
+        document.getElementById('posterMsg').textContent = window.L('aeEditAccentSet');
+      } else uiAlert((res && res.message) || window.L('aeEditAccentFail'));
+    }).withFailureHandler(function (e) { uiAlert(window.L('aeEditAccentFail') + '：' + ((e && e.message) || '')); }).setPosterTheme(compId, hex);
+  }
+  document.getElementById('accentPicker').addEventListener('change', function () { applyAccent(this.value); });
+  document.getElementById('themePresets').addEventListener('click', function (e) {
+    var b = e.target.closest('.theme-preset'); if (!b) return;
+    document.getElementById('accentPicker').value = b.dataset.c; applyAccent(b.dataset.c);
   });
 
   // ===== S3: 簡章 PDF + AI 知識庫 =====

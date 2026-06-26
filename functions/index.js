@@ -5428,6 +5428,19 @@ exports.clearPosterTheme = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
+// Q2: 手動設定主題「強調色」（手選或預設主題）— 存成 {accent}，公開頁只用它當 --acc。
+exports.setPosterTheme = compAuthCallable(async (data, request) => {
+  const { compId, accent } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+  const hex = String(accent || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return { success: false, message: "顏色格式錯誤（需 #RRGGBB）" };
+  await ref.update({ themeColors: JSON.stringify({ accent: hex }) });
+  await auditLog(request.authUser.username, "set theme accent", compId, hex);
+  return { success: true };
+});
+
 // ===== Delete Rules PDF =====
 exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
   const { compId } = data;

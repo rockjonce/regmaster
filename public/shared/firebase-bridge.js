@@ -210,6 +210,7 @@
     aiConvertInlineHTML:["compId","htmlContent","fieldName"],
     deletePosterImage:["compId"],
     clearPosterTheme:["compId"],
+    setPosterTheme:["compId","accent"],
     deleteRulesPdf:["compId"],
     createLicense:["tier","years"],
     deleteLicense:["code"],
