@@ -976,7 +976,9 @@ async function getNotificationsInternal(role, username) {
 }
 
 // BUG-04 FIX: addNotification validates compId exists
-exports.addNotification = callable(async (data) => {
+exports.addNotification = callable(async (data, request) => {
+  const _rl = await checkRateLimit("notif_ip_" + clientIp(request), 10, 600000);  // C-1: 10 / 10 min / IP，防匿名灌爆主辦通知匣
+  if (!_rl.ok) return { success: false, message: "操作過於頻繁，請稍後再試" };
   if (!data.compId) return { success: false, message: "missing compId" };
   const compDoc = await db.collection("competitions").doc(data.compId).get();
   if (!compDoc.exists) return { success: false, message: "活動不存在" };
@@ -2140,6 +2142,9 @@ exports.requestAccount = callable(async (data, request) => {
   const { username, password, displayName, email, phone, intendedPlan, eulaAgreed } = data;
   if (!username || !password || !email || !displayName) return { success: false, message: "必填欄位請填寫完整" };
   if (!eulaAgreed) return { success: false, message: "請先閱讀並同意服務條款與 EULA" };
+  // C-3: 伺服器端密碼強度檢查（比照 changePassword/resetAccountPassword 既有規則，避免前端被繞過）
+  if (typeof password !== "string" || password.length < 6 || password.length > 30) return { success: false, message: "密碼長度須為 6–30 字元" };
+  if (/\s/.test(password)) return { success: false, message: "密碼不可包含空白字元" };
 
   // V3 Phase 2.5: validate plan from signup page (defaults to "free" legacy behavior)
   // QW-2: the 14-day free trial is offered for Starter / Pro only (no standalone "trial" plan).
@@ -2158,7 +2163,7 @@ exports.requestAccount = callable(async (data, request) => {
 
   // 寫入暫存區 (15分鐘後過期)
   await db.collection("accountRequests").doc(username).set({
-    username, passwordHash: hashPwd(password), displayName, email, phone, otp,
+    username, passwordBcrypt: hashPwdBcrypt(password), displayName, email, phone, otp,   // C-3: 註冊即 bcrypt（不再用未加鹽 SHA-256）
     intendedPlan: plan,
     eulaVersion: EULA_VERSION, eulaAgreed: true,
     expiresAt: new Date(Date.now() + 15 * 60000).getTime()
@@ -2320,7 +2325,7 @@ exports.verifyAccount = callable(async (data, request) => {
   // 1. 正式建立帳號（V3 Phase 2.5：紀錄使用者註冊時的方案意圖）
   const intendedPlan = reqData.intendedPlan || "free";
   await db.collection("accounts").add({
-    username: reqData.username, passwordHash: reqData.passwordHash, role: "competition",
+    username: reqData.username, passwordBcrypt: reqData.passwordBcrypt, role: "competition",   // C-3: 落地 bcrypt
     displayName: reqData.displayName, email: reqData.email, phone: reqData.phone || "",
     emailVerified: true,
     intendedPlan,                       // V3: signup-time plan choice (free/trial/starter/pro)
@@ -4381,7 +4386,7 @@ async function checkRateLimit(key, limit, windowMs) {
       let count = 0, windowStart = now;
       if (d.exists) { const v = d.data(); if (now - (v.windowStart || 0) < windowMs) { count = v.count || 0; windowStart = v.windowStart || now; } }
       if (count >= limit) return { ok: false };
-      tx.set(ref, { count: count + 1, windowStart, updatedAt: now });
+      tx.set(ref, { count: count + 1, windowStart, updatedAt: now, expireAt: admin.firestore.Timestamp.fromMillis(windowStart + windowMs) });   // H-6: 供 Firestore TTL 自動清理舊限流文件
       return { ok: true };
     });
   } catch (e) { return { ok: true }; }
