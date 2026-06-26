@@ -5441,6 +5441,49 @@ exports.setPosterTheme = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
+// Q1: 海報焦點（object-position）— 控制公開頁方形封面顯示哪一塊。focus 例："50% 30%"。
+exports.setPosterFocus = compAuthCallable(async (data, request) => {
+  const { compId, focus } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+  const f = String(focus || "").trim();
+  if (!/^\d{1,3}% \d{1,3}%$/.test(f)) return { success: false, message: "焦點格式錯誤" };
+  await ref.update({ posterFocus: f });
+  return { success: true };
+});
+
+// Q1: AI 對焦 — Gemini 偵測海報「活動名稱／主標題」中心位置，回 {x,y}(0-100 百分比)。前端據此設焦點，不直接落地。
+exports.detectPosterFocus = compAuthCallable(async (data, request) => {
+  const { compId } = data;
+  const keyInfo = await getNextGeminiKey();
+  if (!keyInfo) return { success: false, message: "請先設定 Gemini API Key" };
+  try {
+    const compDoc = await db.collection("competitions").doc(compId).get();
+    const cd = compDoc.exists ? compDoc.data() : {};
+    let base64Data = "", mimeType = "image/png";
+    if (cd.posterDocId) {
+      const pd = await db.collection("posterFiles").doc(cd.posterDocId).get();
+      if (pd.exists) { base64Data = pd.data().data || ""; mimeType = pd.data().mimeType || "image/png"; }
+    }
+    if (!base64Data) return { success: false, message: "請先上傳海報圖片" };
+    const prompt = '這是一張活動海報。找出「活動名稱／主標題」文字區塊的中心位置，以整張圖的百分比座標回答。嚴格只回 JSON、不要 Markdown：{"x":0-100,"y":0-100}。x 水平(左0右100)，y 垂直(上0下100)。';
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ inlineData: { mimeType, data: base64Data } }, { text: prompt }] }], generationConfig: { maxOutputTokens: 256, temperature: 0.1 } })
+    });
+    const json = await res.json();
+    let text = ""; try { json.candidates[0].content.parts.forEach(p => { if (p.text) text += p.text; }); } catch (e) {}
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) return { success: false, message: "AI 無法判讀海報" };
+    const o = JSON.parse(m[0]);
+    const x = Math.max(0, Math.min(100, Math.round(Number(o.x))));
+    const y = Math.max(0, Math.min(100, Math.round(Number(o.y))));
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return { success: false, message: "AI 回傳無效座標" };
+    return { success: true, x, y };
+  } catch (e) { await rotateGeminiKey(); return { success: false, message: "AI 暫時無法使用：" + (e && e.message) }; }
+});
+
 // ===== Delete Rules PDF =====
 exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
   const { compId } = data;

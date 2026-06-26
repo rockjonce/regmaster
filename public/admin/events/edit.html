@@ -274,6 +274,25 @@
               <img id="posterImg" alt="海報" style="max-width:240px; max-height:320px; border-radius:10px; border:1px solid var(--line); display:block">
               <button type="button" id="posterRemoveBtn" data-i18n-title="aeEditPosterRemove" title="移除海報" aria-label="移除海報" style="position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:1px solid rgba(255,255,255,.6); background:rgba(0,0,0,.55); color:#fff; font:700 13px/1 system-ui; cursor:pointer; display:grid; place-items:center">✕</button>
             </div>
+            <!-- Q1: 海報焦點（拖曳焦點 + AI 對焦），控制公開頁方形封面顯示區域 -->
+            <div id="focalBox" style="display:none; margin-bottom:14px">
+              <div style="font:600 12px/1.4 var(--f-tc); color:var(--muted); margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                <span data-i18n="aeEditFocalLbl">公開頁顯示範圍（拖曳焦點調整）</span>
+                <button type="button" class="btn btn-ghost btn-sm" id="aiFocusBtn" data-i18n="aeEditAiFocus">🎯 AI 對焦</button>
+              </div>
+              <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap">
+                <div id="focalStage" style="position:relative; width:160px; touch-action:none; user-select:none; cursor:crosshair; border-radius:10px; overflow:hidden; border:1px solid var(--line)">
+                  <img id="focalImg" alt="" style="display:block; width:100%; height:auto; pointer-events:none">
+                  <div id="focalDot" style="position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.55); background:rgba(255,255,255,.25); pointer-events:none"></div>
+                </div>
+                <div style="text-align:center">
+                  <div style="width:120px; aspect-ratio:1/1.1; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2)">
+                    <img id="focalPreview" alt="" style="width:100%; height:100%; object-fit:cover; object-position:50% 50%; display:block">
+                  </div>
+                  <div style="font:400 10px/1.4 var(--f-mono); color:var(--muted); margin-top:4px" data-i18n="aeEditFocalPreviewLbl">公開頁封面</div>
+                </div>
+              </div>
+            </div>
             <input type="file" id="posterFile" accept="image/*" style="display:none">
             <div style="display:flex; gap:8px; flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" id="posterPickBtn" data-i18n="aeEditPosterPickBtn">選擇圖片…</button>
@@ -1382,7 +1401,7 @@
   // ===== S2: 活動海報上傳 + AI 配色 =====
   var posterChosen = null;
   var LAST_POSTER_SRC = '';
-  function showPosterImg(src) { document.getElementById('posterImg').src = src; document.getElementById('posterPreview').style.display = 'block'; LAST_POSTER_SRC = src; }
+  function showPosterImg(src) { document.getElementById('posterImg').src = src; document.getElementById('posterPreview').style.display = 'block'; LAST_POSTER_SRC = src; try { showFocal(src); } catch (e) {} }
   document.getElementById('posterPreviewBtn').addEventListener('click', function () {
     if (!LAST_POSTER_SRC) { uiAlert(window.L('aeEditPosterNotLoaded')); return; }
     openMediaModal('<img src="' + LAST_POSTER_SRC + '" alt="' + escapeHtml(window.L('aeEditPosterImgAltModal')) + '" style="display:block;max-width:100%;height:auto;border-radius:10px">', window.L('aeEditModalPosterTitle'));
@@ -1468,6 +1487,7 @@
           CFG.posterUrl = ''; posterChosen = null; LAST_POSTER_SRC = '';
           document.getElementById('posterPreview').style.display = 'none';
           document.getElementById('posterImg').src = '';
+          try { showFocal(''); } catch (e) {}
           document.getElementById('analyzeColorsBtn').disabled = true;
           document.getElementById('posterUploadBtn').disabled = true;
           document.getElementById('posterPreviewBtn').disabled = true;
@@ -1512,6 +1532,52 @@
   document.getElementById('themePresets').addEventListener('click', function (e) {
     var b = e.target.closest('.theme-preset'); if (!b) return;
     document.getElementById('accentPicker').value = b.dataset.c; applyAccent(b.dataset.c);
+  });
+
+  // Q1: 海報焦點（AI 建議 + 手動拖曳）— 控制公開頁方形封面顯示哪一塊
+  var FOCUS = { x: 50, y: 50 };
+  function _applyFocusUI() {
+    var dot = document.getElementById('focalDot'), pv = document.getElementById('focalPreview');
+    if (dot) { dot.style.left = FOCUS.x + '%'; dot.style.top = FOCUS.y + '%'; }
+    if (pv) pv.style.objectPosition = Math.round(FOCUS.x) + '% ' + Math.round(FOCUS.y) + '%';
+  }
+  function _saveFocus() {
+    google.script.run.withSuccessHandler(function () { document.getElementById('posterMsg').textContent = window.L('aeEditFocalSaved'); })
+      .withFailureHandler(function () {}).setPosterFocus(compId, Math.round(FOCUS.x) + '% ' + Math.round(FOCUS.y) + '%');
+  }
+  function showFocal(src) {
+    var box = document.getElementById('focalBox'); if (!box) return;
+    if (!src) { box.style.display = 'none'; return; }
+    document.getElementById('focalImg').src = src;
+    document.getElementById('focalPreview').src = src;
+    var raw = String((typeof COMP === 'object' && COMP && COMP.posterFocus) || CFG.posterFocus || '');
+    var pf = raw.match(/(\d{1,3})% (\d{1,3})%/);
+    FOCUS = pf ? { x: +pf[1], y: +pf[2] } : { x: 50, y: 50 };
+    _applyFocusUI();
+    box.style.display = '';
+  }
+  (function () {
+    var stage = document.getElementById('focalStage'); if (!stage) return;
+    var dragging = false;
+    function fromEvt(e) {
+      var r = stage.getBoundingClientRect();
+      var cx = (e.touches ? e.touches[0].clientX : e.clientX), cy = (e.touches ? e.touches[0].clientY : e.clientY);
+      FOCUS.x = Math.max(0, Math.min(100, ((cx - r.left) / r.width) * 100));
+      FOCUS.y = Math.max(0, Math.min(100, ((cy - r.top) / r.height) * 100));
+      _applyFocusUI();
+    }
+    stage.addEventListener('pointerdown', function (e) { dragging = true; try { stage.setPointerCapture(e.pointerId); } catch (x) {} fromEvt(e); });
+    stage.addEventListener('pointermove', function (e) { if (dragging) fromEvt(e); });
+    stage.addEventListener('pointerup', function () { if (dragging) { dragging = false; _saveFocus(); } });
+    stage.addEventListener('pointercancel', function () { dragging = false; });
+  })();
+  document.getElementById('aiFocusBtn').addEventListener('click', function () {
+    var b = this; b.disabled = true; b.textContent = window.L('aeEditAiFocusBusy');
+    google.script.run.withSuccessHandler(function (res) {
+      b.disabled = false; b.textContent = window.L('aeEditAiFocus');
+      if (res && res.success) { FOCUS = { x: res.x, y: res.y }; _applyFocusUI(); _saveFocus(); document.getElementById('posterMsg').textContent = window.L('aeEditAiFocusDone'); }
+      else uiAlert((res && res.message) || window.L('aeEditAiFocusFail'));
+    }).withFailureHandler(function (e) { b.disabled = false; b.textContent = window.L('aeEditAiFocus'); uiAlert(window.L('aeEditAiFocusFail') + '：' + ((e && e.message) || '')); }).detectPosterFocus(compId);
   });
 
   // ===== S3: 簡章 PDF + AI 知識庫 =====

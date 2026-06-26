@@ -100,6 +100,13 @@
     aeEditManualColorLbl: '手動強調色',
     aeEditAccentSet: '✓ 已套用強調色',
     aeEditAccentFail: '套用強調色失敗',
+    aeEditFocalLbl: '公開頁顯示範圍（拖曳焦點調整）',
+    aeEditFocalPreviewLbl: '公開頁封面',
+    aeEditFocalSaved: '✓ 已更新顯示範圍',
+    aeEditAiFocus: '🎯 AI 對焦',
+    aeEditAiFocusBusy: '對焦中…',
+    aeEditAiFocusDone: '✓ AI 已對焦到活動名稱',
+    aeEditAiFocusFail: 'AI 對焦失敗',
 
     // ----- BASIC: 活動簡章 PDF -----
     aeEditSecPdfH: '活動簡章 (PDF)',
@@ -572,6 +579,13 @@
     aeEditManualColorLbl: 'Accent color',
     aeEditAccentSet: '✓ Accent applied',
     aeEditAccentFail: 'Failed to apply accent',
+    aeEditFocalLbl: 'Visible area on public page (drag the focus)',
+    aeEditFocalPreviewLbl: 'Public cover',
+    aeEditFocalSaved: '✓ Visible area updated',
+    aeEditAiFocus: '🎯 AI focus',
+    aeEditAiFocusBusy: 'Focusing…',
+    aeEditAiFocusDone: '✓ AI focused on the event name',
+    aeEditAiFocusFail: 'AI focus failed',
 
     // ----- BASIC: 活動簡章 PDF -----
     aeEditSecPdfH: 'Event Brochure (PDF)',

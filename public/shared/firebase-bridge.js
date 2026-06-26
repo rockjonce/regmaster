@@ -211,6 +211,8 @@
     deletePosterImage:["compId"],
     clearPosterTheme:["compId"],
     setPosterTheme:["compId","accent"],
+    setPosterFocus:["compId","focus"],
+    detectPosterFocus:["compId"],
     deleteRulesPdf:["compId"],
     createLicense:["tier","years"],
     deleteLicense:["code"],
