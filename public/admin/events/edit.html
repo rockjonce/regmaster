@@ -270,13 +270,17 @@
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
               <div><h3 data-i18n="aeEditSecPosterH">活動海報</h3><p data-i18n="aeEditSecPosterP">上傳海報圖片，並可用 AI 自動擷取主視覺配色，套用到公開頁的主題色</p></div>
             </div>
-            <div id="posterPreview" style="display:none; margin-bottom:14px"><img id="posterImg" alt="海報" style="max-width:240px; max-height:320px; border-radius:10px; border:1px solid var(--line); display:block"></div>
+            <div id="posterPreview" style="display:none; margin-bottom:14px; position:relative; width:fit-content">
+              <img id="posterImg" alt="海報" style="max-width:240px; max-height:320px; border-radius:10px; border:1px solid var(--line); display:block">
+              <button type="button" id="posterRemoveBtn" data-i18n-title="aeEditPosterRemove" title="移除海報" aria-label="移除海報" style="position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:1px solid rgba(255,255,255,.6); background:rgba(0,0,0,.55); color:#fff; font:700 13px/1 system-ui; cursor:pointer; display:grid; place-items:center">✕</button>
+            </div>
             <input type="file" id="posterFile" accept="image/*" style="display:none">
             <div style="display:flex; gap:8px; flex-wrap:wrap">
               <button type="button" class="btn btn-ghost btn-sm" id="posterPickBtn" data-i18n="aeEditPosterPickBtn">選擇圖片…</button>
               <button type="button" class="btn btn-primary btn-sm" id="posterUploadBtn" disabled data-i18n="aeEditPosterUploadBtn">上傳海報</button>
               <button type="button" class="btn btn-ghost btn-sm" id="posterPreviewBtn" disabled data-i18n="aeEditPosterPreviewBtn">🔍 預覽海報</button>
               <button type="button" class="btn btn-ghost btn-sm" id="analyzeColorsBtn" disabled data-i18n="aeEditAnalyzeColorsBtn">🎨 AI 配色</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="clearThemeBtn" style="display:none" data-i18n="aeEditClearTheme">✕ 不採用配色</button>
             </div>
             <div id="posterMsg" class="help" style="margin-top:8px"></div>
             <div id="colorSwatches" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap"></div>
@@ -1421,10 +1425,12 @@
   });
   // A.3: render persisted palette swatches; accepts JSON string or object
   function renderPaletteFromTheme(theme) {
-    if (!theme) { document.getElementById('colorSwatches').innerHTML = ''; return; }
+    var _ct = document.getElementById('clearThemeBtn');
+    if (!theme) { document.getElementById('colorSwatches').innerHTML = ''; if (_ct) _ct.style.display = 'none'; return; }
     var c;
     try { c = (typeof theme === 'string') ? JSON.parse(theme) : theme; } catch (e) { c = null; }
-    if (!c || typeof c !== 'object') return;
+    if (!c || typeof c !== 'object') { if (_ct) _ct.style.display = 'none'; return; }
+    if (_ct) _ct.style.display = '';   // Q3: 有配色才顯示「✕ 不採用配色」
     document.getElementById('colorSwatches').innerHTML = Object.keys(c).map(function (k) {
       return '<div style="text-align:center"><div style="width:42px;height:42px;border-radius:8px;border:1px solid var(--line);background:' + escapeHtml(c[k]) + '"></div><div style="font:400 9.5px/1.4 var(--f-mono);color:var(--muted);margin-top:3px">' + escapeHtml(k) + '</div></div>';
     }).join('');
@@ -1444,6 +1450,38 @@
       } else { uiAlert((res && res.message) || window.L('aeEditColorsFail')); }
     }).withFailureHandler(function (e) { btn.disabled = false; btn.textContent = window.L('aeEditAnalyzeColorsBtn'); uiAlert(window.L('aeEditColorsFailPre') + (e && e.message)); })
       .analyzePosterColors(compId, CFG.posterUrl || '');
+  });
+
+  // Q3: 移除海報（與 AI 配色獨立）— 用既有 deletePosterImage
+  document.getElementById('posterRemoveBtn').addEventListener('click', function () {
+    uiConfirm(window.L('aeEditPosterRemoveConfirm'), { title: window.L('aeEditPosterRemove'), danger: true }).then(function (ok) {
+      if (!ok) return;
+      google.script.run.withSuccessHandler(function (res) {
+        if (res && res.success) {
+          CFG.posterUrl = ''; posterChosen = null; LAST_POSTER_SRC = '';
+          document.getElementById('posterPreview').style.display = 'none';
+          document.getElementById('posterImg').src = '';
+          document.getElementById('analyzeColorsBtn').disabled = true;
+          document.getElementById('posterUploadBtn').disabled = true;
+          document.getElementById('posterPreviewBtn').disabled = true;
+          document.getElementById('posterMsg').textContent = window.L('aeEditPosterRemoved');
+        } else uiAlert((res && res.message) || window.L('aeEditPosterRemoveFail'));
+      }).withFailureHandler(function (e) { uiAlert(window.L('aeEditPosterRemoveFail') + '：' + ((e && e.message) || '')); }).deletePosterImage(compId);
+    });
+  });
+
+  // Q3: 不採用 AI 配色（與移除海報獨立）— 清掉 themeColors，公開頁回預設色
+  document.getElementById('clearThemeBtn').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    google.script.run.withSuccessHandler(function (res) {
+      b.disabled = false;
+      if (res && res.success) {
+        CFG.themeColors = ''; if (typeof COMP === 'object' && COMP) COMP.themeColors = '';
+        document.getElementById('colorSwatches').innerHTML = '';
+        b.style.display = 'none';
+        document.getElementById('posterMsg').textContent = window.L('aeEditThemeCleared');
+      } else uiAlert((res && res.message) || window.L('aeEditClearThemeFail'));
+    }).withFailureHandler(function (e) { b.disabled = false; uiAlert(window.L('aeEditClearThemeFail') + '：' + ((e && e.message) || '')); }).clearPosterTheme(compId);
   });
 
   // ===== S3: 簡章 PDF + AI 知識庫 =====

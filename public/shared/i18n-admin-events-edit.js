@@ -90,6 +90,13 @@
     aeEditPosterUploadBtn: '上傳海報',
     aeEditPosterPreviewBtn: '🔍 預覽海報',
     aeEditAnalyzeColorsBtn: '🎨 AI 配色',
+    aeEditClearTheme: '✕ 不採用配色',
+    aeEditPosterRemove: '移除海報',
+    aeEditPosterRemoveConfirm: '確定要移除此海報？公開頁將回到預設封面（不影響 AI 配色）。',
+    aeEditPosterRemoved: '✓ 已移除海報',
+    aeEditPosterRemoveFail: '移除海報失敗',
+    aeEditThemeCleared: '✓ 已還原預設配色',
+    aeEditClearThemeFail: '還原配色失敗',
 
     // ----- BASIC: 活動簡章 PDF -----
     aeEditSecPdfH: '活動簡章 (PDF)',
@@ -552,6 +559,13 @@
     aeEditPosterUploadBtn: 'Upload poster',
     aeEditPosterPreviewBtn: '🔍 Preview poster',
     aeEditAnalyzeColorsBtn: '🎨 AI colors',
+    aeEditClearTheme: '✕ Discard colors',
+    aeEditPosterRemove: 'Remove poster',
+    aeEditPosterRemoveConfirm: 'Remove this poster? The public page reverts to the default cover (AI colors are unaffected).',
+    aeEditPosterRemoved: '✓ Poster removed',
+    aeEditPosterRemoveFail: 'Failed to remove poster',
+    aeEditThemeCleared: '✓ Reverted to default colors',
+    aeEditClearThemeFail: 'Failed to revert colors',
 
     // ----- BASIC: 活動簡章 PDF -----
     aeEditSecPdfH: 'Event Brochure (PDF)',

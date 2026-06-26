@@ -209,6 +209,7 @@
     analyzeRulesWithAI:["compId"],
     aiConvertInlineHTML:["compId","htmlContent","fieldName"],
     deletePosterImage:["compId"],
+    clearPosterTheme:["compId"],
     deleteRulesPdf:["compId"],
     createLicense:["tier","years"],
     deleteLicense:["code"],

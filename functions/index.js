@@ -5417,6 +5417,17 @@ exports.deletePosterImage = compAuthCallable(async (data, request) => {
   return { success: true };
 });
 
+// Q3: 不採用 AI 配色（與移除海報獨立）— 清掉 themeColors，公開頁回到 RegMaster 預設主題色。
+exports.clearPosterTheme = compAuthCallable(async (data, request) => {
+  const { compId } = data;
+  const ref = db.collection("competitions").doc(compId);
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "活動不存在" };
+  await ref.update({ themeColors: "" });
+  await auditLog(request.authUser.username, "clear theme", compId, "");
+  return { success: true };
+});
+
 // ===== Delete Rules PDF =====
 exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
   const { compId } = data;
