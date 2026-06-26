@@ -1819,6 +1819,7 @@ exports.getRegistrationBundle = callable(async (data) => {
     rulesPdfUrl: cfg.rulesPdfId || "",
     pdfDocId: r.pdfDocId || "",
     themeColors: cfg.themeColors || "",
+    posterFocus: r.posterFocus || "",
     hostName: hostName,
     createdBy: createdBy,
     eventAiEnabled: eventAiEnabled,

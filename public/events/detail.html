@@ -518,7 +518,17 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
           return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
         };
         var acc = clampAccent(t && (t.accent || t.primary || t.color));
-        if (acc) rsHead.setProperty('--acc', acc);
+        if (acc) {
+          rsHead.setProperty('--acc', acc);
+          // Q2: 讓「強調色」確實看得到 — 套到報名 CTA 按鈕與（無海報時的）封面漸層，
+          // 但仍不動文字/底色（避免走鐘）。
+          var _ts = document.createElement('style');
+          _ts.textContent =
+            '#registerBtn,#registerBtn:link,#registerBtn:visited{background:' + acc + ' !important;border-color:' + acc + ' !important;color:#fff !important}' +
+            '#registerBtn:hover{filter:brightness(.93)}' +
+            '.cover:not(.has-poster){background:linear-gradient(135deg,' + acc + ',color-mix(in srgb,' + acc + ' 60%,#000)) !important}';
+          document.head.appendChild(_ts);
+        }
       } catch (e) { /* ignore malformed theme */ }
     }
 
