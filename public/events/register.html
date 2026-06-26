@@ -12,6 +12,8 @@
 <script src="/__/firebase/10.7.1/firebase-functions-compat.js"></script>
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
+<!-- QRious: 完成頁報到 QR。非阻斷——載入失敗則 QR 區塊自動不顯示。 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" crossorigin="anonymous"></script>
 
 <style>
 .nav { position:sticky; top:0; z-index:50; height:60px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
@@ -355,8 +357,41 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
             <div style="margin-top:6px; color:var(--muted); font-size:11.5px" data-i18n="rgAtmInfoNote">請於 3 個工作天內完成轉帳，主辦方將自動對帳。</div>
           </div>
         </div>
-        <div style="display:flex; gap:10px; justify-content:center; margin-top:24px">
+        <!-- ===== T3: 完成頁延伸動作 ===== -->
+        <!-- 報到 QR（best-effort：getCheckinToken 失敗或 QRious 未載入則隱藏） -->
+        <div id="rgQrBox" style="display:none; margin-top:22px; text-align:center">
+          <div style="font:700 13px/1.4 var(--f-display); margin-bottom:8px" data-i18n="rgQrTitle">📲 報到 QR（請截圖保存）</div>
+          <div style="background:#fff; padding:14px; border-radius:12px; display:inline-block; border:1px solid var(--line)">
+            <canvas id="rgQrCanvas" style="display:block; width:180px; height:180px; image-rendering:pixelated"></canvas>
+          </div>
+          <div style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted); margin-top:6px" data-i18n="rgQrHint">活動當天出示此 QR 即可報到</div>
+        </div>
+
+        <!-- 加入行事曆（無可解析活動日則隱藏） -->
+        <div id="rgCalBox" style="display:none; margin-top:22px">
+          <div style="font:700 12px/1.4 var(--f-display); margin-bottom:8px; text-align:center" data-i18n="rgCalTitle">📅 加入行事曆</div>
+          <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap">
+            <a id="rgCalGoogle" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Google</a>
+            <a id="rgCalIcs" href="#" class="btn btn-ghost btn-sm" data-i18n="rgCalIcs">Apple／Outlook (.ics)</a>
+          </div>
+        </div>
+
+        <!-- 分享 / 邀請（只帶公開活動連結，不含編號·密碼·QR） -->
+        <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:22px">
+          <button type="button" id="rgShareBtn" class="btn btn-ghost" data-i18n="rgShareBtn">🔗 分享我報名了</button>
+          <button type="button" id="rgInviteBtn" class="btn btn-ghost" data-i18n="rgInviteBtn">👥 邀請朋友揪團</button>
+        </div>
+        <div id="rgShareFallback" style="display:none; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px">
+          <button type="button" id="rgShareLine" class="btn btn-ghost btn-sm">LINE</button>
+          <button type="button" id="rgShareFb" class="btn btn-ghost btn-sm">Facebook</button>
+          <button type="button" id="rgShareCopy" class="btn btn-ghost btn-sm" data-i18n="rgShareCopy">複製連結</button>
+        </div>
+
+        <!-- 導覽 -->
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:24px">
           <a href="/my.html" class="btn btn-primary btn-lg" data-i18n="rgViewMy">查看我的報名 →</a>
+          <a id="rgBackEvent" href="#" class="btn btn-ghost" data-i18n="rgBackEvent">返回活動頁</a>
+          <a href="/events/" class="btn btn-ghost" data-i18n="rgExploreMore">探索更多活動</a>
         </div>
       </div>
     </div>
@@ -1558,7 +1593,70 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         });
       });
     });
+    wireSuccessActions(res);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // T3: 完成頁延伸功能 — 報到QR / 加入行事曆 / 分享·邀請 / 導覽。
+  // 分享一律只帶「公開活動連結」，絕不含報名編號·密碼·QR（避免私密憑證外流）。
+  function wireSuccessActions(res) {
+    var eventName = CFG.competitionName || window.L('rgEventFallback');
+    var link = location.origin + '/e/' + encodeURIComponent(compId);
+    var detailPrefix = window.L('rgCalDetails');
+
+    // 活動日：單場用 competitionDate(YYYY-MM-DD)，多梯次取最早 startDate
+    var eventDate = String(CFG.competitionDate || '').slice(0, 10);
+    if (!eventDate && Array.isArray(CFG.sessions) && CFG.sessions.length) {
+      var ds = CFG.sessions.map(function (s) { return String(s.startDate || s.date || '').slice(0, 10); }).filter(Boolean).sort();
+      if (ds.length) eventDate = ds[0];
+    }
+
+    // ── Feature 1：加入行事曆（全天事件）──
+    if (/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) {
+      var icsEsc = function (s) { return String(s).replace(/([\\;,])/g, '\\$1').replace(/\n/g, '\\n'); };
+      var dStart = eventDate.replace(/-/g, '');
+      var _e = new Date(eventDate + 'T00:00:00'); _e.setDate(_e.getDate() + 1);
+      var dEnd = _e.getFullYear() + ('0' + (_e.getMonth() + 1)).slice(-2) + ('0' + _e.getDate()).slice(-2);
+      var gEl = document.getElementById('rgCalGoogle');
+      if (gEl) gEl.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(eventName)
+        + '&dates=' + dStart + '/' + dEnd + '&details=' + encodeURIComponent(detailPrefix + link);
+      var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RegMaster//Reg//EN', 'BEGIN:VEVENT',
+        'UID:' + (res.teamId || 'rg') + '@regmaster', 'DTSTART;VALUE=DATE:' + dStart, 'DTEND;VALUE=DATE:' + dEnd,
+        'SUMMARY:' + icsEsc(eventName), 'DESCRIPTION:' + icsEsc(detailPrefix + link), 'URL:' + link,
+        'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+      var icsEl = document.getElementById('rgCalIcs');
+      if (icsEl) {
+        try { icsEl.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' })); }
+        catch (e) { icsEl.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics); }
+        icsEl.setAttribute('download', (eventName || 'event').replace(/[^\w一-龥-]/g, '_').slice(0, 40) + '.ics');
+      }
+      document.getElementById('rgCalBox').style.display = '';
+    }
+
+    // ── Feature 2 + 5：分享 / 邀請（Web Share API，否則展開 LINE/FB/複製）──
+    function _share(text) {
+      if (navigator.share) { navigator.share({ title: eventName, text: text, url: link }).catch(function () {}); }
+      else { var fb = document.getElementById('rgShareFallback'); if (fb) fb.style.display = 'flex'; }
+    }
+    var sB = document.getElementById('rgShareBtn'); if (sB) sB.addEventListener('click', function () { _share(window.L('rgShareText').replace('{n}', eventName)); });
+    var iB = document.getElementById('rgInviteBtn'); if (iB) iB.addEventListener('click', function () { _share(window.L('rgInviteText').replace('{n}', eventName)); });
+    var fL = document.getElementById('rgShareLine'); if (fL) fL.addEventListener('click', function () { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(link), '_blank'); });
+    var fF = document.getElementById('rgShareFb'); if (fF) fF.addEventListener('click', function () { window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link), '_blank'); });
+    var fC = document.getElementById('rgShareCopy'); if (fC) fC.addEventListener('click', function () { navigator.clipboard.writeText(link).then(function () { fC.textContent = window.L('rgCopied'); setTimeout(function () { fC.textContent = window.L('rgShareCopy'); }, 1500); }); });
+
+    // ── Feature 6：返回活動頁 ──
+    var be = document.getElementById('rgBackEvent'); if (be) be.href = '/events/detail.html?id=' + encodeURIComponent(compId);
+
+    // ── Feature 3：報到 QR（best-effort；用剛建立的報名密碼換已簽章 token）──
+    if (res.teamId && res.password && typeof QRious !== 'undefined') {
+      google.script.run.withSuccessHandler(function (r) {
+        if (!r || !r.success || !r.token) return;
+        try {
+          new QRious({ element: document.getElementById('rgQrCanvas'), value: String(r.token), size: 360, level: 'M', background: '#ffffff', foreground: '#000000' });
+          document.getElementById('rgQrBox').style.display = '';
+        } catch (e) {}
+      }).withFailureHandler(function () {}).getCheckinToken(compId, res.teamId, res.password);
+    }
   }
 })();
 </script>
