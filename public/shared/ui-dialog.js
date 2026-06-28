@@ -89,7 +89,119 @@
   };
   window.uiConfirm = function (message, opts) { opts = opts || {}; return dialog({ title: opts.title || '請確認', message: message, okText: opts.okText || '確定', cancelText: opts.cancelText || '取消', danger: opts.danger }); };
   window.uiPrompt = function (message, defaultValue, opts) { opts = opts || {}; return dialog({ title: opts.title || '輸入', message: message, prompt: true, defaultValue: defaultValue || '', placeholder: opts.placeholder || '', okText: opts.okText || '確定', cancelText: opts.cancelText || '取消', inputType: opts.inputType || 'text' }); };
-  window.uiToast = function (message, type) { ensureRoot(); var t = document.createElement('div'); t.className = 'ui-toast ' + (type || 'ok'); t.textContent = message; document.getElementById('uiToastWrap').appendChild(t); setTimeout(function () { t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 300); }, 2600); };
+  // uiToast(msg, type)                        → transient (2.6s auto-fade) — unchanged
+  // uiToast(msg, type, { sticky: true })      → never auto-fades; caller dismisses via the handle
+  // uiToast(msg, type, { id: 'apply-payout'}) → reuse/replace a toast with the same id in place
+  // uiToast(msg, type, { duration: 5000 })    → custom lifetime in ms
+  // Returns { dismiss(), update(newMsg, newType) }. Older 2-arg call sites ignore the handle safely.
+  window.uiToast = function (message, type, opts) {
+    ensureRoot();
+    opts = opts || {};
+    var wrap = document.getElementById('uiToastWrap');
+    var id = opts.id ? String(opts.id).replace(/[^\w-]/g, '') : '';
+    var t = id ? wrap.querySelector('[data-toast-id="' + id + '"]') : null;
+    if (!t) {
+      t = document.createElement('div');
+      t.className = 'ui-toast ' + (type || 'ok');
+      if (id) t.setAttribute('data-toast-id', id);
+      wrap.appendChild(t);
+    } else {
+      t.className = 'ui-toast ' + (type || 'ok');
+      if (t.__timer) { clearTimeout(t.__timer); t.__timer = null; }
+      t.style.opacity = '1';
+    }
+    t.textContent = message;
+    function fadeOut() { t.style.opacity = '0'; setTimeout(function () { if (t.parentNode) t.remove(); }, 300); }
+    var dur = (opts.sticky === true) ? 0 : (typeof opts.duration === 'number' ? opts.duration : 2600);
+    if (dur > 0) t.__timer = setTimeout(fadeOut, dur);
+    return {
+      dismiss: function () { if (t.__timer) { clearTimeout(t.__timer); t.__timer = null; } fadeOut(); },
+      update: function (newMsg, newType) {
+        if (typeof newMsg === 'string') t.textContent = newMsg;
+        if (typeof newType === 'string') t.className = 'ui-toast ' + newType;
+      }
+    };
+  };
+
+  // Session-expired errors are already handled by firebase-bridge's proxy (it
+  // hard-redirects to /login), so withLoadingUI must NOT also pop an alert for them.
+  function _isSessionExpired(err) {
+    var m = (err && (err.message || err.toString())) || '';
+    return m.indexOf('登入已失效') !== -1 || m.indexOf('Session expired') !== -1 ||
+           m.indexOf('Authentication required') !== -1 || m.indexOf('請先登入') !== -1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // withLoadingUI(btn, asyncFn, opts) — one canonical "click → call → respond"
+  // wrapper. Disables the button (+ optional extra elements via disableSelector),
+  // swaps in busy text and an optional sticky toast, awaits asyncFn(), then
+  // restores everything in BOTH the success and failure paths. Pair with runFn:
+  //   withLoadingUI(btn, function () { return runFn('applyPayout', id, a, b); }, { ... })
+  //
+  // opts: busyText, toast(bool), toastMsg, toastType, toastId, successMsg,
+  //       errorTitle, blockUnload, unloadMsg, disableSelector, skipIfBusy(default true)
+  // Returns the asyncFn promise (rethrows on error → chain .catch(function(){}) ).
+  // ---------------------------------------------------------------------------
+  window.withLoadingUI = function (btn, asyncFn, opts) {
+    opts = opts || {};
+    var L = window.L || function (k) { return k; };
+    var busyText = opts.busyText || L('uiBusyDefault');
+    var wantToast = (opts.toast === false) ? false : !!(opts.toastMsg || busyText);
+    // Reentry guard — same button still running → no-op (covers fast double-click).
+    if (btn && opts.skipIfBusy !== false && btn.dataset && btn.dataset.uiBusy === '1') {
+      return Promise.resolve(undefined);
+    }
+    var origText = null, origDisabled = null;
+    if (btn) {
+      origText = btn.textContent; origDisabled = btn.disabled;
+      if (btn.dataset) btn.dataset.uiBusy = '1';
+      btn.disabled = true;
+      if (busyText) btn.textContent = busyText;
+    }
+    var extras = [];
+    if (opts.disableSelector) {
+      try {
+        document.querySelectorAll(opts.disableSelector).forEach(function (el) {
+          if (el === btn || el.disabled) return;
+          el.disabled = true; extras.push(el);
+        });
+      } catch (e) { /* bad selector — ignore */ }
+    }
+    var toastHandle = wantToast
+      ? window.uiToast(opts.toastMsg || busyText, opts.toastType || 'ok', { sticky: true, id: opts.toastId })
+      : null;
+    var prevUnload = null, unloadAttached = false;
+    if (opts.blockUnload) {
+      prevUnload = window.onbeforeunload;
+      var um = opts.unloadMsg || L('uiUnloadWarning');
+      window.onbeforeunload = function (e) { e.preventDefault(); e.returnValue = um; return um; };
+      unloadAttached = true;
+    }
+    function cleanup() {
+      if (btn) {
+        try { btn.disabled = origDisabled === true; } catch (e) {}
+        try { if (origText !== null) btn.textContent = origText; } catch (e) {}
+        try { if (btn.dataset) delete btn.dataset.uiBusy; } catch (e) {}
+      }
+      extras.forEach(function (el) { try { el.disabled = false; } catch (e) {} });
+      if (unloadAttached) { try { window.onbeforeunload = prevUnload; } catch (e) {} }
+    }
+    return Promise.resolve().then(asyncFn).then(function (result) {
+      cleanup();
+      if (toastHandle) {
+        if (opts.successMsg) { toastHandle.update(opts.successMsg, 'ok'); setTimeout(toastHandle.dismiss, 1800); }
+        else { toastHandle.dismiss(); }
+      }
+      return result;
+    }).catch(function (err) {
+      cleanup();
+      if (toastHandle) toastHandle.dismiss();
+      if (!_isSessionExpired(err)) {
+        window.uiAlert((err && (err.message || err.toString())) || L('uiErrorDefault'), { title: opts.errorTitle || L('uiErrorDefault') });
+      }
+      throw err;
+    });
+  };
 
   // Transparently style native alert() — it's fire-and-forget feedback, so a
   // non-blocking styled modal is a safe drop-in (no call-site changes needed).

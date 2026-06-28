@@ -335,6 +335,23 @@
   window._callFn = _callFn;
 
   // ---------------------------------------------------------------------------
+  // Promise-style callable invoker. Thin wrapper so call sites can write
+  //   withLoadingUI(btn, function () { return runFn('applyPayout', id, a, b); })
+  // instead of the withSuccessHandler/withFailureHandler callback dance. It goes
+  // through the google.script.run Proxy defined below, so the session-expired
+  // auto-redirect in that Proxy's failure handler still fires.
+  // ---------------------------------------------------------------------------
+  window.runFn = function (name) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resolve, reject) {
+      var runner = window.google.script.run
+        .withSuccessHandler(function (r) { resolve(r); })
+        .withFailureHandler(function (e) { reject(e); });
+      runner[name].apply(runner, args);
+    });
+  };
+
+  // ---------------------------------------------------------------------------
   // google.script.run compatibility shim
   // ---------------------------------------------------------------------------
   window.google = window.google || { script: { run: null } };

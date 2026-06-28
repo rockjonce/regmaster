@@ -293,6 +293,40 @@
   Object.keys(ADD.zh).forEach(function (k) { if (!(k in window.I18N.zh)) window.I18N.zh[k] = ADD.zh[k]; });
   Object.keys(ADD.en).forEach(function (k) { if (!(k in window.I18N.en)) window.I18N.en[k] = ADD.en[k]; });
 
+  // ----- shared UI busy / loading states (loading-indicator batch) -----
+  // Self-contained block (kept out of ADD above to avoid touching that dictionary).
+  // Consumed by withLoadingUI() in ui-dialog.js. Missing EN falls back to ZH (never raw key).
+  var UI_BUSY = {
+    zh: {
+      uiBusyDefault: '處理中…', uiBusyDeleting: '正在刪除…', uiBusySubmitting: '送出中…',
+      uiBusyPaymentRedirecting: '建立訂單中⋯即將跳轉到付款頁', uiBusyRefunding: '處理退費中…',
+      uiBusyPayout: '申請撥款中⋯後端處理中請勿關閉', uiBusyApprovePayout: '正在核准撥款⋯',
+      uiBusyRejectPayout: '正在送出拒絕⋯', uiBusyMarkPaid: '標記已支付中⋯',
+      uiBusyDeletingTeam: '正在刪除隊伍⋯', uiBusyDeletingEvent: '正在刪除活動⋯大型活動可能需要 30 秒',
+      uiBusyDuplicating: '複製活動中⋯約 5-10 秒', uiBusyToggleReg: '切換報名開關中⋯',
+      uiBusyAcceptingTeam: '處理中⋯正在寄錄取通知', uiBusySendingCampaign: '寄送中⋯可能需要 10 秒以上',
+      uiBusySettling: '結算中⋯請勿關閉視窗', uiBusyMarkingRefunded: '標記退費中⋯',
+      uiUnloadWarning: '處理中，離開頁面可能造成操作未完成', uiUnloadOrderWarning: '訂單建立中，離開頁面可能造成訂單未完成',
+      uiSuccessGeneric: '完成', uiSuccessSubmitted: '已送出', uiSuccessSaved: '已儲存', uiSuccessDeleted: '已刪除',
+      uiErrorDefault: '發生錯誤'
+    },
+    en: {
+      uiBusyDefault: 'Processing…', uiBusyDeleting: 'Deleting…', uiBusySubmitting: 'Submitting…',
+      uiBusyPaymentRedirecting: 'Creating order… redirecting to payment', uiBusyRefunding: 'Processing refund…',
+      uiBusyPayout: 'Requesting payout… please do not close', uiBusyApprovePayout: 'Approving payout…',
+      uiBusyRejectPayout: 'Submitting rejection…', uiBusyMarkPaid: 'Marking as paid…',
+      uiBusyDeletingTeam: 'Deleting team…', uiBusyDeletingEvent: 'Deleting event… large events may take ~30s',
+      uiBusyDuplicating: 'Duplicating event… ~5-10s', uiBusyToggleReg: 'Toggling registration…',
+      uiBusyAcceptingTeam: 'Processing… sending acceptance notice', uiBusySendingCampaign: 'Sending… may take 10s+',
+      uiBusySettling: 'Settling… please keep this page open', uiBusyMarkingRefunded: 'Marking as refunded…',
+      uiUnloadWarning: 'A request is in flight; leaving may abort it', uiUnloadOrderWarning: 'Order in progress; leaving may abort the payment',
+      uiSuccessGeneric: 'Done', uiSuccessSubmitted: 'Submitted', uiSuccessSaved: 'Saved', uiSuccessDeleted: 'Deleted',
+      uiErrorDefault: 'Error'
+    }
+  };
+  Object.keys(UI_BUSY.zh).forEach(function (k) { if (!(k in window.I18N.zh)) window.I18N.zh[k] = UI_BUSY.zh[k]; });
+  Object.keys(UI_BUSY.en).forEach(function (k) { if (!(k in window.I18N.en)) window.I18N.en[k] = UI_BUSY.en[k]; });
+
   // Quick translate helper. Falls back: requested lang → zh → key itself.
   window.L = function (key, lang) {
     var L = lang || window.LANG || 'zh';

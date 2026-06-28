@@ -258,11 +258,11 @@
         '<ul>' + limRows + featRows + feeRow + upgNote + '</ul>' + btn + '</div>';
     }).join('');
     grid.querySelectorAll('[data-buy]').forEach(function (b) {
-      b.addEventListener('click', function () { purchaseTier(b.dataset.buy, parseInt(b.dataset.amt, 10) || 0); });
+      b.addEventListener('click', function () { purchaseTier(b.dataset.buy, parseInt(b.dataset.amt, 10) || 0, b); });
     });
     if (typeof window.applyI18n === 'function') window.applyI18n();
   }
-  function purchaseTier(tier, amount) {
+  function purchaseTier(tier, amount, btn) {
     var q = UPG[tier];
     var label = (tier || '').toUpperCase();
     var msg = q && q.isUpgrade && q.credit > 0
@@ -270,14 +270,24 @@
       : _fmt('adLicConfirmBuy', { label: label, amt: (amount || (q && q.amount) || 0).toLocaleString() });
     uiConfirm(msg, { title: window.L('adLicConfirmTitle'), okText: window.L('adLicConfirmOk') }).then(function (ok) {
       if (!ok) return;
+      // T0 stopgap: lock the whole plan grid the instant the buy is confirmed.
+      // createPayuniOrder has no backend idempotency, so a 1-3s double-click would
+      // mint a second pending order (orphan / possible double charge). The real fix
+      // is backend idempotency (tracked separately); this just shuts the window.
+      var allBtns = Array.prototype.slice.call(document.querySelectorAll('[data-buy]'));
+      var busyLabel = (window.LANG === 'en') ? 'Creating order…' : '建立訂單中…';
+      var origText = btn ? btn.textContent : '';
+      allBtns.forEach(function (el) { el.disabled = true; });
+      if (btn) btn.textContent = busyLabel;
+      function unlock() { allBtns.forEach(function (el) { el.disabled = false; }); if (btn) btn.textContent = origText; }
       // Stash so payuni-return.html can route the buyer back to this page.
       try { localStorage.setItem('regmaster_pending_plan', JSON.stringify({ tier: tier, ts: Date.now() })); } catch (e) {}
       google.script.run
         .withSuccessHandler(function (res) {
-          if (res && res.success && res.payuni) submitPayuni(res.payuni);
-          else uiAlert((res && res.message) || window.L('adLicOrderFail'));
+          if (res && res.success && res.payuni) submitPayuni(res.payuni); // navigates away; keep grid locked
+          else { unlock(); uiAlert((res && res.message) || window.L('adLicOrderFail')); }
         })
-        .withFailureHandler(function (e) { uiAlert(window.L('adLicErrFail') + (e && e.message)); })
+        .withFailureHandler(function (e) { unlock(); uiAlert(window.L('adLicErrFail') + (e && e.message)); })
         .createPayuniOrder([{ type: 'tier', tier: tier, years: 1 }], '', me.username);
     });
   }
