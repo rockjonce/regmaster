@@ -1034,23 +1034,26 @@ body { background:var(--bg); }
     var po = BILL_DATA.payout || {};
     if (!po.accountNumber) { toast(window.L('adSysBillNoAcctSettle'), 'err'); return; }
     var actualWire = Math.max(0, (s.unsettledNet || 0) - 15);
-    if (!confirm(window.L('adSysBillSettleConfirm') +
+    var msg = window.L('adSysBillSettleConfirm') +
       window.L('adSysBillSettleCreator') + BILL_DATA.creator + '\n' +
       window.L('adSysBillSettleAcct') + (po.bankName || '') + ' ' + (po.branchName || '') + ' / ' + po.accountNumber + '（' + (po.accountName || '') + '）\n\n' +
       window.L('adSysBillSettleUnsettled') + s.unsettledCount + window.L('adSysBillSettleUnit') +
       window.L('adSysBillSettleNet') + (s.unsettledNet || 0).toLocaleString() + '\n' +
       window.L('adSysBillSettleWire') +
       window.L('adSysBillSettleActual') + actualWire.toLocaleString() + '\n\n' +
-      window.L('adSysBillSettleNote'))) return;
-    var btn = document.getElementById('b-settle'); btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('adSysBillSettling');
-    google.script.run
-      .withSuccessHandler(function (r) {
+      window.L('adSysBillSettleNote');
+    uiConfirm(msg, { title: window.L('adSysBillSettleTitle'), danger: true }).then(function (ok) {
+      if (!ok) return;
+      var btn = document.getElementById('b-settle');
+      withLoadingUI(btn, function () { return runFn('createSettlement', BILL_DATA.creator, ''); }, {
+        busyText: window.L('adSysBillSettling'), toastMsg: window.L('uiBusySettling'), toastId: 'settle',
+        blockUnload: true, errorTitle: window.L('adSysBillFail')
+      }).then(function (r) {
         if (r && r.success) { toast(window.L('adSysBillSettleOkPre') + r.settlementId + window.L('adSysBillSettleOkMid') + (r.actualWire || 0).toLocaleString() + window.L('adSysBillSettleOkPost')); loadBilling(); }
-        else if (r && r.accumulated) { btn.disabled = false; btn.textContent = o; toast(r.message); loadBilling(); }  // UX-003: below NT$1000 → accumulate, not an error
-        else { btn.disabled = false; btn.textContent = o; toast((r && r.message) || window.L('adSysBillSettleFail'), 'err'); }
-      })
-      .withFailureHandler(function (e) { btn.disabled = false; btn.textContent = o; toast((e && e.message) || window.L('adSysBillFail'), 'err'); })
-      .createSettlement(BILL_DATA.creator, '');
+        else if (r && r.accumulated) { toast(r.message); loadBilling(); }  // UX-003: below NT$1000 → accumulate, not an error
+        else { toast((r && r.message) || window.L('adSysBillSettleFail'), 'err'); }
+      }).catch(function () {});
+    });
   }
   document.getElementById('b-creator').addEventListener('change', loadBilling);
   document.getElementById('b-reload').addEventListener('click', loadBilling);
@@ -1109,39 +1112,45 @@ body { background:var(--bg); }
       '</div>';
     }).join('');
     var L = document.getElementById('pa-list');
-    L.querySelectorAll('.pa-approve').forEach(function (b) { b.addEventListener('click', function () { paSimple('approvePayout', b.dataset.r, window.L('adSysPaApproveConfirm')); }); });
-    L.querySelectorAll('.pa-paid').forEach(function (b) { b.addEventListener('click', function () { paMarkPaid(b.dataset.r); }); });
+    L.querySelectorAll('.pa-approve').forEach(function (b) { b.addEventListener('click', function () { paSimple('approvePayout', b.dataset.r, window.L('adSysPaApproveConfirm'), b); }); });
+    L.querySelectorAll('.pa-paid').forEach(function (b) { b.addEventListener('click', function () { paMarkPaid(b.dataset.r, b); }); });
     L.querySelectorAll('.pa-reject').forEach(function (b) { b.addEventListener('click', function () { var f = document.getElementById('parej-' + b.dataset.r); if (f) f.style.display = (f.style.display === 'none' ? '' : 'none'); }); });
-    L.querySelectorAll('.pa-reject-go').forEach(function (b) { b.addEventListener('click', function () { paReject(b.dataset.r); }); });
+    L.querySelectorAll('.pa-reject-go').forEach(function (b) { b.addEventListener('click', function () { paReject(b.dataset.r, b); }); });
     L.querySelectorAll('.pa-pdf').forEach(function (b) { b.addEventListener('click', function () { paPdf(b.dataset.r); }); });
   }
-  function paSimple(method, reqId, msg) {
+  function paSimple(method, reqId, msg, btn) {
     var T = window.L;
     uiConfirm(msg, { title: T('adSysPaConfirmTitle') }).then(function (ok) {
       if (!ok) return;
-      var run = google.script.run
-        .withSuccessHandler(function (res) { if (res && res.success) { toast(T('adSysPaProcessed')); loadPayoutAdmin(); } else toast((res && res.message) || T('adSysPaFail'), 'err'); })
-        .withFailureHandler(function (e) { toast((e && e.message) || T('adSysPaFail'), 'err'); });
-      run[method](reqId);
+      withLoadingUI(btn || null, function () { return runFn(method, reqId); }, {
+        busyText: T('uiBusyApprovePayout'), toastMsg: T('uiBusyApprovePayout'), toastId: 'payout-' + reqId, errorTitle: T('adSysPaConfirmTitle')
+      }).then(function (res) {
+        if (res && res.success) { toast(T('adSysPaProcessed')); loadPayoutAdmin(); }
+        else toast((res && res.message) || T('adSysPaFail'), 'err');
+      }).catch(function () {});
     });
   }
-  function paMarkPaid(reqId) {
+  function paMarkPaid(reqId, btn) {
     var T = window.L;
     uiConfirm(T('adSysPaPaidConfirm'), { title: T('adSysPaPaidTitle') }).then(function (ok) {
       if (!ok) return;
-      google.script.run
-        .withSuccessHandler(function (res) { if (res && res.success) { toast(T('adSysPaPaidOkPre') + (res.actualWire || 0)); loadPayoutAdmin(); } else toast((res && res.message) || T('adSysPaFail'), 'err'); })
-        .withFailureHandler(function (e) { toast((e && e.message) || T('adSysPaFail'), 'err'); })
-        .markPayoutPaid(reqId, '');
+      withLoadingUI(btn || null, function () { return runFn('markPayoutPaid', reqId, ''); }, {
+        busyText: T('uiBusyMarkPaid'), toastMsg: T('uiBusyMarkPaid'), toastId: 'payout-' + reqId, errorTitle: T('adSysPaPaidTitle')
+      }).then(function (res) {
+        if (res && res.success) { toast(T('adSysPaPaidOkPre') + (res.actualWire || 0)); loadPayoutAdmin(); }
+        else toast((res && res.message) || T('adSysPaFail'), 'err');
+      }).catch(function () {});
     });
   }
-  function paReject(reqId) {
+  function paReject(reqId, btn) {
     var T = window.L, form = document.getElementById('parej-' + reqId);
     var code = form.querySelector('.pa-reason').value, text = form.querySelector('.pa-reason-text').value;
-    google.script.run
-      .withSuccessHandler(function (res) { if (res && res.success) { toast(T('adSysPaRejectedOk')); loadPayoutAdmin(); } else toast((res && res.message) || T('adSysPaFail'), 'err'); })
-      .withFailureHandler(function (e) { toast((e && e.message) || T('adSysPaFail'), 'err'); })
-      .rejectPayout(reqId, code, text);
+    withLoadingUI(btn || null, function () { return runFn('rejectPayout', reqId, code, text); }, {
+      busyText: T('uiBusyRejectPayout'), toastMsg: T('uiBusyRejectPayout'), toastId: 'payout-' + reqId, errorTitle: T('adSysPaConfirmTitle')
+    }).then(function (res) {
+      if (res && res.success) { toast(T('adSysPaRejectedOk')); loadPayoutAdmin(); }
+      else toast((res && res.message) || T('adSysPaFail'), 'err');
+    }).catch(function () {});
   }
   function paPdf(reqId) {
     var T = window.L, r = paFindReq(reqId); if (!r) return;

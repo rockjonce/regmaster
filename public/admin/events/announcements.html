@@ -468,23 +468,18 @@
       channels: CHANNELS,
       recipientFilter: document.getElementById('recipFilter').value
     };
-    btn.disabled = true; btn.textContent = window.L('aeAnnSending');
-    // Save first then send
-    google.script.run
-      .withSuccessHandler(function () {
-        google.script.run
-          .withSuccessHandler(function (res) {
-            if (res && res.success) {
-              alert(window.L('aeAnnSentOkPre') + res.sent + window.L('aeAnnSentOkMid') + (res.channels.length > 1 ? window.L('aeAnnSentOkMulti') : ''));
-              refreshCampaigns(SELECTED && SELECTED.id);
-            } else { alert(window.L('aeAnnSendFailPre') + ((res && res.message) || '')); }
-            btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn');
-          })
-          .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn'); alert(window.L('aeAnnFailPre') + (err && err.message)); })
-          .sendCampaignNow(SELECTED.id);
-      })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSendBtn'); alert(window.L('aeAnnSaveFailPre') + (err && err.message)); })
-      .updateCampaign(SELECTED.id, payload);
+    // Save the draft first, then send — both callables share one busy state (5-15s).
+    withLoadingUI(btn, function () {
+      return runFn('updateCampaign', SELECTED.id, payload).then(function () { return runFn('sendCampaignNow', SELECTED.id); });
+    }, {
+      busyText: window.L('aeAnnSending'), toastMsg: window.L('uiBusySendingCampaign'), toastId: 'sendCampaign',
+      blockUnload: true, errorTitle: window.L('aeAnnSendTitle')
+    }).then(function (res) {
+      if (res && res.success) {
+        uiAlert(window.L('aeAnnSentOkPre') + res.sent + window.L('aeAnnSentOkMid') + (res.channels.length > 1 ? window.L('aeAnnSentOkMulti') : ''));
+        refreshCampaigns(SELECTED && SELECTED.id);
+      } else { uiAlert(window.L('aeAnnSendFailPre') + ((res && res.message) || '')); }
+    }).catch(function () {});
     });
   });
 

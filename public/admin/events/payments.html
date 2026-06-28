@@ -601,20 +601,21 @@
 
   document.getElementById('payoutApplyBtn').addEventListener('click', function () {
     var T = window.L;
+    var btn = this;
     if (!PAYOUT_DATA || !PAYOUT_DATA.hasPayoutAccount) { uiAlert(T('aePayPoNoAcctAlert')); return; }
     var picks = collectPicks();
     if (!picks.orderIds.length && !picks.depositIds.length) return;
     var sched = PAYOUT_DATA.scheduledPayoutDate || T('aePayPoCycleDefault');
     uiConfirm(T('aePayPoApplyCPre') + (picks.orderIds.length + picks.depositIds.length) + T('aePayPoApplyCMid') + sched + T('aePayPoApplyCSuf'), { title: T('aePayPoApplyTitle') }).then(function (ok) {
       if (!ok) return;
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res && res.success) { uiAlert(T('aePayPoApplyOkPre') + (res.scheduledPayoutDate || '') + T('aePayPoApplyOkMid') + res.actualWire + T('aePayPoApplyOkSuf')).then(loadPayout); }
-          else if (res && res.code === 'NO_PAYOUT_ACCOUNT') { uiAlert(res.message || T('aePayPoNoAcctAlert')); }
-          else { uiAlert((res && res.message) || T('aePayPoApplyFail')); }
-        })
-        .withFailureHandler(function (e) { uiAlert(T('aePayPoFailPre') + ((e && e.message) || '')); })
-        .applyPayout(compId, picks.orderIds, picks.depositIds);
+      withLoadingUI(btn, function () { return runFn('applyPayout', compId, picks.orderIds, picks.depositIds); }, {
+        busyText: T('uiBusyPayout'), toastMsg: T('uiBusyPayout'), toastId: 'applyPayout',
+        blockUnload: true, errorTitle: T('aePayPoApplyTitle')
+      }).then(function (res) {
+        if (res && res.success) { uiAlert(T('aePayPoApplyOkPre') + (res.scheduledPayoutDate || '') + T('aePayPoApplyOkMid') + res.actualWire + T('aePayPoApplyOkSuf')).then(loadPayout); }
+        else if (res && res.code === 'NO_PAYOUT_ACCOUNT') { uiAlert(res.message || T('aePayPoNoAcctAlert')); }
+        else { uiAlert((res && res.message) || T('aePayPoApplyFail')); }
+      }).catch(function () {});
     });
   });
 

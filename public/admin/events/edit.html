@@ -1914,23 +1914,29 @@
 
   // Danger zone
   document.getElementById('dupBtn').addEventListener('click', function () {
+    var btn = this;
     uiPrompt(window.L('aeEditDupPromptMsg'), (CFG.competitionName || window.L('aeEditDefaultEventName')) + window.L('aeEditDupNameSuffix'), { title: window.L('aeEditDupTitle') }).then(function (name) {
       if (!name) return;
-      google.script.run
-        .withSuccessHandler(function () { uiAlert(window.L('aeEditDupDone')).then(function () { location.href = '/admin/events/'; }); })
-        .withFailureHandler(function (err) { uiAlert(window.L('aeEditDupFailPre') + (err && err.message)); })
-        .duplicateCompetition(compId, name, me.username);
+      withLoadingUI(btn, function () { return runFn('duplicateCompetition', compId, name, me.username); }, {
+        busyText: window.L('uiBusyDuplicating'), toastMsg: window.L('uiBusyDuplicating'), toastId: 'dupComp',
+        blockUnload: true, errorTitle: window.L('aeEditDupTitle')
+      }).then(function () {
+        uiAlert(window.L('aeEditDupDone')).then(function () { location.href = '/admin/events/'; });
+      }).catch(function () {});
     });
   });
   document.getElementById('deleteBtn').addEventListener('click', function () {
+    var btn = this;
     uiConfirm(window.L('aeEditDeleteConfirmPre') + CFG.competitionName + window.L('aeEditDeleteConfirmSuf'), { title: window.L('aeEditDeleteTitle'), okText: window.L('aeEditDeleteOk'), danger: true }).then(function (ok) {
       if (!ok) return;
       uiPrompt(window.L('aeEditDeleteFinalPrompt'), '', { title: window.L('aeEditDeleteFinalTitle'), placeholder: CFG.competitionName, danger: true, okText: window.L('aeEditDeleteFinalOk') }).then(function (typed) {
         if (typed !== CFG.competitionName) { if (typed !== null) uiAlert(window.L('aeEditDeleteNameMismatch')); return; }
-        google.script.run
-          .withSuccessHandler(function () { uiAlert(window.L('aeEditDeleteDone')).then(function () { location.href = '/admin/events/'; }); })
-          .withFailureHandler(function (err) { uiAlert(window.L('aeEditDeleteFailPre') + (err && err.message)); })
-          .deleteCompetition(compId);
+        withLoadingUI(btn, function () { return runFn('deleteCompetition', compId); }, {
+          busyText: window.L('uiBusyDeletingEvent'), toastMsg: window.L('uiBusyDeletingEvent'), toastId: 'deleteEvent',
+          blockUnload: true, errorTitle: window.L('aeEditDeleteTitle')
+        }).then(function () {
+          uiAlert(window.L('aeEditDeleteDone')).then(function () { location.href = '/admin/events/'; });
+        }).catch(function () {});
       });
     });
   });

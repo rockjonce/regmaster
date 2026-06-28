@@ -412,10 +412,10 @@
     } else if (action === 'duplicate') {
       uiPrompt(window.L('aeIdxDupPrompt'), btn.dataset.name + window.L('aeIdxDupSuffix'), { title: window.L('aeIdxDupTitle') }).then(function (nm) {
         if (!nm) return;
-        google.script.run
-          .withSuccessHandler(function () { uiToast(window.L('aeIdxDupDone')); load(); })
-          .withFailureHandler(function (err) { uiAlert(window.L('aeIdxFailPrefix') + (err && err.message)); })
-          .duplicateCompetition(id, nm, me.username);
+        withLoadingUI(btn, function () { return runFn('duplicateCompetition', id, nm, me.username); }, {
+          busyText: window.L('uiBusyDuplicating'), toastMsg: window.L('uiBusyDuplicating'), toastId: 'dupComp-' + id,
+          blockUnload: true, errorTitle: window.L('aeIdxDupTitle')
+        }).then(function () { uiToast(window.L('aeIdxDupDone')); load(); }).catch(function () {});
       });
     }
   });

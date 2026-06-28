@@ -800,24 +800,23 @@
       '</tr>';
     }).join('');
     document.querySelectorAll('[data-act]').forEach(function (b) {
-      b.addEventListener('click', function () { handleAct(b.dataset.act, b.dataset.tid); });
+      b.addEventListener('click', function () { handleAct(b.dataset.act, b.dataset.tid, b); });
     });
     if (window.applyI18n) window.applyI18n();
   }
 
-  function handleAct(act, tid) {
+  function handleAct(act, tid, btn) {
     if (act === 'accept') {
       // 自訂正取：單向鎖 — 確認後呼叫 acceptTeam（後端檢查付款/名額並寄錄取通知）
       var _t = (TEAMS || []).filter(function (x) { return x.teamId === tid; })[0] || {};
       uiConfirm(window.L('aeRegAcceptConfirm').replace('{name}', _t.teamNameCN || tid), { title: window.L('aeRegAcceptTitle'), danger: true }).then(function (ok) {
         if (!ok) return;
-        google.script.run
-          .withSuccessHandler(function (res) {
-            if (res && res.success) { uiToast(window.L('aeRegAcceptOk')); if (typeof reload === 'function') reload(); else location.reload(); }
-            else uiAlert((res && res.message) || window.L('aeRegAcceptFail'));
-          })
-          .withFailureHandler(function (e) { uiAlert(window.L('aeRegAcceptFail') + '：' + ((e && e.message) || '')); })
-          .acceptTeam(compId, tid);
+        withLoadingUI(btn || null, function () { return runFn('acceptTeam', compId, tid); }, {
+          busyText: window.L('uiBusyAcceptingTeam'), toastMsg: window.L('uiBusyAcceptingTeam'), toastId: 'accept-' + tid, errorTitle: window.L('aeRegAcceptTitle')
+        }).then(function (res) {
+          if (res && res.success) { uiToast(window.L('aeRegAcceptOk')); if (typeof reload === 'function') reload(); else location.reload(); }
+          else uiAlert((res && res.message) || window.L('aeRegAcceptFail'));
+        }).catch(function () {});
       });
       return;
     }
