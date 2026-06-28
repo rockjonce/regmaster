@@ -404,10 +404,9 @@
       var isOpen = btn.dataset.current === '1';
       uiConfirm(window.L('aeIdxConfirmToggle').replace('{action}', isOpen ? window.L('aeIdxToggleClose') : window.L('aeIdxToggleOpen')), { title: window.L('aeIdxRegStatusTitle') }).then(function (ok) {
         if (!ok) return;
-        google.script.run
-          .withSuccessHandler(function () { load(); })
-          .withFailureHandler(function (err) { uiAlert(window.L('aeIdxFailPrefix') + (err && err.message)); })
-          .setRegistrationOpen(id, !isOpen);
+        withLoadingUI(btn, function () { return runFn('setRegistrationOpen', id, !isOpen); }, {
+          busyText: window.L('uiBusyToggleReg'), toast: false, errorTitle: window.L('aeIdxRegStatusTitle')
+        }).then(function () { load(); }).catch(function () {});
       });
     } else if (action === 'duplicate') {
       uiPrompt(window.L('aeIdxDupPrompt'), btn.dataset.name + window.L('aeIdxDupSuffix'), { title: window.L('aeIdxDupTitle') }).then(function (nm) {
