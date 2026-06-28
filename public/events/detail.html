@@ -86,8 +86,13 @@
 .tabs-bar a.on { color:var(--ink); border-bottom-color:var(--ink); font-weight:600; }
 .tabs-bar a:hover { color:var(--ink-2); }
 
-.body-shell { max-width:1280px; margin:0 auto; padding:48px 32px; display:grid; grid-template-columns:1fr 320px; gap:48px; }
-.body-shell > section { min-width:0; }   /* 內聯 HTML 雙保險：讓內容欄可縮，避免寬表格在手機把版面撐破 */
+/* Outer/inner split mirrors .hero / .hero-inner so the body's content edges
+   line up with the hero's at every viewport width. Previously the single-layer
+   .body-shell (max-width + padding on the same element) was 64px narrower than
+   .hero-inner at viewports ≥1280px. */
+.body-shell { padding:48px 32px; }
+.body-shell-inner { max-width:1280px; margin:0 auto; display:grid; grid-template-columns:1fr 320px; gap:48px; }
+.body-shell-inner > section { min-width:0; }   /* 內聯 HTML 雙保險：讓內容欄可縮，避免寬表格在手機把版面撐破 */
 
 section.block { padding-bottom:40px; margin-bottom:40px; border-bottom:1px solid var(--line); }
 section.block:last-child { border:0; }
@@ -108,6 +113,14 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 .side-card .share-row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
 .side-card .share-row button { display:flex; align-items:center; justify-content:center; white-space:nowrap; padding:8px 6px; border:1px solid var(--line); border-radius:8px; background:var(--surface); cursor:pointer; font:500 12px/1 var(--f-tc); color:var(--ink-2); transition:.15s; }
 .side-card .share-row button:hover { background:var(--surface-2); border-color:var(--ink-3); }
+/* Share UI mode switch — desktop shows 3 buttons (copy/LINE/FB), mobile shows 1 native-share button */
+.side-card .share-mobile { display:none; }
+.side-card .share-mobile button { width:100%; padding:13px 16px; border:1px solid var(--acc); border-radius:10px; background:var(--acc); color:#fff; cursor:pointer; font:600 14px/1 var(--f-tc); transition:.15s; }
+.side-card .share-mobile button:hover { filter:brightness(.92); }
+@media (max-width:768px) {
+  .side-card .share-desktop { display:none; }
+  .side-card .share-mobile  { display:block; }
+}
 .side-card .pdf-link { display:flex; gap:10px; align-items:center; padding:12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; text-decoration:none; color:var(--ink-2); font:500 13.5px/1.4 var(--f-tc); }
 .side-card .pdf-link:hover { background:var(--surface); border-color:var(--ink-3); }
 .side-card .pdf-link .ic { width:32px; height:32px; border-radius:7px; background:var(--err-500); color:white; display:grid; place-items:center; font:700 13px/1 var(--f-display); flex-shrink:0; }
@@ -121,7 +134,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
 .error-state p { font:400 14px/1.6 var(--f-tc); color:var(--ink-3); margin-bottom:18px; }
 
 @media (max-width:960px) {
-  .hero-inner, .body-shell { grid-template-columns:1fr; }
+  .hero-inner, .body-shell-inner { grid-template-columns:1fr; }
   .hero-left h1 { font-size:32px; }
   .facts-grid { grid-template-columns:1fr 1fr; }
   .hero-right { position:static; }
@@ -230,6 +243,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   </div>
 
   <div class="body-shell">
+    <div class="body-shell-inner">
     <div>
       <section class="block" id="about">
         <h2 data-i18n="edAboutH2">關於這場活動</h2>
@@ -257,7 +271,12 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
     <aside>
       <div class="side-card">
         <h4 data-i18n="edShareH4">分享活動</h4>
-        <div class="share-row">
+        <!-- Mobile: single native-share button (Web Share API → system share sheet: LINE/FB/IG/WhatsApp/Mail/etc.) -->
+        <div class="share-row share-mobile">
+          <button id="shareNative" type="button" data-i18n="edShareMobileBtn">📤 分享活動</button>
+        </div>
+        <!-- Desktop: 3-button row. LINE button uses deep-link (line.me/R/msg/text/) so LINE PC users get the app prompt. -->
+        <div class="share-row share-desktop">
           <button id="shareCopy" data-i18n="edShareCopy">📋 複製連結</button>
           <button id="shareLine"><svg width="15" height="15" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#06C755"/><path fill="#fff" d="M19 10.5c0-3.1-3.13-5.6-7-5.6s-7 2.5-7 5.6c0 2.78 2.48 5.1 5.84 5.54.23.04.54.13.62.3.07.16.05.4.02.56l-.09.55c-.03.16-.13.64.57.35.7-.29 3.78-2.22 5.16-3.8C18.42 12.86 19 11.74 19 10.5z"/></svg>LINE</button>
           <button id="shareFB"><svg width="15" height="15" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:5px" fill="#1877F2" aria-hidden="true"><path d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874V12h3.328l-.532 3.47h-2.796v8.385C19.612 22.954 24 17.99 24 12z"/></svg>Facebook</button>
@@ -282,6 +301,7 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
         <p style="font:400 13px/1.6 var(--f-tc); color:var(--ink-3); margin:0" data-i18n-html="edHelpP">活動相關問題請直接洽詢主辦方。其他平台問題請<a href="/contact.html?topic=support" style="color:var(--acc);font-weight:500">聯絡客服</a>。</p>
       </div>
     </aside>
+    </div><!-- /.body-shell-inner -->
   </div>
 </div>
 
@@ -561,6 +581,18 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       dateHtml = '<small>' + escapeHtml(window.L('edDateTBASmall')) + '</small>';
     }
     document.getElementById('factDate').innerHTML = dateHtml;
+    // Populate share prefill state — share handlers (top-level) read window.__shareData.
+    // Date logic mirrors the fact-date display:
+    //  - multi-mode → first session's startDate (most-useful single date for a share)
+    //  - single-mode → cfg.competitionDate
+    //  - neither → empty string (template still works; just no date in the share text)
+    var _shareDateStr = '';
+    if (dateMode === 'multi' && Array.isArray(cfg.sessions) && cfg.sessions.length) {
+      _shareDateStr = String((cfg.sessions[0] && cfg.sessions[0].startDate) || '').replace('T', ' ').slice(0, 16);
+    } else if (competitionDate) {
+      _shareDateStr = String(competitionDate).replace('T', ' ').slice(0, 16);
+    }
+    window.__shareData = { title: name || '', date: _shareDateStr };
     document.getElementById('factCategory').textContent = cfg.category || window.L('edCategoryDefault');
     var accepted = d.currentAccepted || 0;
     var max = d.config.maxCapacityLimit || (cfg.maxTeams || 0);
@@ -771,12 +803,63 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
   // Share
   // Share the /e/{id} SSR route (carries OG title/description/image previews), not the raw app URL.
   function shareUrl() { return compId ? (location.origin + '/e/' + encodeURIComponent(compId)) : location.href; }
+  // renderEvent() populates window.__shareData with the live title + date so all share handlers below
+  // can build the same prefill text. Fallback to document.title if data isn't ready yet.
+  window.__shareData = window.__shareData || { title: '', date: '' };
+  function shareTitle() { return (window.__shareData && window.__shareData.title) || document.title.replace(/ · RegMaster$/, '') || ''; }
+  function shareDate()  { return (window.__shareData && window.__shareData.date)  || ''; }
+  // Build the prefilled text from i18n template. Placeholders {title}/{date}/{url} are replaced with raw
+  // values (no HTML escape — these go into a plain-text URL param or the Web Share API text field, both
+  // of which want raw chars; encodeURIComponent handles URL safety).
+  function sharePrefilledText() {
+    var tpl = window.L('edSharePrefillTemplate') || '{title}｜{date}｜{url}';
+    var t = shareTitle();
+    var d = shareDate();
+    var u = shareUrl();
+    var out = tpl.replace('{title}', t).replace('{date}', d).replace('{url}', u);
+    // No event date set → collapse the empty separator the missing {date} left ("｜｜" or " |  | ").
+    if (!d) out = out.replace(/｜\s*｜/g, '｜').replace(/\s*\|\s*\|\s*/g, ' | ');
+    return out;
+  }
+  // Web Share feature detection — used to decide whether to expose the mobile single-button UI even
+  // when the viewport is mobile-sized. Some mobile browsers (e.g. desktop Chrome in DevTools mobile
+  // emulation) report a small viewport but don't support navigator.share — in those cases we fall
+  // back to the 3-button desktop row.
+  var hasWebShare = !!(navigator && typeof navigator.share === 'function');
+  if (!hasWebShare) {
+    // Force the desktop row to show, hide the mobile button, even on narrow viewports.
+    var _smList = document.querySelectorAll('.side-card .share-mobile');
+    var _sdList = document.querySelectorAll('.side-card .share-desktop');
+    for (var i = 0; i < _smList.length; i++) _smList[i].style.display = 'none';
+    for (var j = 0; j < _sdList.length; j++) _sdList[j].style.display = 'grid';
+  }
+  // Mobile: single button → navigator.share() → system share sheet (LINE / FB / IG / WhatsApp / Mail / etc.)
+  var shareNativeBtn = document.getElementById('shareNative');
+  if (shareNativeBtn) {
+    shareNativeBtn.addEventListener('click', function () {
+      var t = shareTitle();
+      var text = sharePrefilledText();
+      var url = shareUrl();
+      if (hasWebShare) {
+        navigator.share({ title: t, text: text, url: url }).catch(function () { /* user cancelled or share denied */ });
+      } else {
+        // Defensive fallback (shouldn't happen — we hide this button when !hasWebShare).
+        if (navigator.clipboard) navigator.clipboard.writeText(text);
+      }
+    });
+  }
+  // Desktop: copy link
   document.getElementById('shareCopy').addEventListener('click', function () {
     navigator.clipboard.writeText(shareUrl()).then(function () { this.textContent = window.L('edCopied'); setTimeout(function(){ document.getElementById('shareCopy').textContent = window.L('edShareCopy'); }, 1500); }.bind(this));
   });
+  // Desktop: LINE deep link (line.me/R/msg/text/…) — wakes up LINE PC/mobile app directly. Note: LINE's
+  // deep link only accepts a single `text` param, so the URL must be embedded inside the text string.
   document.getElementById('shareLine').addEventListener('click', function () {
-    window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(shareUrl()), '_blank');
+    window.open('https://line.me/R/msg/text/?' + encodeURIComponent(sharePrefilledText()), '_blank');
   });
+  // Desktop: Facebook sharer. FB removed the `quote` param in 2017, so we can't prefill the post text
+  // — sharer.php only consumes the URL and pulls title/description from our og:* meta tags (served by
+  // the eventShare cloud function at /e/{id}).
   document.getElementById('shareFB').addEventListener('click', function () {
     window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl()), '_blank');
   });

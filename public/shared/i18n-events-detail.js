@@ -60,6 +60,8 @@
     // ----- side cards -----
     edShareH4: '分享活動',
     edShareCopy: '📋 複製連結',
+    edShareMobileBtn: '📤 分享活動',
+    edSharePrefillTemplate: '{title}｜{date}｜立刻報名 → {url}',
     edPdfH4: '下載規章',
     edPdfTitle: '活動規章 PDF',
     edPdfHint: '點擊開啟',
@@ -253,6 +255,8 @@
     // ----- side cards -----
     edShareH4: 'Share event',
     edShareCopy: '📋 Copy link',
+    edShareMobileBtn: '📤 Share event',
+    edSharePrefillTemplate: '{title} | {date} | Sign up → {url}',
     edPdfH4: 'Download rules',
     edPdfTitle: 'Event rules PDF',
     edPdfHint: 'Click to open',
