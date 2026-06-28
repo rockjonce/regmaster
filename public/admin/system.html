@@ -154,7 +154,7 @@ body { background:var(--bg); }
 .ana-canvas-box { position:relative; height:240px; }
 .ana-canvas-box.tall { height:340px; }
 /* CSS heatmap (re-used from registrations.html) */
-.ana-heatmap { display:grid; grid-template-columns:46px repeat(24, 1fr); gap:3px; padding:6px 0; }
+.ana-heatmap { display:grid; grid-template-columns:46px repeat(24, minmax(0, 1fr)); gap:3px; padding:6px 0; }
 .ana-heatmap .h-col { font:500 9.5px/1 var(--f-mono); color:var(--muted); text-align:center; padding-bottom:2px; }
 .ana-heatmap .h-row { font:500 11px/1 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; justify-content:flex-end; padding-right:8px; }
 .ana-heatmap .h-cell { aspect-ratio:1; border-radius:3px; background:var(--surface-2); border:1px solid var(--line-2); min-height:18px; }
@@ -171,8 +171,11 @@ body { background:var(--bg); }
   .ana-canvas-box.tall { height:300px; }
   .ana-kpis { grid-template-columns:repeat(2, 1fr); }
   .ana-kpis .k .v { font-size:17px; }
-  .ana-heatmap { grid-template-columns:36px repeat(24, 1fr); gap:2px; }
-  .ana-heatmap .h-row { padding-right:4px; font-size:10px; }
+  .ana-heatmap { grid-template-columns:28px repeat(24, minmax(0, 1fr)); gap:1.5px; }
+  .ana-heatmap .h-row { padding-right:3px; font-size:9px; }
+  .ana-heatmap .h-col { font-size:7.5px; }
+  .ana-heatmap .h-cell { min-height:0; border-radius:2px; }
+  .ana-heatmap .h-legend { flex-wrap:wrap; gap:4px; font-size:10px; }
 }
 </style>
 </head>
