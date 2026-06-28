@@ -44,6 +44,11 @@
     var tw = document.createElement('div'); tw.id = 'uiToastWrap'; document.body.appendChild(tw);
   }
 
+  // Localised default labels — uiConfirm/uiAlert/uiPrompt use these only when a call site
+  // passes no text of its own. Reads window.LANG synchronously (no i18n.js load-order
+  // dependency); the zh path returns the exact same literals as before (zero regression).
+  function dlgT(zh, en) { return (window.LANG === 'en') ? en : zh; }
+
   function dialog(opts) {
     return new Promise(function (resolve) {
       ensureRoot();
@@ -54,8 +59,8 @@
         (opts.title ? '<div class="ui-dlg-h">' + esc(opts.title) + '</div>' : '') +
         '<div class="ui-dlg-b">' + esc(opts.message).replace(/\n/g, '<br>') + inputHtml + '</div>' +
         '<div class="ui-dlg-f">' +
-          (opts.cancelText !== null ? '<button class="ui-dlg-btn ghost" data-act="cancel">' + esc(opts.cancelText || '取消') + '</button>' : '') +
-          '<button class="ui-dlg-btn ' + (opts.danger ? 'danger' : 'primary') + '" data-act="ok">' + esc(opts.okText || '確定') + '</button>' +
+          (opts.cancelText !== null ? '<button class="ui-dlg-btn ghost" data-act="cancel">' + esc(opts.cancelText || dlgT('取消', 'Cancel')) + '</button>' : '') +
+          '<button class="ui-dlg-btn ' + (opts.danger ? 'danger' : 'primary') + '" data-act="ok">' + esc(opts.okText || dlgT('確定', 'Confirm')) + '</button>' +
         '</div></div>';
       root.appendChild(bg);
       var input = bg.querySelector('.ui-dlg-input');
@@ -85,10 +90,10 @@
         if (openMsgs[i].textContent === String(message == null ? '' : message)) return Promise.resolve();
       }
     }
-    return dialog({ title: opts.title || '提示', message: message, okText: opts.okText || '知道了', cancelText: null, danger: opts.danger });
+    return dialog({ title: opts.title || dlgT('提示', 'Notice'), message: message, okText: opts.okText || dlgT('知道了', 'OK'), cancelText: null, danger: opts.danger });
   };
-  window.uiConfirm = function (message, opts) { opts = opts || {}; return dialog({ title: opts.title || '請確認', message: message, okText: opts.okText || '確定', cancelText: opts.cancelText || '取消', danger: opts.danger }); };
-  window.uiPrompt = function (message, defaultValue, opts) { opts = opts || {}; return dialog({ title: opts.title || '輸入', message: message, prompt: true, defaultValue: defaultValue || '', placeholder: opts.placeholder || '', okText: opts.okText || '確定', cancelText: opts.cancelText || '取消', inputType: opts.inputType || 'text' }); };
+  window.uiConfirm = function (message, opts) { opts = opts || {}; return dialog({ title: opts.title || dlgT('請確認', 'Please confirm'), message: message, okText: opts.okText || dlgT('確定', 'Confirm'), cancelText: opts.cancelText || dlgT('取消', 'Cancel'), danger: opts.danger }); };
+  window.uiPrompt = function (message, defaultValue, opts) { opts = opts || {}; return dialog({ title: opts.title || dlgT('輸入', 'Input'), message: message, prompt: true, defaultValue: defaultValue || '', placeholder: opts.placeholder || '', okText: opts.okText || dlgT('確定', 'Confirm'), cancelText: opts.cancelText || dlgT('取消', 'Cancel'), inputType: opts.inputType || 'text' }); };
   // uiToast(msg, type)                        → transient (2.6s auto-fade) — unchanged
   // uiToast(msg, type, { sticky: true })      → never auto-fades; caller dismisses via the handle
   // uiToast(msg, type, { id: 'apply-payout'}) → reuse/replace a toast with the same id in place

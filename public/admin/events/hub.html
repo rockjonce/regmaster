@@ -519,7 +519,10 @@
     }
     document.getElementById('statusInfo').innerHTML = statusLines.join(' · ');
 
-    document.getElementById('toggleOpenBtn').textContent = COMP.isOpen ? window.L('aeHubCloseReg') : window.L('aeHubOpenReg');
+    var _togKey = COMP.isOpen ? 'aeHubCloseReg' : 'aeHubOpenReg';
+    var _togBtn = document.getElementById('toggleOpenBtn');
+    _togBtn.setAttribute('data-i18n', _togKey);   // keep data-i18n in sync with state so applyI18n() (e.g. on language switch) re-applies the correct label instead of the static "關閉報名"
+    _togBtn.textContent = window.L(_togKey);
     document.getElementById('toggleOpenBtn').addEventListener('click', function () {
       var btn = this;
       uiConfirm((COMP.isOpen ? window.L('aeHubToggleClose') : window.L('aeHubToggleOpen')) + window.L('aeHubToggleConfirmSuf'), { title: window.L('aeHubToggleTitle') }).then(function (ok) {
