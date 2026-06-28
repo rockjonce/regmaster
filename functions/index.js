@@ -6145,11 +6145,31 @@ exports.createPayuniOrder = authCallable(["system", "competition"], async (data,
   const total = afterDiscount + tax;
   if (total < 1) return { success: false, message: "金額不正確" };
   
-  const orderId = "RM" + Date.now() + crypto.randomInt(100);
-  await db.collection("orders").doc(orderId).set({
-    orderId, username, items: orderItems, subtotal, couponCode: couponCode || "", couponDiscount,
-    taxRate: sales.taxRate || 5, tax, total, status: "pending", createdAt: fmtNow(), paidAt: ""
-  });
+  // Idempotency (fail-open): a 1-3s double-click used to mint a second pending order
+  // (orphan / possible double charge). If this buyer already has a very recent pending
+  // order for the EXACT same items+coupon+total, reuse it instead of creating another.
+  // Any failure here falls through to a fresh order (today's behaviour) — never block a buy.
+  const itemSig = JSON.stringify((items || []).map(i => ({ t: i.type, tier: String(i.tier || "").toLowerCase(), qty: i.qty || 1 })));
+  const nowMs = Date.now();
+  let orderId = null;
+  try {
+    const dupSnap = await db.collection("orders").where("username", "==", username).get();
+    for (const d of dupSnap.docs) {
+      const o = d.data();
+      if (o.status === "pending" && o.total === total && (o.couponCode || "") === (couponCode || "") &&
+          o._itemSig === itemSig && typeof o.createdTs === "number" && (nowMs - o.createdTs) < 10 * 60 * 1000) {
+        orderId = o.orderId; break;
+      }
+    }
+  } catch (e) { console.error("[createPayuniOrder] dedup lookup failed; minting fresh order:", e); orderId = null; }
+
+  if (!orderId) {
+    orderId = "RM" + nowMs + crypto.randomInt(100);
+    await db.collection("orders").doc(orderId).set({
+      orderId, username, items: orderItems, subtotal, couponCode: couponCode || "", couponDiscount,
+      taxRate: sales.taxRate || 5, tax, total, status: "pending", createdAt: fmtNow(), createdTs: nowMs, paidAt: "", _itemSig: itemSig
+    });
+  }
   
   /* Build PAYUNi parameters */
   const hostUrl = PROJECT_HOST;
@@ -7347,10 +7367,28 @@ exports.checkLicenseExpirations = authCallable(["system"], async () => _runCheck
 // ===== Scheduled jobs (Cloud Scheduler via onSchedule) — Asia/Taipei timezone =====
 // Each sub-task is individually try/caught so one failure never blocks the others. maxInstances:1
 // (these run rarely and don't need concurrency; keeps standing CPU footprint minimal).
+// T4: expire abandoned pending plan orders (createPayuniOrder leftovers that never got
+// paid). Only touches orders whose numeric createdTs is older than 24h, so it can never
+// race a live checkout (PayUNI sessions last minutes) nor touch legacy docs (no createdTs).
+async function _runExpireStalePendingOrders() {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const snap = await db.collection("orders").where("status", "==", "pending").get();
+  let n = 0;
+  for (const d of snap.docs) {
+    const ts = d.data().createdTs;
+    if (typeof ts === "number" && ts < cutoff) {
+      await d.ref.update({ status: "expired", expiredAt: fmtNow() });
+      n++;
+    }
+  }
+  if (n) console.log("[expireStalePendingOrders] expired " + n + " stale pending order(s)");
+  return { expired: n };
+}
 exports.dailyJobs = onSchedule({ schedule: "0 8 * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
   await _runCheckDeadlines().catch(e => console.error("[dailyJobs] deadlines:", e));
   await _runCheckLicenseExpirations().catch(e => console.error("[dailyJobs] license:", e));
   await _runNotifDigest("daily").catch(e => console.error("[dailyJobs] digest:", e));
+  await _runExpireStalePendingOrders().catch(e => console.error("[dailyJobs] expireOrders:", e));
 });
 exports.weeklyJobs = onSchedule({ schedule: "0 8 * * 1", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
   await _runNotifDigest("weekly").catch(e => console.error("[weeklyJobs] digest:", e));

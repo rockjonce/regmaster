@@ -160,6 +160,40 @@ const targets = bulkRefundTargets(pool).map(function (t) { return t.teamId; });
 eq(targets, ['B', 'C'], 'bulkRefund: 僅鎖定已付款未退費的 審核中／備取（B,C）');
 eq(bulkRefundTargets([]).length, 0, 'bulkRefund: 空清單 → 0 筆（冪等：退完按鈕消失）');
 
+/* =================== 5) createPayuniOrder 訂單去重 / 過期（T4）============ */
+// 純函式忠實移植自 index.js createPayuniOrder 去重判斷 + dailyJobs 過期判斷。
+function buildItemSig(items) {
+  return JSON.stringify((items || []).map(function (i) { return { t: i.type, tier: String(i.tier || '').toLowerCase(), qty: i.qty || 1 }; }));
+}
+function matchesPendingOrder(o, ctx) {
+  return o.status === 'pending' && o.total === ctx.total &&
+    (o.couponCode || '') === (ctx.couponCode || '') &&
+    o._itemSig === ctx.itemSig &&
+    typeof o.createdTs === 'number' && (ctx.nowMs - o.createdTs) < ctx.windowMs;
+}
+function isStalePendingOrder(o, nowMs, ttlMs) {
+  return o.status === 'pending' && typeof o.createdTs === 'number' && o.createdTs < (nowMs - ttlMs);
+}
+var NOW = 1000000000000;            // 固定假時間，不依賴真實時鐘
+var WIN = 10 * 60 * 1000;            // 去重視窗 10 分鐘
+var TTL = 24 * 60 * 60 * 1000;      // 過期門檻 24 小時
+var sigA = buildItemSig([{ type: 'tier', tier: 'PRO' }]);
+var sigB = buildItemSig([{ type: 'tier', tier: 'team' }]);
+eq(buildItemSig([{ type: 'tier', tier: 'pro' }]), sigA, 'itemSig: tier 大小寫正規化一致');
+ok(sigA !== sigB, 'itemSig: 不同 tier → 不同簽章');
+var ctxA = { total: 3000, couponCode: '', itemSig: sigA, nowMs: NOW, windowMs: WIN };
+ok(matchesPendingOrder({ status: 'pending', total: 3000, couponCode: '', _itemSig: sigA, createdTs: NOW - 60000 }, ctxA), 'dedup: 完全相同近期 pending → 命中');
+ok(!matchesPendingOrder({ status: 'pending', total: 2999, couponCode: '', _itemSig: sigA, createdTs: NOW - 60000 }, ctxA), 'dedup: 金額不同 → 不命中(嚴防重用錯金額)');
+ok(!matchesPendingOrder({ status: 'pending', total: 3000, couponCode: 'X', _itemSig: sigA, createdTs: NOW - 60000 }, ctxA), 'dedup: coupon 不同 → 不命中');
+ok(!matchesPendingOrder({ status: 'pending', total: 3000, couponCode: '', _itemSig: sigB, createdTs: NOW - 60000 }, ctxA), 'dedup: items 不同 → 不命中');
+ok(!matchesPendingOrder({ status: 'pending', total: 3000, couponCode: '', _itemSig: sigA, createdTs: NOW - 11 * 60000 }, ctxA), 'dedup: 超過 10 分鐘視窗 → 不命中');
+ok(!matchesPendingOrder({ status: 'paid', total: 3000, couponCode: '', _itemSig: sigA, createdTs: NOW - 60000 }, ctxA), 'dedup: 已付款 → 不命中');
+ok(!matchesPendingOrder({ status: 'pending', total: 3000, couponCode: '', _itemSig: sigA }, ctxA), 'dedup: 無 createdTs 舊單 → 不命中(fail-safe)');
+ok(isStalePendingOrder({ status: 'pending', createdTs: NOW - 25 * 60 * 60 * 1000 }, NOW, TTL), 'expire: pending 25h 前 → 過期');
+ok(!isStalePendingOrder({ status: 'pending', createdTs: NOW - 60 * 60 * 1000 }, NOW, TTL), 'expire: pending 1h 前 → 不過期');
+ok(!isStalePendingOrder({ status: 'paid', createdTs: NOW - 25 * 60 * 60 * 1000 }, NOW, TTL), 'expire: 已付款(即使很舊) → 不動');
+ok(!isStalePendingOrder({ status: 'pending' }, NOW, TTL), 'expire: 無 createdTs 舊單 → 不動(fail-safe)');
+
 /* ---- 結果輸出 ------------------------------------------------------------- */
 console.log('正取自訂（acceptanceMode）回歸測試');
 console.log('  通過 ' + pass + ' / 失敗 ' + fail);
