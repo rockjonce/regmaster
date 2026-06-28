@@ -949,7 +949,7 @@
           '</div>';
         }).join('');
         body.querySelectorAll('[data-act]').forEach(function (btn) {
-          btn.addEventListener('click', function () { doRefundAction(btn.dataset.act, btn.dataset.id, parseInt(btn.dataset.calc, 10) || 0, reload); });
+          btn.addEventListener('click', function () { doRefundAction(btn.dataset.act, btn.dataset.id, parseInt(btn.dataset.calc, 10) || 0, reload, btn); });
         });
       }
       function reload() {
@@ -960,15 +960,27 @@
       reload();
     });
   }
-  function doRefundAction(act, reqId, calc, reload) {
+  function doRefundAction(act, reqId, calc, reload, btn) {
     if (act === 'approve') {
-      google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast(window.L('aeRegRefundApproved')); reload(); } else uiAlert((r && r.message) || window.L('aeRegRefundFail')); })
-        .withFailureHandler(function (e) { uiAlert(e && e.message || window.L('aeRegRefundFail')); }).decideRefund(reqId, 'approve', '');
+      // approve = irreversible deduction → require explicit confirm (added R2026-06 T2).
+      uiConfirm(window.L('aeRegRefundApproveConfirm'), { title: window.L('aeRegRefundApproveTitle'), danger: true }).then(function (ok) {
+        if (!ok) return;
+        withLoadingUI(btn, function () { return runFn('decideRefund', reqId, 'approve', ''); }, {
+          busyText: window.L('uiBusyRefunding'), toastId: 'refund-' + reqId, errorTitle: window.L('aeRegRefundFail')
+        }).then(function (r) {
+          if (r && r.success) { uiToast(window.L('aeRegRefundApproved')); reload(); }
+          else uiAlert((r && r.message) || window.L('aeRegRefundFail'));
+        }).catch(function () {});
+      });
     } else if (act === 'reject') {
       uiPrompt(window.L('aeRegRefundRejectPrompt'), '', { title: window.L('aeRegRefundRejectTitle'), inputType: 'text' }).then(function (note) {
         if (note === null) return;
-        google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast(window.L('aeRegRefundRejected')); reload(); } else uiAlert((r && r.message) || window.L('aeRegRefundFail')); })
-          .withFailureHandler(function (e) { uiAlert(e && e.message || window.L('aeRegRefundFail')); }).decideRefund(reqId, 'reject', note);
+        withLoadingUI(btn, function () { return runFn('decideRefund', reqId, 'reject', note); }, {
+          busyText: window.L('uiBusyRefunding'), toastId: 'refund-' + reqId, errorTitle: window.L('aeRegRefundFail')
+        }).then(function (r) {
+          if (r && r.success) { uiToast(window.L('aeRegRefundRejected')); reload(); }
+          else uiAlert((r && r.message) || window.L('aeRegRefundFail'));
+        }).catch(function () {});
       });
     } else if (act === 'mark') {
       uiPrompt(window.L('aeRegRefundMarkAmtPrompt').replace('{n}', calc), String(calc), { title: window.L('aeRegRefundMarkTitle'), inputType: 'number' }).then(function (amt) {
@@ -977,8 +989,12 @@
         if (!(actual >= calc)) { uiAlert(window.L('aeRegRefundAmtTooLow') + calc); return; }
         uiPrompt(window.L('aeRegRefundMethodPrompt'), window.L('aeRegRefundMethodDefault'), { title: window.L('aeRegRefundMarkTitle'), inputType: 'text' }).then(function (method) {
           if (method === null) return;
-          google.script.run.withSuccessHandler(function (r) { if (r && r.success) { uiToast(window.L('aeRegRefundMarked')); reload(); loadAll && loadAll(); } else uiAlert((r && r.message) || window.L('aeRegRefundFail')); })
-            .withFailureHandler(function (e) { uiAlert(e && e.message || window.L('aeRegRefundFail')); }).markRefunded(reqId, actual, method, '');
+          withLoadingUI(btn, function () { return runFn('markRefunded', reqId, actual, method, ''); }, {
+            busyText: window.L('uiBusyMarkingRefunded'), toastId: 'refund-' + reqId, errorTitle: window.L('aeRegRefundFail')
+          }).then(function (r) {
+            if (r && r.success) { uiToast(window.L('aeRegRefundMarked')); reload(); loadAll && loadAll(); }
+            else uiAlert((r && r.message) || window.L('aeRegRefundFail'));
+          }).catch(function () {});
         });
       });
     }
@@ -1254,14 +1270,13 @@
     var teamLbl = t.teamNameCN || t.teamNameEN || tid;
     uiConfirm(window.L('aeRegDeleteConfirm').replace('{team}', teamLbl).replace('{id}', tid), { title: window.L('aeRegDeleteTitle'), okText: window.L('aeRegDeleteOk'), danger: true }).then(function (ok) {
       if (!ok) return;
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res && res.success) {
-            uiAlert(window.L('aeRegDeletedPre') + teamLbl + window.L('aeRegDeletedPost')).then(function () { location.reload(); });
-          } else { uiAlert((res && res.message) || window.L('aeRegDeleteFail')); }
-        })
-        .withFailureHandler(function (e) { uiAlert(window.L('aeRegDeleteFailPrefix') + (e && e.message)); })
-        .deleteTeam(tid);
+      withLoadingUI(null, function () { return runFn('deleteTeam', tid); }, {
+        toastMsg: window.L('uiBusyDeletingTeam'), toastId: 'deleteTeam-' + tid, errorTitle: window.L('aeRegDeleteTitle')
+      }).then(function (res) {
+        if (res && res.success) {
+          uiAlert(window.L('aeRegDeletedPre') + teamLbl + window.L('aeRegDeletedPost')).then(function () { location.reload(); });
+        } else { uiAlert((res && res.message) || window.L('aeRegDeleteFail')); }
+      }).catch(function () {});
     });
   }
 })();

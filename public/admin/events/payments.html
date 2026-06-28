@@ -432,14 +432,13 @@
     var teamLbl = t.teamNameCN || t.teamNameEN || tid;
     uiConfirm(window.L('aePayDeleteMsgPre') + teamLbl + window.L('aePayDeleteMsgMid') + tid + window.L('aePayDeleteMsgSuf'), { title: window.L('aePayDeleteTitle'), okText: window.L('aePayDeleteOk'), danger: true }).then(function (ok) {
       if (!ok) return;
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res && res.success) {
-            uiAlert(window.L('aePayDeleteDonePre') + teamLbl + window.L('aePayDeleteDoneSuf')).then(function () { load(); });
-          } else { uiAlert((res && res.message) || window.L('aePayDeleteFail')); }
-        })
-        .withFailureHandler(function (e) { uiAlert(window.L('aePayDeleteFailPre') + (e && e.message)); })
-        .deleteTeam(tid);
+      withLoadingUI(null, function () { return runFn('deleteTeam', tid); }, {
+        toastMsg: window.L('uiBusyDeletingTeam'), toastId: 'deleteTeam-' + tid, errorTitle: window.L('aePayDeleteTitle')
+      }).then(function (res) {
+        if (res && res.success) {
+          uiAlert(window.L('aePayDeleteDonePre') + teamLbl + window.L('aePayDeleteDoneSuf')).then(function () { load(); });
+        } else { uiAlert((res && res.message) || window.L('aePayDeleteFail')); }
+      }).catch(function () {});
     });
   }
 

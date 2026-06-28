@@ -270,25 +270,26 @@
       : _fmt('adLicConfirmBuy', { label: label, amt: (amount || (q && q.amount) || 0).toLocaleString() });
     uiConfirm(msg, { title: window.L('adLicConfirmTitle'), okText: window.L('adLicConfirmOk') }).then(function (ok) {
       if (!ok) return;
-      // T0 stopgap: lock the whole plan grid the instant the buy is confirmed.
-      // createPayuniOrder has no backend idempotency, so a 1-3s double-click would
-      // mint a second pending order (orphan / possible double charge). The real fix
-      // is backend idempotency (tracked separately); this just shuts the window.
-      var allBtns = Array.prototype.slice.call(document.querySelectorAll('[data-buy]'));
-      var busyLabel = (window.LANG === 'en') ? 'Creating order…' : '建立訂單中…';
-      var origText = btn ? btn.textContent : '';
-      allBtns.forEach(function (el) { el.disabled = true; });
-      if (btn) btn.textContent = busyLabel;
-      function unlock() { allBtns.forEach(function (el) { el.disabled = false; }); if (btn) btn.textContent = origText; }
       // Stash so payuni-return.html can route the buyer back to this page.
       try { localStorage.setItem('regmaster_pending_plan', JSON.stringify({ tier: tier, ts: Date.now() })); } catch (e) {}
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res && res.success && res.payuni) submitPayuni(res.payuni); // navigates away; keep grid locked
-          else { unlock(); uiAlert((res && res.message) || window.L('adLicOrderFail')); }
-        })
-        .withFailureHandler(function (e) { unlock(); uiAlert(window.L('adLicErrFail') + (e && e.message)); })
-        .createPayuniOrder([{ type: 'tier', tier: tier, years: 1 }], '', me.username);
+      // createPayuniOrder has no backend idempotency: a 1-3s double-click would mint a
+      // second pending order (orphan / possible double charge). Lock the whole [data-buy]
+      // grid + warn on unload while the order is created. Real fix = backend idempotency
+      // (tracked separately). On success submitPayuni() navigates away; it runs in the
+      // .then() AFTER withLoadingUI's cleanup restored onbeforeunload, so the redirect
+      // does not trip our own unload warning.
+      withLoadingUI(btn, function () { return runFn('createPayuniOrder', [{ type: 'tier', tier: tier, years: 1 }], '', me.username); }, {
+        busyText: window.L('uiBusyPaymentRedirecting'),
+        toastMsg: window.L('uiBusyPaymentRedirecting'),
+        toastId: 'purchaseTier',
+        blockUnload: true,
+        unloadMsg: window.L('uiUnloadOrderWarning'),
+        disableSelector: '[data-buy]',
+        errorTitle: window.L('adLicConfirmTitle')
+      }).then(function (res) {
+        if (res && res.success && res.payuni) submitPayuni(res.payuni);
+        else uiAlert((res && res.message) || window.L('adLicOrderFail'));
+      }).catch(function () { /* uiAlert already shown by withLoadingUI */ });
     });
   }
   function submitPayuni(p) {
