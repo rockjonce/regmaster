@@ -996,16 +996,17 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       if (typeof firebase === 'undefined' || !firebase.auth) { err.textContent = window.L('edLoginGoogleNotLoaded'); return; }
       err.style.color = 'var(--ink-3)'; err.textContent = window.L('edLoginGoogleIng');
       var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
-      firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
+      var _b = null;
+      firebase.auth().signInWithPopup(prov).then(function (r) { _b = uiBusy(window.L('edLoginGoogleIng')); return r.user.getIdToken(); }).then(function (idToken) {
         google.script.run.withSuccessHandler(function (res) {
           try { firebase.auth().signOut(); } catch (e) {}
           if (res && res.success) {
-            if (!(res.registrations || []).length) { err.style.color = 'var(--err-700)'; err.textContent = window.L('edLoginGoogleNoBind'); return; }
+            if (!(res.registrations || []).length) { if (_b) _b.dismiss(); err.style.color = 'var(--err-700)'; err.textContent = window.L('edLoginGoogleNoBind'); return; }
             try { sessionStorage.setItem('rm_social_regs', JSON.stringify(res.registrations)); } catch (e) {}
             location.href = '/my.html?social=google';
-          } else { err.style.color = 'var(--err-700)'; err.textContent = (res && res.message) || window.L('edLoginFail'); }
-        }).withFailureHandler(function (e) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || window.L('edLoginFail'); }).listMyRegistrationsBySocial('google', idToken);
-      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || window.L('edLoginGoogleFail'); } else { err.textContent = ''; } });
+          } else { if (_b) _b.dismiss(); err.style.color = 'var(--err-700)'; err.textContent = (res && res.message) || window.L('edLoginFail'); }
+        }).withFailureHandler(function (e) { if (_b) _b.dismiss(); err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || window.L('edLoginFail'); }).listMyRegistrationsBySocial('google', idToken);
+      }).catch(function (e) { if (_b) _b.dismiss(); var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { err.style.color = 'var(--err-700)'; err.textContent = (e && e.message) || window.L('edLoginGoogleFail'); } else { err.textContent = ''; } });
     });
     ov.querySelector('#mLoginL').addEventListener('click', function () {
       var state = Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -1070,13 +1071,15 @@ section.block .rich-content img { max-width:100%; border-radius:8px; margin:10px
       if (typeof firebase === 'undefined' || !firebase.auth) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = window.L('edLoginGoogleNotLoaded'); return; }
       bmsg.style.color = 'var(--ink-3)'; bmsg.textContent = window.L('edBindGoogleIng');
       var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
-      firebase.auth().signInWithPopup(prov).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
+      var _b = null;
+      firebase.auth().signInWithPopup(prov).then(function (r) { _b = uiBusy(window.L('edBindGoogleIng')); return r.user.getIdToken(); }).then(function (idToken) {
         google.script.run.withSuccessHandler(function (res) {
           try { firebase.auth().signOut(); } catch (e) {}
+          if (_b) _b.dismiss();
           if (res && res.success) { bmsg.style.color = 'var(--ok-700,#047857)'; bmsg.textContent = window.L('edBindGoogleOkPrefix') + (res.email || '') + window.L('edBindGoogleOkSuffix'); markBound('google'); }
           else { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (res && res.message) || window.L('edBindFail'); }
-        }).withFailureHandler(function (e) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || window.L('edBindFail'); }).bindRegistrantSocial(compId, teamId, pwd, 'google', idToken);
-      }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || window.L('edBindGoogleFail'); } });
+        }).withFailureHandler(function (e) { if (_b) _b.dismiss(); bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || window.L('edBindFail'); }).bindRegistrantSocial(compId, teamId, pwd, 'google', idToken);
+      }).catch(function (e) { if (_b) _b.dismiss(); var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { bmsg.style.color = 'var(--err-700)'; bmsg.textContent = (e && e.message) || window.L('edBindGoogleFail'); } });
     });
     v.querySelector('#mBindL').addEventListener('click', function () {
       var state = Math.random().toString(36).slice(2) + Date.now().toString(36);

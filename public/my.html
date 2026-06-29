@@ -1164,8 +1164,10 @@ html, body { max-width:100%; overflow-x:hidden; }
     if (typeof firebase === 'undefined' || !firebase.auth) { el.textContent = window.L('myErrGoogleNotLoaded'); el.style.display = 'block'; return; }
     el.style.display = 'none';
     var prov = new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({ prompt: 'select_account' });
-    var verifiedEmail = '';
+    var verifiedEmail = '', _b = null;
     firebase.auth().signInWithPopup(prov).then(function (r) {
+      // 彈窗一關閉就顯示「登入驗證中…」遮罩，蓋住 getIdToken + 後端驗證的空窗（避免使用者回到原畫面以為沒反應）。
+      _b = uiBusy((window.LANG === 'en') ? 'Verifying login…' : '登入驗證中⋯');
       // Capture the OAuth-verified email BEFORE the post-lookup signOut clobbers
       // firebase.auth().currentUser. Server-side verifyIdToken re-checks this.
       verifiedEmail = (r && r.user && r.user.email) ? String(r.user.email).toLowerCase() : '';
@@ -1173,14 +1175,15 @@ html, body { max-width:100%; overflow-x:hidden; }
     }).then(function (idToken) {
       google.script.run.withSuccessHandler(function (res) {
         try { firebase.auth().signOut(); } catch (e) {}
+        if (_b) _b.dismiss();
         if (res && res.success) {
           // Prefer server-returned email (it's the verified one); fall back to
           // the client one we captured above.
           showSocialRegs(res.registrations, res.email || verifiedEmail, 'google');
         }
         else { el.textContent = (res && res.message) || window.L('myErrLookupFail'); el.style.display = 'block'; }
-      }).withFailureHandler(function (e) { el.textContent = (e && e.message) || window.L('myErrLookupFail'); el.style.display = 'block'; }).listMyRegistrationsBySocial('google', idToken);
-    }).catch(function (e) { var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { el.textContent = (e && e.message) || window.L('myErrGoogleFail'); el.style.display = 'block'; } });
+      }).withFailureHandler(function (e) { if (_b) _b.dismiss(); el.textContent = (e && e.message) || window.L('myErrLookupFail'); el.style.display = 'block'; }).listMyRegistrationsBySocial('google', idToken);
+    }).catch(function (e) { if (_b) _b.dismiss(); var c = (e && e.code) || ''; if (c.indexOf('popup-closed') < 0 && c.indexOf('cancelled') < 0) { el.textContent = (e && e.message) || window.L('myErrGoogleFail'); el.style.display = 'block'; } });
   });
   document.getElementById('socialL').addEventListener('click', function () {
     var state = Math.random().toString(36).slice(2) + Date.now().toString(36);

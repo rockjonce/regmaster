@@ -37,7 +37,12 @@
       '.ui-dlg-btn.danger{background:var(--err-600,#dc2626);color:#fff}' +
       '#uiToastWrap{position:fixed;top:18px;right:18px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none}' +
       '.ui-toast{padding:11px 16px;border-radius:9px;font:600 13px/1.4 var(--f-tc,sans-serif);color:#fff;box-shadow:0 8px 24px rgba(10,20,40,.2);transition:opacity .3s;animation:uiPop .2s ease}' +
-      '.ui-toast.ok{background:var(--ok-600,#059669)}.ui-toast.err{background:var(--err-600,#dc2626)}';
+      '.ui-toast.ok{background:var(--ok-600,#059669)}.ui-toast.err{background:var(--err-600,#dc2626)}' +
+      '.ui-busy-ov{position:fixed;inset:0;z-index:99995;display:flex;align-items:center;justify-content:center;background:rgba(10,20,40,.5);transition:opacity .2s;animation:uiFade .15s ease}' +
+      '.ui-busy-card{background:var(--surface,#fff);border:1px solid var(--line,#e2e8f0);border-radius:16px;padding:30px 36px;box-shadow:0 18px 60px rgba(10,20,40,.28);display:flex;flex-direction:column;align-items:center;gap:16px;max-width:300px;text-align:center;animation:uiPop .18s ease}' +
+      '.ui-busy-spin{width:42px;height:42px;border:3px solid var(--line,#e2e8f0);border-top-color:var(--acc,#3d6bff);border-radius:50%;animation:uiSpin .9s linear infinite}' +
+      '@keyframes uiSpin{to{transform:rotate(360deg)}}' +
+      '.ui-busy-msg{font:600 14.5px/1.5 var(--f-tc,sans-serif);color:var(--ink,#0b1c3d)}';
     var style = document.createElement('style'); style.id = 'uiDlgStyle'; style.textContent = css;
     document.head.appendChild(style);
     var root = document.createElement('div'); root.id = 'uiDlgRoot'; document.body.appendChild(root);
@@ -206,6 +211,25 @@
       }
       throw err;
     });
+  };
+
+  // Full-screen blocking spinner overlay — for "you approved, we're verifying" windows,
+  // e.g. after a Google sign-in popup closes while the backend validates the token (the
+  // user is back on the original page and would otherwise see no feedback). Returns
+  // { dismiss(), update(msg) }; each call layers its own overlay and removes only its own.
+  window.uiBusy = function (msg) {
+    ensureRoot();
+    var ov = document.createElement('div'); ov.className = 'ui-busy-ov';
+    var card = document.createElement('div'); card.className = 'ui-busy-card';
+    var sp = document.createElement('div'); sp.className = 'ui-busy-spin';
+    var m = document.createElement('div'); m.className = 'ui-busy-msg';
+    m.textContent = msg || ((window.LANG === 'en') ? 'Processing…' : '處理中…');
+    card.appendChild(sp); card.appendChild(m); ov.appendChild(card);
+    document.body.appendChild(ov);
+    return {
+      dismiss: function () { if (ov.parentNode) { ov.style.opacity = '0'; setTimeout(function () { if (ov.parentNode) ov.remove(); }, 200); } },
+      update: function (newMsg) { if (typeof newMsg === 'string') m.textContent = newMsg; }
+    };
   };
 
   // Transparently style native alert() — it's fire-and-forget feedback, so a

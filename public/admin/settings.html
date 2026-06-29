@@ -585,15 +585,16 @@
     btn.disabled = true;
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    firebase.auth().signInWithPopup(provider).then(function (r) { return r.user.getIdToken(); }).then(function (idToken) {
+    var _b = null;
+    firebase.auth().signInWithPopup(provider).then(function (r) { _b = uiBusy(L('adSetVerifyingBusy')); return r.user.getIdToken(); }).then(function (idToken) {
       google.script.run.withSuccessHandler(function (res) {
-        btn.disabled = false;
+        btn.disabled = false; if (_b) _b.dismiss();
         if (res && res.success) { uiToast(L('adSetGoogleLinkedOk')); loadLinkedProviders(); }
         else uiAlert((res && res.message) || L('adSetLinkFail'));
         try { firebase.auth().signOut(); } catch (e) {}
-      }).withFailureHandler(function (e) { btn.disabled = false; uiAlert(L('adSetGoogleLinkFailPrefix') + (e && e.message)); }).linkGoogleAccount(idToken);
+      }).withFailureHandler(function (e) { btn.disabled = false; if (_b) _b.dismiss(); uiAlert(L('adSetGoogleLinkFailPrefix') + (e && e.message)); }).linkGoogleAccount(idToken);
     }).catch(function (e) {
-      btn.disabled = false;
+      btn.disabled = false; if (_b) _b.dismiss();
       var code = (e && e.code) || '';
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
       uiAlert((e && e.message) || L('adSetGoogleLinkFail'));
