@@ -338,7 +338,9 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var methods = CFG.paymentMethods || [];
     var grid = document.getElementById('methodGrid');
     var html = '';
-    var hasPayuni = CFG.payuniEnabled && CFG.payuniMerID;
+    // per-活動通常不存 payuniMerID（後端 createRegistrationPayment 會 fallback 去系統 sales 設定
+    // 取用商店代號），故前端只看 payuniEnabled 旗標，否則「我的報名→付款」會看不到付款按鈕。
+    var hasPayuni = CFG.payuniEnabled === true;
     var hasManual = methods.indexOf('atm') !== -1 || methods.indexOf('bank') !== -1 || methods.indexOf('manual') !== -1;
     var hasCC = !!CFG.creditCardLink;
 

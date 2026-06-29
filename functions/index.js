@@ -6499,7 +6499,11 @@ exports.createRegistrationPayment = callable(async (data) => {
     // ASCII-only ProdDesc avoids any encoding gotcha; the orderId disambiguates per-team
     ProdDesc: "RegMaster Order " + orderId,
     ReturnURL: hostUrl + "/payuni-return.html",
-    NotifyURL: FUNCTIONS_BASE + "/payuniRegNotify"
+    NotifyURL: FUNCTIONS_BASE + "/payuniRegNotify",
+    // 報名費只提供「信用卡一次付清」：TradeType=1 幕前付款、Credit=1 開信用卡；不開 ATM/CVS/超商/
+    // 分期/Apple Pay/Google Pay（與方案訂單 createPayuniOrder 相同的限定方式；不設 CreditInst 即不分期）。
+    TradeType: "1",
+    Credit: "1"
   };
   const encStr = payuniEncrypt(encryptInfo, payKey, payIV);
   const hashStr = payuniHash(encStr, payKey, payIV);

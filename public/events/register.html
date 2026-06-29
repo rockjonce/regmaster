@@ -1259,7 +1259,14 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       if (def.req && !v) { if (wrap) wrap.classList.add('error'); showErr(who + window.L('rgValRequiredA') + def.label + window.L('rgValRequiredB')); return false; }
       if (wrap) wrap.classList.remove('error');
       if (def.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { if (wrap) wrap.classList.add('error'); showErr(who + window.L('rgValEmail')); return false; }
-      if (def.type === 'idnumber' && v && /^[A-Za-z][0-9]{9}$/.test(v) && !validateTWID(v)) { if (wrap) wrap.classList.add('error'); showErr(who + window.L('rgValIdNumA') + def.label + window.L('rgValIdNumB')); return false; }
+      if (def.type === 'idnumber' && v) {
+        // 此欄限台灣身分證/居留證：須為 10 碼、首字英文字母（國民身分證另驗檢查碼）。
+        // 修正：原本只驗「剛好 10 碼」格式，過長/過短會被當外籍護照放行而漏驗。
+        var _idv = String(v).trim().toUpperCase();
+        if (!/^[A-Z][A-Z0-9][0-9]{8}$/.test(_idv) || (/^[A-Z][12][0-9]{8}$/.test(_idv) && !validateTWID(_idv))) {
+          if (wrap) wrap.classList.add('error'); showErr(who + window.L('rgValIdNumA') + def.label + window.L('rgValIdNumB')); return false;
+        }
+      }
       // 網址欄位：未填協定時自動補 https://，再驗證為合法網址
       if (def.type === 'url' && v) {
         v = String(v).trim();
@@ -1325,10 +1332,19 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         var v = document.getElementById('teamNameCN').value.trim();
         var f = document.getElementById('teamNameCNField');
         if (!v) { f.classList.add('error'); showErr(window.L('rgValTeamNameCN')); return false; }
+        // 中文隊名僅限中文字（數字/空格/標點放行，但不可含英文字母）
+        if (/[A-Za-z]/.test(v)) { f.classList.add('error'); showErr(window.L('rgValTeamNameCNChar')); return false; }
         f.classList.remove('error');
         STATE.teamNameCN = v;
       }
-      if (CFG.requireTeamNameEN) STATE.teamNameEN = document.getElementById('teamNameEN').value.trim();
+      if (CFG.requireTeamNameEN) {
+        var ve = document.getElementById('teamNameEN').value.trim();
+        var fe = document.getElementById('teamNameENField');
+        // 英文隊名僅限英文字母（數字/空格/標點放行，但不可含中文字）
+        if (ve && /[㐀-鿿豈-﫿]/.test(ve)) { if (fe) fe.classList.add('error'); showErr(window.L('rgValTeamNameENChar')); return false; }
+        if (fe) fe.classList.remove('error');
+        STATE.teamNameEN = ve;
+      }
     } else if (n === 2) {
       // Collect students/teachers from the schema-driven cards
       STATE.students = [];

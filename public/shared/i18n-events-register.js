@@ -160,7 +160,7 @@
 
     // ----- dynamic: payment method cards -----
     rgPayuniName: '線上付款（PayUNI）',
-    rgPayuniDesc: '信用卡 · ATM · 超商代碼 · LINE Pay，立即完成付款',
+    rgPayuniDesc: '信用卡（一次付清），立即完成付款',
     rgAtmName: '銀行轉帳 / ATM',
     rgAtmDescFallback: '主辦方銀行帳戶',
     rgAtmCardAcc: '帳號',
@@ -204,6 +204,8 @@
     rgValPickGroup: '請選擇組別',
     rgValPickSession: '請選擇場次',
     rgValTeamNameCN: '請輸入隊伍中文名稱',
+    rgValTeamNameCNChar: '中文隊名僅限中文字（數字、空格、標點可，但不可含英文字母）',
+    rgValTeamNameENChar: '英文隊名僅限英文字母（數字、空格、標點可，但不可含中文字）',
     rgValRequiredA: ' 的「',           // who + 的「 + label + 」為必填
     rgValRequiredB: '」為必填',
     rgValEmail: ' 的 Email 格式錯誤',  // who + …
@@ -401,7 +403,7 @@
     rgSessionSingle: '(single)',
 
     rgPayuniName: 'Online payment (PayUNI)',
-    rgPayuniDesc: 'Credit card · ATM · convenience-store code · LINE Pay, pay instantly',
+    rgPayuniDesc: 'Credit card (pay in full), instant payment',
     rgAtmName: 'Bank transfer / ATM',
     rgAtmDescFallback: 'Organizer bank account',
     rgAtmCardAcc: 'Acct',
@@ -440,6 +442,8 @@
     rgValPickGroup: 'Please select a group',
     rgValPickSession: 'Please select a session',
     rgValTeamNameCN: 'Please enter the Chinese team name',
+    rgValTeamNameCNChar: 'Chinese team name must not contain English letters (digits/spaces/punctuation allowed)',
+    rgValTeamNameENChar: 'English team name must not contain Chinese characters (digits/spaces/punctuation allowed)',
     rgValRequiredA: '’s "',
     rgValRequiredB: '" is required',
     rgValEmail: '’s email format is invalid',
