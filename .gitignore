@@ -101,6 +101,8 @@ public/tutorials/videos/
 # Tutorial-video production pipeline + caches + source media.
 # (Already-tracked exceptions stay tracked: _pipeline/episodes_v2.json, narration_en_01-25.md)
 教學影片/
+# 介紹影片 production folder — planning .md + 成品/素材 大型媒體 (~82MB)，同上太大不進版。
+介紹影片/
 # Recording control panel + cleanup scripts (contain now-defunct recording secret)
 outputs/
 # Pre-V3 full site backup snapshot
