@@ -1,0 +1,19 @@
+{
+  "_comment": "regmaster-v3 專屬部署設定。v3 已停用，此設定只把整個 v3 hosting 換成一頁轉址到 regmaster-pro.web.app。與 pro 的 firebase.json / public/ 完全隔離，不影響 regmaster-pro。部署： firebase deploy --only hosting --project v3 --config firebase.v3.json",
+  "hosting": {
+    "public": "v3-redirect",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "cleanUrls": true,
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ]
+      }
+    ]
+  }
+}
