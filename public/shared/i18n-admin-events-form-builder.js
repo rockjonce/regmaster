@@ -69,6 +69,8 @@
     aeFormContentTextEmpty: '（尚未輸入文字）',
     aeFormContentImgSet: '已設定圖片',
     aeFormContentImgEmpty: '（尚未上傳圖片）',
+    aeFormInsContentImgDel: '刪除圖片',
+    aeFormInsContentImgDelConfirm: '確定要刪除這張圖片嗎？此動作無法復原。',
 
     // ----- palette: special-field category headings -----
     aeFormCatBasic: '基本欄位',
@@ -304,6 +306,8 @@
     aeFormContentTextEmpty: '(no text yet)',
     aeFormContentImgSet: 'Image set',
     aeFormContentImgEmpty: '(no image yet)',
+    aeFormInsContentImgDel: 'Remove image',
+    aeFormInsContentImgDelConfirm: 'Remove this image? This cannot be undone.',
 
     // ----- palette: special-field category headings -----
     aeFormCatBasic: 'Basic Fields',

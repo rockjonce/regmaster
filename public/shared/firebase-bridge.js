@@ -140,6 +140,7 @@
     uploadPosterImage:["compId","base64Data","fileName","mimeType"],
     uploadFormImage:["compId","base64Data","mimeType"],
     getFormImageData:["ref"],
+    deleteFormImage:["compId","ref"],
     listCompetitions:["role","username"],
     createCompetition:["name","category","eventType","creator"],
     getCompetitionConfig:["compId"],

@@ -5415,6 +5415,15 @@ exports.getFormImageData = callable(async (data) => {
   const p = doc.data();
   return { success: true, dataUri: "data:" + (p.mimeType || "image/jpeg") + ";base64," + (p.data || "") };
 });
+// 刪除「圖片內容」欄位的圖片（主辦在 form-builder 按縮圖上的 ✕）。
+exports.deleteFormImage = compAuthCallable(async (data, request) => {
+  let id = String((data && data.ref) || "");
+  if (id.indexOf("fa:") === 0) id = id.slice(3);
+  if (!id) return { success: false, message: "缺少參照" };
+  try { await db.collection("formAssets").doc(id).delete(); } catch (e) {}
+  await auditLog(request.authUser.username, "delete form image", String((data && data.compId) || ""), id);
+  return { success: true };
+});
 
 // ===== Delete Poster Image =====
 exports.deletePosterImage = compAuthCallable(async (data, request) => {
@@ -9225,8 +9234,10 @@ exports.getAiInsights = authCallable(["system", "competition"], async (data, req
       });
     }
 
-    // Heuristic 3: payment lag — count pending payments
-    if (team > 0) {
+    // Heuristic 3: payment lag — count pending payments.
+    // 僅對「有收款管道」的活動才跑：paymentMethods 由 payuni / 銀行轉帳(atm) 自動推導，
+    // 空陣列＝免費活動（沒開 payuni、也沒開銀行帳戶）→ 不該顯示待付款/付款提醒。
+    if (team > 0 && Array.isArray(cfg.paymentMethods) && cfg.paymentMethods.length > 0) {
       const tSnap = await db.collection("teams").where("compId", "==", cDoc.id).get();
       let payWait = 0;
       tSnap.docs.forEach(d => {
@@ -9287,7 +9298,8 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
         if (!(t.paymentStatus || "").includes("已確認")) payWait++;
         if (t.fileUrl && t.fileApproved !== true && cfg.requireFileUpload) fileWait++;
       });
-      if (payWait > 0) {
+      // 免費活動（無收款管道：沒開 payuni、也沒開銀行帳戶）跳過付款待辦；檔案審核不受影響。
+      if (payWait > 0 && Array.isArray(cfg.paymentMethods) && cfg.paymentMethods.length > 0) {
         todos.push({
           priority: payWait > 10 ? "high" : "med",
           title: `確認 ${payWait} 筆付款`,

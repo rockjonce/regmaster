@@ -901,8 +901,23 @@ body { background:var(--bg); overflow:hidden; }
     if (fimgBtn) {
       var fimgPrev = document.getElementById('fimgPrev');
       var renderFimgPrev = function (src) {
-        if (src) fimgPrev.innerHTML = '<img src="' + src + '" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--line);display:block">';
-        else fimgPrev.innerHTML = '<div style="font:400 11px/1.4 var(--f-tc);color:var(--muted)">' + escapeHtml(window.L('aeFormContentImgEmpty')) + '</div>';
+        if (src) {
+          fimgPrev.innerHTML = '<div style="position:relative;display:inline-block">'
+            + '<img src="' + src + '" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--line);display:block">'
+            + '<button type="button" id="fimgDel" title="' + escapeHtml(window.L('aeFormInsContentImgDel')) + '" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border:0;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font:700 14px/1 system-ui;cursor:pointer">✕</button>'
+            + '</div>';
+          var del = document.getElementById('fimgDel');
+          if (del) del.addEventListener('click', function () {
+            uiConfirm(window.L('aeFormInsContentImgDelConfirm'), { title: window.L('aeFormInsContentImgDel'), danger: true }).then(function (ok) {
+              if (!ok) return;
+              var oldRef = f.imageRef;
+              f.imageRef = ''; markDirty(); renderFimgPrev('');
+              var pf = document.querySelector('.field-c[data-field-id="' + f.id + '"] .preview-f');
+              if (pf) pf.textContent = window.L('aeFormContentImgEmpty');
+              if (oldRef) google.script.run.withSuccessHandler(function () {}).withFailureHandler(function () {}).deleteFormImage(compId, oldRef);
+            });
+          });
+        } else fimgPrev.innerHTML = '<div style="font:400 11px/1.4 var(--f-tc);color:var(--muted)">' + escapeHtml(window.L('aeFormContentImgEmpty')) + '</div>';
       };
       if (f.imageRef) {
         fimgPrev.innerHTML = '<div style="font:400 11px/1.4 var(--f-tc);color:var(--muted)">' + escapeHtml(window.L('aeFormInsContentImgLoading')) + '</div>';
