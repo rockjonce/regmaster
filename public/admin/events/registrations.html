@@ -440,10 +440,24 @@
   // server's _parseRegTime so client-recomputed stats match the original aggregates.
   function parseRegTime(rt) {
     if (!rt) return null;
-    var s = String(rt).replace('T', ' ');
+    var s = String(rt).replace('T', ' ').trim();
+    // ISO-ish：YYYY-MM-DD HH:MM[:SS]
     var m = s.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
-    if (!m) return null;
-    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0);
+    // zh-TW 在地化（fmtNow）：YYYY/M/D 上午|下午H:MM[:SS]（斜線、不補零、12 小時）
+    m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})/);
+    if (m) {
+      var h = +m[5];
+      if (m[4] === '下午' && h < 12) h += 12;
+      if (m[4] === '上午' && h === 12) h = 0;
+      return new Date(+m[1], +m[2] - 1, +m[3], h, +m[6], 0);
+    }
+    return null;
+  }
+  // 由解析後的 Date 產生 YYYY-MM-DD 日鍵（與後端 toDayKey 一致；不可用 slice(0,10)，
+  // 因在地化格式 2026/6/30 不補零會切錯）。
+  function dayKeyOf(dt) {
+    return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
   }
   // Resolve the selected range to [fromMs, toMs] (inclusive day bounds). null = unbounded.
   function rangeBounds() {
@@ -476,7 +490,7 @@
       if (b.from != null && ms < b.from) return;
       if (b.to != null && ms > b.to) return;
       n++;
-      var day = String(t.registrationTime).slice(0, 10);
+      var day = dayKeyOf(dt);
       var paid = String(t.paymentStatus || '').indexOf('已確認') !== -1 || String(t.paymentStatus || '').toLowerCase().indexOf('paid') !== -1;
       dailyCounts[day] = (dailyCounts[day] || 0) + 1;
       if (paid) {
