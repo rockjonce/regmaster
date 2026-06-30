@@ -1313,7 +1313,15 @@ body { background:var(--bg); }
     anaCharts.funnel = new Chart(document.getElementById('ana-funnel').getContext('2d'), {
       type: 'bar',
       data: { labels: ['訪客', '註冊', '付費'], datasets: [{ label: '人數', data: [f.visitors, f.signups, f.paid], backgroundColor: ['#3d6bff', '#9b6bff', '#10b981'], borderRadius: 4 }] },
-      options: Object.assign({}, ANA_BASE, { indexAxis: 'y', plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }) })
+      // 同 topevents：水平長條自帶 scales，避免沿用被垂直圖表污染的共用 ANA_BASE.scales。
+      options: Object.assign({}, ANA_BASE, {
+        indexAxis: 'y',
+        plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }),
+        scales: {
+          x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.06)' }, ticks: { precision: 0, font: { family: 'inherit', size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { family: 'inherit', size: 11 } } }
+        }
+      })
     });
     var mr = ANA.monthlyRevenue || [];
     _anaDestroy('mrr');
@@ -1339,7 +1347,16 @@ body { background:var(--bg); }
           { label: '報名數', data: te.map(function (e) { return e.regs; }), backgroundColor: '#10b981', borderRadius: 3 }
         ]
       },
-      options: Object.assign({}, ANA_BASE, { indexAxis: 'y' })
+      // 水平長條（indexAxis:'y'）必須自帶 scales，不可共用 ANA_BASE.scales：前面的垂直圖表
+      // 會把共用的 scales.x 就地定型為 category、scales.y 為 linear；水平圖若沿用，數值資料
+      // 會被丟到 category 的 x 軸而完全畫不出長條（熱門活動 Top 10 空白的根因）。
+      options: Object.assign({}, ANA_BASE, {
+        indexAxis: 'y',
+        scales: {
+          x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.06)' }, ticks: { precision: 0, font: { family: 'inherit', size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { family: 'inherit', size: 11 } } }
+        }
+      })
     });
   }
   // ----- Tab: 安全 -----
