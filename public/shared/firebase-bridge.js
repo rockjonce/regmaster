@@ -138,6 +138,8 @@
     getRegPaymentStatus:["orderId"],
     clearExpiredLicenses:[],
     uploadPosterImage:["compId","base64Data","fileName","mimeType"],
+    uploadFormImage:["compId","base64Data","mimeType"],
+    getFormImageData:["ref"],
     listCompetitions:["role","username"],
     createCompetition:["name","category","eventType","creator"],
     getCompetitionConfig:["compId"],

@@ -5394,6 +5394,28 @@ exports.getPosterData = callable(async (data) => {
   return { success: true, dataUri: "data:" + (p.mimeType || "image/png") + ";base64," + (p.data || "") };
 });
 
+/* ===== Form display-image assets (通用欄位「圖片內容」) ===== */
+// 單一 doc 儲存（前端已壓到 ≤500KB ≈ ≤685KB base64，安全落在 Firestore 1MB doc 限制內）。
+exports.uploadFormImage = compAuthCallable(async (data, request) => {
+  const { compId, base64Data, mimeType } = data;
+  if (!compId || !base64Data) return { success: false, message: "缺少資料" };
+  if (String(base64Data).length > 900000) return { success: false, message: "圖檔過大，請壓縮後再上傳" };
+  const ref = db.collection("formAssets").doc();
+  await ref.set({ compId, mimeType: String(mimeType || "image/jpeg"), data: String(base64Data), createdAt: fmtNow() });
+  await auditLog(request.authUser.username, "upload form image", compId, ref.id);
+  return { success: true, ref: "fa:" + ref.id, dataUri: "data:" + (mimeType || "image/jpeg") + ";base64," + base64Data };
+});
+// 公開以參照取圖（報名頁與 form-builder 預覽都用）。
+exports.getFormImageData = callable(async (data) => {
+  let id = String(data.ref || "");
+  if (id.indexOf("fa:") === 0) id = id.slice(3);
+  if (!id) return { success: false };
+  const doc = await db.collection("formAssets").doc(id).get();
+  if (!doc.exists) return { success: false };
+  const p = doc.data();
+  return { success: true, dataUri: "data:" + (p.mimeType || "image/jpeg") + ";base64," + (p.data || "") };
+});
+
 // ===== Delete Poster Image =====
 exports.deletePosterImage = compAuthCallable(async (data, request) => {
   const { compId } = data;
@@ -8885,6 +8907,7 @@ function deriveLegacyFromFormSchema(formSchema) {
     if (role === 'teacher') tchTotal += 1;
     for (const f of (sec.fields || [])) {
       if (!f || !f.type) continue;
+      if (f.type === 'contentText' || f.type === 'contentImage') continue;   // 顯示型欄位（純資訊）不進 legacy 衍生
       if (role === 'student' && f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) {
         if (!seenStudent.has(f.legacyKey)) { out.studentFields.push(f.legacyKey); seenStudent.add(f.legacyKey); }
         if (f.legacyKey === 'dietary' && Array.isArray(f.opts) && f.opts.length) out.dietaryOptions = f.opts.slice();
@@ -9058,6 +9081,9 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
           };
           if (f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) cleanF.legacyKey = f.legacyKey;
           if (f.logic && typeof f.logic === 'object') cleanF.logic = f.logic;
+          // 顯示型欄位（純資訊、不收報名者輸入）：保留內容/圖片參照，否則會被上面的欄位清理剝掉。
+          if (f.type === 'contentText' && f.content) cleanF.content = String(f.content).slice(0, 2000);
+          if (f.type === 'contentImage' && f.imageRef) cleanF.imageRef = String(f.imageRef).slice(0, 60);
           return cleanF;
         })
       };
