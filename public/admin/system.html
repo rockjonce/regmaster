@@ -1388,6 +1388,11 @@ body { background:var(--bg); }
       document.querySelectorAll('.ana-subtabs a').forEach(function (x) { x.classList.remove('on'); });
       a.classList.add('on');
       document.querySelectorAll('.ana-sub').forEach(function (p) { p.classList.toggle('on', p.dataset.subpane === a.dataset.sub); });
+      // 圖表是在頁面載入時一次全部建立的，當下非預設分頁為 display:none → Chart.js 畫成 0×0 空白。
+      // 切到該分頁後容器才有尺寸，於此 resize 所有 analytics 圖表，讓剛顯示的分頁正確重繪。
+      requestAnimationFrame(function () {
+        Object.keys(anaCharts).forEach(function (k) { try { anaCharts[k].resize(); } catch (e) {} });
+      });
     });
   });
   document.getElementById('ana-preset').addEventListener('change', loadAnalytics);
