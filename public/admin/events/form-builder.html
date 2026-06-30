@@ -1180,7 +1180,8 @@ body { background:var(--bg); overflow:hidden; }
           btn.textContent = window.L('aeFormSaveBtn');
           markDirty();
           var meta = document.getElementById('saveMeta');
-          meta.textContent = window.L('aeFormSavedSyncPre') + res.derived.studentFields.length + window.L('aeFormSavedSyncMid') + res.derived.customQuestionCount + window.L('aeFormSavedSyncSuf');
+          // 主辦方只看到乾淨的「✓ 已儲存」；舊欄位同步是內部相容機制（仍在後端背景進行，供匯出/匯入/舊報名 fallback 使用），不對外露出內部數字。
+          meta.textContent = window.L('aeFormSavedOk');
           meta.className = 'save-meta saved';
         } else {
           btn.disabled = false; btn.textContent = window.L('aeFormSaveBtn');

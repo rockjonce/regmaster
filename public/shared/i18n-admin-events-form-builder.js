@@ -230,6 +230,7 @@
     aeFormSavedSyncPre: '✓ 已儲存（同步舊欄位 ',
     aeFormSavedSyncMid: ' 學員 + ',
     aeFormSavedSyncSuf: ' 附加問題）',
+    aeFormSavedOk: '✓ 已儲存',
 
     // ----- lock banner / messages (dynamic) -----
     aeFormLockBannerPre: '🔒 <b>此活動已有 ',
@@ -464,6 +465,7 @@
     aeFormSaving: 'Saving…',
     aeFormDirty: 'Unsaved changes',
     aeFormSaved: 'Saved',
+    aeFormSavedOk: '✓ Saved',
     aeFormSavedSyncPre: '✓ Saved (synced legacy fields: ',
     aeFormSavedSyncMid: ' participant + ',
     aeFormSavedSyncSuf: ' additional questions)',
