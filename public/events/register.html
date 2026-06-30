@@ -953,6 +953,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var key = f.legacyKey || f.id;
     var opts = (Array.isArray(f.opts) && f.opts.length) ? f.opts.slice() : optsFor(f.legacyKey || '');
     var d = { key: key, label: f.label || key, type: f.type || 'text', opts: opts, req: !!f.req, help: f.help || '', logic: (f.logic && f.logic.key) ? f.logic : null };
+    if (f.type === 'contentText') d.content = f.content || '';        // 顯示型欄位：純文字資訊
+    if (f.type === 'contentImage') d.imageRef = f.imageRef || '';     // 顯示型欄位：圖片參照
     LABEL_MAP[key] = d.label; return d;
   }
   function legacyDefs(keys) { return (keys || []).map(function (k) { LABEL_MAP[k] = FIELD_LABELS[k] || k; return { key: k, label: FIELD_LABELS[k] || k, type: inferType(k), opts: optsFor(k), req: true, help: '', logic: null }; }); }
@@ -1027,8 +1029,30 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var ph = (t === 'url') ? ' placeholder="例：https://example.com" data-i18n-placeholder="rgUrlPlaceholder" inputmode="url"' : '';
     return '<input type="' + it + '" id="' + domId + '"' + ph + '>';
   }
+  // 點擊放大圖片（顯示型「圖片內容」欄位用）。
+  function openImgLightbox(src) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+    var im = document.createElement('img');
+    im.src = src;
+    im.style.cssText = 'max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)';
+    ov.appendChild(im);
+    ov.addEventListener('click', function () { if (ov.parentNode) ov.parentNode.removeChild(ov); });
+    document.body.appendChild(ov);
+  }
   // Build a .fld wrapper for a field (prefix scopes the id; e.g. "student_0_" or "cq_")
   function buildFieldHtml(def, prefix) {
+    // 顯示型欄位（純資訊、不收報名者輸入）：只顯示標題＋文字/圖片，無輸入框、無必填星號、無錯誤列。
+    if (def.type === 'contentText') {
+      var ctLbl = def.label ? '<div class="lbl">' + escapeHtml(window.LF(def.key, def.label)) + '</div>' : '';
+      var ctBody = def.content ? '<div class="content-text" style="white-space:pre-wrap;font:400 13.5px/1.65 var(--f-tc);color:var(--ink-2)">' + escapeHtml(def.content) + '</div>' : '';
+      return '<div class="fld field-full content-fld" data-fld-key="' + escapeHtml(def.key) + '">' + ctLbl + ctBody + '</div>';
+    }
+    if (def.type === 'contentImage') {
+      var ciLbl = def.label ? '<div class="lbl">' + escapeHtml(window.LF(def.key, def.label)) + '</div>' : '';
+      var ciImg = def.imageRef ? '<img class="content-img" data-fimg-ref="' + escapeHtml(def.imageRef) + '" alt="' + escapeHtml(def.label || '') + '" style="max-width:100%;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;display:none">' : '';
+      return '<div class="fld field-full content-fld" data-fld-key="' + escapeHtml(def.key) + '">' + ciLbl + ciImg + '</div>';
+    }
     var domId = prefix + def.key;
     var isFull = (def.type === 'textarea' || def.type === 'file' || def.key === 'address' || def.key === 'nationality');
     var req = def.req ? ' <span class="req">*</span>' : '';
@@ -1037,6 +1061,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
   // Wire file uploads + conditional show/hide within a container (prefix scopes ids)
   function wireFieldContainer(container, defs, prefix) {
+    // 顯示型「圖片內容」欄位：以參照懶載入圖片（getFormImageData），並可點擊放大。
+    container.querySelectorAll('img.content-img[data-fimg-ref]').forEach(function (cimg) {
+      if (cimg.dataset.fimgLoaded) return;
+      cimg.dataset.fimgLoaded = '1';
+      google.script.run.withSuccessHandler(function (r) {
+        if (r && r.success && r.dataUri) { cimg.src = r.dataUri; cimg.style.display = 'block'; }
+      }).withFailureHandler(function () {}).getFormImageData(cimg.dataset.fimgRef);
+      cimg.addEventListener('click', function () { var s = cimg.getAttribute('src'); if (s) openImgLightbox(s); });
+    });
     defs.forEach(function (def) {
       if (def.type !== 'file') return;
       var fInp = container.querySelector('#' + CSS.escape(prefix + def.key + '_f'));
@@ -1253,6 +1286,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var obj = {};
     for (var k = 0; k < defs.length; k++) {
       var def = defs[k];
+      if (def.type === 'contentText' || def.type === 'contentImage') continue;   // 顯示型欄位：純資訊，不收集/驗證
       var wrap = fieldWrap(def, prefix);
       if (wrap && wrap.style.display === 'none') continue;   // hidden by condition → skip
       var v = readFieldValue(def, prefix);
@@ -1310,6 +1344,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   function readCustom() {
     for (var i = 0; i < CUSTOM_DEFS.length; i++) {
       var def = CUSTOM_DEFS[i];
+      if (def.type === 'contentText' || def.type === 'contentImage') continue;   // 顯示型欄位：純資訊，不收集/驗證
       var wrap = fieldWrap(def, 'cq_');
       if (wrap && wrap.style.display === 'none') continue;
       var v = readFieldValue(def, 'cq_');
