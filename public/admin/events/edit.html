@@ -317,8 +317,7 @@
             <div id="pdfStatus" class="help" style="margin-bottom:10px"></div>
             <input type="file" id="pdfFile" accept="application/pdf" style="display:none">
             <div style="display:flex; gap:8px; flex-wrap:wrap">
-              <button type="button" class="btn btn-ghost btn-sm" id="pdfPickBtn" data-i18n="aeEditPdfPickBtn">選擇 PDF…</button>
-              <button type="button" class="btn btn-primary btn-sm" id="pdfUploadBtn" disabled data-i18n="aeEditPdfUploadBtn">上傳簡章</button>
+              <button type="button" class="btn btn-primary btn-sm" id="pdfUploadBtn" data-i18n="aeEditPdfUploadBtn">上傳簡章</button>
               <button type="button" class="btn btn-ghost btn-sm" id="aiFillBtn" style="display:none" data-i18n="aeEditAiFillBtn">🤖 用簡章 AI 自動填寫設定</button>
             </div>
             <div id="pdfMsg" class="help" style="margin-top:8px"></div>
@@ -1584,7 +1583,6 @@
   });
 
   // ===== S3: 簡章 PDF + AI 知識庫 =====
-  var pdfChosen = null;
   function refreshPdfStatus() {
     var el = document.getElementById('pdfStatus');
     if (CFG.rulesPdfId || CFG.pdfDocId) {
@@ -1604,31 +1602,30 @@
       });
     } else { el.textContent = window.L('aeEditPdfNone'); }
   }
-  document.getElementById('pdfPickBtn').addEventListener('click', function () { document.getElementById('pdfFile').click(); });
+  // 一鍵「上傳簡章」：點按即開檔案選擇，選好 PDF 後立即上傳（與海報「圖片上傳」一致；PDF 不需壓縮）。
+  document.getElementById('pdfUploadBtn').addEventListener('click', function () { document.getElementById('pdfFile').click(); });
   document.getElementById('pdfFile').addEventListener('change', function () {
     var file = this.files[0]; if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { uiAlert(window.L('aeEditPdfTooLarge')); this.value = ''; return; }
-    pdfChosen = file; document.getElementById('pdfUploadBtn').disabled = false;
+    this.value = '';
+    if (file.size > 5 * 1024 * 1024) { uiAlert(window.L('aeEditPdfTooLarge')); return; }
+    var btn = document.getElementById('pdfUploadBtn');
+    btn.disabled = true; var orig = btn.textContent; btn.textContent = window.L('aeEditPdfUploadBusy');
     document.getElementById('pdfMsg').textContent = window.L('aeEditPdfChosenPre') + file.name;
-  });
-  document.getElementById('pdfUploadBtn').addEventListener('click', function () {
-    if (!pdfChosen) return;
-    var btn = this; btn.disabled = true; btn.textContent = window.L('aeEditPdfUploadBusy');
     var r = new FileReader();
     r.onload = function (e) {
       var b64 = e.target.result.split(',')[1];
       google.script.run.withSuccessHandler(function (res) {
-        btn.textContent = window.L('aeEditPdfUploadBtn');
+        btn.disabled = false; btn.textContent = orig;
         if (res && res.success) {
           CFG.rulesPdfId = 'pfpdf:' + res.fileId; CFG.pdfDocId = res.fileId;
           CFG.rulesText = new Array((res.textExtracted || 0) + 1).join(' ');
           document.getElementById('pdfMsg').textContent = window.L('aeEditPdfUploadedShortPre') + (res.textExtracted || 0) + window.L('aeEditPdfUploadedShortSuf');
-          refreshPdfStatus(); pdfChosen = null;
-        } else { btn.disabled = false; uiAlert((res && res.message) || window.L('aeEditPdfUploadFail')); }
-      }).withFailureHandler(function (er) { btn.disabled = false; btn.textContent = window.L('aeEditPdfUploadBtn'); uiAlert(window.L('aeEditPdfUploadFailPre') + (er && er.message)); })
-        .uploadRulesPdf(compId, b64, pdfChosen.name);
+          refreshPdfStatus();
+        } else { uiAlert((res && res.message) || window.L('aeEditPdfUploadFail')); }
+      }).withFailureHandler(function (er) { btn.disabled = false; btn.textContent = orig; uiAlert(window.L('aeEditPdfUploadFailPre') + (er && er.message)); })
+        .uploadRulesPdf(compId, b64, file.name);
     };
-    r.readAsDataURL(pdfChosen);
+    r.readAsDataURL(file);
   });
   document.getElementById('aiFillBtn').addEventListener('click', function () {
     if (!(CFG.rulesPdfId || CFG.pdfDocId)) { uiAlert(window.L('aeEditAiFillNeedPdf')); return; }
