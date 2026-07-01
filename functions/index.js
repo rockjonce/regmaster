@@ -9753,7 +9753,7 @@ exports.queryRegistrants = authCallable(["system"], async (data) => {
     if (rawSearch) rows = rows.filter(r => String(r.email).includes(rawSearch) || String(r.nameLower || "").includes(rawSearch));
     rows.sort(byRecent);
     const total = rows.length;
-    return { rows: pageSize ? rows.slice(0, pageSize) : rows, total, mode: "date" };
+    return { rows, total, mode: "date" };   // 回傳完整(受 CAP 保護)結果，前端客戶端分頁
   }
 
   // 模式 2：搜尋（Email 或 姓名 前綴）
@@ -9767,7 +9767,7 @@ exports.queryRegistrants = authCallable(["system"], async (data) => {
     be.docs.forEach(d => { if (d.id !== "__meta") map[d.id] = d.data(); });
     bn.docs.forEach(d => { if (d.id !== "__meta") map[d.id] = d.data(); });
     const rows = Object.values(map).sort(byRecent);
-    return { rows: pageSize ? rows.slice(0, pageSize) : rows, total: rows.length, mode: "search" };
+    return { rows, total: rows.length, mode: "search" };   // 回傳完整結果，前端客戶端分頁
   }
 
   // 模式 3：預設 — lastReg desc + email 的 cursor 分頁

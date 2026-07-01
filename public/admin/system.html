@@ -552,9 +552,23 @@ body { background:var(--bg); }
       <div class="pane" data-pane="registrants">
         <div class="card">
           <div class="ch"><div><h3 data-i18n="adSysRegTitle">報名帳號</h3><p data-i18n="adSysRegSub">平台上所有報名者的 Email 與其社群綁定狀態。刪除僅解除該 Email 的社群綁定，不影響其報名資料。</p></div><button class="icon-btn" id="reloadRegsBtn" data-i18n="adSysReload">重新整理</button></div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-bottom:12px">
+            <input id="regSearch" type="search" placeholder="搜尋 Email / 姓名（前綴）" style="flex:1 1 220px; min-width:160px; padding:7px 10px; border:1px solid var(--line); border-radius:7px; font:400 13px/1.2 var(--f-tc)">
+            <label style="display:inline-flex; align-items:center; gap:5px; font:400 12px/1 var(--f-tc); color:var(--muted)">報名日期
+              <input id="regFrom" type="date" style="padding:6px 8px; border:1px solid var(--line); border-radius:6px; font:400 12px/1 var(--f-tc)"> ～
+              <input id="regTo" type="date" style="padding:6px 8px; border:1px solid var(--line); border-radius:6px; font:400 12px/1 var(--f-tc)"></label>
+            <select id="regPageSize" style="padding:7px 8px; border:1px solid var(--line); border-radius:7px; font:400 12.5px/1 var(--f-tc)">
+              <option value="25">每頁 25</option><option value="50" selected>每頁 50</option><option value="100">每頁 100</option><option value="0">全部</option></select>
+            <span id="regMeta" class="muted" style="font:400 12px/1.4 var(--f-tc); margin-left:auto"></span>
+          </div>
           <div class="tbl-wrap">
             <table class="tbl"><thead><tr><th data-i18n="adSysRegThEmail">Email</th><th data-i18n="adSysRegThName">姓名</th><th data-i18n="adSysRegThRegCount">報名數</th><th data-i18n="adSysRegThActivities">涉及活動</th><th data-i18n="adSysRegThLastReg">最近報名</th><th data-i18n="adSysRegThPay">付款</th><th data-i18n="adSysRegThGoogle">Google</th><th data-i18n="adSysRegThLine">LINE</th><th></th></tr></thead>
             <tbody id="regsBody"><tr><td colspan="9" class="empty" data-i18n="adSysLoading">載入中⋯</td></tr></tbody></table>
+          </div>
+          <div id="regPager" style="display:none; gap:10px; align-items:center; justify-content:flex-end; margin-top:12px">
+            <button class="icon-btn" id="regPrev">← 上一頁</button>
+            <span id="regPageInfo" class="muted" style="font:500 12px/1 var(--f-tc)"></span>
+            <button class="icon-btn" id="regNext">下一頁 →</button>
           </div>
         </div>
       </div>
@@ -1518,39 +1532,95 @@ body { background:var(--bg); }
       .saveGeminiKeys(keys);
   });
 
-  // ================= 報名帳號 =================
-  function loadRegistrants() {
-    google.script.run.withSuccessHandler(function (res) {
-      var list = (res && res.registrants) || [];
-      var ct = document.getElementById('ctRegs'); if (ct) ct.textContent = list.length;
-      var b = document.getElementById('regsBody');
-      if (!list.length) { b.innerHTML = '<tr><td colspan="9" class="empty">尚無報名帳號</td></tr>'; return; }
-      b.innerHTML = list.map(function (r) {
-        var g = r.google ? '<span class="pill" style="background:rgba(66,133,244,.1);color:#1a73e8;border:1px solid rgba(66,133,244,.25)">已綁定</span>' : '<span class="muted">—</span>';
-        var l = r.line ? '<span class="pill" style="background:rgba(6,199,85,.12);color:#06994a;border:1px solid rgba(6,199,85,.3)">已綁定</span>' : '<span class="muted">—</span>';
-        var del = (r.google || r.line) ? '<button class="icon-btn danger" data-unbind="' + esc(r.email) + '">解除綁定</button>' : '';
-        var regLink = (r.regCount || 0) > 0
-          ? '<a href="javascript:void(0)" data-detail="' + esc(r.email) + '" style="color:var(--acc);font-weight:600;cursor:pointer;text-decoration:underline">' + r.regCount + '</a>'
-          : '0';
-        var pay = (r.paid || r.unpaid) ? ('<span style="color:var(--ok-700,#047857)">已付 ' + (r.paid || 0) + '</span> / <span style="color:var(--warn-700,#b45309)">待付 ' + (r.unpaid || 0) + '</span>') : '<span class="muted">—</span>';
-        return '<tr><td class="muted">' + esc(r.email) + '</td><td>' + esc(r.name || '') + '</td><td>' + regLink + '</td><td>' + (r.activityCount || 0) + '</td><td class="muted">' + esc(r.lastReg || '—') + '</td><td style="font:500 12px/1.4 var(--f-mono)">' + pay + '</td><td>' + g + '</td><td>' + l + '</td><td style="text-align:right">' + del + '</td></tr>';
-      }).join('');
-      b.querySelectorAll('[data-detail]').forEach(function (a) {
-        a.addEventListener('click', function () { openRegDetail(a.dataset.detail); });
-      });
-      b.querySelectorAll('[data-unbind]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var em = btn.dataset.unbind;
-          uiConfirm('解除「' + em + '」的社群綁定？該報名者需重新綁定才能用社群登入；報名資料不受影響。', { title: '解除綁定', okText: '解除', danger: true }).then(function (ok) {
-            if (!ok) return;
-            google.script.run.withSuccessHandler(function (r) { if (r && r.success) { toast('已解除綁定 ' + em); loadRegistrants(); } else toast((r && r.message) || '失敗', 'err'); })
-              .withFailureHandler(function (e) { toast(e.message || '失敗', 'err'); }).deleteRegistrantBinding(em);
-          });
+  // ================= 報名帳號（伺服器端分頁/搜尋/日期區間，讀 registrantSummary）=================
+  var REGST = { pageSize: 50, search: '', from: '', to: '', mode: 'default', cursor: null, stack: [], clientRows: null, clientPage: 0, _nextCursor: null, _hasMore: false };
+
+  function regRenderRows(list) {
+    var b = document.getElementById('regsBody');
+    if (!list.length) { b.innerHTML = '<tr><td colspan="9" class="empty">無符合的報名帳號</td></tr>'; return; }
+    b.innerHTML = list.map(function (r) {
+      var g = r.google ? '<span class="pill" style="background:rgba(66,133,244,.1);color:#1a73e8;border:1px solid rgba(66,133,244,.25)">已綁定</span>' : '<span class="muted">—</span>';
+      var l = r.line ? '<span class="pill" style="background:rgba(6,199,85,.12);color:#06994a;border:1px solid rgba(6,199,85,.3)">已綁定</span>' : '<span class="muted">—</span>';
+      var del = (r.google || r.line) ? '<button class="icon-btn danger" data-unbind="' + esc(r.email) + '">解除綁定</button>' : '';
+      var regLink = (r.regCount || 0) > 0 ? '<a href="javascript:void(0)" data-detail="' + esc(r.email) + '" style="color:var(--acc);font-weight:600;cursor:pointer;text-decoration:underline">' + r.regCount + '</a>' : '0';
+      var pay = (r.paid || r.unpaid) ? ('<span style="color:var(--ok-700,#047857)">已付 ' + (r.paid || 0) + '</span> / <span style="color:var(--warn-700,#b45309)">待付 ' + (r.unpaid || 0) + '</span>') : '<span class="muted">—</span>';
+      return '<tr><td class="muted">' + esc(r.email) + '</td><td>' + esc(r.name || '') + '</td><td>' + regLink + '</td><td>' + (r.activityCount || 0) + '</td><td class="muted">' + esc(r.lastReg || '—') + '</td><td style="font:500 12px/1.4 var(--f-mono)">' + pay + '</td><td>' + g + '</td><td>' + l + '</td><td style="text-align:right">' + del + '</td></tr>';
+    }).join('');
+    b.querySelectorAll('[data-detail]').forEach(function (a) { a.addEventListener('click', function () { openRegDetail(a.dataset.detail); }); });
+    b.querySelectorAll('[data-unbind]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var em = btn.dataset.unbind;
+        uiConfirm('解除「' + em + '」的社群綁定？該報名者需重新綁定才能用社群登入；報名資料不受影響。', { title: '解除綁定', okText: '解除', danger: true }).then(function (ok) {
+          if (!ok) return;
+          google.script.run.withSuccessHandler(function (r) { if (r && r.success) { toast('已解除綁定 ' + em); regQuery(true); } else toast((r && r.message) || '失敗', 'err'); })
+            .withFailureHandler(function (e) { toast(e.message || '失敗', 'err'); }).deleteRegistrantBinding(em);
         });
       });
-    }).withFailureHandler(function (e) { toast(e.message || '載入失敗', 'err'); }).listRegistrants();
+    });
   }
-  document.getElementById('reloadRegsBtn').addEventListener('click', loadRegistrants);
+  function regMeta(t) { var m = document.getElementById('regMeta'); if (m) m.textContent = t; }
+  function regPager() { return document.getElementById('regPager'); }
+
+  // 搜尋/日期模式：整包客戶端分頁
+  function regRenderClientPage() {
+    var rows = REGST.clientRows || [];
+    var ps = REGST.pageSize;
+    var pages = ps ? Math.max(1, Math.ceil(rows.length / ps)) : 1;
+    if (REGST.clientPage >= pages) REGST.clientPage = pages - 1;
+    if (REGST.clientPage < 0) REGST.clientPage = 0;
+    var slice = ps ? rows.slice(REGST.clientPage * ps, REGST.clientPage * ps + ps) : rows;
+    regRenderRows(slice);
+    regPager().style.display = (ps && pages > 1) ? 'flex' : 'none';
+    document.getElementById('regPrev').disabled = REGST.clientPage <= 0;
+    document.getElementById('regNext').disabled = REGST.clientPage >= pages - 1;
+    document.getElementById('regPageInfo').textContent = (REGST.clientPage + 1) + ' / ' + pages;
+  }
+
+  function regQuery(reset) {
+    if (reset) { REGST.cursor = null; REGST.stack = []; REGST.clientPage = 0; }
+    var body = document.getElementById('regsBody');
+    body.innerHTML = '<tr><td colspan="9" class="empty">載入中⋯</td></tr>';
+    var params = { pageSize: REGST.pageSize, search: REGST.search, dateFrom: REGST.from, dateTo: REGST.to, cursor: REGST.cursor };
+    google.script.run.withSuccessHandler(function (res) {
+      res = res || {}; var rows = res.rows || [];
+      var ct = document.getElementById('ctRegs'); if (ct) ct.textContent = (res.total != null ? res.total : rows.length);
+      if (res.tooMany) { body.innerHTML = '<tr><td colspan="9" class="empty">符合筆數過多（' + res.total + '），請縮小日期範圍或加上搜尋</td></tr>'; regPager().style.display = 'none'; regMeta('共 ' + res.total + ' 筆（超過上限 ' + res.cap + '）'); return; }
+      if (res.mode === 'default') {
+        REGST.mode = 'default'; REGST.clientRows = null;
+        REGST._nextCursor = res.nextCursor || null; REGST._hasMore = !!res.hasMore;
+        regRenderRows(rows);
+        regPager().style.display = (REGST.pageSize && (res.hasMore || REGST.stack.length)) ? 'flex' : 'none';
+        document.getElementById('regPrev').disabled = REGST.stack.length === 0;
+        document.getElementById('regNext').disabled = !res.hasMore;
+        document.getElementById('regPageInfo').textContent = '第 ' + (REGST.stack.length + 1) + ' 頁';
+        regMeta('共 ' + (res.total || 0) + ' 筆・資料更新於 ' + (res.reconciledAt || '—'));
+      } else {
+        REGST.mode = res.mode; REGST.clientRows = rows;
+        regRenderClientPage();
+        regMeta('符合 ' + rows.length + ' 筆' + (res.mode === 'date' ? '（依報名日期區間）' : '（搜尋）'));
+      }
+    }).withFailureHandler(function (e) { body.innerHTML = '<tr><td colspan="9" class="empty">載入失敗：' + esc(e && e.message || '') + '</td></tr>'; }).queryRegistrants(params);
+  }
+  function loadRegistrants() { regQuery(true); }   // 相容既有 tab loader
+
+  var _regSearchTimer;
+  document.getElementById('regSearch').addEventListener('input', function () { REGST.search = this.value.trim(); clearTimeout(_regSearchTimer); _regSearchTimer = setTimeout(function () { regQuery(true); }, 300); });
+  document.getElementById('regFrom').addEventListener('change', function () { REGST.from = this.value; regQuery(true); });
+  document.getElementById('regTo').addEventListener('change', function () { REGST.to = this.value; regQuery(true); });
+  document.getElementById('regPageSize').addEventListener('change', function () { REGST.pageSize = parseInt(this.value, 10) || 0; regQuery(true); });
+  document.getElementById('regPrev').addEventListener('click', function () {
+    if (REGST.mode === 'default') { if (!REGST.stack.length) return; REGST.cursor = REGST.stack.pop() || null; regQuery(false); }
+    else { REGST.clientPage--; regRenderClientPage(); }
+  });
+  document.getElementById('regNext').addEventListener('click', function () {
+    if (REGST.mode === 'default') { if (!REGST._hasMore) return; REGST.stack.push(REGST.cursor); REGST.cursor = REGST._nextCursor; regQuery(false); }
+    else { REGST.clientPage++; regRenderClientPage(); }
+  });
+  document.getElementById('reloadRegsBtn').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; toast('對帳更新中⋯');
+    google.script.run.withSuccessHandler(function (r) { btn.disabled = false; toast('已更新（' + ((r && r.total) || 0) + ' 筆）'); regQuery(true); })
+      .withFailureHandler(function (e) { btn.disabled = false; toast(e.message || '對帳失敗', 'err'); }).reconcileRegistrants();
+  });
 
   // 報名數 → 該 Email 名下所有報名明細
   function openRegDetail(email) {
