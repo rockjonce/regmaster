@@ -2081,8 +2081,9 @@ exports.submitRegistration = callable(async (data, request) => {
     if (!m.email) { for (const fid of _emailFieldIds) { if (m[fid]) { m.email = m[fid]; break; } } }
     if (m.email) m.email = String(m.email).trim().toLowerCase();
   };
-  (fd.students || []).forEach((s, i) => { const m = { teamId, compId, role: "學生", seq: i + 1, ...s }; _liftEmail(m); members.push(m); });
-  (fd.teachers || []).forEach((t, i) => { const m = { teamId, compId, role: "教練", seq: i + 1, ...t }; _liftEmail(m); members.push(m); });
+  const _regDate = toDayKey(fmtNow());   // 正規化報名日 YYYY-MM-DD（供報名帳號日期區間查詢；放 spread 後避免被覆蓋）
+  (fd.students || []).forEach((s, i) => { const m = { teamId, compId, role: "學生", seq: i + 1, ...s, regDate: _regDate }; _liftEmail(m); members.push(m); });
+  (fd.teachers || []).forEach((t, i) => { const m = { teamId, compId, role: "教練", seq: i + 1, ...t, regDate: _regDate }; _liftEmail(m); members.push(m); });
   const memBatch = db.batch();
   members.forEach(m => memBatch.set(db.collection("members").doc(), m));
   await memBatch.commit();
@@ -3138,8 +3139,9 @@ exports.updateRegistration = callable(async (data) => {
   // NEW-01 FIX: Use single batch for atomic member delete + recreate
   const oldMembers = await db.collection("members").where("teamId", "==", teamId).get();
   const members = [];
-  (fd.students || []).forEach((s, i) => members.push({ teamId, compId, role: "學生", seq: i + 1, ...s }));
-  (fd.teachers || []).forEach((t, i) => members.push({ teamId, compId, role: "教練", seq: i + 1, ...t }));
+  const _regDate = toDayKey((doc.data() || {}).registrationTime);   // 保留原報名日（供日期區間查詢）
+  (fd.students || []).forEach((s, i) => members.push({ teamId, compId, role: "學生", seq: i + 1, ...s, regDate: _regDate }));
+  (fd.teachers || []).forEach((t, i) => members.push({ teamId, compId, role: "教練", seq: i + 1, ...t, regDate: _regDate }));
   const atomicBatch = db.batch();
   oldMembers.docs.forEach(d => atomicBatch.delete(d.ref));
   members.forEach(m => atomicBatch.set(db.collection("members").doc(), m));
@@ -5317,12 +5319,12 @@ exports.batchImportTeams = compAuthCallable(async (data) => {
     
     let colIdx = 2; 
     for (let i = 0; i < (cfg.memberCount || 1); i++) {
-      let studentData = { teamId, compId, role: "學生", seq: i + 1 };
+      let studentData = { teamId, compId, role: "學生", seq: i + 1, regDate: toDayKey(fmtNow()) };
       (cfg.studentFields || []).forEach((f) => { studentData[f] = cols[colIdx] || ""; colIdx++; });
       await db.collection("members").add(studentData);
     }
     for (let i = 0; i < (cfg.teacherCount || 0); i++) {
-      let teacherData = { teamId, compId, role: "教練", seq: i + 1 };
+      let teacherData = { teamId, compId, role: "教練", seq: i + 1, regDate: toDayKey(fmtNow()) };
       (cfg.teacherFields || []).forEach((f) => { teacherData[f] = cols[colIdx] || ""; colIdx++; });
       await db.collection("members").add(teacherData);
     }
@@ -9648,8 +9650,9 @@ async function refreshOneRegistrant(email) {
     const google = !!b.googleSub, line = !!b.lineUserId;
     const ref = db.collection("registrantSummary").doc(e);
     if (regCount === 0 && !google && !line) { await ref.delete().catch(() => {}); return; }
+    const nm = Array.from(names).slice(0, 3).join("、");
     await ref.set({
-      email: e, name: Array.from(names).slice(0, 3).join("、"),
+      email: e, name: nm, nameLower: nm.toLowerCase(),
       regCount, activityCount: comps.size, firstReg, lastReg, paid, unpaid, google, line, updatedAt: fmtNow()
     });
   } catch (err) { console.error("refreshOneRegistrant fail", e, err && err.message); }
@@ -9694,8 +9697,9 @@ async function reconcileRegistrants() {
     const google = !!b.googleSub, line = !!b.lineUserId;
     const regCount = o ? o.teams.size : 0;
     if (regCount === 0 && !google && !line) continue;
+    const nm = o ? Array.from(o.names).slice(0, 3).join("、") : "";
     batch.set(db.collection("registrantSummary").doc(e), {
-      email: e, name: o ? Array.from(o.names).slice(0, 3).join("、") : "",
+      email: e, name: nm, nameLower: nm.toLowerCase(),
       regCount, activityCount: o ? o.comps.size : 0, firstReg: o ? o.firstReg : "", lastReg: o ? o.lastReg : "",
       paid: o ? o.paid : 0, unpaid: o ? o.unpaid : 0, google, line, updatedAt: fmtNow()
     });
@@ -9716,6 +9720,72 @@ async function reconcileRegistrants() {
 // 系統管理員：手動觸發全量對帳（「重新整理」按鈕用）。
 exports.reconcileRegistrants = authCallable(["system"], async () => {
   return await reconcileRegistrants();
+});
+
+// 系統管理員：報名帳號查詢（讀 registrantSummary，伺服器端分頁/搜尋/日期區間，不再全掃描）。
+//   input: { pageSize(25/50/100/0=全部), cursor:{lastReg,email}, search, dateFrom, dateTo }
+//   模式：日期區間(🅑 曾在區間報名) → members.regDate；搜尋 → email/nameLower 前綴；預設 → lastReg desc cursor。
+exports.queryRegistrants = authCallable(["system"], async (data) => {
+  data = data || {};
+  const allowed = [25, 50, 100, 0];
+  const pageSize = allowed.includes(data.pageSize) ? data.pageSize : 50;
+  const rawSearch = String(data.search || "").trim().toLowerCase();
+  const dateFrom = String(data.dateFrom || "").slice(0, 10);
+  const dateTo = String(data.dateTo || "").slice(0, 10);
+  const CAP = 2000;
+  const col = db.collection("registrantSummary");
+  const byRecent = (a, b) => String(b.lastReg || "").localeCompare(String(a.lastReg || "")) || String(a.email).localeCompare(String(b.email));
+
+  // 模式 1：日期區間（🅑）→ members.regDate 命中 → email 去重 → 撈摘要 → (次篩選搜尋) → 排序分頁
+  if (dateFrom || dateTo) {
+    let mq = db.collection("members");
+    if (dateFrom) mq = mq.where("regDate", ">=", dateFrom);
+    if (dateTo) mq = mq.where("regDate", "<=", dateTo);
+    const ms = await mq.get();
+    const emails = [...new Set(ms.docs.map(d => _regKey(d.data().email)).filter(Boolean))];
+    if (emails.length > CAP) return { rows: [], total: emails.length, tooMany: true, cap: CAP, mode: "date" };
+    let rows = [];
+    for (let i = 0; i < emails.length; i += 300) {
+      const refs = emails.slice(i, i + 300).map(e => col.doc(e));
+      const docs = await db.getAll(...refs);
+      docs.forEach(d => { if (d.exists) rows.push(d.data()); });
+    }
+    if (rawSearch) rows = rows.filter(r => String(r.email).includes(rawSearch) || String(r.nameLower || "").includes(rawSearch));
+    rows.sort(byRecent);
+    const total = rows.length;
+    return { rows: pageSize ? rows.slice(0, pageSize) : rows, total, mode: "date" };
+  }
+
+  // 模式 2：搜尋（Email 或 姓名 前綴）
+  if (rawSearch) {
+    const end = rawSearch + "";
+    const [be, bn] = await Promise.all([
+      col.where("email", ">=", rawSearch).where("email", "<=", end).limit(200).get(),
+      col.where("nameLower", ">=", rawSearch).where("nameLower", "<=", end).limit(200).get()
+    ]);
+    const map = {};
+    be.docs.forEach(d => { if (d.id !== "__meta") map[d.id] = d.data(); });
+    bn.docs.forEach(d => { if (d.id !== "__meta") map[d.id] = d.data(); });
+    const rows = Object.values(map).sort(byRecent);
+    return { rows: pageSize ? rows.slice(0, pageSize) : rows, total: rows.length, mode: "search" };
+  }
+
+  // 模式 3：預設 — lastReg desc + email 的 cursor 分頁
+  let q = col.orderBy("lastReg", "desc").orderBy("email", "asc");
+  if (data.cursor && data.cursor.lastReg != null) q = q.startAfter(String(data.cursor.lastReg), String(data.cursor.email || ""));
+  const lim = pageSize || CAP;
+  const snap = await q.limit(lim + 1).get();
+  const docs = snap.docs.filter(d => d.id !== "__meta");
+  const hasMore = docs.length > lim;
+  const rows = docs.slice(0, lim).map(d => d.data());
+  const last = rows[rows.length - 1];
+  const meta = await col.doc("__meta").get();
+  return {
+    rows, hasMore, mode: "default",
+    nextCursor: hasMore && last ? { lastReg: last.lastReg || "", email: last.email } : null,
+    total: meta.exists ? (meta.data().total || rows.length) : rows.length,
+    reconciledAt: meta.exists ? (meta.data().reconciledAt || "") : ""
+  };
 });
 
 // System admin: one registrant's registrations (drill-down for 報名數).
