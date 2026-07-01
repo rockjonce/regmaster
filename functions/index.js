@@ -3144,6 +3144,9 @@ exports.updateRegistration = callable(async (data) => {
   const _regDate = toDayKey((doc.data() || {}).registrationTime);   // 保留原報名日（供日期區間查詢）
   (fd.students || []).forEach((s, i) => members.push({ teamId, compId, role: "學生", seq: i + 1, ...s, regDate: _regDate }));
   (fd.teachers || []).forEach((t, i) => members.push({ teamId, compId, role: "教練", seq: i + 1, ...t, regDate: _regDate }));
+  // 補 email lift（比照 submitRegistration）：自訂 email 欄位(無 legacyKey)的值存在欄位id鍵；
+  // 若 m.email 缺就從任一 email 樣式值提升＋正規化，避免編輯後摘要/「我的報名」查詢漏抓該 email。
+  members.forEach(m => { if (!m.email) { for (const k in m) { if (typeof m[k] === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m[k])) { m.email = m[k]; break; } } } if (m.email) m.email = String(m.email).trim().toLowerCase(); });
   const atomicBatch = db.batch();
   oldMembers.docs.forEach(d => atomicBatch.delete(d.ref));
   members.forEach(m => atomicBatch.set(db.collection("members").doc(), m));
@@ -9767,7 +9770,7 @@ exports.queryRegistrants = authCallable(["system"], async (data) => {
 
   // 模式 2：搜尋（Email 或 姓名 前綴）
   if (rawSearch) {
-    const end = rawSearch + "";
+    const end = rawSearch + "\uf8ff";
     const [be, bn] = await Promise.all([
       col.where("email", ">=", rawSearch).where("email", "<=", end).limit(200).get(),
       col.where("nameLower", ">=", rawSearch).where("nameLower", "<=", end).limit(200).get()
