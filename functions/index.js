@@ -2087,7 +2087,8 @@ exports.submitRegistration = callable(async (data, request) => {
   const memBatch = db.batch();
   members.forEach(m => memBatch.set(db.collection("members").doc(), m));
   await memBatch.commit();
-  
+  await refreshRegistrantsForTeam(teamId);   // 增量更新報名帳號摘要（內部吞例外、不阻斷報名）
+
   await auditLog("", "報名", teamId, cfg.competitionName || "");
 
   // 【信件排版優化】：專業版樣式 + QR Code 產生
@@ -2903,6 +2904,7 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
     await db.collection("competitions").doc(r.compId).update({ teamCount: FieldValue.increment(-1) });
   }
   await auditLog(request.authUser.username, "註記已退款", r.teamId, "實退NT$" + actual);
+  await refreshRegistrantsForTeam(r.teamId);   // 增量更新（退費致取消）
   try {
     const compDoc = await db.collection("competitions").doc(r.compId).get();
     const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
@@ -3146,6 +3148,8 @@ exports.updateRegistration = callable(async (data) => {
   oldMembers.docs.forEach(d => atomicBatch.delete(d.ref));
   members.forEach(m => atomicBatch.set(db.collection("members").doc(), m));
   await atomicBatch.commit();
+  const _emails = [...new Set([].concat(oldMembers.docs.map(d => d.data().email), members.map(m => m.email)).map(e => String(e || "").trim().toLowerCase()).filter(Boolean))];
+  for (const _e of _emails) await refreshOneRegistrant(_e);   // 增量更新（email 可能變 → 新舊都重算）
   return { success: true, message: "更新成功" };
 });
 
@@ -3579,6 +3583,7 @@ exports.confirmPayment = compAuthCallable(async (data, request) => {
   }
   await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 " + fmtNow() });
   await auditLog(request.authUser.username, "確認付款", teamId, "");
+  await refreshRegistrantsForTeam(teamId);   // 增量更新報名帳號摘要
   return { success: true };
 });
 
@@ -3645,6 +3650,7 @@ exports.deleteTeam = compAuthCallable(async (data, request) => {
   }
   
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+  const _delEmails = [...new Set(memSnap.docs.map(d => String(d.data().email || "").trim().toLowerCase()).filter(Boolean))];   // 刪除前先抓 email
   const batch = db.batch();
   memSnap.docs.forEach(d => batch.delete(d.ref));
   batch.delete(db.collection("teams").doc(teamId));
@@ -3656,6 +3662,7 @@ exports.deleteTeam = compAuthCallable(async (data, request) => {
     await db.collection("competitions").doc(compId).update({ teamCount: FieldValue.increment(-1) });
   }
   await auditLog(request.authUser.username, "刪除隊伍", teamId, "");
+  for (const _e of _delEmails) await refreshOneRegistrant(_e);   // 刪除後重算這些 email 的摘要
   return { success: true };
 });
 
@@ -5985,6 +5992,7 @@ async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo)
   };
   if (_consumeNow) _teamUpd.codeConsumed = order.discountCode;
   await db.collection("teams").doc(order.teamId).update(_teamUpd);
+  await refreshRegistrantsForTeam(order.teamId);   // 增量更新（線上付款成功）
   /* Item 10: consume the discount code now that payment succeeded (once per team) */
   if (_consumeNow) {
     try { await db.collection("discountCodes").doc(compId + "_" + order.discountCode).update({ usedCount: FieldValue.increment(1) }); } catch (e) {}
@@ -6558,6 +6566,7 @@ exports.createRegistrationPayment = callable(async (data) => {
     if (_newly) _tu.codeConsumed = q.code;
     await db.collection("teams").doc(teamId).update(_tu);
     if (_newly) { try { await db.collection("discountCodes").doc(compId + "_" + q.code).update({ usedCount: FieldValue.increment(1) }); } catch (e) {} }
+    await refreshRegistrantsForTeam(teamId);   // 增量更新（折扣全免直接付清）
     return { success: true, freeAfterDiscount: true };
   }
   if (fee < 1) return { success: false, message: "報名費金額不正確" };
@@ -9799,6 +9808,7 @@ exports.deleteRegistrantBinding = authCallable(["system"], async (data) => {
   if (!e) return { success: false, message: "缺少 email" };
   await db.collection("registrants").doc(e).delete().catch(() => {});
   await auditLog("system", "解除報名帳號綁定", e, "");
+  await refreshOneRegistrant(e);   // 增量更新（綁定狀態變）
   return { success: true };
 });
 
