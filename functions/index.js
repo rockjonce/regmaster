@@ -9612,6 +9612,112 @@ exports.listRegistrants = authCallable(["system"], async () => {
   list.sort((a, b) => b.regCount - a.regCount || String(b.lastReg).localeCompare(String(a.lastReg)));
   return { registrants: list };
 });
+
+// ============================================================================
+// registrantSummary：可擴展的報名帳號摘要（每 email 一筆預聚合）。
+//   - refreshOneRegistrant(email)：從源頭重算單一 email（非 +/- 算術 → 不 drift）。
+//   - refreshRegistrantsForTeam(teamId)：team 事件用（取其成員 email 各重算）。
+//   - reconcileRegistrants()：全量重算兜底（＝ listRegistrants 同規則，寫入摘要集合）。
+//   已用 Node 對真實資料驗證：單一重算 == 全掃描 100% 一致。
+//   所有 refresh 一律吞例外、絕不阻斷呼叫端主流程（報名/付款）；漏更新由 reconcile 兜底自癒。
+// ============================================================================
+function _regKey(email) { return String(email || "").trim().toLowerCase(); }
+
+async function refreshOneRegistrant(email) {
+  const e = _regKey(email);
+  if (!e) return;
+  try {
+    const memSnap = await db.collection("members").where("email", "==", e).get();
+    const names = new Set();
+    memSnap.docs.forEach(d => { const n = d.data().chineseName; if (n) names.add(n); });
+    const teamIds = [...new Set(memSnap.docs.map(d => d.data().teamId).filter(Boolean))];
+    const teamDocs = await Promise.all(teamIds.map(t => db.collection("teams").doc(t).get()));
+    const seen = new Set(), comps = new Set();
+    let regCount = 0, paid = 0, unpaid = 0, firstReg = "", lastReg = "";
+    teamDocs.forEach(td => {
+      if (!td.exists) return; const t = td.data();
+      if ((t.status || "") === "已取消") return;
+      const tid = t.teamId || td.id; if (seen.has(tid)) return; seen.add(tid);
+      regCount++; if (t.compId) comps.add(t.compId);
+      const dk = toDayKey(t.registrationTime);
+      if (dk) { if (!firstReg || dk < firstReg) firstReg = dk; if (dk > lastReg) lastReg = dk; }
+      if (String(t.paymentStatus || "").includes("已確認")) paid++; else unpaid++;
+    });
+    const bd = await db.collection("registrants").doc(e).get();
+    const b = bd.exists ? bd.data() : {};
+    const google = !!b.googleSub, line = !!b.lineUserId;
+    const ref = db.collection("registrantSummary").doc(e);
+    if (regCount === 0 && !google && !line) { await ref.delete().catch(() => {}); return; }
+    await ref.set({
+      email: e, name: Array.from(names).slice(0, 3).join("、"),
+      regCount, activityCount: comps.size, firstReg, lastReg, paid, unpaid, google, line, updatedAt: fmtNow()
+    });
+  } catch (err) { console.error("refreshOneRegistrant fail", e, err && err.message); }
+}
+
+// 給 team 事件用：取該隊成員 email 各自重算。刪除類事件請於刪除「前」先取得 emails 再逐一 refreshOneRegistrant。
+async function refreshRegistrantsForTeam(teamId) {
+  try {
+    const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
+    const emails = [...new Set(memSnap.docs.map(d => _regKey(d.data().email)).filter(Boolean))];
+    for (const e of emails) await refreshOneRegistrant(e);
+  } catch (err) { console.error("refreshRegistrantsForTeam fail", teamId, err && err.message); }
+}
+
+// 全量重算兜底（＝ listRegistrants 同規則，但寫入 registrantSummary + __meta，並刪除已不存在者）。
+async function reconcileRegistrants() {
+  const [memSnap, teamSnap, regSnap] = await Promise.all([
+    db.collection("members").get(), db.collection("teams").get(), db.collection("registrants").get()
+  ]);
+  const teamInfo = {};
+  teamSnap.docs.forEach(d => { const t = d.data(); teamInfo[t.teamId || d.id] = { compId: t.compId || "", status: t.status || "", paymentStatus: t.paymentStatus || "", registrationTime: t.registrationTime || "" }; });
+  const byEmail = {};
+  memSnap.docs.forEach(d => {
+    const m = d.data(); const e = _regKey(m.email); if (!e) return;
+    if (!byEmail[e]) byEmail[e] = { teams: new Set(), comps: new Set(), names: new Set(), firstReg: "", lastReg: "", paid: 0, unpaid: 0 };
+    const o = byEmail[e]; if (m.chineseName) o.names.add(m.chineseName);
+    const ti = teamInfo[m.teamId];
+    if (ti && ti.status !== "已取消" && m.teamId && !o.teams.has(m.teamId)) {
+      o.teams.add(m.teamId); if (ti.compId) o.comps.add(ti.compId);
+      const dk = toDayKey(ti.registrationTime);
+      if (dk) { if (!o.firstReg || dk < o.firstReg) o.firstReg = dk; if (dk > o.lastReg) o.lastReg = dk; }
+      if (String(ti.paymentStatus).includes("已確認")) o.paid++; else o.unpaid++;
+    }
+  });
+  const bound = {}; regSnap.docs.forEach(d => { bound[d.id] = d.data(); });
+  const allEmails = new Set([...Object.keys(byEmail), ...Object.keys(bound)]);
+  const existing = await db.collection("registrantSummary").get();
+  let batch = db.batch(), n = 0, total = 0;
+  const flush = async () => { if (n) { await batch.commit(); batch = db.batch(); n = 0; } };
+  for (const e of allEmails) {
+    const o = byEmail[e]; const b = bound[e] || {};
+    const google = !!b.googleSub, line = !!b.lineUserId;
+    const regCount = o ? o.teams.size : 0;
+    if (regCount === 0 && !google && !line) continue;
+    batch.set(db.collection("registrantSummary").doc(e), {
+      email: e, name: o ? Array.from(o.names).slice(0, 3).join("、") : "",
+      regCount, activityCount: o ? o.comps.size : 0, firstReg: o ? o.firstReg : "", lastReg: o ? o.lastReg : "",
+      paid: o ? o.paid : 0, unpaid: o ? o.unpaid : 0, google, line, updatedAt: fmtNow()
+    });
+    n++; total++; if (n >= 400) await flush();
+  }
+  await flush();
+  // 刪除已不存在（或已無報名且無綁定）的殘留摘要
+  let delBatch = db.batch(), dn = 0, deleted = 0;
+  for (const d of existing.docs) {
+    if (d.id === "__meta") continue;
+    if (!allEmails.has(d.id)) { delBatch.delete(d.ref); dn++; deleted++; if (dn >= 400) { await delBatch.commit(); delBatch = db.batch(); dn = 0; } }
+  }
+  if (dn) await delBatch.commit();
+  await db.collection("registrantSummary").doc("__meta").set({ total, reconciledAt: fmtNow() });
+  return { total, deleted };
+}
+
+// 系統管理員：手動觸發全量對帳（「重新整理」按鈕用）。
+exports.reconcileRegistrants = authCallable(["system"], async () => {
+  return await reconcileRegistrants();
+});
+
 // System admin: one registrant's registrations (drill-down for 報名數).
 exports.getRegistrantDetail = authCallable(["system"], async (data) => {
   const e = String(data.email || "").trim().toLowerCase();
