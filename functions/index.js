@@ -3724,7 +3724,61 @@ exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
     membersByTeam[tid].students.sort((a, b) => a.seq - b.seq);
     membersByTeam[tid].teachers.sort((a, b) => a.seq - b.seq);
   });
-  
+
+  // ===== V3 schema-native 匯出（有 config.formSchema 的活動）=====
+  // 欄位與值一律以 formSchema 為準：值讀 member[field.legacyKey || field.id]（與報名儲存規則一致），
+  // 涵蓋所有自訂欄位（如手機含國碼/完賽禮/小組推薦人，過去落入 team.customAnswers 撈不到而空白）；
+  // 顯示型欄位（圖片/文字內容）跳過；未使用的隊名/付款/檔案欄位不輸出。上方 legacy 表頭對此類活動不採用。
+  // 無 formSchema 的舊活動（例如尚未遷移者）維持下方 legacy 路徑，行為不變。
+  if (cfg.formSchema && Array.isArray(cfg.formSchema.sections) && cfg.formSchema.sections.length > 0) {
+    const _teams = tSnap.docs.map(d => d.data());
+    const _secs = cfg.formSchema.sections;
+    const _roleOf = (s) => s.role || "custom";
+    const _isDisp = (f) => f.type === "contentText" || f.type === "contentImage";
+    const _stuSecs = _secs.filter(s => _roleOf(s) === "student");
+    const _tchSecs = _secs.filter(s => _roleOf(s) === "teacher");
+    const _cusSecs = _secs.filter(s => _roleOf(s) !== "student" && _roleOf(s) !== "teacher");
+    const _pay = (Array.isArray(cfg.paymentMethods) && cfg.paymentMethods.length > 0) || (parseInt(cfg.registrationFee, 10) || 0) > 0;
+    const _showCN = cfg.requireTeamNameCN === true || _teams.some(t => t.teamNameCN);
+    const _showEN = cfg.requireTeamNameEN === true || _teams.some(t => t.teamNameEN);
+    const _showFile = cfg.requireFileUpload === true || _teams.some(t => t.fileUrl);
+    const _cols = [];
+    _cols.push({ h: "ID", f: t => t.teamId });
+    _cols.push({ h: "組別", f: t => t.group });
+    if (_showCN) _cols.push({ h: "中文隊名", f: t => t.teamNameCN || "" });
+    if (_showEN) _cols.push({ h: "英文隊名", f: t => t.teamNameEN || "" });
+    _cols.push({ h: "狀態", f: t => t.status || "" });
+    if (_pay) {
+      _cols.push({ h: "付款狀態", f: t => t.paymentStatus || "" });
+      _cols.push({ h: "付款方式", f: t => t.paymentMethod || "" });
+      _cols.push({ h: "匯款人", f: t => t.remitterName || "" });
+      _cols.push({ h: "銀行", f: t => t.remitterBank || "" });
+      _cols.push({ h: "帳號後五碼", f: t => t.remitterAccount || "" });
+      _cols.push({ h: "信用卡訂單號", f: t => t.creditCardOrderNo || "" });
+    }
+    if (_showFile) _cols.push({ h: "檔案連結", f: t => t.fileUrl || "" });
+    _cols.push({ h: "報名時間", f: t => t.registrationTime || "" });
+    if (sessions.length > 1) _cols.push({ h: "參加梯次", f: t => { const ss = t.selectedSessions || [t.selectedSession || 0]; return ss.map(idx => "梯次" + (idx + 1)).join("、"); } });
+    _stuSecs.forEach((sec, si) => (sec.fields || []).forEach(fld => {
+      if (_isDisp(fld)) return;
+      const key = fld.legacyKey || fld.id;
+      _cols.push({ h: `學員${si + 1}_${fld.label || key}`, f: t => { const m = (membersByTeam[t.teamId] || { students: [] }).students[si] || {}; return m[key] != null ? m[key] : ""; } });
+    }));
+    _tchSecs.forEach((sec, ti) => (sec.fields || []).forEach(fld => {
+      if (_isDisp(fld)) return;
+      const key = fld.legacyKey || fld.id;
+      _cols.push({ h: `指導者${ti + 1}_${fld.label || key}`, f: t => { const m = (membersByTeam[t.teamId] || { teachers: [] }).teachers[ti] || {}; return m[key] != null ? m[key] : ""; } });
+    }));
+    _cusSecs.forEach(sec => (sec.fields || []).forEach(fld => {
+      if (_isDisp(fld)) return;
+      const label = fld.label || fld.id;
+      _cols.push({ h: label, f: t => { const ca = t.customAnswers || {}; let v = ca[fld.id]; if (v == null) v = ca[label]; return v == null ? "" : v; } });
+    }));
+    let out = "﻿" + _cols.map(c => `"${String(c.h).replace(/"/g, '""')}"`).join(",") + "\n";
+    _teams.forEach(t => { out += _cols.map(c => { let v = c.f(t); if (Array.isArray(v)) v = v.join("、"); return `"${String(v == null ? "" : v).replace(/"/g, '""')}"`; }).join(",") + "\n"; });
+    return out;
+  }
+
   tSnap.docs.forEach(d => {
     const t = d.data();
     let row = [
