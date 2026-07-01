@@ -24,6 +24,14 @@
         { "fieldPath": "activatedBy", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "registrantSummary",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lastReg", "order": "DESCENDING" },
+        { "fieldPath": "email", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
