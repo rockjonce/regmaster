@@ -266,9 +266,9 @@
             <div id="groupCapMatrixWrap" style="display:none; margin-top:12px">
               <label style="display:flex; gap:8px; align-items:center; font:500 13px/1.45 var(--f-tc); cursor:pointer; color:var(--ink)">
                 <input type="checkbox" id="perSessionCapToggle" data-dirty>
-                <span>各梯次設定不同組別上限（進階）</span>
+                <span data-i18n="aeEditPerSessionCapToggle">各梯次設定不同組別上限（進階）</span>
               </label>
-              <p class="help" style="margin:4px 0 0 24px">關閉時，各梯次一律沿用「組別」頁每組的預設上限；開啟後可逐格微調。</p>
+              <p class="help" style="margin:4px 0 0 24px" data-i18n="aeEditPerSessionCapHelp">關閉時，各梯次一律沿用「組別」頁每組的預設上限；開啟後可逐格微調。</p>
               <div id="groupCapMatrix" style="display:none; margin-top:8px; overflow-x:auto"></div>
             </div>
           </div>
@@ -743,7 +743,7 @@
       var caps = readGroupCaps();
       var hasUnlimited = Object.keys(caps).some(function(k) { return caps[k] === -1; });
       if (hasUnlimited) {
-        msg = '您目前的方案不支援「無上限(-1)」，請輸入具體數字，或升級方案以解除限制。';
+        msg = window.L('aeEditGroupCapNoUnlimited');
         err.style.display = ''; err.textContent = msg; return false;
       }
       var sumGroups = Object.keys(caps).reduce(function(acc, k) { return acc + (caps[k] > 0 ? caps[k] : 0); }, 0);
@@ -751,7 +751,7 @@
       var sessCount = (typeof readSessions === 'function') ? readSessions().length : 0;
       var effTotal = (sessCount >= 2) ? sumGroups * sessCount : sumGroups;
       if (effTotal > cap) {
-        msg = '各組別上限推算總容量 (' + effTotal + ') 超過方案上限 ' + cap + ' 組。';
+        msg = window.L('aeEditGroupCapOverPre') + effTotal + window.L('aeEditGroupCapOverMid') + cap + window.L('aeEditGroupCapOverSuf');
         err.style.display = ''; err.textContent = msg; return false;
       }
       // 有組別時容量由 groupCaps 主導，略過下方以 session.maxTeams 為準的檢查。
@@ -944,8 +944,8 @@
         '<span class="grip" style="cursor:grab">⋮⋮</span>' +
         '<input data-gf="name" data-prevname="' + escapeHtml(name) + '" value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditGroupNamePlaceholder')) + '" style="flex:1; min-width:110px">' +
         '<span style="display:inline-flex; gap:4px; align-items:center; white-space:nowrap">' +
-          '<span class="help" style="margin:0">報名上限：</span>' +
-          '<input type="number" data-gf="cap" min="-1" value="' + escapeHtml(String(capVal !== undefined ? capVal : -1)) + '" placeholder="無上限(-1)" style="width:76px; text-align:right" title="該組別名額上限 (-1為無上限，0為不開放)">' +
+          '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditCapLabel')) + '</span>' +
+          '<input type="number" data-gf="cap" min="-1" value="' + escapeHtml(String(capVal !== undefined ? capVal : -1)) + '" placeholder="' + escapeHtml(window.L('aeEditCapPlaceholder')) + '" style="width:76px; text-align:right" title="' + escapeHtml(window.L('aeEditGroupCapTitle')) + '">' +
         '</span>' +
         '<select data-gf="type" style="padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13px/1.4 var(--f-tc)">' +
         '<option value="none"' + (t==='none' ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeNone')) + '</option>' +
@@ -1092,7 +1092,7 @@
           '<span class="grip" style="cursor:grab">⋮⋮</span>' +
           '<input value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditSessionNamePlaceholder')) + '" data-sf="name" style="flex:1; min-width:110px">' +
           '<span style="display:inline-flex; gap:4px; align-items:center; white-space:nowrap">' +
-            '<span class="help" style="margin:0">報名上限：</span>' +
+            '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditCapLabel')) + '</span>' +
             '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="' + escapeHtml(window.L('aeEditSessionMaxPlaceholder')) + '" data-sf="maxTeams" style="width:76px; text-align:right" title="' + escapeHtml(window.L('aeEditSessionMaxTitle')) + '">' +
           '</span>' +
           '<span class="rm" data-rm-session="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
@@ -1159,7 +1159,7 @@
       inp.readOnly = on;
       inp.style.background = on ? 'var(--surface-2)' : '';
       inp.style.color = on ? 'var(--muted)' : '';
-      inp.title = on ? '由「各梯次設定不同組別上限（進階）」矩陣控制' : '該組別名額上限 (-1為無上限，0為不開放)';
+      inp.title = on ? window.L('aeEditGroupCapLocked') : window.L('aeEditGroupCapTitle');
     });
   }
   // 渲染 (梯次 × 組別) 覆寫矩陣；僅在「有組別 + 有梯次 + 開關開啟」時顯示。
@@ -1182,7 +1182,7 @@
     var seed = Object.keys(domCaps).length ? domCaps : (window._loadedSessionCaps || {});
     var cell = 'padding:5px 6px; border:1px solid var(--line); text-align:center';
     var head = 'padding:5px 8px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted); font-weight:600; white-space:nowrap';
-    var html = '<table style="border-collapse:collapse; font:500 12.5px/1.4 var(--f-tc)"><thead><tr><th style="' + head + '">梯次 ＼ 組別</th>';
+    var html = '<table style="border-collapse:collapse; font:500 12.5px/1.4 var(--f-tc)"><thead><tr><th style="' + head + '">' + escapeHtml(window.L('aeEditMatrixCorner')) + '</th>';
     groups.forEach(function (g) { html += '<th style="' + head + '">' + escapeHtml(g) + '</th>'; });
     html += '</tr></thead><tbody>';
     sessionNames.forEach(function (sn, si) {
@@ -1193,7 +1193,7 @@
       });
       html += '</tr>';
     });
-    html += '</tbody></table><p class="help" style="margin-top:6px">-1 = 無上限、0 = 不開放、N = 上限。</p>';
+    html += '</tbody></table><p class="help" style="margin-top:6px">' + escapeHtml(window.L('aeEditMatrixHelp')) + '</p>';
     matrix.innerHTML = html;
     matrix.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { markDirty(); updateCapacityField(); }); });
   }
@@ -1233,7 +1233,7 @@
         var res = _sumSessionGroupCaps(sName, defCaps, perSess);
         mInp.readOnly = true; mInp.style.background = 'var(--surface-2)'; mInp.style.color = 'var(--muted)';
         mInp.value = res.unlimited ? -1 : res.sum;
-        mInp.title = res.unlimited ? '含無上限組別（由組別上限決定）' : '各組別上限加總（唯讀，請改組別上限或進階矩陣）';
+        mInp.title = res.unlimited ? window.L('aeEditSessionCapReadonlyUnlim') : window.L('aeEditSessionCapReadonly');
       });
     } else {
       Array.from(document.querySelectorAll('#sessionsList .list-row [data-sf="maxTeams"]')).forEach(function (mInp) {
@@ -1247,12 +1247,12 @@
       var sum = sess.reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
       inp.value = anyUnlim ? -1 : sum;
       inp.readOnly = true; inp.style.background = 'var(--surface-2)'; inp.style.color = 'var(--muted)';
-      if (help) help.textContent = anyUnlim ? '包含無上限梯次/組別' : (window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf'));
+      if (help) help.textContent = anyUnlim ? window.L('aeEditCapUnlimMulti') : (window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf'));
     } else if (hasGroups) {
       var r2 = _sumSessionGroupCaps('', defCaps, {});
       inp.value = r2.unlimited ? -1 : r2.sum;
       inp.readOnly = true; inp.style.background = 'var(--surface-2)'; inp.style.color = 'var(--muted)';
-      if (help) help.textContent = r2.unlimited ? '包含無上限組別' : ('自動加總各組別上限：' + r2.sum);
+      if (help) help.textContent = r2.unlimited ? window.L('aeEditCapUnlimGroup') : (window.L('aeEditCapSumGroupsPre') + r2.sum);
     } else {
       inp.readOnly = false; inp.style.background = ''; inp.style.color = '';
       if (help) help.textContent = window.L('aeEditMaxTeamsHelp');
@@ -1994,6 +1994,7 @@
       competitionEndTime: single ? (data.competitionEndTime || '') : '',
       sessions: single ? [] : data.sessions,
       groups: data.groups,
+      groupCaps: data.groupCaps || {},                          // BUG FIX: 過去漏送 → config.groupCaps 永遠 undefined、重載回 -1（newCfg 漏送家族：同 maxTeams/refundPolicy/acceptanceMode）
       groupAgeRules: data.groupAgeRules || {},
       sessionSelectMode: data.sessionMode,
       requireTeamNameCN: data.requireTeamNameCN,
