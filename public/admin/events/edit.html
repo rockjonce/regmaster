@@ -1199,6 +1199,12 @@
   }
   document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', endDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
   document.getElementById('perSessionCapToggle').addEventListener('change', function () { renderGroupCapMatrix(); markDirty(); updateCapacityField(); });
+  // 語言即時切換：組別/梯次卡是用 window.L 一次性產生的動態內容，applyI18n 只會更新靜態 data-i18n，
+  // 不會換這些卡片的語言 → 用當前 DOM 值重繪（保留已輸入值、只換語言：報名上限/開始/結束/placeholder 等）。
+  if (window.AppState && window.AppState.on) window.AppState.on('lang-changed', function () {
+    if (document.getElementById('groupsList') && typeof readGroups === 'function') renderGroups(readGroups(), readGroupAgeRules(), readGroupCaps());
+    if (document.getElementById('sessionsList') && typeof readSessions === 'function') renderSessions(readSessions());
+  });
 
   // 某梯次的 Σ組別上限（覆寫矩陣優先、否則用該組預設）；回傳 {unlimited:true} 或 {sum:N}。
   function _sumSessionGroupCaps(sName, defCaps, perSess) {
