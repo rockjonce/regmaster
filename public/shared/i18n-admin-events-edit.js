@@ -232,7 +232,7 @@
     // ----- ADVANCED -----
     aeEditSecCapacityH: '名額與候補',
     aeEditFldMaxTeams: '報名上限',
-    aeEditMaxTeamsHelp: '0 = 無上限。超過此數將進入候補',
+    aeEditMaxTeamsHelp: '-1 = 無上限、0 = 不開放、N = 上限（超過將進入候補）',
     aeEditFldAllowWaitlist: '允許候補',
     aeEditWaitlistYes: '是（額滿後可候補，依報名順序正取）',
     aeEditWaitlistManual: '是（額滿後可候補，自訂正取）：報名＋付款後進「審核中」，由你在報名管理勾選正取（勾選即扣名額、寄錄取通知、不可復原）',
@@ -313,7 +313,7 @@
     // sessions dynamic
     aeEditSessionNamePlaceholder: '場次名稱（例：第一梯次）',
     aeEditSessionMaxPlaceholder: '名額',
-    aeEditSessionMaxTitle: '該場次名額上限（0 = 不限）',
+    aeEditSessionMaxTitle: '該梯次報名上限（-1 = 無上限、0 = 不開放、N = 上限）',
     // 層級化報名上限（組別×梯次）
     aeEditCapLabel: '報名上限：',
     aeEditCapPlaceholder: '無上限(-1)',
@@ -741,7 +741,7 @@
     // ----- ADVANCED -----
     aeEditSecCapacityH: 'Capacity & Waitlist',
     aeEditFldMaxTeams: 'Registration Cap',
-    aeEditMaxTeamsHelp: '0 = unlimited. Anything beyond this goes to the waitlist',
+    aeEditMaxTeamsHelp: '-1 = unlimited, 0 = closed, N = cap (overflow goes to the waitlist)',
     aeEditFldAllowWaitlist: 'Allow Waitlist',
     aeEditWaitlistYes: 'Yes (waitlist once full)',
     aeEditWaitlistManual: 'Yes (waitlist once full, organizer picks accepted): paid teams enter "Pending review"; you accept them in Registrations (uses a slot, sends acceptance email, irreversible)',
@@ -822,7 +822,7 @@
     // sessions dynamic
     aeEditSessionNamePlaceholder: 'Session name (e.g. Session 1)',
     aeEditSessionMaxPlaceholder: 'Cap',
-    aeEditSessionMaxTitle: 'Capacity for this session (0 = unlimited)',
+    aeEditSessionMaxTitle: 'Cap for this session (-1 = unlimited, 0 = closed, N = cap)',
     // Hierarchical registration caps (group × session)
     aeEditCapLabel: 'Cap: ',
     aeEditCapPlaceholder: 'Unlimited (-1)',

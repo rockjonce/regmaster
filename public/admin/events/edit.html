@@ -526,7 +526,7 @@
               <div><h3 data-i18n="aeEditSecCapacityH">名額與候補</h3></div>
             </div>
             <div class="row2">
-              <div class="fld"><div class="lbl" data-i18n="aeEditFldMaxTeams">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="0"><div class="help" id="maxTeamsHelp" data-i18n="aeEditMaxTeamsHelp">0 = 無上限。超過此數將進入候補</div><div id="maxTeamsErr" style="display:none; margin-top:5px; color:var(--err-700); font:600 11.5px/1.45 var(--f-tc)"></div></div>
+              <div class="fld"><div class="lbl" data-i18n="aeEditFldMaxTeams">報名上限</div><input type="number" id="adv-maxTeams" data-dirty min="-1"><div class="help" id="maxTeamsHelp" data-i18n="aeEditMaxTeamsHelp">-1 = 無上限、0 = 不開放、N = 上限（超過將進入候補）</div><div id="maxTeamsErr" style="display:none; margin-top:5px; color:var(--err-700); font:600 11.5px/1.45 var(--f-tc)"></div></div>
               <div class="fld"><div class="lbl" data-i18n="aeEditFldAllowWaitlist">允許候補</div><select id="adv-allowWaitlist" data-dirty><option value="auto" data-i18n="aeEditWaitlistYes">是（額滿後可候補，依報名順序正取）</option><option value="manual" data-i18n="aeEditWaitlistManual">是（額滿後可候補，自訂正取）</option><option value="none" data-i18n="aeEditWaitlistNo">否（額滿即停止報名）</option></select><div id="waitlistHint" style="display:none; margin-top:5px; color:var(--warn-700); font:500 11.5px/1.45 var(--f-tc)"></div></div>
             </div>
           </div>
@@ -761,16 +761,19 @@
     if (mode === 'multi') {
       var sess = (typeof readSessions === 'function') ? readSessions() : [];
       if (sess.length) {
-        var sum = sess.reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
-        var overEach = sess.some(function (s) { return (parseInt(s.maxTeams, 10) || 0) > cap; });
-        if (sum > cap) msg = window.L('aeEditCapMultiSumPre') + sum + window.L('aeEditCapMultiSumMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapMultiSumSuf') + cap + window.L('aeEditCapMultiSumEnd');
-        else if (overEach) msg = window.L('aeEditCapMultiEachPre') + tierLabelFE(PLAN.tier) + window.L('aeEditCapMultiEachSuf') + cap + window.L('aeEditCapMultiEachEnd');
+        if (sess.some(function (s) { return parseInt(s.maxTeams, 10) === -1; })) {
+          msg = window.L('aeEditGroupCapNoUnlimited');   // 未解鎖方案不支援 -1（無上限）
+        } else {
+          var sum = sess.reduce(function (n, s) { var v = parseInt(s.maxTeams, 10); return n + (v > 0 ? v : 0); }, 0);
+          var overEach = sess.some(function (s) { return (parseInt(s.maxTeams, 10) || 0) > cap; });
+          if (sum > cap) msg = window.L('aeEditCapMultiSumPre') + sum + window.L('aeEditCapMultiSumMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapMultiSumSuf') + cap + window.L('aeEditCapMultiSumEnd');
+          else if (overEach) msg = window.L('aeEditCapMultiEachPre') + tierLabelFE(PLAN.tier) + window.L('aeEditCapMultiEachSuf') + cap + window.L('aeEditCapMultiEachEnd');
+        }
       }
     } else {
-      var val = parseInt(document.getElementById('adv-maxTeams').value, 10) || 0;
-      // In single mode with groups, adv-maxTeams is readonly and holds the sum, we already checked sumGroups > cap above.
-      // We check val > cap just in case groups are empty.
-      if (val > cap) msg = window.L('aeEditCapSinglePre') + val + window.L('aeEditCapSingleMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapSingleSuf') + cap + window.L('aeEditCapSingleEnd') + cap + window.L('aeEditCapSingleEnd2');
+      var val = parseInt(document.getElementById('adv-maxTeams').value, 10);
+      if (val === -1) msg = window.L('aeEditGroupCapNoUnlimited');   // 未解鎖方案不支援 -1
+      else if (val > cap) msg = window.L('aeEditCapSinglePre') + val + window.L('aeEditCapSingleMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapSingleSuf') + cap + window.L('aeEditCapSingleEnd') + cap + window.L('aeEditCapSingleEnd2');
     }
     if (msg) { err.style.display = ''; err.textContent = msg; return false; }
     err.style.display = 'none'; return true;
@@ -915,7 +918,7 @@
 
     // Populate from the ORGANISER'S setting (top-level maxTeams synced into cfg),
     // not the tier ceiling (maxCapacityLimit) — those two are different concepts.
-    document.getElementById('adv-maxTeams').value = COMP.config.maxTeams || 0;
+    document.getElementById('adv-maxTeams').value = (COMP.config.maxTeams == null ? -1 : COMP.config.maxTeams);   // -1 = 無上限（統一 -1/0/N）
     document.getElementById('adv-allowWaitlist').value = CFG.acceptanceMode || ((CFG.allowWaitlist !== false) ? 'auto' : 'none');
     setToggle('eventAiOn', CFG.enableAI !== false);   // 活動 AI 助理 per-activity toggle (default on)
     updateCapacityField();   // multi mode → overwrite with session sum + lock
@@ -1085,7 +1088,7 @@
       var startTime = s.startTime || '08:30';
       var endDate = s.endDate || startDate || '';     // default to same-day
       var endTime = s.endTime || '18:00';
-      var maxTeams = s.maxTeams || 0;
+      var maxTeams = (s.maxTeams == null ? -1 : s.maxTeams);   // -1 = 無上限（統一 -1/0/N；未設預設不限）
       // Two-row card so a multi-day session has room for full date+time range
       return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:10px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
         '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
@@ -1093,7 +1096,7 @@
           '<input value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditSessionNamePlaceholder')) + '" data-sf="name" style="flex:1; min-width:110px">' +
           '<span style="display:inline-flex; gap:4px; align-items:center; white-space:nowrap">' +
             '<span class="help" style="margin:0">' + escapeHtml(window.L('aeEditCapLabel')) + '</span>' +
-            '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="' + escapeHtml(window.L('aeEditSessionMaxPlaceholder')) + '" data-sf="maxTeams" style="width:76px; text-align:right" title="' + escapeHtml(window.L('aeEditSessionMaxTitle')) + '">' +
+            '<input type="number" min="-1" value="' + (maxTeams == null ? -1 : maxTeams) + '" placeholder="' + escapeHtml(window.L('aeEditSessionMaxPlaceholder')) + '" data-sf="maxTeams" style="width:76px; text-align:right" title="' + escapeHtml(window.L('aeEditSessionMaxTitle')) + '">' +
           '</span>' +
           '<span class="rm" data-rm-session="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
         '</div>' +
@@ -1122,7 +1125,7 @@
         endDate: ed || sd,                       // default endDate = startDate
         startTime: r.querySelector('[data-sf="startTime"]').value || '08:30',
         endTime: r.querySelector('[data-sf="endTime"]').value || '18:00',
-        maxTeams: parseInt(r.querySelector('[data-sf="maxTeams"]').value, 10) || 0
+        maxTeams: (function () { var v = parseInt(r.querySelector('[data-sf="maxTeams"]').value, 10); return isNaN(v) ? -1 : v; })()
       };
     }).filter(function (s) { return s.name; });
     // 各梯次覆寫矩陣開啟時，依「梯次名稱」帶入該梯 groupCaps（名稱制、免索引錯位）。
@@ -1197,7 +1200,7 @@
     matrix.innerHTML = html;
     matrix.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { markDirty(); updateCapacityField(); }); });
   }
-  document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', endDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
+  document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', endDate: '', startTime: '08:30', endTime: '18:00', maxTeams: -1 }); renderSessions(arr); markDirty(); updateCapacityField(); });
   document.getElementById('perSessionCapToggle').addEventListener('change', function () { renderGroupCapMatrix(); markDirty(); updateCapacityField(); });
   // 語言即時切換：組別/梯次卡是用 window.L 一次性產生的動態內容，applyI18n 只會更新靜態 data-i18n，
   // 不會換這些卡片的語言 → 用當前 DOM 值重繪（保留已輸入值、只換語言：報名上限/開始/結束/placeholder 等）。
@@ -1249,8 +1252,10 @@
 
     if (mode === 'multi') {
       var sess = readSessions();
-      var anyUnlim = hasGroups && sess.some(function (s) { return _sumSessionGroupCaps(s.name, defCaps, perSess).unlimited; });
-      var sum = sess.reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
+      var anyUnlim = hasGroups
+        ? sess.some(function (s) { return _sumSessionGroupCaps(s.name, defCaps, perSess).unlimited; })
+        : sess.some(function (s) { return parseInt(s.maxTeams, 10) === -1; });
+      var sum = sess.reduce(function (n, s) { var v = parseInt(s.maxTeams, 10); return n + (v > 0 ? v : 0); }, 0);
       inp.value = anyUnlim ? -1 : sum;
       inp.readOnly = true; inp.style.background = 'var(--surface-2)'; inp.style.color = 'var(--muted)';
       if (help) help.textContent = anyUnlim ? window.L('aeEditCapUnlimMulti') : (window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf'));

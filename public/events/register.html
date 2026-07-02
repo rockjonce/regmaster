@@ -914,16 +914,18 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
               qtyTxt = acc + window.L('rgSessionRegistered');
             }
           } else {
-            var sMax = parseInt(s.maxTeams) || 0;
-            var isPerSession = sessions.some(function(sess){ return sess && parseInt(sess.maxTeams)>0; });
+            // 無組別（統一 -1/0/N）：0=不開放（隱藏）、-1/未設=看全域、N=該梯上限。
+            var sMax = parseInt(s.maxTeams, 10);
             acc = (CFG.sessionAccepted && CFG.sessionAccepted[sIdx]) || 0;
-            if (isPerSession) {
-              if (sMax > 0) { qtyTxt = acc + ' / ' + sMax; if (acc >= sMax) isFull = true; }
-              else qtyTxt = acc + window.L('rgSessionRegistered');
+            if (sMax === 0) {
+              isClosed = true;
+            } else if (sMax > 0) {
+              qtyTxt = acc + ' / ' + sMax; if (acc >= sMax) isFull = true;
             } else {
-              var gMax = CFG.maxTeams || 0;
+              var gMax = parseInt(CFG.maxTeams, 10);
               var globAcc = CFG.currentAccepted || 0;
-              if (gMax > 0) { qtyTxt = globAcc + ' / ' + gMax; if (globAcc >= gMax) isFull = true; }
+              if (gMax === 0) { isClosed = true; }
+              else if (gMax > 0) { qtyTxt = globAcc + ' / ' + gMax; if (globAcc >= gMax) isFull = true; }
               else qtyTxt = acc + window.L('rgSessionRegistered');
             }
           }

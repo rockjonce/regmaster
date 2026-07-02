@@ -243,19 +243,23 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
         txStatus = "備取" + txWn;
       }
     } else {
+      // 無組別（統一 -1/0/N 語意）：-1 或未設＝無上限、0＝不開放（擋）、N＝上限。
       if (perSession) {
         if (!s) continue;
-        const sMax = parseInt(s.maxTeams) || 0;
-        if (sMax <= 0) continue;
-        const sAcc = sessionAccepted[sIdx] || 0;
-        if (sAcc >= sMax) {
-          if (s.allowWaitlist === false) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 名額已滿，不接受新報名");
-          const sWait = sessionWaitlist[sIdx] || 0;
-          if (sWait + 1 > txWn) txWn = sWait + 1;
-          txStatus = "備取" + txWn;
+        const sMax = parseInt(s.maxTeams, 10);
+        if (sMax === 0) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 目前不開放報名");
+        if (sMax > 0) {
+          const sAcc = sessionAccepted[sIdx] || 0;
+          if (sAcc >= sMax) {
+            if (s.allowWaitlist === false) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 名額已滿，不接受新報名");
+            const sWait = sessionWaitlist[sIdx] || 0;
+            if (sWait + 1 > txWn) txWn = sWait + 1;
+            txStatus = "備取" + txWn;
+          }
         }
       } else {
-        const maxT = compData.maxTeams || 0;
+        const maxT = parseInt(compData.maxTeams, 10);
+        if (maxT === 0) throw new Error("QUOTA:目前不開放報名");
         if (maxT > 0 && accepted >= maxT) {
           if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:報名已額滿，不接受新報名");
           if (waitlist + 1 > txWn) txWn = waitlist + 1;
@@ -1433,7 +1437,7 @@ exports.createCompetition = authCallable(["system","competition"], async (data, 
   
   await db.collection("competitions").doc(compId).set({
     name, category: category || '研討會', config: cfg, createdAt: fmtNow(), 
-    isOpen: false, isVisible: false, deadline: "", maxTeams: 0,
+    isOpen: false, isVisible: false, deadline: "", maxTeams: -1,   /* -1 = 無上限（統一 -1/0/N 語意；新活動預設不限） */
     creator: creator || "", rulesPdfId: "", rulesText: "", themeColors: "",
     teamCount: 0,
     maxCapacityLimit: lim.maxCapacity === Infinity ? 0 : lim.maxCapacity,
@@ -1504,25 +1508,30 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     const sessions = config.sessions || [];
     const sessCount = sessions.length;
     
+    // 統一 -1/0/N：-1（無上限）未解鎖方案一律擋、0（不開放）計 0、N 照算加總。
+    const _noUnlim = "您目前的方案不支援「無上限(-1)」，請輸入具體數字，或升級方案以解除限制。";
     if (sessMode === "multi" && sessCount >= 2) {
-      // Multi-select + multiple sessions: sum all session maxTeams
       let totalMax = 0;
-      sessions.forEach(s => { totalMax += parseInt(s.maxTeams) || 0; });
+      for (const s of sessions) {
+        const v = parseInt(s.maxTeams, 10);
+        if (v === -1) return { success: false, message: _noUnlim };
+        if (v > 0) totalMax += v;
+      }
       if (totalMax > capLimit) {
         return { success: false, message: "所有梯次報名組數加總 (" + totalMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
       }
     } else {
-      // Single-select or single session: check global maxTeams or per-session max
       if (sessCount >= 2) {
-        // Single-select with multiple sessions: check each session max
         for (let i = 0; i < sessions.length; i++) {
-          const sMax = parseInt(sessions[i].maxTeams) || 0;
+          const sMax = parseInt(sessions[i].maxTeams, 10);
+          if (sMax === -1) return { success: false, message: _noUnlim };
           if (sMax > capLimit) {
             return { success: false, message: "梯次 " + (i + 1) + " 的最大報名數 (" + sMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
           }
         }
       }
-      const globalMax = parseInt(config.maxTeams) || 0;
+      const globalMax = parseInt(config.maxTeams, 10);
+      if (globalMax === -1) return { success: false, message: _noUnlim };
       if (globalMax > capLimit) {
         return { success: false, message: "最大報名數 (" + globalMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
       }
