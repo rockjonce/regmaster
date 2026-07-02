@@ -158,6 +158,115 @@ function emailWrap(title, bodyHtml, footerExtra) {
 </body></html>`;
 }
 
+/**
+ * 解析 (sessionIdx, groupName) 這一格的容量上限。
+ * 回傳：
+ *   -1   → 無上限
+ *    0   → 不開放（0 名額）
+ *   >0   → 上限 N
+ *   null → 該梯無 groupCaps（整梯走既有「梯次/全域」舊路徑）
+ */
+function resolveGroupCap(cfg, sessionIdx, groupName) {
+  const session = ((cfg && cfg.sessions) || [])[sessionIdx];
+  const caps = (session && session.groupCaps) || (cfg && cfg.groupCaps); // P1 fallback
+  const hasCaps = caps && typeof caps === "object" && Object.keys(caps).length > 0;
+  if (!hasCaps) return null;
+  const v = caps[groupName];
+  let parsed = parseInt(v, 10);
+  if (!isNaN(parsed) && (parsed === -1 || parsed >= 0)) {
+    return parsed;
+  }
+  return 0; // 有組別級但此格未定義或不合法 → 不開放
+}
+
+/**
+ * 檢查 (梯次, 組別) 容量上限，並回傳評估後的狀態與備取序號。
+ * 用於在 db.runTransaction(tx) 內部呼叫，防範 TOCTOU 併發超收。
+ */
+async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgInTx, newSessions, newGroup, isAcceptTeam = false) {
+  const perSession = isPerSessionQuota(cfgInTx);
+  const _accMode = cfgInTx.acceptanceMode || (cfgInTx.allowWaitlist === false ? "none" : "auto");
+  if (!isAcceptTeam && _accMode === "manual") {
+    return { status: "審核中", wn: 0 };
+  }
+
+  const tSnap = await tx.get(db.collection("teams").where("compId", "==", compId));
+  let accepted = 0, waitlist = 0;
+  const sessionAccepted = {}, sessionWaitlist = {};
+  const sessionGroupAccepted = {}, sessionGroupWaitlist = {};
+
+  tSnap.docs.forEach(d => {
+    if (teamIdToIgnore && d.id === teamIdToIgnore) return; // 略過自己
+    const t = d.data();
+    const st = t.status || "";
+    // 退費申請中不佔用名額
+    if (st === "已取消" || st === "退費申請中") return;
+    const isAcc = st === "正取";
+    const isWL = st.startsWith("備取");
+    if (isAcc) accepted++;
+    if (isWL) waitlist++;
+    const grp = t.group || "";
+    (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
+      if (isAcc) {
+        sessionAccepted[idx] = (sessionAccepted[idx] || 0) + 1;
+        if (grp) {
+          sessionGroupAccepted[idx] = sessionGroupAccepted[idx] || {};
+          sessionGroupAccepted[idx][grp] = (sessionGroupAccepted[idx][grp] || 0) + 1;
+        }
+      }
+      if (isWL) {
+        sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
+        if (grp) {
+          sessionGroupWaitlist[idx] = sessionGroupWaitlist[idx] || {};
+          sessionGroupWaitlist[idx][grp] = (sessionGroupWaitlist[idx][grp] || 0) + 1;
+        }
+      }
+    });
+  });
+
+  let txStatus = "正取", txWn = 0;
+  const sessions = cfgInTx.sessions || [];
+  for (const sIdx of newSessions) {
+    const s = sessions[sIdx];
+    let cap = null;
+    if (newGroup) cap = resolveGroupCap(cfgInTx, sIdx, newGroup);
+    
+    if (cap !== null) {
+      if (cap === 0) throw new Error("QUOTA:您選擇的組別「" + newGroup + "」目前不開放報名");
+      if (cap === -1) continue;
+      
+      const accCount = (sessionGroupAccepted[sIdx] || {})[newGroup] || 0;
+      if (accCount >= cap) {
+        if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:組別「" + newGroup + "」名額已滿，不接受新報名");
+        const wlCount = (sessionGroupWaitlist[sIdx] || {})[newGroup] || 0;
+        if (wlCount + 1 > txWn) txWn = wlCount + 1;
+        txStatus = "備取" + txWn;
+      }
+    } else {
+      if (perSession) {
+        if (!s) continue;
+        const sMax = parseInt(s.maxTeams) || 0;
+        if (sMax <= 0) continue;
+        const sAcc = sessionAccepted[sIdx] || 0;
+        if (sAcc >= sMax) {
+          if (s.allowWaitlist === false) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 名額已滿，不接受新報名");
+          const sWait = sessionWaitlist[sIdx] || 0;
+          if (sWait + 1 > txWn) txWn = sWait + 1;
+          txStatus = "備取" + txWn;
+        }
+      } else {
+        const maxT = compData.maxTeams || 0;
+        if (maxT > 0 && accepted >= maxT) {
+          if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:報名已額滿，不接受新報名");
+          if (waitlist + 1 > txWn) txWn = waitlist + 1;
+          txStatus = "備取" + txWn;
+        }
+      }
+    }
+  }
+  return { status: txStatus, wn: txWn };
+}
+
 // ===== Wrap all as callable functions (Gen2 + CORS) =====
 function callable(handler) {
   return onCall({ cors: true }, async (request) => {
@@ -1115,6 +1224,8 @@ async function getCompStats(compId) {
   let total = 0, accepted = 0, waitlist = 0;
   const sessionAccepted = {};
   const sessionWaitlist = {};
+  const sessionGroupAccepted = {};
+  const sessionGroupWaitlist = {};
   snap.docs.forEach(d => {
     const t = d.data();
     const st = t.status || "";
@@ -1124,13 +1235,26 @@ async function getCompStats(compId) {
     const isWL = st.startsWith("備取");
     if (isAcc) accepted++;
     if (isWL) waitlist++;
+    const grp = t.group || "";
     // Per-session counts
     (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
-      if (isAcc) sessionAccepted[idx] = (sessionAccepted[idx] || 0) + 1;
-      if (isWL) sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
+      if (isAcc) {
+        sessionAccepted[idx] = (sessionAccepted[idx] || 0) + 1;
+        if (grp) {
+          sessionGroupAccepted[idx] = sessionGroupAccepted[idx] || {};
+          sessionGroupAccepted[idx][grp] = (sessionGroupAccepted[idx][grp] || 0) + 1;
+        }
+      }
+      if (isWL) {
+        sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
+        if (grp) {
+          sessionGroupWaitlist[idx] = sessionGroupWaitlist[idx] || {};
+          sessionGroupWaitlist[idx][grp] = (sessionGroupWaitlist[idx][grp] || 0) + 1;
+        }
+      }
     });
   });
-  return { total, accepted, waitlist, sessionAccepted, sessionWaitlist };
+  return { total, accepted, waitlist, sessionAccepted, sessionWaitlist, sessionGroupAccepted, sessionGroupWaitlist };
 }
 
 /** Check if per-session quota mode is active */
@@ -1403,9 +1527,39 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
         return { success: false, message: "最大報名數 (" + globalMax + ") 超過上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
       }
     }
+    
+    // Check groupCaps limits if groups are defined（含「各梯次覆寫矩陣」sessions[i].groupCaps）
+    if (config.groups && config.groups.length > 0 && config.groupCaps) {
+      const _sumPos = (obj) => Object.values(obj || {}).reduce((a, cap) => { const c = parseInt(cap, 10); return a + (c > 0 ? c : 0); }, 0);
+      const _hasNeg1 = (obj) => Object.values(obj || {}).some(cap => parseInt(cap, 10) === -1);
+      // 覆寫矩陣：任一梯次有非空 groupCaps 即視為啟用逐格覆寫
+      const overrideSessions = (Array.isArray(config.sessions) ? config.sessions : []).filter(s => s && s.groupCaps && Object.keys(s.groupCaps).length);
+      const anyOverride = overrideSessions.length > 0;
+      // -1（無上限）：top-level 或任一梯次覆寫含 -1，未解鎖方案一律擋
+      const hasUnlimited = _hasNeg1(config.groupCaps) || overrideSessions.some(s => _hasNeg1(s.groupCaps));
+      if (hasUnlimited) {
+        return { success: false, message: "您目前的方案不支援「無上限(-1)」，請輸入具體數字，或升級方案以解除限制。" };
+      }
+      // 推算總容量：有覆寫→逐梯以「該梯 groupCaps（缺則用 top-level 預設）」加總；
+      // 無覆寫→多梯次 = Σ組別 × 梯次數、單梯/無梯 = Σ組別。
+      let effectiveTotal;
+      if (anyOverride) {
+        effectiveTotal = 0;
+        (config.sessions || []).forEach(s => {
+          const caps = (s && s.groupCaps && Object.keys(s.groupCaps).length) ? s.groupCaps : config.groupCaps;
+          effectiveTotal += _sumPos(caps);
+        });
+      } else {
+        const sumGroups = _sumPos(config.groupCaps);
+        effectiveTotal = (sessCount >= 2) ? sumGroups * sessCount : sumGroups;
+      }
+      if (effectiveTotal > capLimit) {
+        return { success: false, message: "各組別上限推算總容量 (" + effectiveTotal + ") 超過方案上限 " + capLimit + " 組。如需大型活動報名，請與 廣天國際有限公司 聯繫洽談。" };
+      }
+    }
   }
   
-  const jk = ["competitionName", "category", "eventType", "isVisible", "groups", "requireTeamNameCN", "requireTeamNameEN", "memberCount",
+  const jk = ["competitionName", "category", "eventType", "isVisible", "groups", "groupCaps", "requireTeamNameCN", "requireTeamNameEN", "memberCount",
     "studentFields", "teacherCount", "teacherFields", "dietaryOptions", "dietaryRestrictionOptions", "tshirtOptions", "customQuestions", "studentCustomQuestions", "teacherCustomQuestions", "paymentMethods", "bankInfo", "creditCardLink",
     "description", "descriptionSummary", "posterUrl", "requireFileUpload", "fileUploadLevel", "fileUploadDescription", "openDate",
     "competitionDate", "competitionStartTime", "competitionEndTime", "openImmediate",
@@ -1421,6 +1575,50 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   const jc = Object.assign({}, compData.config || {});
   /* Filter undefined values — Firestore rejects undefined */
   jk.forEach(k => { if (config[k] !== undefined && config[k] !== null) jc[k] = config[k]; });
+
+  // 組別改名同步（reorder-safe）：以「集合差集」偵測，只有在剛好一個組別被改名（一進一出）時才動作，
+  // 避免用 index 比對把「拖曳重新排序」誤判成互相改名而洗掉 caps。
+  // 用 compData.config（既有設定）當前值，勿用尚未宣告的 prevCfg（會踩 TDZ）。
+  {
+    const _nm = (g) => (typeof g === "string" ? g : (g && (g.name || g.label)) || "");
+    const _prevGroups = (((compData.config && compData.config.groups) || [])).map(_nm).filter(Boolean);
+    const _newGroups = ((Array.isArray(jc.groups) ? jc.groups : [])).map(_nm).filter(Boolean);
+    const _removed = _prevGroups.filter(g => !_newGroups.includes(g));
+    const _added = _newGroups.filter(g => !_prevGroups.includes(g));
+    if (_removed.length === 1 && _added.length === 1) {
+      const oldName = _removed[0], newName = _added[0];
+      // (a) config keys：前端通常已以新名重建，這裡僅在舊 key 仍殘留、且新 key 未占用時防禦性搬移
+      if (jc.groupAgeRules && jc.groupAgeRules[oldName] !== undefined && jc.groupAgeRules[newName] === undefined) {
+        jc.groupAgeRules[newName] = jc.groupAgeRules[oldName]; delete jc.groupAgeRules[oldName];
+      }
+      if (jc.groupCaps && jc.groupCaps[oldName] !== undefined && jc.groupCaps[newName] === undefined) {
+        jc.groupCaps[newName] = jc.groupCaps[oldName]; delete jc.groupCaps[oldName];
+      }
+      if (Array.isArray(jc.sessions)) jc.sessions.forEach(s => {
+        if (s && s.groupCaps && s.groupCaps[oldName] !== undefined && s.groupCaps[newName] === undefined) {
+          s.groupCaps[newName] = s.groupCaps[oldName]; delete s.groupCaps[oldName];
+        }
+      });
+      // (b) 既有報名隊伍的 team.group 一併改名 → 避免改名後容量分格對不上（孤兒 team.group）。
+      //     best-effort：失敗不阻斷存檔（容量以現有分格為準，最壞是主辦需手動處理）。
+      try {
+        const _tSnap = await db.collection("teams").where("compId", "==", compId).where("group", "==", oldName).get();
+        // 分塊提交（Firestore batch 上限 500）→ 大型活動同組 >500 隊也不整批失敗。
+        for (let _k = 0; _k < _tSnap.docs.length; _k += 450) {
+          const _b = db.batch();
+          _tSnap.docs.slice(_k, _k + 450).forEach(d => _b.update(d.ref, { group: newName }));
+          await _b.commit();
+        }
+      } catch (e) { /* 同步 team.group 失敗不阻斷設定存檔 */ }
+    } else if (_removed.length >= 1 && _added.length >= 1) {
+      // 多重/交錯改名：兩邊都有增減，無法可靠對應 old→new（index 配對可能把某組隊伍搬到錯組）。
+      // 方案 (a)：有既有報名時擋下存檔，請主辦一次只改一個組別名稱；純新增或純刪除（任一邊為 0）不受影響。
+      const _anyTeam = await db.collection("teams").where("compId", "==", compId).limit(1).get();
+      if (!_anyTeam.empty) {
+        return { success: false, message: "偵測到一次修改了多個組別名稱。已有隊伍報名時，為保護報名資料對應，請一次只改一個組別名稱、存檔後再改下一個。" };
+      }
+    }
+  }
 
   // #2-2: 拒絕負數費用（退費/結算數學的資料完整性）。
   if (jc.registrationFee != null && Number(jc.registrationFee) < 0) throw new HttpsError("failed-precondition", "報名費不可為負數");
@@ -1816,6 +2014,8 @@ exports.getRegistrationBundle = callable(async (data) => {
     config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
     sessionAccepted: stats.sessionAccepted || {},
     sessionWaitlist: stats.sessionWaitlist || {},
+    sessionGroupAccepted: stats.sessionGroupAccepted || {},
+    sessionGroupWaitlist: stats.sessionGroupWaitlist || {},
     rulesPdfUrl: cfg.rulesPdfId || "",
     pdfDocId: r.pdfDocId || "",
     themeColors: cfg.themeColors || "",
@@ -1974,7 +2174,6 @@ exports.submitRegistration = callable(async (data, request) => {
   // 報名編號 = 活動ID-隨機碼（嵌入活動ID，便於辨識；teamId 仍為文件 ID 與所有引用鍵）
   const teamId = compId + "-" + generateId("T");
   const pwd = generatePassword();
-  const perSession = isPerSessionQuota(cfg);
 
   // === BUG-01 FIX: Use Firestore Transaction to prevent race condition ===
   // Atomically read all teams, check quota, and write new team inside one transaction
@@ -1989,54 +2188,11 @@ exports.submitRegistration = callable(async (data, request) => {
       const compInTx = compSnapInTx.data() || comp;
       const cfgInTx = compInTx.config || cfg;
 
-      // Read all teams for this competition within the transaction
-      const tSnap = await tx.get(db.collection("teams").where("compId", "==", compId));
-      let accepted = 0, waitlist = 0;
-      const sessionAccepted = {}, sessionWaitlist = {};
-      tSnap.docs.forEach(d => {
-        const t = d.data();
-        const st = t.status || "";
-        if (st === "已取消") return;
-        const isAcc = st === "正取";
-        const isWL = st.startsWith("備取");
-        if (isAcc) accepted++;
-        if (isWL) waitlist++;
-        (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
-          if (isAcc) sessionAccepted[idx] = (sessionAccepted[idx] || 0) + 1;
-          if (isWL) sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
-        });
-      });
-
-      let txStatus = "正取", txWn = 0;
-      // 自訂正取（user 決策）：報名＋付款後一律進「審核中」池（無人自動正取），
-      // 正取 100% 由主辦方於報名管理勾選（acceptTeam），名額於勾選時才扣。
-      const _accMode = cfgInTx.acceptanceMode || (cfgInTx.allowWaitlist === false ? "none" : "auto");
-      if (_accMode === "manual") {
-        txStatus = "審核中";
-      } else if (perSession) {
-        const selectedSessions = fd.selectedSessions || [fd.selectedSession || 0];
-        const sessions = cfgInTx.sessions || [];
-        for (const sIdx of selectedSessions) {
-          const s = sessions[sIdx];
-          if (!s) continue;
-          const sMax = parseInt(s.maxTeams) || 0;
-          if (sMax <= 0) continue;
-          const sAcc = sessionAccepted[sIdx] || 0;
-          if (sAcc >= sMax) {
-            if (s.allowWaitlist === false) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 名額已滿，不接受新報名");
-            const sWait = sessionWaitlist[sIdx] || 0;
-            txWn = sWait + 1;
-            txStatus = "備取" + txWn;
-          }
-        }
-      } else {
-        const maxT = compInTx.maxTeams || 0;
-        if (maxT > 0 && accepted >= maxT) {
-          if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:報名已額滿，不接受新報名");
-          txWn = waitlist + 1;
-          txStatus = "備取" + txWn;
-        }
-      }
+      const newSessions = fd.selectedSessions || [fd.selectedSession || 0];
+      const newGroup = fd.group || "";
+      const qRes = await checkAndReserveQuotaTx(tx, compId, null, compInTx, cfgInTx, newSessions, newGroup);
+      const txStatus = qRes.status;
+      const txWn = qRes.wn;
 
       // Write team doc inside transaction
       const teamRef = db.collection("teams").doc(teamId);
@@ -2822,9 +2978,42 @@ exports.withdrawRefund = callable(async (data) => {
   const team = tDoc.data();
   if (!verifyTeamPwd(team, password)) return { success: false, message: "密碼錯誤" };
   if ((team.refundStatus || "") !== "requested") return { success: false, message: "目前無可撤回的申請" };
-  if (team.refundReqId) await db.collection("refundRequests").doc(team.refundReqId).update({ status: "withdrawn", decidedAt: fmtNow() });
-  await db.collection("teams").doc(teamId).update({ refundStatus: FieldValue.delete(), refundReqId: FieldValue.delete(), status: team.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() });
-  return { success: true };
+  
+  let txOut;
+  try {
+    txOut = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(tDoc.ref);
+      if (!snap.exists) return { success: false, message: "找不到報名資料" };
+      const t = snap.data();
+      const orig = t.statusBeforeRefund || "正取";
+      if (orig !== "正取") {
+        tx.update(tDoc.ref, { refundStatus: FieldValue.delete(), refundReqId: FieldValue.delete(), status: orig, statusBeforeRefund: FieldValue.delete() });
+        return { success: true };
+      }
+      const compRef = db.collection("competitions").doc(t.compId);
+      const compSnapInTx = await tx.get(compRef);
+      const compInTx = compSnapInTx.data() || {};
+      const cfgInTx = compInTx.config || {};
+      const res = await checkAndReserveQuotaTx(tx, t.compId, teamId, compInTx, cfgInTx, t.selectedSessions || [t.selectedSession || 0], t.group || "", true);
+      tx.update(tDoc.ref, { refundStatus: FieldValue.delete(), refundReqId: FieldValue.delete(), status: res.status, waitlistNum: res.wn, statusBeforeRefund: FieldValue.delete() });
+      return { success: true, newStatus: res.status };
+    });
+  } catch (e) {
+    if (e.message && e.message.startsWith("QUOTA:")) {
+      await tDoc.ref.update({ refundStatus: FieldValue.delete(), refundReqId: FieldValue.delete(), status: "審核中", statusBeforeRefund: FieldValue.delete() });
+      if (team.refundReqId) await db.collection("refundRequests").doc(team.refundReqId).update({ status: "withdrawn", decidedAt: fmtNow() });
+      return { success: true, message: "已撤回退費申請。但因原報名名額已滿，您的狀態已被轉為「審核中」，請聯繫主辦方。" };
+    }
+    return { success: false, message: "撤回失敗，請稍後再試" };
+  }
+  
+  if (txOut && txOut.success) {
+    if (team.refundReqId) await db.collection("refundRequests").doc(team.refundReqId).update({ status: "withdrawn", decidedAt: fmtNow() });
+    if (txOut.newStatus && txOut.newStatus !== "正取") {
+      return { success: true, message: "已撤回退費申請。但因原報名名額已滿，您的狀態已被降為「" + txOut.newStatus + "」，請留意後續通知。" };
+    }
+  }
+  return txOut || { success: false };
 });
 
 // Organiser: list refund requests for a competition.
@@ -2849,8 +3038,43 @@ exports.decideRefund = compAuthCallable(async (data, request) => {
   const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
   const contact = await organiserContact(compDoc.exists ? compDoc.data().creator : "");
   if (action === "reject") {
-    await rRef.update({ status: "rejected", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
-    if (tDoc.exists) { const t = tDoc.data(); await tDoc.ref.update({ refundStatus: FieldValue.delete(), status: t.statusBeforeRefund || "正取", statusBeforeRefund: FieldValue.delete() }); }
+    let txOut;
+    try {
+      txOut = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(rRef);
+        if (!snap.exists || snap.data().status !== "requested") return { success: false, message: "此申請已處理" };
+        
+        let newStatus = null;
+        if (tDoc.exists) {
+          const tSnap = await tx.get(tDoc.ref);
+          if (tSnap.exists) {
+            const t = tSnap.data();
+            const orig = t.statusBeforeRefund || "正取";
+            if (orig !== "正取") {
+              tx.update(tDoc.ref, { refundStatus: FieldValue.delete(), status: orig, statusBeforeRefund: FieldValue.delete() });
+            } else {
+              const compSnapInTx = await tx.get(compDoc.ref);
+              const compInTx = compSnapInTx.data() || {};
+              const res = await checkAndReserveQuotaTx(tx, r.compId, r.teamId, compInTx, compInTx.config || {}, t.selectedSessions || [t.selectedSession || 0], t.group || "", true);
+              tx.update(tDoc.ref, { refundStatus: FieldValue.delete(), status: res.status, waitlistNum: res.wn, statusBeforeRefund: FieldValue.delete() });
+              newStatus = res.status;
+            }
+          }
+        }
+        tx.update(rRef, { status: "rejected", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
+        return { success: true, newStatus };
+      });
+    } catch (e) {
+      if (e.message && e.message.startsWith("QUOTA:")) {
+        if (tDoc.exists) await tDoc.ref.update({ refundStatus: FieldValue.delete(), status: "審核中", statusBeforeRefund: FieldValue.delete() });
+        await rRef.update({ status: "rejected", decideNote: String(note || "").slice(0, 500), operator: request.authUser.username, decidedAt: fmtNow() });
+        txOut = { success: true, newStatus: "審核中" };
+      } else {
+        return { success: false, message: "處理失敗，請稍後再試" };
+      }
+    }
+    
+    if (!txOut.success) return txOut;
     await auditLog(request.authUser.username, "駁回退費", r.teamId, String(note || ""));
     try {
       const html = emailWrap("退費申請未通過", `
@@ -3126,17 +3350,49 @@ exports.updateRegistration = callable(async (data) => {
   if (!doc.exists || doc.data().compId !== compId) return { success: false, message: "驗證失敗" };
   // Auth: OAuth-verified manage token (social login) OR the registration password.
   const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
-  if (!_mgr && !verifyTeamPwd(doc.data(), pwd)) return { success: false, message: "驗證失敗" };
+  const teamData = doc.data();
+  if (!_mgr && !verifyTeamPwd(teamData, pwd)) return { success: false, message: "驗證失敗" };
   
-  await doc.ref.update({
-    group: fd.group || "", teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
+  let finalStatus = teamData.status || "";
+  let finalWn = teamData.waitlistNum || 0;
+  
+  const oldGroup = teamData.group || "";
+  const newGroup = fd.group || "";
+  const oldSessions = teamData.selectedSessions || [teamData.selectedSession || 0];
+  const newSessions = fd.selectedSessions || [fd.selectedSession || 0];
+  const isGridChanged = (oldGroup !== newGroup) || JSON.stringify(oldSessions) !== JSON.stringify(newSessions);
+
+  let updateObj = {
+    group: newGroup, teamNameCN: fd.teamNameCN || "", teamNameEN: fd.teamNameEN || "",
     paymentMethod: fd.paymentMethod || "", remitterName: fd.remitterName || "",
     remitterBank: fd.remitterBank || "", remitterAccount: fd.remitterAccount || "",
     creditCardOrderNo: fd.creditCardOrderNo || "",
     selectedSession: fd.selectedSession || 0,
-    selectedSessions: fd.selectedSessions || [fd.selectedSession || 0],
+    selectedSessions: newSessions,
     customAnswers: fd.customAnswers || {}
-  });
+  };
+
+  if (isGridChanged && (finalStatus === "正取" || finalStatus.startsWith("備取"))) {
+    try {
+      await db.runTransaction(async (tx) => {
+        const compRef = db.collection("competitions").doc(compId);
+        const compSnapInTx = await tx.get(compRef);
+        const compInTx = compSnapInTx.data() || {};
+        const cfgInTx = compInTx.config || {};
+        // isAcceptTeam=true：已是正取/備取的隊伍改格時，一律對「新格」做實質容量檢查，
+        // 不走 manual 模式的「一律審核中」短路（否則改個組別就把已核准的正取打回審核中）。
+        const qRes = await checkAndReserveQuotaTx(tx, compId, teamId, compInTx, cfgInTx, newSessions, newGroup, true);
+        updateObj.status = qRes.status;
+        updateObj.waitlistNum = qRes.wn;
+        tx.update(doc.ref, updateObj);
+      });
+    } catch (e) {
+      if (e.message && e.message.startsWith("QUOTA:")) return { success: false, message: e.message.substring(6) };
+      throw e;
+    }
+  } else {
+    await doc.ref.update(updateObj);
+  }
   
   // NEW-01 FIX: Use single batch for atomic member delete + recreate
   const oldMembers = await db.collection("members").where("teamId", "==", teamId).get();
@@ -3533,7 +3789,33 @@ exports.updateTeamDetailOwner = compAuthCallable("manage", async (data, request)
     }
     teamUpd.customAnswers = ca;
   }
-  if (Object.keys(teamUpd).length) await db.collection("teams").doc(teamId).update(teamUpd);
+  
+  if (Object.keys(teamUpd).length) {
+    if (teamUpd.group !== undefined && (team.status === "正取" || (team.status || "").startsWith("備取"))) {
+      try {
+        await db.runTransaction(async (tx) => {
+          const compRef = db.collection("competitions").doc(compId);
+          const compSnapInTx = await tx.get(compRef);
+          const compInTx = compSnapInTx.data() || {};
+          const cfgInTx = compInTx.config || {};
+          // isAcceptTeam=true：主辦改已核准隊伍的組別時，對「新格」做實質容量檢查，
+          // 有位維持正取、滿了才降備取/擋，不因 manual 模式被無腦打回審核中。
+          const qRes = await checkAndReserveQuotaTx(tx, compId, teamId, compInTx, cfgInTx, team.selectedSessions || [team.selectedSession || 0], teamUpd.group, true);
+          teamUpd.status = qRes.status;
+          teamUpd.waitlistNum = qRes.wn;
+          tx.update(tDoc.ref, teamUpd);
+        });
+        if (teamUpd.status !== team.status) {
+           logs.push({ who: "", label: "報名狀態", old: team.status, neu: teamUpd.status });
+        }
+      } catch (e) {
+        if (e.message && e.message.startsWith("QUOTA:")) return { success: false, message: e.message.substring(6) };
+        throw e;
+      }
+    } else {
+      await tDoc.ref.update(teamUpd);
+    }
+  }
   // members (by doc id)
   const membersIn = Array.isArray(data.members) ? data.members : [];
   for (const min of membersIn) {
@@ -3612,16 +3894,29 @@ exports.acceptTeam = compAuthCallable("manage", async (data, request) => {
         return { success: false, message: "此報名狀態不可勾選正取（" + (t.status || "") + "）" };
       if (!String(t.paymentStatus || "").includes("已確認")) return { success: false, message: "此隊伍尚未完成付款，不可勾選正取" };
       if (String(t.paymentStatus || "").includes("已退費")) return { success: false, message: "此隊伍已退費，不可勾選正取" };
-      if (maxT > 0) {
-        // 單欄查詢 + 記憶體過濾（避免 compId+status 複合索引需求）；讀進交易讀集＝序列化並發勾選
-        const accSnap = await tx.get(db.collection("teams").where("compId", "==", compId));
-        const acc = accSnap.docs.filter(d => d.data().status === "正取").length;
-        if (acc >= maxT) return { success: false, message: "正取名額已滿（" + acc + "/" + maxT + "），如需增加請先調整報名上限" };
+      const selectedSessions = t.selectedSessions || [t.selectedSession || 0];
+      // TOCTOU 修補：容量判定所用的設定（上限）改在交易內讀取，避免用到交易外的過期快取
+      // （並發改設定時才會有差）；交易外的 comp/cfg 仍保留給交易後的稽核與寄信使用。
+      const compSnapInTx = await tx.get(compDoc.ref);
+      const compInTx = compSnapInTx.exists ? compSnapInTx.data() : {};
+      const cfgInTx = compInTx.config || {};
+      const qRes = await checkAndReserveQuotaTx(tx, compId, teamId, compInTx, cfgInTx, selectedSessions, t.group || "", true);
+      
+      // If qRes.status is not "正取", it means quota is full (could be Waitlist or Error)
+      // Because we passed isAcceptTeam=true, it actually checks the capacity.
+      if (qRes.status !== "正取") {
+        return { success: false, message: "正取名額已滿，如需增加請先調整報名上限" };
       }
+
       tx.update(teamRef, { status: "正取", waitlistNum: 0, acceptedAt: fmtNow(), acceptedBy: request.authUser.username });
       return { success: true, _accepted: true, teamNameCN: t.teamNameCN || "" };
     });
-  } catch (e) { return { success: false, message: "勾選失敗，請稍後再試" }; }
+  } catch (e) {
+    if (e.message && e.message.startsWith("QUOTA:")) {
+      return { success: false, message: e.message.substring(6) };
+    }
+    return { success: false, message: "勾選失敗，請稍後再試" }; 
+  }
   if (!txOut.success || txOut.already) return txOut;
 
   await auditLog(request.authUser.username, "勾選正取", teamId, txOut.teamNameCN || "");
@@ -5231,7 +5526,7 @@ exports.analyzePosterColors = compAuthCallable(async (data) => {
 
 
 exports.batchImportTeams = compAuthCallable(async (data) => {
-  const { compId, csvText } = data;
+  throw new Error("此功能已停用 (Deprecated)");
   const lines = (csvText || "").trim().split("\n").filter(l => l.trim());
   if (!lines.length) return { success: false, message: "empty" };
   
@@ -5348,7 +5643,7 @@ exports.batchImportTeams = compAuthCallable(async (data) => {
 });
 
 exports.updateTeamStatus = compAuthCallable(async (data, request) => {
-  const { teamId, newStatus } = data;
+  throw new Error("此功能已停用 (Deprecated)");
   
   const teamDoc = await db.collection("teams").doc(teamId).get();
   if (!teamDoc.exists) return { success: false, message: "Team not found" };

@@ -263,6 +263,14 @@
             </div>
             <div class="list-grp" id="sessionsList"></div>
             <button class="add-row" id="addSessionBtn" data-i18n="aeEditAddSessionBtn">＋ 新增場次</button>
+            <div id="groupCapMatrixWrap" style="display:none; margin-top:12px">
+              <label style="display:flex; gap:8px; align-items:center; font:500 13px/1.45 var(--f-tc); cursor:pointer; color:var(--ink)">
+                <input type="checkbox" id="perSessionCapToggle" data-dirty>
+                <span>各梯次設定不同組別上限（進階）</span>
+              </label>
+              <p class="help" style="margin:4px 0 0 24px">關閉時，各梯次一律沿用「組別」頁每組的預設上限；開啟後可逐格微調。</p>
+              <div id="groupCapMatrix" style="display:none; margin-top:8px; overflow-x:auto"></div>
+            </div>
           </div>
 
           <!-- 活動海報 + AI 配色 -->
@@ -728,6 +736,28 @@
     var cap = PLAN.maxCapacity;
     var mode = (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single';
     var msg = '';
+    
+    // Check if any group has -1 (unlimited) when plan doesn't allow it
+    var groups = (typeof readGroups === 'function') ? readGroups() : [];
+    if (groups.length) {
+      var caps = readGroupCaps();
+      var hasUnlimited = Object.keys(caps).some(function(k) { return caps[k] === -1; });
+      if (hasUnlimited) {
+        msg = '您目前的方案不支援「無上限(-1)」，請輸入具體數字，或升級方案以解除限制。';
+        err.style.display = ''; err.textContent = msg; return false;
+      }
+      var sumGroups = Object.keys(caps).reduce(function(acc, k) { return acc + (caps[k] > 0 ? caps[k] : 0); }, 0);
+      // 與後端一致：多梯次（≥2）每梯都含全部組別 → 推算總容量 = Σ組別 × 梯次數；單梯或無梯次 = Σ組別。
+      var sessCount = (typeof readSessions === 'function') ? readSessions().length : 0;
+      var effTotal = (sessCount >= 2) ? sumGroups * sessCount : sumGroups;
+      if (effTotal > cap) {
+        msg = '各組別上限推算總容量 (' + effTotal + ') 超過方案上限 ' + cap + ' 組。';
+        err.style.display = ''; err.textContent = msg; return false;
+      }
+      // 有組別時容量由 groupCaps 主導，略過下方以 session.maxTeams 為準的檢查。
+      err.style.display = 'none'; return true;
+    }
+
     if (mode === 'multi') {
       var sess = (typeof readSessions === 'function') ? readSessions() : [];
       if (sess.length) {
@@ -738,6 +768,8 @@
       }
     } else {
       var val = parseInt(document.getElementById('adv-maxTeams').value, 10) || 0;
+      // In single mode with groups, adv-maxTeams is readonly and holds the sum, we already checked sumGroups > cap above.
+      // We check val > cap just in case groups are empty.
       if (val > cap) msg = window.L('aeEditCapSinglePre') + val + window.L('aeEditCapSingleMid') + tierLabelFE(PLAN.tier) + window.L('aeEditCapSingleSuf') + cap + window.L('aeEditCapSingleEnd') + cap + window.L('aeEditCapSingleEnd2');
     }
     if (msg) { err.style.display = ''; err.textContent = msg; return false; }
@@ -823,8 +855,14 @@
     updateDateMode();
 
     // Groups
-    renderGroups(CFG.groups || [], CFG.groupAgeRules || {});
+    renderGroups(CFG.groups || [], CFG.groupAgeRules || {}, CFG.groupCaps || {});
     renderSessions(CFG.sessions || []);
+    // 各梯次覆寫矩陣：載入既有 sessions[i].groupCaps 當種子，並依此決定開關預設開啟與否
+    window._loadedSessionCaps = {};
+    (CFG.sessions || []).forEach(function (s) { if (s && s.name && s.groupCaps && Object.keys(s.groupCaps).length) window._loadedSessionCaps[s.name] = s.groupCaps; });
+    var _pct = document.getElementById('perSessionCapToggle');
+    if (_pct) _pct.checked = Object.keys(window._loadedSessionCaps).length > 0;
+    renderGroupCapMatrix();
     var mode = CFG.sessionSelectMode || 'single';
     document.querySelectorAll('input[name="sessionMode"]').forEach(function (r) { r.checked = (r.value === mode); });
 
@@ -895,7 +933,7 @@
     '普高組': { type: 'age', minAge: 16, maxAge: 18 },
     '技高組': { type: 'age', minAge: 16, maxAge: 18 }
   };
-  function _groupCardHtml(i, name, rule) {
+  function _groupCardHtml(i, name, rule, capVal) {
     var t = (rule && rule.type) || 'none';
     var minAge = (rule && rule.minAge != null) ? rule.minAge : '';
     var maxAge = (rule && rule.maxAge != null) ? rule.maxAge : '';
@@ -905,8 +943,9 @@
       '<div style="display:flex; gap:8px; align-items:center">' +
         '<span class="grip" style="cursor:grab">⋮⋮</span>' +
         '<input data-gf="name" value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditGroupNamePlaceholder')) + '" style="flex:1">' +
+        '<input type="number" data-gf="cap" min="-1" value="' + escapeHtml(String(capVal !== undefined ? capVal : -1)) + '" placeholder="無上限(-1)" style="width:90px" title="該組別名額上限 (-1為無上限，0為不開放)">' +
         '<select data-gf="type" style="padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13px/1.4 var(--f-tc)">' +
-          '<option value="none"' + (t==='none' ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeNone')) + '</option>' +
+        '<option value="none"' + (t==='none' ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeNone')) + '</option>' +
           '<option value="age"'  + (t==='age'  ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeAge')) + '</option>' +
           '<option value="birth"'+ (t==='birth'?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeBirth')) + '</option>' +
         '</select>' +
@@ -927,12 +966,13 @@
       '</div>' +
     '</div>';
   }
-  function renderGroups(groups, rules) {
+  function renderGroups(groups, rules, caps) {
     rules = rules || {};
+    caps = caps || {};
     var el = document.getElementById('groupsList');
     el.innerHTML = (groups || []).map(function (g, i) {
       var name = typeof g === 'string' ? g : (g.name || g.label || '');
-      return _groupCardHtml(i, name, rules[name] || null);
+      return _groupCardHtml(i, name, rules[name] || null, caps[name]);
     }).join('');
     // mode-select toggles between rows
     el.querySelectorAll('[data-gf="type"]').forEach(function (sel) {
@@ -949,13 +989,15 @@
         var idx = parseInt(b.dataset.rmGroup, 10);
         var arr = readGroups();
         var rs = readGroupAgeRules();
+        var caps = readGroupCaps();
         var removed = arr[idx];
         arr.splice(idx, 1);
-        if (removed) delete rs[removed];
-        renderGroups(arr, rs);
+        if (removed) { delete rs[removed]; delete caps[removed]; }
+        renderGroups(arr, rs, caps);
         markDirty();
       });
     });
+    renderGroupCapMatrix();
   }
   function readGroups() {
     return Array.from(document.querySelectorAll('#groupsList .list-row [data-gf="name"]'))
@@ -978,10 +1020,21 @@
     });
     return out;
   }
+  function readGroupCaps() {
+    var out = {};
+    Array.from(document.querySelectorAll('#groupsList .list-row')).forEach(function (r) {
+      var name = (r.querySelector('[data-gf="name"]').value || '').trim();
+      if (!name) return;
+      var capVal = parseInt(r.querySelector('[data-gf="cap"]').value, 10);
+      out[name] = isNaN(capVal) ? -1 : capVal;
+    });
+    return out;
+  }
   document.getElementById('addGroupBtn').addEventListener('click', function () {
     var preset = document.getElementById('groupPreset').value;
     var arr = readGroups();
     var rs = readGroupAgeRules();
+    var caps = readGroupCaps();
     var name;
     // R5 M-1: 下拉新增後會歸位 placeholder，再按「新增」不再彈窗擋人 — 直接給自訂空白列
     if (!preset) preset = '__custom__';
@@ -995,9 +1048,10 @@
       }
       name = preset;
       if (GROUP_AGE_PRESETS[name]) rs[name] = Object.assign({}, GROUP_AGE_PRESETS[name]);
+      caps[name] = -1; // 預設無上限
     }
     arr.push(name);
-    renderGroups(arr, rs);
+    renderGroups(arr, rs, caps);
     markDirty();
     document.getElementById('groupPreset').value = '';
     if (!name) {
@@ -1036,9 +1090,10 @@
     el.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { markDirty(); updateCapacityField(); }); });
     el.querySelectorAll('[data-rm-session]').forEach(function (b) { b.addEventListener('click', function () { var idx = parseInt(b.dataset.rmSession, 10); var arr = readSessions(); arr.splice(idx, 1); renderSessions(arr); markDirty(); updateCapacityField(); }); });
     updateCapacityField();
+    renderGroupCapMatrix();
   }
   function readSessions() {
-    return Array.from(document.querySelectorAll('#sessionsList .list-row')).map(function (r) {
+    var rows = Array.from(document.querySelectorAll('#sessionsList .list-row')).map(function (r) {
       var sd = r.querySelector('[data-sf="startDate"]').value;
       var ed = r.querySelector('[data-sf="endDate"]').value;
       return {
@@ -1050,8 +1105,65 @@
         maxTeams: parseInt(r.querySelector('[data-sf="maxTeams"]').value, 10) || 0
       };
     }).filter(function (s) { return s.name; });
+    // 各梯次覆寫矩陣開啟時，依「梯次名稱」帶入該梯 groupCaps（名稱制、免索引錯位）。
+    var tog = document.getElementById('perSessionCapToggle');
+    if (tog && tog.checked) {
+      var perSess = readSessionGroupCaps();   // { 梯次名: { 組別名: cap } }
+      rows.forEach(function (s) { if (s.name && perSess[s.name]) s.groupCaps = perSess[s.name]; });
+    }
+    return rows;
+  }
+  // 讀矩陣 → { 梯次名: { 組別名: cap } }。用 cell 自帶的 data-sname/data-gname，
+  // 不再用 index 回查 readGroups()/sessionNames → 刪除或重排組別/梯次時絕不錯位。
+  function readSessionGroupCaps() {
+    var out = {};
+    Array.from(document.querySelectorAll('#groupCapMatrix input[data-gname]')).forEach(function (inp) {
+      var sName = inp.getAttribute('data-sname');
+      var gName = inp.getAttribute('data-gname');
+      if (!gName) return;
+      var v = parseInt(inp.value, 10);
+      if (isNaN(v)) v = -1;
+      out[sName] = out[sName] || {};
+      out[sName][gName] = v;
+    });
+    return out;
+  }
+  // 渲染 (梯次 × 組別) 覆寫矩陣；僅在「有組別 + 有梯次 + 開關開啟」時顯示。
+  function renderGroupCapMatrix() {
+    var wrap = document.getElementById('groupCapMatrixWrap');
+    var matrix = document.getElementById('groupCapMatrix');
+    var toggle = document.getElementById('perSessionCapToggle');
+    if (!wrap || !matrix || !toggle) return;
+    var groups = readGroups().filter(function (g) { return g; });
+    var sessionNames = Array.from(document.querySelectorAll('#sessionsList .list-row [data-sf="name"]'))
+      .map(function (inp) { return inp.value.trim(); }).filter(Boolean);
+    // 矩陣只有在「有組別 + ≥1 梯次」才有意義
+    if (!groups.length || !sessionNames.length) { wrap.style.display = 'none'; matrix.style.display = 'none'; matrix.innerHTML = ''; return; }
+    wrap.style.display = '';
+    if (!toggle.checked) { matrix.style.display = 'none'; matrix.innerHTML = ''; return; }
+    matrix.style.display = '';
+    var defCaps = readGroupCaps();
+    var domCaps = readSessionGroupCaps();
+    var seed = Object.keys(domCaps).length ? domCaps : (window._loadedSessionCaps || {});
+    var cell = 'padding:5px 6px; border:1px solid var(--line); text-align:center';
+    var head = 'padding:5px 8px; border:1px solid var(--line); background:var(--surface-2); color:var(--muted); font-weight:600; white-space:nowrap';
+    var html = '<table style="border-collapse:collapse; font:500 12.5px/1.4 var(--f-tc)"><thead><tr><th style="' + head + '">梯次 ＼ 組別</th>';
+    groups.forEach(function (g) { html += '<th style="' + head + '">' + escapeHtml(g) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    sessionNames.forEach(function (sn, si) {
+      html += '<tr><td style="' + head + '; text-align:left">' + escapeHtml(sn || ('梯次' + (si + 1))) + '</td>';
+      groups.forEach(function (g) {
+        var v = (seed[sn] && seed[sn][g] !== undefined) ? seed[sn][g] : (defCaps[g] !== undefined ? defCaps[g] : -1);
+        html += '<td style="' + cell + '"><input type="number" min="-1" value="' + escapeHtml(String(v)) + '" data-sname="' + escapeHtml(sn) + '" data-gname="' + escapeHtml(g) + '" style="width:66px; text-align:right"></td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table><p class="help" style="margin-top:6px">-1 = 無上限、0 = 不開放、N = 上限。</p>';
+    matrix.innerHTML = html;
+    matrix.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { markDirty(); updateCapacityField(); }); });
   }
   document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', endDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
+  document.getElementById('perSessionCapToggle').addEventListener('change', function () { renderGroupCapMatrix(); markDirty(); updateCapacityField(); });
 
   // Item 1: 報名上限 is editable only in 單日活動; in 多梯次 it shows the sum of each
   // session's cap (read-only) — change it back in the 場次 / 梯次 section.
@@ -1060,6 +1172,7 @@
     var help = document.getElementById('maxTeamsHelp');
     if (!inp) return;
     var mode = (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single';
+    var hasGroups = readGroups().length > 0;
     if (mode === 'multi') {
       var sum = readSessions().reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
       inp.value = sum;
@@ -1067,6 +1180,15 @@
       inp.style.background = 'var(--surface-2)';
       inp.style.color = 'var(--muted)';
       if (help) help.textContent = window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf');
+    } else if (hasGroups) {
+      var caps = readGroupCaps();
+      var hasUnlimited = Object.keys(caps).some(function(k) { return caps[k] === -1; });
+      var sumGroups = Object.keys(caps).reduce(function(acc, k) { return acc + (caps[k] > 0 ? caps[k] : 0); }, 0);
+      inp.value = hasUnlimited ? -1 : sumGroups;
+      inp.readOnly = true;
+      inp.style.background = 'var(--surface-2)';
+      inp.style.color = 'var(--muted)';
+      if (help) help.textContent = hasUnlimited ? '包含無上限組別' : '自動加總各組別預設上限：' + sumGroups;
     } else {
       inp.readOnly = false;
       inp.style.background = '';
@@ -1702,6 +1824,7 @@
       competitionEndTime: document.getElementById('basic-competitionEndTime').value,
       dateMode: (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single',
       groups: readGroups(),
+      groupCaps: readGroupCaps(),
       groupAgeRules: readGroupAgeRules(),
       sessions: readSessions(),
       sessionMode: (document.querySelector('input[name="sessionMode"]:checked') || {}).value || 'single',

@@ -796,26 +796,19 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     } else {
       groupRadio.innerHTML = groups.map(function (g, i) {
         var name = typeof g === 'string' ? g : (g.name || g.label || (window.L('rgGroupNFallback') + ' ' + (i+1)));
-        return '<div class="rc" data-group="' + escapeHtml(name) + '"><h6>' + escapeHtml(name) + '</h6></div>';
+        return '<div class="rc" data-group="' + escapeHtml(name) + '"><h6>' + escapeHtml(name) + '</h6><div class="cap-hint" style="font-size:0.85em;color:var(--text-600);margin-top:4px"></div></div>';
       }).join('');
-      groupRadio.querySelectorAll('.rc').forEach(function (rc) {
-        rc.addEventListener('click', function () {
-          groupRadio.querySelectorAll('.rc').forEach(function (x) { x.classList.remove('on'); });
-          rc.classList.add('on');
-          STATE.group = rc.dataset.group;
-        });
-      });
     }
 
     // Sessions
     var sessions = CFG.sessions || [];
+    var multi = CFG.sessionSelectMode === 'multiple';
     if (sessions.length === 0) {
       document.getElementById('sessionSection').style.display = 'none';
     } else {
       // BUG FIX: the markup defaults to display:none; without un-hiding here the section
       // stays hidden but step-1 validation still requires a selection → user is stuck.
       document.getElementById('sessionSection').style.display = '';
-      var multi = CFG.sessionSelectMode === 'multiple';
       var smEl = document.getElementById('sessionMode');
       smEl.setAttribute('data-i18n', multi ? 'rgSessionMulti' : 'rgSessionSingle');
       smEl.textContent = window.L(multi ? 'rgSessionMulti' : 'rgSessionSingle');
@@ -834,16 +827,155 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         } else if (sd) {
           rangeTxt = sd;
         }
-        var accepted = CFG.sessionAccepted[i] || 0;
-        var max = parseInt(s.maxTeams) || 0;
-        var qtyTxt = max > 0 ? (accepted + ' / ' + max) : (accepted + window.L('rgSessionRegistered'));
-        // R6-6: 滿額場次先講清楚 — 報名將列候補（或無候補時標示已滿）
-        var isFull = max > 0 && accepted >= max;
-        if (isFull) qtyTxt += '・' + window.L(CFG.allowWaitlist ? 'rgSessionFullWl' : 'rgSessionFull');
-        return '<div class="session-card" data-idx="' + i + '"><div class="top"><div class="ck"></div><h5>' + escapeHtml(name) + '</h5><span class="qty"' + (isFull ? ' style="color:var(--warn-700); font-weight:600"' : '') + '>' + qtyTxt + '</span></div>' + (rangeTxt ? '<div class="meta">' + escapeHtml(rangeTxt) + '</div>' : '') + '</div>';
+        return '<div class="session-card" data-idx="' + i + '"><div class="top"><div class="ck"></div><h5>' + escapeHtml(name) + '</h5><span class="qty"></span></div>' + (rangeTxt ? '<div class="meta">' + escapeHtml(rangeTxt) + '</div>' : '') + '</div>';
       }).join('');
-      grid.querySelectorAll('.session-card').forEach(function (card) {
-        card.addEventListener('click', function () {
+    }
+
+    function resolveGroupCap(cfg, sIdx, gName) {
+      // 與後端一致：優先梯次級 sessions[i].groupCaps，否則 fallback 到 top-level cfg.groupCaps
+      // （edit.html 目前只存 top-level 每組預設；不 fallback 會讓組別可用性顯示整組失效）。
+      var s = (cfg.sessions || [])[sIdx];
+      var caps = (s && s.groupCaps) || cfg.groupCaps;
+      if (!caps || typeof caps !== 'object' || !Object.keys(caps).length) return null;
+      var v = caps[gName];
+      var p = parseInt(v, 10);
+      return (!isNaN(p) && (p === -1 || p >= 0)) ? p : 0;
+    }
+
+    function updateAvailabilityUI() {
+      var manual = (CFG.acceptanceMode === 'manual');
+      var selectedSess = STATE.selectedSessions || [];
+      // 決定用哪些梯次評估組別可用性：
+      //  已選梯次 → 只看選中的（任一格不開放/滿 → 整組不可選，符合後端「任一格滿整隊備取」）
+      //  未選、但有多梯次 → 看全部梯次（只有「所有梯次都不開放/都滿」才隱藏/標滿，避免提前誤擋）
+      //  無梯次 → 視為虛擬 [0]（讀 top-level cfg.groupCaps，與後端一致）← 修：原本無梯次會完全略過檢查
+      var evalIdxs, closeIfAny;
+      if (selectedSess.length > 0) { evalIdxs = selectedSess; closeIfAny = true; }
+      else if (sessions.length > 0) { evalIdxs = sessions.map(function (_s, i) { return i; }); closeIfAny = false; }
+      else { evalIdxs = [0]; closeIfAny = true; }
+
+      // Update Groups
+      if (groups.length > 0) {
+        groupRadio.querySelectorAll('.rc').forEach(function(rc) {
+          var gName = rc.dataset.group;
+          var closedN = 0, openN = 0, fullN = 0;
+          for (var i=0; i<evalIdxs.length; i++) {
+            var cap = resolveGroupCap(CFG, evalIdxs[i], gName);
+            if (cap === 0) { closedN++; continue; }
+            openN++;
+            if (cap > 0) {
+              var acc = (CFG.sessionGroupAccepted && CFG.sessionGroupAccepted[evalIdxs[i]] && CFG.sessionGroupAccepted[evalIdxs[i]][gName]) || 0;
+              if (acc >= cap) fullN++;
+            }
+          }
+          var isClosed = closeIfAny ? (closedN > 0) : (openN === 0);
+          var isFull = closeIfAny ? (fullN > 0) : (openN > 0 && fullN === openN);
+          var hint = rc.querySelector('.cap-hint');
+          if (isClosed) {
+            rc.style.display = 'none';
+            if (STATE.group === gName) { STATE.group = ''; rc.classList.remove('on'); }
+          } else {
+            rc.style.display = '';
+            if (isFull && !manual) {
+              hint.textContent = window.L(CFG.allowWaitlist ? 'rgSessionFullWl' : 'rgSessionFull');
+              hint.style.color = 'var(--warn-700)';
+              if (CFG.allowWaitlist === false) {
+                 rc.style.pointerEvents = 'none'; rc.style.opacity = '0.5';
+                 if (STATE.group === gName) { STATE.group = ''; rc.classList.remove('on'); }
+              } else {
+                 rc.style.pointerEvents = ''; rc.style.opacity = '1';
+              }
+            } else {
+              hint.textContent = '';
+              rc.style.pointerEvents = ''; rc.style.opacity = '1';
+            }
+          }
+        });
+      }
+      
+      // Update Sessions
+      if (sessions.length > 0) {
+        var grid = document.getElementById('sessionGrid');
+        grid.querySelectorAll('.session-card').forEach(function(card) {
+          var sIdx = parseInt(card.dataset.idx, 10);
+          var s = sessions[sIdx];
+          var gName = STATE.group;
+          var cap = gName ? resolveGroupCap(CFG, sIdx, gName) : null;
+          var isClosed = false, isFull = false, qtyTxt = '', acc = 0;
+          
+          if (cap !== null) {
+            if (cap === 0) isClosed = true;
+            else if (cap > 0) {
+              acc = (CFG.sessionGroupAccepted && CFG.sessionGroupAccepted[sIdx] && CFG.sessionGroupAccepted[sIdx][gName]) || 0;
+              qtyTxt = acc + ' / ' + cap;
+              if (acc >= cap) isFull = true;
+            } else {
+              acc = (CFG.sessionGroupAccepted && CFG.sessionGroupAccepted[sIdx] && CFG.sessionGroupAccepted[sIdx][gName]) || 0;
+              qtyTxt = acc + window.L('rgSessionRegistered');
+            }
+          } else {
+            var sMax = parseInt(s.maxTeams) || 0;
+            var isPerSession = sessions.some(function(sess){ return sess && parseInt(sess.maxTeams)>0; });
+            acc = (CFG.sessionAccepted && CFG.sessionAccepted[sIdx]) || 0;
+            if (isPerSession) {
+              if (sMax > 0) { qtyTxt = acc + ' / ' + sMax; if (acc >= sMax) isFull = true; }
+              else qtyTxt = acc + window.L('rgSessionRegistered');
+            } else {
+              var gMax = CFG.maxTeams || 0;
+              var globAcc = CFG.currentAccepted || 0;
+              if (gMax > 0) { qtyTxt = globAcc + ' / ' + gMax; if (globAcc >= gMax) isFull = true; }
+              else qtyTxt = acc + window.L('rgSessionRegistered');
+            }
+          }
+          
+          var qtySpan = card.querySelector('.qty');
+          if (isClosed) {
+            card.style.display = 'none';
+            if (STATE.selectedSessions && STATE.selectedSessions.indexOf(sIdx) >= 0) {
+              card.classList.remove('on');
+              STATE.selectedSessions = STATE.selectedSessions.filter(function(x){ return x !== sIdx; });
+            }
+          } else {
+            card.style.display = '';
+            if (isFull && !manual) {
+              qtyTxt += '・' + window.L(CFG.allowWaitlist ? 'rgSessionFullWl' : 'rgSessionFull');
+              qtySpan.style.color = 'var(--warn-700)'; qtySpan.style.fontWeight = '600';
+              if (CFG.allowWaitlist === false) {
+                 card.style.pointerEvents = 'none'; card.style.opacity = '0.5';
+                 if (STATE.selectedSessions && STATE.selectedSessions.indexOf(sIdx) >= 0) {
+                   card.classList.remove('on');
+                   STATE.selectedSessions = STATE.selectedSessions.filter(function(x){ return x !== sIdx; });
+                 }
+              } else {
+                 card.style.pointerEvents = ''; card.style.opacity = '1';
+              }
+            } else {
+              qtySpan.style.color = ''; qtySpan.style.fontWeight = '';
+              card.style.pointerEvents = ''; card.style.opacity = '1';
+            }
+            qtySpan.textContent = qtyTxt;
+          }
+        });
+      }
+    }
+
+    // Attach listeners
+    if (groups.length > 0) {
+      groupRadio.querySelectorAll('.rc').forEach(function(rc) {
+        rc.addEventListener('click', function() {
+          if (rc.style.pointerEvents === 'none') return;
+          groupRadio.querySelectorAll('.rc').forEach(function (x) { x.classList.remove('on'); });
+          rc.classList.add('on');
+          STATE.group = rc.dataset.group;
+          updateAvailabilityUI();
+        });
+      });
+    }
+    if (sessions.length > 0) {
+      var grid = document.getElementById('sessionGrid');
+      grid.querySelectorAll('.session-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          if (card.style.pointerEvents === 'none') return;
           var idx = parseInt(card.dataset.idx, 10);
           if (multi) {
             card.classList.toggle('on');
@@ -853,9 +985,13 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
             card.classList.add('on');
             STATE.selectedSessions = [idx];
           }
+          updateAvailabilityUI();
         });
       });
     }
+    
+    // Initial render
+    updateAvailabilityUI();
 
     // Team name fields
     if (!CFG.requireTeamNameCN) document.getElementById('teamNameCNField').style.display = 'none';
