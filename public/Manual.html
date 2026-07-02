@@ -66,7 +66,9 @@
     { "@type": "Question", "name": "退費／退刷顯示「關帳狀態不符合」怎麼辦？", "acceptedAnswer": { "@type": "Answer", "text": "這是 PayUNI 當日交易尚未關帳的正常情形。信用卡退款需交易已關帳（多為隔日批次結算）才能執行；全額退款系統會自動改走「取消請款」當日即可完成，部分退款請於付款隔日關帳後再操作。系統會自動判斷並選擇正確動作，主辦方只需擇日重試。" } },
     { "@type": "Question", "name": "評審看得到其他隊伍的分數或排名嗎？", "acceptedAnswer": { "@type": "Answer", "text": "預設看不到。評分頁有兩個公平性開關「評審可看到即時排名」與「評審可看到報名者個資」，皆預設關閉；關閉時評審只看到被指派的隊伍與代稱，看不到即時排名與個資，可避免分數互相錨定。" } },
     { "@type": "Question", "name": "總排名的分數和名次看起來對不上？", "acceptedAnswer": { "@type": "Answer", "text": "總排名是以「原始加權分」排序（跨組可比），分數欄顯示的也是原始加權分；分組檢視時則顯示組內正規化分。未評分與備取/審核中的隊伍不列入排名。" } },
-    { "@type": "Question", "name": "證書可以發給指導老師（感謝狀）嗎？", "acceptedAnswer": { "@type": "Answer", "text": "可以。證書／名牌設計器（Pro／Team）匯出時對象範圍可選「僅指導者」，並在文字欄位使用稱謂 token 帶出老師職稱，即可批次產出感謝狀。" } }
+    { "@type": "Question", "name": "證書可以發給指導老師（感謝狀）嗎？", "acceptedAnswer": { "@type": "Answer", "text": "可以。證書／名牌設計器（Pro／Team）匯出時對象範圍可選「僅指導者」，並在文字欄位使用稱謂 token 帶出老師職稱，即可批次產出感謝狀。" } },
+    { "@type": "Question", "name": "有組別時，報名上限要怎麼設？為什麼梯次上限改不動？", "acceptedAnswer": { "@type": "Answer", "text": "報名上限採「組別→梯次→總數」由下往上加總的層級。有組別時，容量以「組別上限」為唯一手動來源：在活動設定的「組別」分頁，每個組別卡片右側填「報名上限」。梯次上限與總報名上限會自動等於加總並唯讀，避免兩套數字打架；要改總量就回「組別」改組別上限。若要不同梯次收不同人數，勾選「梯次」清單下方的「各梯次設定不同組別上限（進階）」，展開 (梯次×組別) 矩陣逐格填。" } },
+    { "@type": "Question", "name": "組別上限填的 -1、0、N 是什麼意思？", "acceptedAnswer": { "@type": "Answer", "text": "在組別上限欄位：-1 = 無上限（該組不限人數，需方案已解鎖大型活動容量）；0 = 不開放（該組或該梯次該格不收報名）；N（正整數）= 上限 N 人。注意這與「無組別」時全域報名上限的舊語意「0＝無上限」不同——有組別時請以組別上限的 -1/0/N 為準。報名頁會依每個 (梯次,組別) 格即時顯示額滿或不開放，並在選擇當下就擋，不會讓報名者填完整份表單才被退回。" } }
   ]
 }
 </script>
@@ -416,6 +418,7 @@ body[data-lang="en"] .zh{display:none !important}
             <a href="#s-valid"><span class="dot"></span><span class="zh">欄位驗證規則</span><span class="en">Field Validation</span></a>
             <a href="#s-fees"><span class="dot"></span><span class="zh">收費、折扣與退費</span><span class="en">Fees, Discounts &amp; Refunds</span></a>
             <a href="#s-advanced"><span class="dot"></span><span class="zh">名額與候補/正取模式</span><span class="en">Capacity &amp; Acceptance</span></a>
+            <a href="#s-capacity"><span class="dot"></span><span class="zh">報名上限（組別×梯次層級）</span><span class="en">Registration Caps (Group×Session)</span></a>
             <a href="#s-open"><span class="dot"></span><span class="zh">開放報名與分享</span><span class="en">Open &amp; Share</span></a>
           </div>
         </div>
@@ -722,7 +725,7 @@ body[data-lang="en"] .zh{display:none !important}
 
       <h3 class="zh">報名上限</h3>
       <h3 class="en">Capacity</h3>
-      <p><span class="zh"><b>0 = 無上限。</b>多梯次活動的總上限是各梯次名額的加總，請在「梯次」區塊調整各梯。</span><span class="en"><b>0 = unlimited.</b> For multi-session events, total capacity is the sum of each session's cap — adjust them in the Sessions block.</span></p>
+      <p><span class="zh"><b>沒有組別</b>時，這裡填全域報名上限（<b>0 = 無上限</b>）；多梯次活動的總上限是各梯次名額的加總，請在「梯次」區塊調整各梯。<b>有組別</b>時，容量改由「組別上限」層級決定，此欄與各梯次上限一律自動加總並唯讀 — 詳見下一節〈報名上限（組別 × 梯次 層級）〉。</span><span class="en"><b>Without groups</b>, set the global cap here (<b>0 = unlimited</b>); for multi-session events the total is the sum of session caps. <b>With groups</b>, capacity is driven by per-group caps and this field (plus each session cap) becomes an auto-summed, read-only total — see the next section, "Registration Caps (Group × Session)".</span></p>
 
       <h3 class="zh">三種錄取模式</h3>
       <h3 class="en">Three acceptance modes</h3>
@@ -733,6 +736,113 @@ body[data-lang="en"] .zh{display:none !important}
         <tr><td><span class="zh"><b>額滿即停止</b></span><span class="en"><b>Stop when full</b></span></td><td><span class="zh">額滿後不再接受新報名（無候補）。</span><span class="en">No new registrations once full (no waitlist).</span></td></tr>
       </table>
       <div class="m-note"><span class="zh">自訂正取的完整操作見下一節〈自訂正取〉。「允許候補」屬 Starter 以上方案功能。</span><span class="en">See the next section, "Custom Acceptance", for the full workflow. Waitlisting is a Starter-and-above feature.</span></div>
+    </section>
+
+    <section class="m-sec" id="s-capacity">
+      <h2><span class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 16l4-6 4 3 5-8"/></svg></span><span class="zh">報名上限（組別 × 梯次 層級）</span><span class="en">Registration Caps (Group × Session)</span></h2>
+      <p class="lead zh">報名上限採「組別 → 梯次 → 總數」由下往上加總的層級。你<b>只需要設定最底層的「組別上限」</b>，梯次上限與總報名上限都會自動算出並唯讀，避免兩套數字打架。</p>
+      <p class="lead en">Capacity is a bottom-up hierarchy: <b>Group → Session → Total</b>. You only set the bottom layer — each group's cap — and the session and total caps are computed automatically (read-only), so the numbers never conflict.</p>
+
+      <div style="overflow-x:auto;margin:14px 0">
+      <svg viewBox="0 0 720 230" width="720" style="max-width:100%;font-family:var(--f-tc)" role="img" aria-label="Group to Session to Total capacity hierarchy">
+        <defs><marker id="capArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 z" fill="var(--ink-3)"/></marker></defs>
+        <rect x="12" y="46" width="196" height="132" rx="13" fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="1.6"/>
+        <text x="110" y="74" text-anchor="middle" font-weight="700" font-size="15" fill="var(--acc)" class="zh">① 組別上限</text>
+        <text x="110" y="74" text-anchor="middle" font-weight="700" font-size="15" fill="var(--acc)" class="en">① Group cap</text>
+        <text x="110" y="104" text-anchor="middle" font-size="13" fill="var(--ink)">國小組 = 20</text>
+        <text x="110" y="126" text-anchor="middle" font-size="13" fill="var(--ink)">國中組 = 30</text>
+        <text x="110" y="159" text-anchor="middle" font-size="12" fill="var(--acc)" class="zh">← 你只需設這裡</text>
+        <text x="110" y="159" text-anchor="middle" font-size="12" fill="var(--acc)" class="en">← set only this</text>
+        <line x1="212" y1="112" x2="256" y2="112" stroke="var(--ink-3)" stroke-width="2" marker-end="url(#capArrow)"/>
+        <text x="234" y="103" text-anchor="middle" font-size="10.5" fill="var(--muted)" class="zh">加總</text>
+        <text x="234" y="103" text-anchor="middle" font-size="10.5" fill="var(--muted)" class="en">sum</text>
+        <rect x="260" y="46" width="196" height="132" rx="13" fill="var(--surface)" stroke="var(--line)" stroke-width="1.4"/>
+        <text x="358" y="74" text-anchor="middle" font-weight="700" font-size="15" fill="var(--ink)" class="zh">② 梯次上限</text>
+        <text x="358" y="74" text-anchor="middle" font-weight="700" font-size="15" fill="var(--ink)" class="en">② Session cap</text>
+        <text x="358" y="104" text-anchor="middle" font-size="13" fill="var(--ink)">= Σ 組別 = 50</text>
+        <text x="358" y="126" text-anchor="middle" font-size="12" fill="var(--muted)">南區 / 北區 / 中區</text>
+        <text x="358" y="159" text-anchor="middle" font-size="12" fill="var(--muted)" class="zh">（唯讀・自動）</text>
+        <text x="358" y="159" text-anchor="middle" font-size="12" fill="var(--muted)" class="en">(read-only)</text>
+        <line x1="460" y1="112" x2="504" y2="112" stroke="var(--ink-3)" stroke-width="2" marker-end="url(#capArrow)"/>
+        <text x="482" y="103" text-anchor="middle" font-size="10.5" fill="var(--muted)" class="zh">加總</text>
+        <text x="482" y="103" text-anchor="middle" font-size="10.5" fill="var(--muted)" class="en">sum</text>
+        <rect x="508" y="46" width="200" height="132" rx="13" fill="var(--surface)" stroke="var(--line)" stroke-width="1.4"/>
+        <text x="608" y="74" text-anchor="middle" font-weight="700" font-size="15" fill="var(--ink)" class="zh">③ 總報名上限</text>
+        <text x="608" y="74" text-anchor="middle" font-weight="700" font-size="15" fill="var(--ink)" class="en">③ Total cap</text>
+        <text x="608" y="104" text-anchor="middle" font-size="13" fill="var(--ink)">= Σ 梯次</text>
+        <text x="608" y="127" text-anchor="middle" font-size="15" font-weight="700" fill="var(--acc)">3 × 50 = 150</text>
+        <text x="608" y="159" text-anchor="middle" font-size="12" fill="var(--muted)" class="zh">（唯讀・自動）</text>
+        <text x="608" y="159" text-anchor="middle" font-size="12" fill="var(--muted)" class="en">(read-only)</text>
+        <text x="360" y="212" text-anchor="middle" font-size="11.5" fill="var(--muted)" class="zh">由下往上自動加總：只設「組別上限」，梯次與總數自動算出</text>
+        <text x="360" y="212" text-anchor="middle" font-size="11.5" fill="var(--muted)" class="en">Bottom-up auto-sum: set only group caps; session &amp; total are computed</text>
+      </svg>
+      </div>
+
+      <h3 class="zh">三種數值的意思</h3>
+      <h3 class="en">What the numbers mean</h3>
+      <table class="m-tbl">
+        <tr><th><span class="zh">數值</span><span class="en">Value</span></th><th><span class="zh">意思</span><span class="en">Meaning</span></th></tr>
+        <tr><td><b>-1</b></td><td><span class="zh"><b>無上限</b> — 該組不限人數。</span><span class="en"><b>Unlimited</b> — no limit for this group.</span></td></tr>
+        <tr><td><b>0</b></td><td><span class="zh"><b>不開放</b> — 該組（在該梯次）不收報名。</span><span class="en"><b>Closed</b> — this group is not open (for that session).</span></td></tr>
+        <tr><td><b>N</b></td><td><span class="zh"><b>上限 N 人</b>（正整數）。</span><span class="en"><b>Cap of N</b> (a positive integer).</span></td></tr>
+      </table>
+      <div class="m-note"><span class="zh"><b>-1（無上限）</b>僅在你的方案已解鎖大型活動容量時可用；未解鎖請填具體數字或升級方案。此語意（-1/0/N）與舊版「無組別」時的全域上限「0 = 無上限」不同 — 有組別時請以組別上限的 -1/0/N 為準。</span><span class="en"><b>-1 (unlimited)</b> is only allowed when your plan has unlocked large-event capacity; otherwise enter a number or upgrade. Note this <b>-1/0/N</b> meaning differs from the legacy global "0 = unlimited" used when there are no groups.</span></div>
+
+      <h3 class="zh">怎麼設定「真正的」報名上限（步驟）</h3>
+      <h3 class="en">How to set the real cap (step-by-step)</h3>
+      <ol class="m-list">
+        <li><span class="zh">到活動<b>設定 →「組別」</b>分頁：每個組別卡右側有「<b>報名上限：</b>」欄，填該組要收的人數（例：國小 20、國中 30）。這是<b>你唯一要手動輸入</b>的容量來源。</span><span class="en">Go to <b>Settings → Groups</b>: each group card has a "<b>Cap:</b>" field on the right — enter how many that group takes (e.g. Junior 20, Senior 30). This is the <b>only</b> capacity you type by hand.</span></li>
+        <li><span class="zh">到<b>「基本／時間」→「梯次」</b>清單：有組別時，每個梯次的「報名上限」會<b>自動＝該梯各組別加總、且唯讀反灰</b>（例：20+30=50）。不用、也不能在這裡直接改。</span><span class="en">In <b>Basics/Dates → Sessions</b>: with groups, each session's cap <b>auto-becomes the sum of its group caps and turns read-only</b> (e.g. 20+30=50). You don't (and can't) edit it here.</span></li>
+        <li><span class="zh">「進階」分頁的<b>總報名上限</b>也會自動＝各梯次加總（唯讀）。要改總量 → 回「組別」改組別上限即可。</span><span class="en">The <b>total cap</b> on the Advanced tab also auto-sums all sessions (read-only). To change the total, edit the group caps.</span></li>
+      </ol>
+      <div class="m-ui">
+        <div class="bar"><i></i><i></i><i></i><span class="t">Settings › Groups</span></div>
+        <div class="body">
+          <div class="uicard"><div class="row" style="justify-content:space-between;align-items:center"><b style="font:700 13px/1 var(--f-display)">國小組</b><span style="font:600 12px/1 var(--f-mono);color:var(--ink-3)"><span class="zh">報名上限：</span><span class="en">Cap: </span><b style="color:var(--acc);font-size:15px">20</b></span></div></div>
+          <div class="uicard"><div class="row" style="justify-content:space-between;align-items:center"><b style="font:700 13px/1 var(--f-display)">國中組</b><span style="font:600 12px/1 var(--f-mono);color:var(--ink-3)"><span class="zh">報名上限：</span><span class="en">Cap: </span><b style="color:var(--acc);font-size:15px">30</b></span></div></div>
+        </div>
+        <div class="cap"><span class="zh">「組別」分頁：每組卡片右側直接填該組報名上限（-1/0/N）</span><span class="en">Groups tab: type each group's cap (-1/0/N) on the right of its card</span></div>
+      </div>
+      <div class="m-ui">
+        <div class="bar"><i></i><i></i><i></i><span class="t">Settings › Sessions</span></div>
+        <div class="body">
+          <div class="uicard"><div class="row" style="justify-content:space-between;align-items:center"><b style="font:700 13px/1 var(--f-display)">南區預賽</b><span style="font:600 12px/1 var(--f-mono);color:var(--muted)"><span class="zh">報名上限：</span><span class="en">Cap: </span><b style="font-size:15px">50</b> <span class="zh">（唯讀·自動）</span><span class="en">(auto)</span></span></div></div>
+          <div class="uicard"><div class="row" style="justify-content:space-between;align-items:center"><b style="font:700 13px/1 var(--f-display)">北區預賽</b><span style="font:600 12px/1 var(--f-mono);color:var(--muted)"><span class="zh">報名上限：</span><span class="en">Cap: </span><b style="font-size:15px">50</b> <span class="zh">（唯讀·自動）</span><span class="en">(auto)</span></span></div></div>
+        </div>
+        <div class="cap"><span class="zh">有組別時：梯次上限＝該梯各組別加總、灰色唯讀（要改回「組別」調）</span><span class="en">With groups: each session cap = sum of its group caps, shown grey &amp; read-only</span></div>
+      </div>
+
+      <h3 class="zh">進階：讓不同梯次收不同人數</h3>
+      <h3 class="en">Advanced: different caps per session</h3>
+      <p><span class="zh">預設每個梯次都套用同一組「組別上限」。若某梯次要不一樣（例：南區國小只收 15），勾選梯次清單下方的「<b>各梯次設定不同組別上限（進階）</b>」，會展開一張 <b>(梯次 × 組別) 矩陣</b>讓你逐格微調。開啟後「組別」分頁的組別上限會變唯讀（改以矩陣為準）。</span><span class="en">By default every session uses the same group caps. If one session needs different numbers (e.g. Junior only 15 at the South session), tick "<b>Set different group caps per session (advanced)</b>" below the Sessions list to open a <b>(session × group) matrix</b> for per-cell tuning. While it's on, the group-cap fields on the Groups tab become read-only (the matrix wins).</span></p>
+      <div class="m-ui">
+        <div class="bar"><i></i><i></i><i></i><span class="t">Advanced · per-session matrix</span></div>
+        <div class="body">
+          <table class="m-tbl" style="margin:0">
+            <tr><th><span class="zh">梯次 ＼ 組別</span><span class="en">Session ＼ Group</span></th><th>國小</th><th>國中</th></tr>
+            <tr><td>南區預賽</td><td><b style="color:var(--acc)">15</b></td><td>30</td></tr>
+            <tr><td>北區預賽</td><td>20</td><td>30</td></tr>
+            <tr><td>中區預賽</td><td>20</td><td>30</td></tr>
+          </table>
+        </div>
+        <div class="cap"><span class="zh">勾「各梯次設定不同組別上限（進階）」後展開，逐格填 -1/0/N</span><span class="en">Tick the advanced toggle to open the grid; fill each cell with -1/0/N</span></div>
+      </div>
+
+      <h3 class="zh">四種情境</h3>
+      <h3 class="en">Four scenarios</h3>
+      <table class="m-tbl">
+        <tr><th><span class="zh">情境</span><span class="en">Scenario</span></th><th><span class="zh">上限設定處</span><span class="en">Set where</span></th><th><span class="zh">梯次上限</span><span class="en">Session cap</span></th><th><span class="zh">總上限</span><span class="en">Total</span></th></tr>
+        <tr><td><span class="zh">無組別・單日</span><span class="en">No groups · one day</span></td><td><span class="zh">總數直接填</span><span class="en">Total, directly</span></td><td>—</td><td><span class="zh">直接設（0=無上限）</span><span class="en">Direct (0 = unlimited)</span></td></tr>
+        <tr><td><span class="zh">無組別・多梯次</span><span class="en">No groups · multi-session</span></td><td><span class="zh">各梯次直接填</span><span class="en">Each session, directly</span></td><td><span class="zh">直接設</span><span class="en">Direct</span></td><td>Σ <span class="zh">梯次</span><span class="en">sessions</span></td></tr>
+        <tr><td><span class="zh">有組別・單日</span><span class="en">Groups · one day</span></td><td><span class="zh"><b>各組別</b></span><span class="en"><b>Per group</b></span></td><td>Σ <span class="zh">組別（唯讀）</span><span class="en">groups (read-only)</span></td><td>= Σ <span class="zh">組別</span><span class="en">groups</span></td></tr>
+        <tr><td><span class="zh">有組別・多梯次</span><span class="en">Groups · multi-session</span></td><td><span class="zh"><b>各組別</b>（可用矩陣逐梯覆寫）</span><span class="en"><b>Per group</b> (matrix to override)</span></td><td>Σ <span class="zh">組別（唯讀）</span><span class="en">groups (read-only)</span></td><td>Σ <span class="zh">梯次</span><span class="en">sessions</span></td></tr>
+      </table>
+
+      <h3 class="zh">報名者會看到什麼</h3>
+      <h3 class="en">What registrants see</h3>
+      <p><span class="zh">報名頁會依 (梯次, 組別) <b>即時顯示可用性</b>：某組在某梯次「<b>不開放(0)</b>」會隱藏或反灰；「<b>已額滿</b>」則依你是否「允許候補」顯示為候補或不可選。額滿／不開放在選擇當下就擋，不會讓人填完整份表單才被退回。</span><span class="en">The registration page shows availability <b>live per (session, group)</b>: a group that's <b>closed (0)</b> for a session is hidden/greyed; a <b>full</b> group shows as waitlist or is disabled depending on your "allow waitlist" setting. Full/closed is blocked at selection time, not after filling the whole form.</span></p>
+      <div class="m-note"><span class="zh">額滿判定以每個 <b>(梯次, 組別) 格</b>為單位、備取序號也在該格內排。系統在報名／改報名／主辦核准／退費復原等<b>所有寫入路徑都以交易嚴格把關</b>，杜絕並發超收。</span><span class="en">Fullness is judged per <b>(session, group) cell</b>, with waitlist numbers ordered within that cell. Every write path — register, edit, accept, refund-restore — is guarded by a transaction to prevent concurrent oversell.</span></div>
+      <div class="m-warn"><span class="zh"><b>已有報名後要改組別名稱時：</b>請一次只改一個組別、存檔後再改下一個，以保護既有報名的組別對應。</span><span class="en"><b>Renaming a group after registrations exist:</b> change one group at a time and save before the next, to keep existing entries correctly mapped.</span></div>
     </section>
 
     <section class="m-sec" id="s-open">
@@ -996,7 +1106,19 @@ body[data-lang="en"] .zh{display:none !important}
 
       <h4 class="zh">Q. 報名上限存檔後數字會不見嗎？</h4>
       <h4 class="en">Q. Does the capacity number disappear after saving?</h4>
-      <p><span class="zh">不會。報名上限會被正確保存；多梯次模式下，總上限是各梯次名額的加總，請於「梯次」區塊調整各梯。</span><span class="en">No. Capacity is saved correctly; in multi-session mode the total is the sum of session caps — adjust them in the Sessions block.</span></p>
+      <p><span class="zh">不會。報名上限會被正確保存。若你用「組別上限」，重新載入仍會保留你設的數字；多梯次模式下，總上限是各梯次名額的加總。詳見〈報名上限（組別 × 梯次 層級）〉。</span><span class="en">No. Capacity is saved correctly. Group caps persist across reloads; in multi-session mode the total is the sum of session caps. See "Registration Caps (Group × Session)".</span></p>
+
+      <h4 class="zh">Q. 有組別時，怎麼設「真正的」報名上限？為什麼梯次上限改不動？</h4>
+      <h4 class="en">Q. With groups, how do I set the real cap? Why can't I edit the session cap?</h4>
+      <p><span class="zh">有組別時，容量以「組別上限」為唯一來源：到「組別」分頁每組卡片右側填「報名上限」。梯次上限與總數會<b>自動＝加總並唯讀</b>（避免兩套數字打架）。要改總量就回「組別」改組別上限；要讓不同梯次不同就用進階矩陣（見下一題）。</span><span class="en">With groups, group caps are the single source: set each group's "Cap" on the Groups tab. Session and total caps become an <b>auto-summed, read-only</b> value. To change the total, edit the group caps; for per-session differences, use the advanced matrix (next question).</span></p>
+
+      <h4 class="zh">Q. 組別上限填的 -1、0 是什麼意思？</h4>
+      <h4 class="en">Q. What do -1 and 0 mean in a group cap?</h4>
+      <p><span class="zh"><b>-1 = 無上限</b>（該組不限人數，需方案已解鎖）、<b>0 = 不開放</b>（該組/該格不收報名）、<b>N = 上限 N 人</b>。注意這與「無組別」時全域上限的舊語意「0＝無上限」不同。</span><span class="en"><b>-1 = unlimited</b> (needs an unlocked plan), <b>0 = closed</b> (not open), <b>N = a cap of N</b>. Note this differs from the legacy global "0 = unlimited" used when there are no groups.</span></p>
+
+      <h4 class="zh">Q. 想讓不同梯次收不同人數（例：南區某組少收）怎麼設？</h4>
+      <h4 class="en">Q. How do I set different caps for different sessions?</h4>
+      <p><span class="zh">勾選「梯次」清單下方的「各梯次設定不同組別上限（進階）」，展開 (梯次 × 組別) 矩陣後逐格填數字。開啟後「組別」分頁的組別上限會變唯讀、改以矩陣為準。</span><span class="en">Tick "Set different group caps per session (advanced)" below the Sessions list to open a (session × group) matrix and fill each cell. While it's on, the Groups-tab caps become read-only and the matrix takes over.</span></p>
 
       <h4 class="zh">Q.「自訂正取」和「依報名順序正取」差在哪？</h4>
       <h4 class="en">Q. Custom acceptance vs. by-order?</h4>
