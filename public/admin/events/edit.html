@@ -940,10 +940,13 @@
     var bFrom = (rule && rule.birthFrom) || '';
     var bTo   = (rule && rule.birthTo)   || '';
     return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
-      '<div style="display:flex; gap:8px; align-items:center">' +
+      '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
         '<span class="grip" style="cursor:grab">⋮⋮</span>' +
-        '<input data-gf="name" value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditGroupNamePlaceholder')) + '" style="flex:1">' +
-        '<input type="number" data-gf="cap" min="-1" value="' + escapeHtml(String(capVal !== undefined ? capVal : -1)) + '" placeholder="無上限(-1)" style="width:90px" title="該組別名額上限 (-1為無上限，0為不開放)">' +
+        '<input data-gf="name" data-prevname="' + escapeHtml(name) + '" value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditGroupNamePlaceholder')) + '" style="flex:1; min-width:110px">' +
+        '<span style="display:inline-flex; gap:4px; align-items:center; white-space:nowrap">' +
+          '<span class="help" style="margin:0">報名上限：</span>' +
+          '<input type="number" data-gf="cap" min="-1" value="' + escapeHtml(String(capVal !== undefined ? capVal : -1)) + '" placeholder="無上限(-1)" style="width:76px; text-align:right" title="該組別名額上限 (-1為無上限，0為不開放)">' +
+        '</span>' +
         '<select data-gf="type" style="padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:500 13px/1.4 var(--f-tc)">' +
         '<option value="none"' + (t==='none' ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeNone')) + '</option>' +
           '<option value="age"'  + (t==='age'  ?' selected':'') + '>' + escapeHtml(window.L('aeEditGroupTypeAge')) + '</option>' +
@@ -983,7 +986,21 @@
         markDirty();
       });
     });
-    el.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', markDirty); });
+    el.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', function () { markDirty(); updateCapacityField(); }); });
+    // 未存檔就改組別名時，即時把覆寫矩陣裡該組的 data-gname 一併更名（並重繪＋重算），
+    // 避免之後任何重繪用「舊名」對不到而讓該組容量歸零。
+    el.querySelectorAll('[data-gf="name"]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var oldN = inp.getAttribute('data-prevname') || '', newN = inp.value.trim();
+        if (oldN === newN) return;
+        Array.from(document.querySelectorAll('#groupCapMatrix input[data-gname]')).forEach(function (c) {
+          if (c.getAttribute('data-gname') === oldN) c.setAttribute('data-gname', newN);
+        });
+        inp.setAttribute('data-prevname', newN);
+        renderGroupCapMatrix();
+        updateCapacityField();
+      });
+    });
     el.querySelectorAll('[data-rm-group]').forEach(function (b) {
       b.addEventListener('click', function () {
         var idx = parseInt(b.dataset.rmGroup, 10);
@@ -1165,34 +1182,61 @@
   document.getElementById('addSessionBtn').addEventListener('click', function () { var arr = readSessions(); arr.push({ name: '', startDate: '', endDate: '', startTime: '08:30', endTime: '18:00', maxTeams: 0 }); renderSessions(arr); markDirty(); updateCapacityField(); });
   document.getElementById('perSessionCapToggle').addEventListener('change', function () { renderGroupCapMatrix(); markDirty(); updateCapacityField(); });
 
-  // Item 1: 報名上限 is editable only in 單日活動; in 多梯次 it shows the sum of each
-  // session's cap (read-only) — change it back in the 場次 / 梯次 section.
+  // 某梯次的 Σ組別上限（覆寫矩陣優先、否則用該組預設）；回傳 {unlimited:true} 或 {sum:N}。
+  function _sumSessionGroupCaps(sName, defCaps, perSess) {
+    var groups = readGroups(), anyUnlimited = false, sum = 0;
+    groups.forEach(function (g) {
+      var cap = (perSess[sName] && perSess[sName][g] !== undefined) ? perSess[sName][g] : (defCaps[g] !== undefined ? defCaps[g] : -1);
+      cap = parseInt(cap, 10); if (isNaN(cap)) cap = -1;
+      if (cap === -1) anyUnlimited = true; else if (cap > 0) sum += cap;
+    });
+    return anyUnlimited ? { unlimited: true } : { sum: sum };
+  }
+
+  // 容量顯示規則（規劃 §3）：
+  //  - 無組別：報名上限＝單日直接輸入 / 多梯次為各梯次加總（唯讀）。
+  //  - 有組別：容量以「組別上限（＋進階矩陣）」為唯一可編輯來源；各梯次「人數上限」與總數一律唯讀自動加總。
   function updateCapacityField() {
     var inp = document.getElementById('adv-maxTeams');
     var help = document.getElementById('maxTeamsHelp');
     if (!inp) return;
     var mode = (document.querySelector('input[name="dateMode"]:checked') || {}).value || 'single';
     var hasGroups = readGroups().length > 0;
-    if (mode === 'multi') {
-      var sum = readSessions().reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
-      inp.value = sum;
-      inp.readOnly = true;
-      inp.style.background = 'var(--surface-2)';
-      inp.style.color = 'var(--muted)';
-      if (help) help.textContent = window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf');
-    } else if (hasGroups) {
-      var caps = readGroupCaps();
-      var hasUnlimited = Object.keys(caps).some(function(k) { return caps[k] === -1; });
-      var sumGroups = Object.keys(caps).reduce(function(acc, k) { return acc + (caps[k] > 0 ? caps[k] : 0); }, 0);
-      inp.value = hasUnlimited ? -1 : sumGroups;
-      inp.readOnly = true;
-      inp.style.background = 'var(--surface-2)';
-      inp.style.color = 'var(--muted)';
-      if (help) help.textContent = hasUnlimited ? '包含無上限組別' : '自動加總各組別預設上限：' + sumGroups;
+    var defCaps = hasGroups ? readGroupCaps() : {};
+    var _tog = document.getElementById('perSessionCapToggle');
+    var perSess = (hasGroups && _tog && _tog.checked) ? readSessionGroupCaps() : {};
+
+    // 有組別 → 各梯次「人數上限」欄一律唯讀＝該梯 Σ組別上限（避免與組別上限兩套數字打架）
+    if (hasGroups) {
+      Array.from(document.querySelectorAll('#sessionsList .list-row')).forEach(function (r) {
+        var sName = (r.querySelector('[data-sf="name"]').value || '').trim();
+        var mInp = r.querySelector('[data-sf="maxTeams"]');
+        if (!mInp) return;
+        var res = _sumSessionGroupCaps(sName, defCaps, perSess);
+        mInp.readOnly = true; mInp.style.background = 'var(--surface-2)'; mInp.style.color = 'var(--muted)';
+        mInp.value = res.unlimited ? -1 : res.sum;
+        mInp.title = res.unlimited ? '含無上限組別（由組別上限決定）' : '各組別上限加總（唯讀，請改組別上限或進階矩陣）';
+      });
     } else {
-      inp.readOnly = false;
-      inp.style.background = '';
-      inp.style.color = '';
+      Array.from(document.querySelectorAll('#sessionsList .list-row [data-sf="maxTeams"]')).forEach(function (mInp) {
+        mInp.readOnly = false; mInp.style.background = ''; mInp.style.color = ''; mInp.title = '';
+      });
+    }
+
+    if (mode === 'multi') {
+      var sess = readSessions();
+      var anyUnlim = hasGroups && sess.some(function (s) { return _sumSessionGroupCaps(s.name, defCaps, perSess).unlimited; });
+      var sum = sess.reduce(function (n, s) { return n + (parseInt(s.maxTeams, 10) || 0); }, 0);
+      inp.value = anyUnlim ? -1 : sum;
+      inp.readOnly = true; inp.style.background = 'var(--surface-2)'; inp.style.color = 'var(--muted)';
+      if (help) help.textContent = anyUnlim ? '包含無上限梯次/組別' : (window.L('aeEditCapMultiHelpPre') + sum + window.L('aeEditCapMultiHelpSuf'));
+    } else if (hasGroups) {
+      var r2 = _sumSessionGroupCaps('', defCaps, {});
+      inp.value = r2.unlimited ? -1 : r2.sum;
+      inp.readOnly = true; inp.style.background = 'var(--surface-2)'; inp.style.color = 'var(--muted)';
+      if (help) help.textContent = r2.unlimited ? '包含無上限組別' : ('自動加總各組別上限：' + r2.sum);
+    } else {
+      inp.readOnly = false; inp.style.background = ''; inp.style.color = '';
       if (help) help.textContent = window.L('aeEditMaxTeamsHelp');
     }
     validateCapacity();
