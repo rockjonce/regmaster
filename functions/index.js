@@ -8004,11 +8004,13 @@ exports.getUserAnalytics = authCallable(["system"], async (data) => {
   const deviceCounts = { Desktop: 0, Mobile: 0, Tablet: 0, Other: 0 };
   let totalVisits = 0;
   const allDeviceKeys = new Set();
+  const compViewsInRange = {};            // compId → 日期範圍內瀏覽數（供熱門活動 Top10 與 KPI 同步）
   visitorSnap.docs.forEach(d => {
     const v = d.data();
     const date = v.date || "";
     if (!date || date < fromDate || date > toDate) return;
     totalVisits++;
+    if (v.compId) compViewsInRange[v.compId] = (compViewsInRange[v.compId] || 0) + 1;
     if (!dailyMap[date]) dailyMap[date] = { views: 0, devices: new Set() };
     dailyMap[date].views++;
     dailyMap[date].devices.add(v.ip + "|" + (v.device || ""));
@@ -8103,11 +8105,22 @@ exports.getUserAnalytics = authCallable(["system"], async (data) => {
   const mrr = monthlyRevenue.length ? monthlyRevenue[monthlyRevenue.length - 1].revenue : 0;
 
   // ---------- 內容 ----------
-  // Top events by viewCount + registration count
+  // Top events by 日期範圍內的瀏覽數 + 報名數（與上方 KPI/日期篩選一致；非全期累計）。
   const compSnap = await db.collection("competitions").get();
+  const compRegsInRange = {};             // compId → 日期範圍內報名（未取消）隊數
+  try {
+    const teamsSnap = await db.collection("teams").limit(20000).get();
+    teamsSnap.docs.forEach(t => {
+      const td = t.data();
+      if (td.status === "已取消") return;
+      const dk = toDayKey(td.registrationTime || "");
+      if (!dk || dk < fromDate || dk > toDate) return;
+      if (td.compId) compRegsInRange[td.compId] = (compRegsInRange[td.compId] || 0) + 1;
+    });
+  } catch (e) { /* teams 讀取失敗時報名數以 0 計，不阻斷分析 */ }
   const topEvents = compSnap.docs.map(d => {
     const c = d.data();
-    return { compId: d.id, name: c.name || "", views: c.viewCount || 0, regs: c.teamCount || 0 };
+    return { compId: d.id, name: c.name || "", views: compViewsInRange[d.id] || 0, regs: compRegsInRange[d.id] || 0 };
   }).sort((a, b) => (b.views + b.regs) - (a.views + a.regs)).slice(0, 10);
 
   // ---------- 安全 ----------
