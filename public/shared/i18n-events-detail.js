@@ -18,7 +18,7 @@
     edCrumbExplore: '探索活動',
     edCrumbLoading: '載入中⋯⋯',
     edNavMy: '我的報名',
-    edNavLogin: '登入',
+    edNavLogin: '主辦方登入',
 
     // ----- loading / error states -----
     edLoading: '載入活動資料⋯⋯',
@@ -213,7 +213,7 @@
     edCrumbExplore: 'Explore',
     edCrumbLoading: 'Loading…',
     edNavMy: 'My Registrations',
-    edNavLogin: 'Login',
+    edNavLogin: 'Organizer Login',
 
     // ----- loading / error states -----
     edLoading: 'Loading event…',
