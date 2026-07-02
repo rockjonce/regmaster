@@ -68,7 +68,7 @@
     { "@type": "Question", "name": "總排名的分數和名次看起來對不上？", "acceptedAnswer": { "@type": "Answer", "text": "總排名是以「原始加權分」排序（跨組可比），分數欄顯示的也是原始加權分；分組檢視時則顯示組內正規化分。未評分與備取/審核中的隊伍不列入排名。" } },
     { "@type": "Question", "name": "證書可以發給指導老師（感謝狀）嗎？", "acceptedAnswer": { "@type": "Answer", "text": "可以。證書／名牌設計器（Pro／Team）匯出時對象範圍可選「僅指導者」，並在文字欄位使用稱謂 token 帶出老師職稱，即可批次產出感謝狀。" } },
     { "@type": "Question", "name": "有組別時，報名上限要怎麼設？為什麼梯次上限改不動？", "acceptedAnswer": { "@type": "Answer", "text": "報名上限採「組別→梯次→總數」由下往上加總的層級。有組別時，容量以「組別上限」為唯一手動來源：在活動設定的「組別」分頁，每個組別卡片右側填「報名上限」。梯次上限與總報名上限會自動等於加總並唯讀，避免兩套數字打架；要改總量就回「組別」改組別上限。若要不同梯次收不同人數，勾選「梯次」清單下方的「各梯次設定不同組別上限（進階）」，展開 (梯次×組別) 矩陣逐格填。" } },
-    { "@type": "Question", "name": "組別上限填的 -1、0、N 是什麼意思？", "acceptedAnswer": { "@type": "Answer", "text": "在組別上限欄位：-1 = 無上限（該組不限人數，需方案已解鎖大型活動容量）；0 = 不開放（該組或該梯次該格不收報名）；N（正整數）= 上限 N 人。注意這與「無組別」時全域報名上限的舊語意「0＝無上限」不同——有組別時請以組別上限的 -1/0/N 為準。報名頁會依每個 (梯次,組別) 格即時顯示額滿或不開放，並在選擇當下就擋，不會讓報名者填完整份表單才被退回。" } }
+    { "@type": "Question", "name": "組別上限填的 -1、0、N 是什麼意思？", "acceptedAnswer": { "@type": "Answer", "text": "報名上限一律採：-1 = 無上限（不限人數，需方案已解鎖大型活動容量）；0 = 不開放（不收報名）；N（正整數）= 上限 N 人。這套 -1/0/N 語意對「有組別（組別上限）」與「無組別（全域／各梯次上限）」一致適用。報名頁會依每個 (梯次,組別) 格即時顯示額滿或不開放，並在選擇當下就擋，不會讓報名者填完整份表單才被退回。" } }
   ]
 }
 </script>
@@ -725,7 +725,7 @@ body[data-lang="en"] .zh{display:none !important}
 
       <h3 class="zh">報名上限</h3>
       <h3 class="en">Capacity</h3>
-      <p><span class="zh"><b>沒有組別</b>時，這裡填全域報名上限（<b>0 = 無上限</b>）；多梯次活動的總上限是各梯次名額的加總，請在「梯次」區塊調整各梯。<b>有組別</b>時，容量改由「組別上限」層級決定，此欄與各梯次上限一律自動加總並唯讀 — 詳見下一節〈報名上限（組別 × 梯次 層級）〉。</span><span class="en"><b>Without groups</b>, set the global cap here (<b>0 = unlimited</b>); for multi-session events the total is the sum of session caps. <b>With groups</b>, capacity is driven by per-group caps and this field (plus each session cap) becomes an auto-summed, read-only total — see the next section, "Registration Caps (Group × Session)".</span></p>
+      <p><span class="zh">報名上限一律採 <b>-1 = 無上限、0 = 不開放、N = 上限</b>（有無組別皆同）。<b>沒有組別</b>時，直接在這裡（或各梯次）填；多梯次的總上限是各梯次的加總。<b>有組別</b>時，容量改由「組別上限」層級決定，此欄與各梯次上限一律自動加總並唯讀 — 詳見下一節〈報名上限（組別 × 梯次 層級）〉。</span><span class="en">Caps use <b>-1 = unlimited, 0 = closed, N = a cap</b> everywhere (with or without groups). <b>Without groups</b>, enter it here (or per session); the multi-session total is the sum. <b>With groups</b>, capacity is driven by per-group caps and this field (and each session cap) becomes an auto-summed, read-only total — see the next section, "Registration Caps (Group × Session)".</span></p>
 
       <h3 class="zh">三種錄取模式</h3>
       <h3 class="en">Three acceptance modes</h3>
@@ -786,7 +786,7 @@ body[data-lang="en"] .zh{display:none !important}
         <tr><td><b>0</b></td><td><span class="zh"><b>不開放</b> — 該組（在該梯次）不收報名。</span><span class="en"><b>Closed</b> — this group is not open (for that session).</span></td></tr>
         <tr><td><b>N</b></td><td><span class="zh"><b>上限 N 人</b>（正整數）。</span><span class="en"><b>Cap of N</b> (a positive integer).</span></td></tr>
       </table>
-      <div class="m-note"><span class="zh"><b>-1（無上限）</b>僅在你的方案已解鎖大型活動容量時可用；未解鎖請填具體數字或升級方案。此語意（-1/0/N）與舊版「無組別」時的全域上限「0 = 無上限」不同 — 有組別時請以組別上限的 -1/0/N 為準。</span><span class="en"><b>-1 (unlimited)</b> is only allowed when your plan has unlocked large-event capacity; otherwise enter a number or upgrade. Note this <b>-1/0/N</b> meaning differs from the legacy global "0 = unlimited" used when there are no groups.</span></div>
+      <div class="m-note"><span class="zh"><b>-1（無上限）</b>僅在你的方案已解鎖大型活動容量時可用；未解鎖請填具體數字或升級方案。<b>這套 -1/0/N 語意對「有組別」與「無組別（全域／各梯次）」一致適用。</b></span><span class="en"><b>-1 (unlimited)</b> is only allowed when your plan has unlocked large-event capacity; otherwise enter a number or upgrade. <b>The -1/0/N convention applies uniformly to grouped and non-grouped (global / per-session) caps.</b></span></div>
 
       <h3 class="zh">怎麼設定「真正的」報名上限（步驟）</h3>
       <h3 class="en">How to set the real cap (step-by-step)</h3>
@@ -832,7 +832,7 @@ body[data-lang="en"] .zh{display:none !important}
       <h3 class="en">Four scenarios</h3>
       <table class="m-tbl">
         <tr><th><span class="zh">情境</span><span class="en">Scenario</span></th><th><span class="zh">上限設定處</span><span class="en">Set where</span></th><th><span class="zh">梯次上限</span><span class="en">Session cap</span></th><th><span class="zh">總上限</span><span class="en">Total</span></th></tr>
-        <tr><td><span class="zh">無組別・單日</span><span class="en">No groups · one day</span></td><td><span class="zh">總數直接填</span><span class="en">Total, directly</span></td><td>—</td><td><span class="zh">直接設（0=無上限）</span><span class="en">Direct (0 = unlimited)</span></td></tr>
+        <tr><td><span class="zh">無組別・單日</span><span class="en">No groups · one day</span></td><td><span class="zh">總數直接填</span><span class="en">Total, directly</span></td><td>—</td><td><span class="zh">直接填（-1/0/N）</span><span class="en">Direct (-1/0/N)</span></td></tr>
         <tr><td><span class="zh">無組別・多梯次</span><span class="en">No groups · multi-session</span></td><td><span class="zh">各梯次直接填</span><span class="en">Each session, directly</span></td><td><span class="zh">直接設</span><span class="en">Direct</span></td><td>Σ <span class="zh">梯次</span><span class="en">sessions</span></td></tr>
         <tr><td><span class="zh">有組別・單日</span><span class="en">Groups · one day</span></td><td><span class="zh"><b>各組別</b></span><span class="en"><b>Per group</b></span></td><td>Σ <span class="zh">組別（唯讀）</span><span class="en">groups (read-only)</span></td><td>= Σ <span class="zh">組別</span><span class="en">groups</span></td></tr>
         <tr><td><span class="zh">有組別・多梯次</span><span class="en">Groups · multi-session</span></td><td><span class="zh"><b>各組別</b>（可用矩陣逐梯覆寫）</span><span class="en"><b>Per group</b> (matrix to override)</span></td><td>Σ <span class="zh">組別（唯讀）</span><span class="en">groups (read-only)</span></td><td>Σ <span class="zh">梯次</span><span class="en">sessions</span></td></tr>
@@ -1114,7 +1114,7 @@ body[data-lang="en"] .zh{display:none !important}
 
       <h4 class="zh">Q. 組別上限填的 -1、0 是什麼意思？</h4>
       <h4 class="en">Q. What do -1 and 0 mean in a group cap?</h4>
-      <p><span class="zh"><b>-1 = 無上限</b>（該組不限人數，需方案已解鎖）、<b>0 = 不開放</b>（該組/該格不收報名）、<b>N = 上限 N 人</b>。注意這與「無組別」時全域上限的舊語意「0＝無上限」不同。</span><span class="en"><b>-1 = unlimited</b> (needs an unlocked plan), <b>0 = closed</b> (not open), <b>N = a cap of N</b>. Note this differs from the legacy global "0 = unlimited" used when there are no groups.</span></p>
+      <p><span class="zh"><b>-1 = 無上限</b>（不限人數，需方案已解鎖）、<b>0 = 不開放</b>（不收報名）、<b>N = 上限 N 人</b>。這套語意對「有組別（組別上限）」與「無組別（全域／各梯次上限）」<b>一致適用</b>。</span><span class="en"><b>-1 = unlimited</b> (needs an unlocked plan), <b>0 = closed</b> (not open), <b>N = a cap of N</b>. This applies <b>uniformly</b> to grouped (group caps) and non-grouped (global / per-session) caps.</span></p>
 
       <h4 class="zh">Q. 想讓不同梯次收不同人數（例：南區某組少收）怎麼設？</h4>
       <h4 class="en">Q. How do I set different caps for different sessions?</h4>
