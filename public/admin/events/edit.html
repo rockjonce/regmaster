@@ -1088,10 +1088,13 @@
       var maxTeams = s.maxTeams || 0;
       // Two-row card so a multi-day session has room for full date+time range
       return '<div class="list-row" data-idx="' + i + '" style="display:block; padding:10px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--surface)">' +
-        '<div style="display:grid; grid-template-columns:auto 1fr 90px auto; gap:8px; align-items:center">' +
+        '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">' +
           '<span class="grip" style="cursor:grab">⋮⋮</span>' +
-          '<input value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditSessionNamePlaceholder')) + '" data-sf="name">' +
-          '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="' + escapeHtml(window.L('aeEditSessionMaxPlaceholder')) + '" data-sf="maxTeams" style="text-align:right" title="' + escapeHtml(window.L('aeEditSessionMaxTitle')) + '">' +
+          '<input value="' + escapeHtml(name) + '" placeholder="' + escapeHtml(window.L('aeEditSessionNamePlaceholder')) + '" data-sf="name" style="flex:1; min-width:110px">' +
+          '<span style="display:inline-flex; gap:4px; align-items:center; white-space:nowrap">' +
+            '<span class="help" style="margin:0">報名上限：</span>' +
+            '<input type="number" min="0" value="' + (maxTeams || 0) + '" placeholder="' + escapeHtml(window.L('aeEditSessionMaxPlaceholder')) + '" data-sf="maxTeams" style="width:76px; text-align:right" title="' + escapeHtml(window.L('aeEditSessionMaxTitle')) + '">' +
+          '</span>' +
           '<span class="rm" data-rm-session="' + i + '" style="cursor:pointer; padding:0 8px; color:var(--err-700); font-size:18px">×</span>' +
         '</div>' +
         '<div style="display:grid; grid-template-columns:auto 130px 95px auto 130px 95px; gap:6px; align-items:center; margin-top:8px; padding-left:28px">' +
@@ -1145,12 +1148,27 @@
     });
     return out;
   }
+  // 進階矩陣「實際生效」（開關開 + 有組別 + 有梯次）時，組別區「報名上限」改唯讀（以矩陣為準）；
+  // 否則恢復可編輯。避免刪光梯次後卡在「唯讀又沒矩陣」的死狀態。
+  function syncGroupCapEditability() {
+    var tog = document.getElementById('perSessionCapToggle');
+    var groupN = document.querySelectorAll('#groupsList [data-gf="cap"]').length;
+    var sessN = Array.from(document.querySelectorAll('#sessionsList .list-row [data-sf="name"]')).filter(function (i) { return i.value.trim(); }).length;
+    var on = !!(tog && tog.checked) && groupN > 0 && sessN > 0;
+    Array.from(document.querySelectorAll('#groupsList [data-gf="cap"]')).forEach(function (inp) {
+      inp.readOnly = on;
+      inp.style.background = on ? 'var(--surface-2)' : '';
+      inp.style.color = on ? 'var(--muted)' : '';
+      inp.title = on ? '由「各梯次設定不同組別上限（進階）」矩陣控制' : '該組別名額上限 (-1為無上限，0為不開放)';
+    });
+  }
   // 渲染 (梯次 × 組別) 覆寫矩陣；僅在「有組別 + 有梯次 + 開關開啟」時顯示。
   function renderGroupCapMatrix() {
     var wrap = document.getElementById('groupCapMatrixWrap');
     var matrix = document.getElementById('groupCapMatrix');
     var toggle = document.getElementById('perSessionCapToggle');
     if (!wrap || !matrix || !toggle) return;
+    syncGroupCapEditability();
     var groups = readGroups().filter(function (g) { return g; });
     var sessionNames = Array.from(document.querySelectorAll('#sessionsList .list-row [data-sf="name"]'))
       .map(function (inp) { return inp.value.trim(); }).filter(Boolean);
