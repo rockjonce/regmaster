@@ -43,12 +43,19 @@
 
   var IC = {
     home: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>',
+    dash: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>',
     cal: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/></svg>',
+    form: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 4H7a2 2 0 00-2 2v13a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2h-2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>',
     ai: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>',
-    lic: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>',
+    lic: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
     gear: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.13-1.3l2-1.5-2-3.4-2.3 1a7 7 0 00-2.27-1.3L13.6 2h-3.2l-.4 2.5a7 7 0 00-2.27 1.3l-2.3-1-2 3.4 2 1.5A7 7 0 005 12a7 7 0 00.13 1.3l-2 1.5 2 3.4 2.3-1a7 7 0 002.27 1.3l.4 2.5h3.2l.4-2.5a7 7 0 002.27-1.3l2.3 1 2-3.4-2-1.5A7 7 0 0019 12z"/></svg>',
+    sliders: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>',
     sys: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
-    log: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/></svg>',
+    score: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+    checkin: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M4 7V5a1 1 0 011-1h2M17 4h2a1 1 0 011 1v2M20 17v2a1 1 0 01-1 1h-2M7 20H5a1 1 0 01-1-1v-2"/><path d="M4 12h16"/></svg>',
+    bell: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>',
+    hist: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l3 2"/></svg>',
+    audit: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg>',
     out: '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
     chev: '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>'
   };
@@ -73,13 +80,13 @@
     evtNavHtml =
       '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpThisEvent">本活動</div>' +
         eitem('', 'anEvtOverview', '總覽', 'hub', IC.home, 'manager staff judge', '<span class="ct" id="navRegCt"></span>') +
-        eitem('/edit', 'anEvtSettings', '設定', 'edit', IC.gear, 'manager') +
-        eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.cal, 'manager') +
+        eitem('/edit', 'anEvtSettings', '設定', 'edit', IC.sliders, 'manager') +
+        eitem('/form-builder', 'anEvtForm', '表單設計', 'form-builder', IC.form, 'manager') +
         eitem('/registrations', 'anEvtReg', '報名管理', 'registrations', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM4 21a8 8 0 0116 0"/></svg>', 'manager') +
-        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.log, 'manager', '', 'campaigns') +
+        eitem('/announcements', 'anEvtNotice', '通知', 'announcements', IC.bell, 'manager', '', 'campaigns') +
         eitem('/payments', 'anEvtBilling', '帳務', 'payments', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', '') +
-        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.sys, 'manager judge', '', 'scoring') +
-        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.ai, 'manager staff', '', 'checkin') +
+        eitem('/scoring', 'anEvtScoring', '評分', 'scoring', IC.score, 'manager judge', '', 'scoring') +
+        eitem('/checkin', 'anEvtCheckin', '報到', 'checkin', IC.checkin, 'manager staff', '', 'checkin') +
         eitem('/certificates', 'anEvtCert', '證書 / 名牌', 'certificates', '<svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M9 13l-1.5 7L12 18l4.5 2L15 13"/></svg>', 'manager staff', '', 'certificate') +   /* R5 H-10: staff 開放證書 */
       '</div>';
   }
@@ -91,20 +98,20 @@
     '<div class="org-switcher"><div class="av" id="orgAv">' + esc(initial) + '</div>' +
       '<div class="body"><h6 id="orgName">' + esc(name) + '</h6><p id="orgPlan" data-i18n="' + (isSystem ? 'anRoleSystem' : 'anRoleOrg') + '">' + roleLabel + '</p></div></div>' +
     '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpOverview">概覽</div>' +
-      item('/admin/', 'anDashboard', '儀表板', IC.home) +
+      item('/admin/', 'anDashboard', '儀表板', IC.dash) +
       item('/admin/events/', 'anAllEvents', '所有活動', IC.cal, '<span class="ct" id="navCompCount"></span>') +
       item('/admin/ai.html', 'anAi', 'AI 助理', IC.ai) +
     '</div>' +
     evtNavHtml +
     '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpManage">管理</div>' +
       item('/admin/license.html', 'anLicense', '方案與授權', IC.lic) +
-      item('/admin/my-logs.html', 'anLogs', '操作紀錄', IC.log) +
+      item('/admin/my-logs.html', 'anLogs', '操作紀錄', IC.hist) +
       item('/admin/settings.html', 'anSettings', '設定', IC.gear) +
     '</div>' +
     (isSystem ?
       '<div class="nav-grp"><div class="l-grp" data-i18n="anGrpSysadmin">系統管理</div>' +
         item('/admin/system.html', 'anSysSettings', '系統設定', IC.sys) +
-        item('/admin/audit.html', 'anAudit', '操作日誌', IC.log) +
+        item('/admin/audit.html', 'anAudit', '操作日誌', IC.audit) +
       '</div>' : '') +
     '<div class="side-foot">' +
       // UX-15: SYSTEM accounts have no plan/license concept → never show the
