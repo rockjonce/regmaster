@@ -91,7 +91,7 @@
     aePayModalNotFound: '查無此筆報名',
     aePayModalLoadFailPre: '載入失敗：',
     aePayGroupTeamInfo: '隊伍資訊',
-    aePayGroupStudent: '學員 ',
+    aePayGroupStudent: '報名者 ',
     aePayGroupTeacher: '指導者 ',
     aePayKvId: '編號',
     aePayKvTeamCN: '中文隊名',

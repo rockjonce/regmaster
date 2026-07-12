@@ -736,7 +736,7 @@ html, body { max-width:100%; overflow-x:hidden; }
       case '{{日期}}': return new Date().toISOString().slice(0, 10);
       case '{{隊名}}': return r.teamNameCN || '';
       case '{{英文隊名}}': return r.teamNameEN || '';
-      case '{{稱謂}}': return (r.role === '教練' || r.role === 'teacher') ? '指導者' : '學員';
+      case '{{稱謂}}': return (r.role === '教練' || r.role === 'teacher') ? '指導者' : '報名者';
       case '{{QR}}': return '';
       default: return '';
     }

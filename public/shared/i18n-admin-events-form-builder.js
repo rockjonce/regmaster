@@ -152,7 +152,7 @@
     aeFormSecDel: '刪除',
 
     // ----- canvas: role tags -----
-    aeFormRoleStudent: '學員',
+    aeFormRoleStudent: '報名者',
     aeFormRoleTeacher: '指導者',
     aeFormRoleCustom: '附加問題',
     aeFormRoleFallback: '自訂',
@@ -210,7 +210,7 @@
     // ----- add-section modal -----
     aeFormAsTitle: '新增區塊',
     aeFormAsTypeLbl: '區塊類型',
-    aeFormAsOptStudent: '學員（可新增多個 → 每個代表一位學員）',
+    aeFormAsOptStudent: '報名者（可新增多個 → 每個代表一位報名者）',
     aeFormAsOptTeacher: '指導者（可新增多個 → 每個代表一位指導者）',
     aeFormAsOptCustom: '附加問題（限一個）',
     aeFormAsOptCustomExists: '附加問題（已存在，僅允許一個）',
@@ -221,14 +221,14 @@
     // ----- default VALUES created at insert time (new field / section) -----
     aeFormDefaultFieldLabel: '新欄位',
     aeFormDefaultSectionBase: '區塊',
-    aeFormDefaultTitleStudent: '學員資料',
+    aeFormDefaultTitleStudent: '報名者資料',
 
     // ----- save / status (dynamic) -----
     aeFormSaving: '儲存中⋯',
     aeFormDirty: '有未儲存變更',
     aeFormSaved: '已儲存',
     aeFormSavedSyncPre: '✓ 已儲存（同步舊欄位 ',
-    aeFormSavedSyncMid: ' 學員 + ',
+    aeFormSavedSyncMid: ' 報名者 + ',
     aeFormSavedSyncSuf: ' 附加問題）',
     aeFormSavedOk: '✓ 已儲存',
 

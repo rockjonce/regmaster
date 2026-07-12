@@ -214,7 +214,7 @@
           <label><input type="radio" name="scope" value="confirmed"> <span data-i18n="aeCrtScopeConfirmed">僅正取</span></label>
           <label><input type="radio" name="scope" value="checkedin"> <span data-i18n="aeCrtScopeCheckedIn">僅已報到</span></label>
           <label><input type="radio" name="scope" value="winners"> <span data-i18n="aeCrtScopeWinners">得獎者</span></label>
-          <label><input type="radio" name="scope" value="students"> <span data-i18n="aeCrtScopeStudents">僅學員</span></label>
+          <label><input type="radio" name="scope" value="students"> <span data-i18n="aeCrtScopeStudents">僅報名者</span></label>
           <label><input type="radio" name="scope" value="teachers"> <span data-i18n="aeCrtScopeTeachers">僅指導者</span></label>
           <label><input type="radio" name="scope" value="manual"> <span data-i18n="aeCrtScopeManual">手動勾選</span></label>
         </div>
@@ -510,7 +510,7 @@
       case '{{日期}}': return (CONFIG && (CONFIG.competitionDate || CONFIG.deadline)) || new Date().toISOString().slice(0, 10);
       case '{{隊名}}': return rec.teamNameCN || '';
       case '{{英文隊名}}': return rec.teamNameEN || '';
-      case '{{稱謂}}': return (rec.role === '教練' || rec.role === 'teacher') ? '指導者' : '學員';
+      case '{{稱謂}}': return (rec.role === '教練' || rec.role === 'teacher') ? '指導者' : '報名者';
       case '{{QR}}': return '';
       default: {
         // custom form token: {{<label>}} -> team's customAnswers[label], fallback to member[fieldKey]

@@ -444,7 +444,7 @@
 
     // form summary dynamic
     aeEditFsLoading: '載入表單設計⋯',
-    aeEditFsRoleStudent: '學員',
+    aeEditFsRoleStudent: '報名者',
     aeEditFsRoleTeacher: '指導者',
     aeEditFsRoleCustom: '自訂',
     aeEditFsTypeText: '單行文字',
@@ -460,7 +460,7 @@
     aeEditFsTypeFile: '上傳檔案',
     aeEditFsEmpty: '尚未設計任何欄位。點上方「開啟設計器」開始設計報名表單。',
     aeEditFsSummaryPre: '共 <b>',
-    aeEditFsSummaryMid1: '</b> 個區塊（學員 <b>',
+    aeEditFsSummaryMid1: '</b> 個區塊（報名者 <b>',
     aeEditFsSummaryMid2: '</b> 位、指導者 <b>',
     aeEditFsSummaryMid3: '</b> 位）、<b>',
     aeEditFsSummarySuf: '</b> 個欄位 — 僅供檢視，修改請按上方「開啟設計器」。',

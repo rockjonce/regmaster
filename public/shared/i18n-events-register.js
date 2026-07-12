@@ -31,7 +31,7 @@
 
     // ----- step indicator labels -----
     rgStep1Label: '組別 / 場次',
-    rgStep2Label: '學員資料',
+    rgStep2Label: '報名者資料',
     rgStep3Label: '附加問題',
     rgStep4Label: '確認送出',
 
@@ -50,7 +50,7 @@
     rgStep2Eyebrow: '步驟 02',
     rgStep2Title: '填寫成員資料',
     rgStep2Sub: '每位成員都需要提供基本資料。可以稍後再修改。',
-    rgSecStudent: '學員',
+    rgSecStudent: '報名者',
     rgSecTeacher: '指導者',
 
     // ----- step 3 -----
@@ -171,7 +171,7 @@
     rgSessionFull: '已額滿',
     rgCountUnit: ' 位',          // used as: 共 N 位
     rgCountPrefix: '共 ',
-    rgStudentN: '學員',          // used as: 學員 N
+    rgStudentN: '報名者',          // used as: 報名者 N
     rgTeacherN: '指導者',        // used as: 指導者 N
 
     // ----- dynamic: field inputs -----

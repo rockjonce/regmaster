@@ -136,7 +136,7 @@
     aeCrtTokQr: 'QR Code',
     aeCrtTokTeam: '隊名',
     aeCrtTokTeamEN: '英文隊名',
-    aeCrtTokRole: '稱謂（學員/指導者）',
+    aeCrtTokRole: '稱謂（報名者/指導者）',
 
     // ----- generate / export -----
     aeCrtGenTitle: '產生 / 匯出',
@@ -147,7 +147,7 @@
     aeCrtScopeCheckedIn: '僅已報到',
     aeCrtScopeWinners: '得獎者',
     aeCrtScopeManual: '手動勾選',
-    aeCrtScopeStudents: '僅學員',
+    aeCrtScopeStudents: '僅報名者',
     aeCrtScopeTeachers: '僅指導者',
     aeCrtScopeGroupPick: '選擇組別',
     aeCrtScopeManualPick: '勾選對象',
@@ -327,7 +327,7 @@
     aeCrtTokQr: 'QR Code',
     aeCrtTokTeam: 'Team Name',
     aeCrtTokTeamEN: 'Team Name (EN)',
-    aeCrtTokRole: 'Title (Student / Instructor)',
+    aeCrtTokRole: 'Title (Participant / Instructor)',
 
     // ----- generate / export -----
     aeCrtGenTitle: 'Generate / Export',
@@ -338,7 +338,7 @@
     aeCrtScopeCheckedIn: 'Checked-in Only',
     aeCrtScopeWinners: 'Winners',
     aeCrtScopeManual: 'Manual Select',
-    aeCrtScopeStudents: 'Students Only',
+    aeCrtScopeStudents: 'Participants Only',
     aeCrtScopeTeachers: 'Instructors Only',
     aeCrtScopeGroupPick: 'Choose Group',
     aeCrtScopeManualPick: 'Select Recipients',
