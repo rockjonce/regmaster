@@ -6,7 +6,7 @@
   var Z = {
     prHeroTitle: '從免費開始<br>用得越多<em>越划算</em>。',
     prHeroSub: '透明定價、無隱藏費用、隨時可降級或取消。價格與功能以實際方案設定為準。',
-    prNote: '所有金額未含稅 · NT$ = 新台幣 · 接受發票申請統編 · 銀行轉帳免收金流手續費',
+    prNote: '所有金額均為含稅價 · NT$ = 新台幣 · 接受發票申請統編 · 銀行轉帳免收金流手續費',
     prCmpH2: '逐項比較',
     prCmpSub: '看清楚每一分錢買到了什麼。',
     prCmpCap: '方案與容量',
@@ -37,7 +37,7 @@
   var E = {
     prHeroTitle: 'Start free —<br>better value <em>the more you use it</em>.',
     prHeroSub: 'Transparent pricing, no hidden fees, downgrade or cancel anytime. Actual prices and features follow your plan settings.',
-    prNote: 'All prices exclude tax · NT$ = New Taiwan Dollar · business tax ID accepted for invoices · no transaction fee on bank transfers',
+    prNote: 'All prices include tax · NT$ = New Taiwan Dollar · business tax ID accepted for invoices · no transaction fee on bank transfers',
     prCmpH2: 'Feature-by-feature comparison',
     prCmpSub: 'See exactly what every dollar buys.',
     prCmpCap: 'Plans & capacity',
