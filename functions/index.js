@@ -1343,7 +1343,7 @@ function _normaliseSchemaSections(schema) {
       const titleSuffix = ' ' + (i + 1);
       out.push({
         id: (sec.id || 'sec') + '_' + i,
-        title: (sec.title || (sec.role === 'student' ? '學員' : '指導者')) + titleSuffix,
+        title: (sec.title || (sec.role === 'student' ? '報名者' : '指導者')) + titleSuffix,
         desc: sec.desc || '',
         role: sec.role,
         repeat: 1,
@@ -1378,7 +1378,7 @@ function _buildInitialSchemaForEventType(eventType) {
   for (let i = 0; i < stuCount; i++) {
     sections.push({
       id: 'sec_stu_' + i,
-      title: stuCount > 1 ? ('學員 ' + (i + 1)) : '學員資料',
+      title: stuCount > 1 ? ('報名者 ' + (i + 1)) : '報名者資料',
       desc: '',
       role: 'student',
       repeat: 1,
@@ -1793,7 +1793,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   cDel("cfg_" + compId);
   return { success: true,
     message: openBlocked
-      ? "設定已儲存，但報名尚未開放：請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），再開啟報名。"
+      ? "設定已儲存，但報名尚未開放：請先到「表單設計」新增至少一個必填 Email 欄位（報名者或指導者皆可），再開啟報名。"
       : "儲存成功！",
     openBlocked, isOpen: wantOpen, ageRuleNoBirthday,
     summaryUpdated, summaryReason,
@@ -1888,7 +1888,7 @@ exports.setRegistrationOpen = compAuthCallable(async (data) => {
     const cfg = (doc.exists && doc.data().config) || {};
     if (!formHasRequiredEmail(cfg)) {
       return { success: false, code: 'NO_EMAIL',
-        message: "開放報名前，請先到「表單設計」新增至少一個必填 Email 欄位（學員或指導者皆可），否則無法寄送確認信與通知。" };
+        message: "開放報名前，請先到「表單設計」新增至少一個必填 Email 欄位（報名者或指導者皆可），否則無法寄送確認信與通知。" };
     }
   }
   await db.collection("competitions").doc(data.compId).update({ isOpen: data.isOpen });
@@ -2111,16 +2111,16 @@ exports.submitRegistration = callable(async (data, request) => {
         if (!bd) continue;
         if (ageRule.type === "age") {
           const b = new Date(bd);
-          if (isNaN(b.getTime())) return { success: false, message: "學員" + (i + 1) + " 生日格式有誤" };
+          if (isNaN(b.getTime())) return { success: false, message: "報名者" + (i + 1) + " 生日格式有誤" };
           const t = new Date();
           let age = t.getFullYear() - b.getFullYear();
           const mm = t.getMonth() - b.getMonth();
           if (mm < 0 || (mm === 0 && t.getDate() < b.getDate())) age--;
-          if (ageRule.minAge != null && age < ageRule.minAge) return { success: false, message: "學員" + (i + 1) + " 不符組別「" + fd.group + "」年齡下限 " + ageRule.minAge + " 歲（目前 " + age + " 歲）" };
-          if (ageRule.maxAge != null && age > ageRule.maxAge) return { success: false, message: "學員" + (i + 1) + " 不符組別「" + fd.group + "」年齡上限 " + ageRule.maxAge + " 歲（目前 " + age + " 歲）" };
+          if (ageRule.minAge != null && age < ageRule.minAge) return { success: false, message: "報名者" + (i + 1) + " 不符組別「" + fd.group + "」年齡下限 " + ageRule.minAge + " 歲（目前 " + age + " 歲）" };
+          if (ageRule.maxAge != null && age > ageRule.maxAge) return { success: false, message: "報名者" + (i + 1) + " 不符組別「" + fd.group + "」年齡上限 " + ageRule.maxAge + " 歲（目前 " + age + " 歲）" };
         } else {
-          if (ageRule.birthFrom && bd < ageRule.birthFrom) return { success: false, message: "學員" + (i + 1) + " 生日早於組別「" + fd.group + "」允許範圍（" + ageRule.birthFrom + " 起）" };
-          if (ageRule.birthTo && bd > ageRule.birthTo) return { success: false, message: "學員" + (i + 1) + " 生日晚於組別「" + fd.group + "」允許範圍（至 " + ageRule.birthTo + "）" };
+          if (ageRule.birthFrom && bd < ageRule.birthFrom) return { success: false, message: "報名者" + (i + 1) + " 生日早於組別「" + fd.group + "」允許範圍（" + ageRule.birthFrom + " 起）" };
+          if (ageRule.birthTo && bd > ageRule.birthTo) return { success: false, message: "報名者" + (i + 1) + " 生日晚於組別「" + fd.group + "」允許範圍（至 " + ageRule.birthTo + "）" };
         }
       }
     }
@@ -2152,6 +2152,16 @@ exports.submitRegistration = callable(async (data, request) => {
   // the same 身分證號碼 (idNumber), and no two may share the same 護照號碼 + 國籍 pair.
   {
     const newStudents = fd.students || [];
+    // 身分證/護照正規化：一律 trim+大寫，避免 a120733298 / A120733298 被視為兩碼
+    // （寫入 members 與下方所有比對都吃正規化後的值；教練欄位一併正規化求資料一致）
+    newStudents.forEach(s => {
+      if (s.idNumber) s.idNumber = String(s.idNumber).trim().toUpperCase();
+      if (s.passport) s.passport = String(s.passport).trim().toUpperCase();
+    });
+    (fd.teachers || []).forEach(t => {
+      if (t.idNumber) t.idNumber = String(t.idNumber).trim().toUpperCase();
+      if (t.passport) t.passport = String(t.passport).trim().toUpperCase();
+    });
     const newIds = [], newPP = [];
     for (const sObj of newStudents) {
       const idn = String(sObj.idNumber || "").trim();
@@ -2168,12 +2178,21 @@ exports.submitRegistration = callable(async (data, request) => {
       }
     }
     if (newIds.length || newPP.length) {
-      const exSnap = await db.collection("members").where("compId", "==", compId).get();
+      // 比照 checkDuplicates：排除已取消隊伍（取消後可重新報名）、只比對學生角色
+      // （同一位教練帶多隊屬正常場景，不應被身分證去重擋下）。
+      const [exSnap, exTSnap] = await Promise.all([
+        db.collection("members").where("compId", "==", compId).get(),
+        db.collection("teams").where("compId", "==", compId).get()
+      ]);
+      const validTeams = new Set();
+      exTSnap.docs.forEach(d => { const t = d.data(); if (t.status !== "已取消") validTeams.add(t.teamId); });
       const exIds = new Set(), exPP = new Set();
       exSnap.docs.forEach(d => {
         const m = d.data();
-        if (m.idNumber) exIds.add(String(m.idNumber).trim());
-        if (m.passport) exPP.add(String(m.passport).trim() + "|" + String(m.nationality || "").trim());
+        if (!validTeams.has(m.teamId) || m.role !== "學生") return;
+        // 既有資料可能存小寫（正規化上線前寫入），比對端也轉大寫
+        if (m.idNumber) exIds.add(String(m.idNumber).trim().toUpperCase());
+        if (m.passport) exPP.add(String(m.passport).trim().toUpperCase() + "|" + String(m.nationality || "").trim());
       });
       for (const idn of newIds) if (exIds.has(idn)) return { success: false, message: "身分證號碼「" + idn + "」已被報名，不可重複報名。" };
       for (const key of newPP) if (exPP.has(key)) return { success: false, message: "此護照號碼（與國籍）已被其他人報名，不可重複報名。" };
@@ -3361,7 +3380,52 @@ exports.updateRegistration = callable(async (data) => {
   const _mgr = manageToken ? await verifyManage(manageToken, compId, teamId) : null;
   const teamData = doc.data();
   if (!_mgr && !verifyTeamPwd(teamData, pwd)) return { success: false, message: "驗證失敗" };
-  
+
+  // 身分證/護照正規化＋跨隊重複檢查（比照 submitRegistration；另排除自己這隊，
+  // 否則沒改號碼的正常編輯會被自己的舊資料擋下）。檢查失敗時尚未寫入任何資料。
+  (fd.students || []).forEach(s => {
+    if (s.idNumber) s.idNumber = String(s.idNumber).trim().toUpperCase();
+    if (s.passport) s.passport = String(s.passport).trim().toUpperCase();
+  });
+  (fd.teachers || []).forEach(t => {
+    if (t.idNumber) t.idNumber = String(t.idNumber).trim().toUpperCase();
+    if (t.passport) t.passport = String(t.passport).trim().toUpperCase();
+  });
+  {
+    const newIds = [], newPP = [];
+    for (const sObj of (fd.students || [])) {
+      const idn = String(sObj.idNumber || "").trim();
+      const pp = String(sObj.passport || "").trim();
+      const nat = String(sObj.nationality || "").trim();
+      if (idn) {
+        if (newIds.indexOf(idn) >= 0) return { success: false, message: "同一筆報名中有重複的身分證號碼：" + idn };
+        newIds.push(idn);
+      }
+      if (pp) {
+        const key = pp + "|" + nat;
+        if (newPP.indexOf(key) >= 0) return { success: false, message: "同一筆報名中有重複的護照號碼：" + pp };
+        newPP.push(key);
+      }
+    }
+    if (newIds.length || newPP.length) {
+      const [exSnap, exTSnap] = await Promise.all([
+        db.collection("members").where("compId", "==", compId).get(),
+        db.collection("teams").where("compId", "==", compId).get()
+      ]);
+      const validTeams = new Set();
+      exTSnap.docs.forEach(d => { const t = d.data(); if (t.teamId !== teamId && t.status !== "已取消") validTeams.add(t.teamId); });
+      const exIds = new Set(), exPP = new Set();
+      exSnap.docs.forEach(d => {
+        const m = d.data();
+        if (!validTeams.has(m.teamId) || m.role !== "學生") return;
+        if (m.idNumber) exIds.add(String(m.idNumber).trim().toUpperCase());
+        if (m.passport) exPP.add(String(m.passport).trim().toUpperCase() + "|" + String(m.nationality || "").trim());
+      });
+      for (const idn of newIds) if (exIds.has(idn)) return { success: false, message: "身分證號碼「" + idn + "」已被報名，不可重複報名。" };
+      for (const key of newPP) if (exPP.has(key)) return { success: false, message: "此護照號碼（與國籍）已被其他人報名，不可重複報名。" };
+    }
+  }
+
   let finalStatus = teamData.status || "";
   let finalWn = teamData.waitlistNum || 0;
   
@@ -3833,7 +3897,7 @@ exports.updateTeamDetailOwner = compAuthCallable("manage", async (data, request)
     const mDoc = await mRef.get();
     if (!mDoc.exists || mDoc.data().teamId !== teamId) continue;
     const m = mDoc.data();
-    const who = String(min.label || (m.role === "學生" ? "學員" : "指導者")).slice(0, 20);
+    const who = String(min.label || (m.role === "學生" ? "報名者" : "指導者")).slice(0, 20);
     const upd = {}, fin = min.fields || {};
     for (const k of Object.keys(fin)) {
       if (!MEMBER_EDIT_LABELS[k] && !schemaFieldLabel[k]) continue;
@@ -4011,8 +4075,8 @@ exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
   
   // 學員欄位 × 人數 + SCQ
   for (let i = 1; i <= mCount; i++) {
-    sFields.forEach(f => { headers.push(`學員${i}_${f}`); });
-    scqs.forEach(sq => { headers.push(`學員${i}_${sq.q}`); });
+    sFields.forEach(f => { headers.push(`報名者${i}_${f}`); });
+    scqs.forEach(sq => { headers.push(`報名者${i}_${sq.q}`); });
   }
   // 教練欄位 × 人數 + TCQ
   for (let i = 1; i <= tCount; i++) {
@@ -4078,7 +4142,7 @@ exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
     _stuSecs.forEach((sec, si) => (sec.fields || []).forEach(fld => {
       if (_isDisp(fld)) return;
       const key = fld.legacyKey || fld.id;
-      _cols.push({ h: `學員${si + 1}_${fld.label || key}`, f: t => { const m = (membersByTeam[t.teamId] || { students: [] }).students[si] || {}; return m[key] != null ? m[key] : ""; } });
+      _cols.push({ h: `報名者${si + 1}_${fld.label || key}`, f: t => { const m = (membersByTeam[t.teamId] || { students: [] }).students[si] || {}; return m[key] != null ? m[key] : ""; } });
     }));
     _tchSecs.forEach((sec, ti) => (sec.fields || []).forEach(fld => {
       if (_isDisp(fld)) return;
@@ -5086,7 +5150,7 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
   ctx += "=== RegMaster 功能總覽 ===\n";
   ctx += "RegMaster 是專業線上報名平台，核心功能包含：\n";
   ctx += "1、活動管理：建立活動、設定組別、梯次（單選/複選）、報名截止日、最大報名數\n";
-  ctx += "2、報名表設定：學生/教練欄位、自訂問題、便當/T-shirt選項\n";
+  ctx += "2、報名表設定：報名者/教練欄位、自訂問題、便當/T-shirt選項\n";
   ctx += "3、金流整合：銀行轉帳、信用卡、現金、PAYUNi線上金流\n";
   ctx += "4、檔案上傳：海報圖片、規則PDF、報名時要求上傳PDF（必填/選填）\n";
   ctx += "5、通知系統：自動Email通知、公告功能\n";
@@ -9363,8 +9427,8 @@ function buildFormSchemaFromLegacy(cfg) {
     for (let i = 0; i < stuCount; i++) {
       sections.push({
         id: 'sec_student_' + i,
-        title: stuCount > 1 ? ('學員 ' + (i + 1)) : '學員資料',
-        desc: '請填寫每位學員的資訊',
+        title: stuCount > 1 ? ('報名者 ' + (i + 1)) : '報名者資料',
+        desc: '請填寫每位報名者的資訊',
         role: 'student',
         repeat: 1,
         fields: studentFields.map((k, fi) => ({
@@ -9515,7 +9579,7 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
     (sec.fields || []).some(f => f.type === 'email' && f.req === true));
   if (!hasRequiredEmail) {
     return { success: false, code: 'NO_EMAIL',
-      message: "報名表單需至少一個「必填 Email」欄位（學員或指導者區塊皆可），否則無法寄送確認信與通知。請新增後再儲存。" };
+      message: "報名表單需至少一個「必填 Email」欄位（報名者或指導者區塊皆可），否則無法寄送確認信與通知。請新增後再儲存。" };
   }
 
   const derived = deriveLegacyFromFormSchema(cleanSchema);
@@ -9697,7 +9761,7 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
         todos.push({
           priority: "med",
           title: `審核 ${fileWait} 份檔案上傳`,
-          body: `${c.name} · 學員提交檔案待審核`,
+          body: `${c.name} · 報名者提交檔案待審核`,
           link: `/admin/events/${cDoc.id}#registrations`,
           compId: cDoc.id
         });

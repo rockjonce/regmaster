@@ -185,7 +185,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       <div class="steps-row" id="stepsRow">
         <div class="step-item on" data-step="1"><div class="n"><span>1</span></div><div class="l" data-i18n="rgStep1Label">組別 / 場次</div></div>
         <div class="bar"></div>
-        <div class="step-item" data-step="2"><div class="n"><span>2</span></div><div class="l" data-i18n="rgStep2Label">學員資料</div></div>
+        <div class="step-item" data-step="2"><div class="n"><span>2</span></div><div class="l" data-i18n="rgStep2Label">報名者資料</div></div>
         <div class="bar"></div>
         <div class="step-item" data-step="3"><div class="n"><span>3</span></div><div class="l" data-i18n="rgStep3Label">附加問題</div></div>
         <div class="bar"></div>
@@ -244,7 +244,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         <div class="form-section">
           <div class="sec-head">
             <div class="ic-w"><svg data-hero viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
-            <h3><span data-i18n="rgSecStudent">學員</span> <span id="studentCount" style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-left:6px"></span></h3>
+            <h3><span data-i18n="rgSecStudent">報名者</span> <span id="studentCount" style="font:500 11px/1 var(--f-mono); color:var(--muted); margin-left:6px"></span></h3>
           </div>
           <div id="studentList"><!-- generated --></div>
         </div>
@@ -1165,6 +1165,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     }
     var it = (t === 'email') ? 'email' : (t === 'tel') ? 'tel' : (t === 'date') ? 'date' : (t === 'number') ? 'number' : (t === 'url') ? 'url' : 'text';
     var ph = (t === 'url') ? ' placeholder="例：https://example.com" data-i18n-placeholder="rgUrlPlaceholder" inputmode="url"' : '';
+    if (t === 'idnumber') ph = ' data-idupper="1" autocapitalize="characters"';   // 身分證：即打即轉大寫（監聽在 wizard 委派）
     return '<input type="' + it + '" id="' + domId + '"' + ph + '>';
   }
   // 點擊放大圖片（顯示型「圖片內容」欄位用）。
@@ -1438,6 +1439,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         if (!/^[A-Z][A-Z0-9][0-9]{8}$/.test(_idv) || (/^[A-Z][12][0-9]{8}$/.test(_idv) && !validateTWID(_idv))) {
           if (wrap) wrap.classList.add('error'); showErr(who + window.L('rgValIdNumA') + def.label + window.L('rgValIdNumB')); return false;
         }
+        v = _idv;   // 大小寫正規化：一律以大寫送出/入庫（a120733298 → A120733298）
       }
       // 網址欄位：未填協定時自動補 https://，再驗證為合法網址
       if (def.type === 'url' && v) {
@@ -1658,6 +1660,17 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     // input covers text/email/textarea; change covers select/radio/checkbox/file/date.
     // Attached on the wizard root so applyConds (bound on the inner fields container) runs first
     // via bubbling, leaving field visibility correct before we re-validate.
+    // 身分證欄位即打即轉大寫（先於 liveRevalidate 註冊，讓重驗吃到大寫值）；
+    // 記錄/還原游標位置，避免中段編輯時游標跳到字尾。
+    _wizEl.addEventListener('input', function (e) {
+      var el = e.target;
+      if (!el || !el.dataset || !el.dataset.idupper) return;
+      var up = (el.value || '').toUpperCase();
+      if (up === el.value) return;
+      var s = el.selectionStart, t = el.selectionEnd;
+      el.value = up;
+      try { el.setSelectionRange(s, t); } catch (_) {}
+    });
     _wizEl.addEventListener('input', liveRevalidate);
     _wizEl.addEventListener('change', liveRevalidate);
   }
