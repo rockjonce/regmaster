@@ -115,6 +115,8 @@ const EMAIL_HOST = PROJECT_HOST;
 const EMAIL_LOGO_URL = EMAIL_HOST + "/Emaillogo.png";
 const SYSTEM_ADMIN_EMAIL = "ceo@calculator.com.tw";
 
+const amego = require("./amego");   // 光貿 Amego 電子發票 API 共用模組
+
 function emailWrap(title, bodyHtml, footerExtra) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head><body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f0f4f8">
@@ -309,6 +311,292 @@ async function getCheckinSecret() {
   _checkinSecretCache = key;
   return key;
 }
+
+// ===================== 電子發票（光貿 Amego）核心引擎 =====================
+// 原則：所有開票/作廢/折讓呼叫「絕不 throw 回金流主流程」；invoices collection 為唯一完整存根
+// （光貿只能查 180 天）；文件 ID = inv_{orderId}（.create() 天然冪等鎖，防 webhook 重複併發）。
+
+// 平台憑證（appSecrets/amegoPlatform）。mode!=="prod" 一律回光貿測試環境組（統編 12345678）。
+let _amegoCredsCache = null, _amegoCredsAt = 0;
+async function getAmegoCreds() {
+  if (_amegoCredsCache && Date.now() - _amegoCredsAt < 300000) return _amegoCredsCache;
+  const doc = await db.collection("appSecrets").doc("amegoPlatform").get();
+  const d = doc.exists ? doc.data() : {};
+  _amegoCredsCache = (d.mode === "prod" && d.ban && d.appKey)
+    ? { ban: d.ban, appKey: d.appKey, mode: "prod" }
+    : { ban: "12345678", appKey: "sHeq7t8G1wiQvhAuIM27", mode: "test" };
+  _amegoCredsAt = Date.now();
+  return _amegoCredsCache;
+}
+// 主辦方憑證（appSecrets/amego_{username}；Phase 3 綁定）。未綁定回 null。
+async function getOrganizerCreds(username) {
+  const doc = await db.collection("appSecrets").doc("amego_" + username).get();
+  if (!doc.exists) return null;
+  const d = doc.data();
+  return (d.ban && d.appKey) ? { ban: d.ban, appKey: d.appKey, mode: "prod" } : null;
+}
+// 全平台總開關（config/sales.invoiceEnabled；預設 false —— 部署後未打開前不會開出任何發票）。
+async function invoiceGloballyEnabled() {
+  const doc = await db.collection("config").doc("sales").get();
+  return !!(doc.exists && doc.data().invoiceEnabled === true);
+}
+function _allowanceNo() {   // 折讓單號 ≤16 字、唯一
+  return "A" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
+}
+function _periodOf(ymd) {   // 雙月期別鍵（"2026-3"）：作廢/折讓同期判斷用
+  const y = Math.floor(ymd / 10000), m = Math.floor(ymd / 100) % 100;
+  return y + "-" + Math.floor((m - 1) / 2);
+}
+function _todayYmd() {      // Asia/Taipei 當日 YYYYMMDD（數字）
+  const d = new Date(Date.now() + 8 * 3600000);
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+// 統一編號檢查碼（財政部 112 年新制 %5；與前端 register.html validateTaxId 同邏輯）
+function validateTaxIdSrv(s) {
+  s = String(s || "").trim();
+  if (!/^\d{8}$/.test(s)) return false;
+  const w = [1, 2, 1, 2, 1, 2, 4, 1];
+  let sum = 0;
+  for (let i = 0; i < 8; i++) { const p = parseInt(s[i], 10) * w[i]; sum += Math.floor(p / 10) + (p % 10); }
+  return sum % 5 === 0 || (s[6] === "7" && (sum + 1) % 5 === 0);
+}
+// 報名者發票選擇消毒器（擋前端多塞欄位；kind: personal|company）
+function _sanitizeInvoiceChoice(c) {
+  if (!c || typeof c !== "object") return null;
+  if (c.kind === "company") {
+    const taxId = String(c.taxId || "").trim();
+    return { kind: "company", taxId, title: String(c.title || "").trim().slice(0, 60) };
+  }
+  const ct = ["", "3J0002", "amego", "donate"].includes(c.carrierType) ? c.carrierType : "";
+  return { kind: "personal", carrierType: ct,
+    carrierId: String(c.carrierId || "").trim().slice(0, 64),
+    npoban: String(c.npoban || "").trim().slice(0, 10) };
+}
+// 報名者發票選擇 → 光貿 buyer 物件
+function _buyerFromChoice(c, email) {
+  if (c && c.kind === "company" && c.taxId)
+    return { ban: c.taxId, name: c.title || c.taxId, email: email || "", type: "triplicate" };
+  const cc = c || {};
+  if (cc.carrierType === "donate" && cc.npoban)
+    return { ban: "0000000000", name: "報名者", email: email || "", carrierType: "", carrierId: "", npoban: cc.npoban, type: "duplicate" };
+  if (cc.carrierType === "3J0002" && cc.carrierId)
+    return { ban: "0000000000", name: "報名者", email: email || "", carrierType: "3J0002", carrierId: cc.carrierId, npoban: "", type: "duplicate" };
+  // 預設：雲端發票（光貿會員載具 a+email；無 email 則開無載具存根）
+  return { ban: "0000000000", name: "報名者", email: email || "",
+    carrierType: email ? "amego" : "", carrierId: email || "", npoban: "", type: "duplicate" };
+}
+// 主辦方 invoiceProfile → 光貿 buyer 物件（未填 → incomplete，走 pending_profile 待補開）
+function _profileToBuyer(prof, fallbackName, fallbackEmail) {
+  if (!prof || !prof.type)
+    return { ban: "0000000000", name: fallbackName || "客人", email: fallbackEmail || "", carrierType: "", carrierId: "", npoban: "", type: "duplicate", incomplete: true };
+  if (prof.type === "triplicate")
+    return { ban: prof.taxId, name: prof.title || prof.taxId, email: prof.email || fallbackEmail || "", carrierType: "", carrierId: "", npoban: "", type: "triplicate" };
+  return { ban: "0000000000", name: prof.title || fallbackName || "客人", email: prof.email || fallbackEmail || "",
+    carrierType: prof.carrierType || "", carrierId: prof.carrierId || "", npoban: "", type: "duplicate" };
+}
+async function _accountByUsername(username) {
+  const s = await db.collection("accounts").where("username", "==", username).limit(1).get();
+  return s.empty ? null : { ref: s.docs[0].ref, data: s.docs[0].data() };
+}
+
+// ---- 開立發票（核心）----
+// refs: { orderId, compId?, teamId?, settlementId?, buyerUsername?, sellerUsername?, reissueSeq? }
+// 回傳 invoices docId 或 null（0 元／總開關關閉／已有他方處理）。呼叫端一律 try/catch。
+async function issueInvoiceFor(kind, refs, buyer, items, credsOverride) {
+  if (!(await invoiceGloballyEnabled())) return null;
+  const amount = items.reduce((s, it) => s + Math.round(Number(it.amount)), 0);
+  if (amount <= 0) return null;                                   // Q7：0 元不開
+  const creds = credsOverride || await getAmegoCreds();
+  const docId = "inv_" + refs.orderId + (refs.reissueSeq ? "_r" + refs.reissueSeq : "");
+  const ref = db.collection("invoices").doc(docId);
+  const base = {
+    kind, sellerType: refs.sellerUsername ? "organizer" : "platform",
+    sellerBan: creds.ban, sellerUsername: refs.sellerUsername || "",
+    orderId: String(refs.orderId), compId: refs.compId || "", teamId: refs.teamId || "",
+    settlementId: refs.settlementId || "", buyerUsername: refs.buyerUsername || "",
+    buyer: { ban: buyer.ban || "0000000000", name: buyer.name || "客人", email: buyer.email || "",
+      carrierType: buyer.carrierType || "", carrierId: buyer.carrierId || "", npoban: buyer.npoban || "",
+      type: buyer.type || "duplicate" },
+    amount, items,
+    status: buyer.incomplete ? "pending_profile" : "pending",
+    invoiceNumber: "", invoiceDate: "", randomNumber: "", pdfPath: "",
+    allowances: [], retryCount: 0, lastError: "",
+    createdAt: fmtNow(), createdTs: Date.now(), issuedAt: ""
+  };
+  try { await ref.create(base); }
+  catch (e) {
+    if (e.code === 6 || /already exists/i.test(String(e.message))) return null;   // 併發鎖：他方處理中
+    throw e;
+  }
+  if (base.status === "pending_profile") return docId;            // 等補發票資料，佇列接手
+  await _tryIssue(ref, base, creds);
+  return docId;
+}
+async function _tryIssue(ref, inv, creds) {
+  try {
+    // 光貿端防重：OrderId 已開過（先前中斷）→ 只補存根
+    let existed = null;
+    try {
+      const q = await amego.queryByOrder(creds, inv.orderId);
+      if (q.data && q.data.invoice_number && q.data.invoice_type === "C0401" && !q.data.cancel_date) existed = q.data;
+    } catch (e) { /* 查無資料屬正常（code!==0），續開 */ }
+    let invoiceNumber, randomNumber, invoiceDate;
+    if (existed) {
+      invoiceNumber = existed.invoice_number;
+      randomNumber = existed.random_number || "";
+      invoiceDate = String(existed.invoice_date || _todayYmd());
+    } else {
+      const r = await amego.issueInvoice(creds, {
+        orderId: inv.orderId, buyer: inv.buyer,
+        items: inv.items.map(it => ({ desc: it.desc, qty: it.qty || 1, unitPrice: it.unitPrice, amount: it.amount }))
+      });
+      invoiceNumber = r.invoice_number; randomNumber = r.random_number || "";
+      invoiceDate = String(_todayYmd());
+    }
+    await ref.update({ status: "issued", invoiceNumber, invoiceDate, randomNumber, issuedAt: fmtNow(), lastError: "" });
+    // Q12：載具/捐贈票法規上中獎後才有 PDF；打統編或無載具紙本型 → 開立當下即存檔歸戶
+    const isB2B = inv.buyer.ban && inv.buyer.ban !== "0000000000";
+    const hasCarrier = !!inv.buyer.carrierType || !!inv.buyer.npoban;
+    if (isB2B || !hasCarrier) { try { await _storeInvoicePdf(ref, invoiceNumber, creds); } catch (e) {} }
+    try { await _sendInvoiceMail(inv, invoiceNumber, randomNumber); } catch (e) {}
+  } catch (e) {
+    await ref.update({ status: "error", lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1) });
+  }
+}
+async function _storeInvoicePdf(ref, invoiceNumber, creds) {
+  const f = await amego.getPdfUrl(creds, invoiceNumber);          // 10 分鐘短效連結 → 即刻下載入庫
+  const buf = Buffer.from(await (await fetch(f.data.file_url)).arrayBuffer());
+  const path = "invoicePdfs/" + creds.ban + "/" + invoiceNumber + ".pdf";
+  await admin.storage().bucket().file(path).save(buf, { contentType: "application/pdf" });
+  await ref.update({ pdfPath: path });
+  return path;
+}
+async function _storeAllowancePdf(allowanceNo, creds) {
+  const f = await amego.getAllowancePdfUrl(creds, allowanceNo);   // 折讓 PDF 可無限次下載 → 即開即存
+  const buf = Buffer.from(await (await fetch(f.data.file_url)).arrayBuffer());
+  const path = "invoicePdfs/" + creds.ban + "/allowance_" + allowanceNo + ".pdf";
+  await admin.storage().bucket().file(path).save(buf, { contentType: "application/pdf" });
+  return path;
+}
+async function _sendInvoiceMail(inv, invoiceNumber, randomNumber) {
+  if (!inv.buyer.email) return;
+  const kindName = { plan: "方案訂閱", fee: "平台服務費", registration: "報名費" }[inv.kind] || "消費";
+  const html = emailWrap("您的電子發票已開立", `
+    <p>您的${escMail(kindName)}電子發票已開立：</p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.9">
+      <b>發票號碼：</b><span style="font-family:monospace">${escMail(invoiceNumber)}</span><br>
+      <b>隨機碼：</b>${escMail(randomNumber || "-")}<br>
+      <b>金額：</b>NT$${Number(inv.amount).toLocaleString()}</div>
+    <p style="color:#475569;font-size:13px">發票明細與下載請至 RegMaster 對應頁面查詢（載具/捐贈發票依法規不提供紙本檔案）。</p>`);
+  await queueMail([inv.buyer.email], "[RegMaster] 電子發票開立通知 " + invoiceNumber, html);
+}
+
+// ---- 退費時的發票處置（v9 狀態機；transaction 分流＋上鎖）----
+async function voidOrAllowance(invId, refundGross, credsOverride) {
+  const ref = db.collection("invoices").doc(invId);
+  const decision = await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return { act: "none" };
+    const inv = doc.data();
+    if (["pending", "error", "pending_profile", "dead"].includes(inv.status)) {
+      tx.update(ref, { status: "cancelled_before_issue", lastError: "退費於開立前發生" });   // 絕不呼叫光貿
+      return { act: "none" };
+    }
+    if (["void", "allowanced", "cancelled_before_issue", "voiding", "issuing"].includes(inv.status))
+      return { act: "none" };                                     // 冪等 / 處理中互斥
+    tx.update(ref, { status: "voiding" });
+    return { act: "go", inv };
+  });
+  if (decision.act !== "go") return;
+  const inv = decision.inv;
+  const creds = credsOverride || (inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds());
+  if (!creds) { await ref.update({ status: "void_error", lastError: "主辦方光貿憑證不存在" }); return; }
+  const gross = Math.round(Number(refundGross));
+  const fullRefund = gross >= inv.amount;
+  const samePeriod = _periodOf(parseInt(inv.invoiceDate, 10) || _todayYmd()) === _periodOf(_todayYmd());
+  try {
+    if (fullRefund && samePeriod && !inv.lottery) {
+      try {
+        await amego.voidInvoice(creds, inv.invoiceNumber);
+        await ref.update({ status: "void", voidedAt: fmtNow(), lastError: "" });
+        return;
+      } catch (e) { /* 作廢被拒（期別/中獎等）→ fallback 折讓 */ }
+    }
+    const no = _allowanceNo();
+    await amego.createAllowance(creds, {
+      allowanceNo: no, dateYmd: String(_todayYmd()), buyer: inv.buyer,
+      origInvoice: { number: inv.invoiceNumber, dateYmd: parseInt(inv.invoiceDate, 10) || _todayYmd() },
+      desc: (inv.items[0] && inv.items[0].desc) || "退費折讓", refundGross: gross
+    });
+    let pdfPath = "";
+    try { pdfPath = await _storeAllowancePdf(no, creds); } catch (e) {}
+    await ref.update({ status: "allowanced", lastError: "",
+      allowances: FieldValue.arrayUnion({ allowanceNumber: no, date: fmtNow(), amount: gross, pdfPath }) });
+  } catch (e) {
+    await ref.update({ status: "void_error", pendingRefund: gross,
+      lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1) });
+  }
+}
+// 佇列開立前重驗來源單據（v9 第三層防呆：已退費/已刪隊 → 不開立）
+async function _sourceStillBillable(inv) {
+  try {
+    if (inv.kind === "registration") {
+      if (inv.orderId && /^RG/.test(inv.orderId)) {
+        const d = await db.collection("regPayments").doc(inv.orderId).get();
+        if (!d.exists) return false;
+        const p = d.data();
+        if (p.refundState && p.refundState !== "none") return false;
+      }
+      if (inv.teamId) { const t = await db.collection("teams").doc(inv.teamId).get(); if (!t.exists) return false; }
+      return true;
+    }
+    if (inv.kind === "plan") {
+      const d = await db.collection("orders").doc(inv.orderId).get();
+      return d.exists && d.data().status === "paid";
+    }
+    return true;   // fee：結算批次不會消失
+  } catch (e) { return true; }
+}
+
+// ---- 高階包裝：方案發票（F1）與手續費發票（F5）----
+async function issuePlanInvoice(order, username, userEmail) {
+  const acct = await _accountByUsername(username);
+  const prof = acct && acct.data.invoiceProfile;
+  const tierNames = { free: "免費版 Free", starter: "入門版 Starter", pro: "專業版 Pro", team: "團隊版 Team" };
+  const items = (order.items || []).filter(it => it.type === "tier").map(it => ({
+    desc: "RegMaster " + (tierNames[it.tier] || it.tier) + " 年度訂閱",
+    qty: 1, unitPrice: Math.round(Number(it.subtotal)), amount: Math.round(Number(it.subtotal))
+  }));
+  if (!items.length || order.total <= 0) return null;
+  // 有折扣時以實收 total 開立（單品項時直接調整金額；發票金額必須=實收）
+  const itemSum = items.reduce((s, it) => s + it.amount, 0);
+  if (itemSum !== Math.round(Number(order.total)) && items.length === 1) {
+    items[0].unitPrice = Math.round(Number(order.total));
+    items[0].amount = Math.round(Number(order.total));
+  }
+  const mail = userEmail || (acct && acct.data.email) || "";
+  return issueInvoiceFor("plan", { orderId: order.orderId, buyerUsername: username },
+    _profileToBuyer(prof, username, mail), items);
+}
+async function issueFeeInvoice(settlementId, creator, feeTotal, wireFee) {
+  const acct = await _accountByUsername(creator);
+  const prof = acct && acct.data.invoiceProfile;
+  const items = [
+    { desc: "平台金流手續費", qty: 1, unitPrice: Math.round(feeTotal), amount: Math.round(feeTotal) },
+    { desc: "匯款手續費", qty: 1, unitPrice: Math.round(wireFee), amount: Math.round(wireFee) }
+  ].filter(it => it.amount > 0);
+  if (!items.length) return null;
+  return issueInvoiceFor("fee", { orderId: settlementId, settlementId, buyerUsername: creator },
+    _profileToBuyer(prof, creator, (acct && acct.data.email) || ""), items);
+}
+
+// 中獎查詢執行月對照（光貿 lottery_status API 明定 0-based：0:1-2月…4:9-10月 5:11-12月。勿改 1-based）
+const LOTTERY_RUN_MAP = {
+  12: { dy: 0, period: 4 }, 2: { dy: -1, period: 5 }, 4: { dy: 0, period: 0 },
+  6: { dy: 0, period: 1 }, 8: { dy: 0, period: 2 }, 10: { dy: 0, period: 3 }
+};
+// ===================== 電子發票核心引擎（結束）=====================
+
 function _b64url(buf) {
   return Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -977,7 +1265,11 @@ exports.getMyProfile = authCallable(["system", "competition"], async (data, requ
     // 收款帳戶 (payout): where the platform wires this organiser's PayUNI net to.
     payoutBankCode: a.payoutBankCode || "", payoutBankName: a.payoutBankName || "",
     payoutBranchCode: a.payoutBranchCode || "", payoutBranchName: a.payoutBranchName || "",
-    payoutAccount: a.payoutAccount || "", payoutName: a.payoutName || ""
+    payoutAccount: a.payoutAccount || "", payoutName: a.payoutName || "",
+    // 電子發票：主辦方發票資料與報名費發票模式（F6/Phase 3）
+    invoiceProfile: a.invoiceProfile || null,
+    einvoiceMode: a.einvoiceMode || "off",
+    amegoBan: a.amegoBan || ""
   };
 });
 
@@ -998,6 +1290,321 @@ exports.savePayoutAccount = authCallable(["system", "competition"], async (data,
   await auditLog(username, "更新收款帳戶", username, "");
   return { success: true };
 });
+
+// ===================== 電子發票 callables（F6/F7/查詢/匯出/Phase2/Phase3）=====================
+
+// F6：主辦方發票資訊（二聯/三聯、抬頭、統編、載具、Email）。applyPayout 前置必填。
+exports.saveInvoiceProfile = authCallable(["system", "competition"], async (data, request) => {
+  const p = data || {};
+  if (!["duplicate", "triplicate"].includes(p.type)) return { success: false, message: "請選擇發票類型（二聯式/三聯式）" };
+  if (p.type === "triplicate") {
+    if (!validateTaxIdSrv(p.taxId)) return { success: false, message: "統一編號格式或檢查碼錯誤" };
+    if (!String(p.title || "").trim()) return { success: false, message: "請填寫發票抬頭" };
+  }
+  if (p.type === "duplicate" && p.carrierType === "3J0002" && !/^\/[0-9A-Z+\-.]{7}$/.test(String(p.carrierId || "").trim().toUpperCase()))
+    return { success: false, message: "手機條碼載具格式錯誤（斜線開頭共 8 碼，例：/ABC+123）" };
+  const profile = {
+    type: p.type,
+    title: String(p.title || "").trim().slice(0, 60),
+    taxId: p.type === "triplicate" ? String(p.taxId).trim() : "",
+    carrierType: p.type === "duplicate" && p.carrierType === "3J0002" ? "3J0002" : "",
+    carrierId: p.type === "duplicate" && p.carrierType === "3J0002" ? String(p.carrierId).trim().toUpperCase() : "",
+    email: String(p.email || "").trim().toLowerCase().slice(0, 120),
+    updatedAt: fmtNow()
+  };
+  const acct = await _accountByUsername(request.authUser.username);
+  if (!acct) return { success: false, message: "帳號不存在" };
+  await acct.ref.update({ invoiceProfile: profile });
+  await auditLog(request.authUser.username, "更新發票資訊", "", profile.type);
+  // 補開 pending_profile 存量票：帶上新 buyer 後轉 pending 交佇列
+  try {
+    const snap = await db.collection("invoices").where("buyerUsername", "==", request.authUser.username).limit(200).get();
+    for (const d of snap.docs.filter(x => x.data().status === "pending_profile")) {
+      await d.ref.update({ buyer: _profileToBuyer(profile, request.authUser.username, profile.email),
+        status: "pending", createdTs: 0 });   // createdTs=0 → 佇列下一輪即撿（跳過 15 分緩衝）
+    }
+  } catch (e) {}
+  return { success: true };
+});
+
+// Phase 3：報名費發票模式（off/assist/auto）。auto 需綁定主辦自己的光貿帳號（唯讀連線驗證）。
+exports.saveEinvoiceMode = authCallable(["competition", "system"], async (data, request) => {
+  const mode = String(data.mode || "off");
+  if (!["off", "assist", "auto"].includes(mode)) return { success: false, message: "模式參數錯誤" };
+  const username = request.authUser.username;
+  if (mode === "auto") {
+    const ban = String(data.amegoBan || "").trim();
+    if (!validateTaxIdSrv(ban)) return { success: false, message: "統一編號格式或檢查碼錯誤" };
+    const appKey = String(data.amegoAppKey || "").trim();
+    const existing = await getOrganizerCreds(username);
+    const creds = appKey ? { ban, appKey } : (existing && existing.ban === ban ? existing : null);
+    if (!creds) return { success: false, message: "首次綁定（或變更統編）必須填入 App Key" };
+    try { await amego.banQuery(creds, [ban]); }   // 唯讀驗證，不真開票（10-3）
+    catch (e) { return { success: false, message: "光貿連線驗證失敗：" + String(e.message).slice(0, 80) }; }
+    await db.collection("appSecrets").doc("amego_" + username).set(
+      { ban: creds.ban, appKey: creds.appKey, updatedAt: fmtNow() }, { merge: true });
+  }
+  const acct = await _accountByUsername(username);
+  if (!acct) return { success: false, message: "帳號不存在" };
+  await acct.ref.update({ einvoiceMode: mode, amegoBan: mode === "auto" ? String(data.amegoBan).trim() : (acct.data.amegoBan || "") });
+  await auditLog(username, "電子發票模式", "", mode);
+  return { success: true, mode };
+});
+
+// 統編→公司抬頭（前端 blur 自動帶入；fail-open，查不到不阻擋）
+exports.banLookup = callable(async (data, request) => {
+  const _rl = await checkRateLimit("ban_ip_" + clientIp(request), 80, 600000);
+  if (!_rl.ok) return { success: true, name: "" };
+  const ban = String(data.ban || "").trim();
+  if (!/^\d{8}$/.test(ban)) return { success: false, message: "統編須為 8 碼數字" };
+  try {
+    const r = await amego.banQuery(await getAmegoCreds(), [ban]);
+    return { success: true, name: (r.data && r.data[0] && r.data[0].name) || "" };
+  } catch (e) { return { success: true, name: "" }; }
+});
+
+// 手機條碼載具即時驗證（fail-open；正式把關在光貿開立時）
+exports.carrierCheck = callable(async (data, request) => {
+  const _rl = await checkRateLimit("carrier_ip_" + clientIp(request), 80, 600000);
+  if (!_rl.ok) return { success: true, valid: true };
+  try { await amego.barcodeCheck(await getAmegoCreds(), String(data.barcode || "").trim().toUpperCase());
+        return { success: true, valid: true }; }
+  catch (e) { return { success: true, valid: false }; }
+});
+
+// 主辦方：發票檢視（收到的＝buyerUsername 是我；開出的＝sellerUsername 是我）
+exports.listMyInvoices = authCallable(["system", "competition"], async (data, request) => {
+  const u = request.authUser.username;
+  const [recvSnap, sentSnap] = await Promise.all([
+    db.collection("invoices").where("buyerUsername", "==", u).limit(500).get(),
+    db.collection("invoices").where("sellerUsername", "==", u).limit(500).get()
+  ]);
+  const pick = (d) => { const v = d.data(); return {
+    invId: d.id, kind: v.kind, orderId: v.orderId, compId: v.compId, teamId: v.teamId,
+    buyerName: v.buyer.name, buyerBan: v.buyer.ban === "0000000000" ? "" : v.buyer.ban,
+    amount: v.amount, status: v.status, invoiceNumber: v.invoiceNumber, invoiceDate: v.invoiceDate,
+    randomNumber: v.randomNumber, hasPdf: !!v.pdfPath, lastError: v.lastError || "",
+    allowances: (v.allowances || []).map(a => ({ no: a.allowanceNumber, date: a.date, amount: a.amount, hasPdf: !!a.pdfPath })),
+    createdAt: v.createdAt
+  }; };
+  const bySort = (a, b) => String(b.createdAt).localeCompare(String(a.createdAt));
+  return { success: true,
+    received: recvSnap.docs.map(pick).sort(bySort),
+    issued: sentSnap.docs.map(pick).sort(bySort) };
+});
+
+// 發票/折讓 PDF 下載（base64 回傳；點擊當下取，不存短效連結——10-4）
+async function _invoicePdfPayload(inv, allowanceNumber) {
+  let path = inv.pdfPath, name = inv.invoiceNumber + ".pdf";
+  if (allowanceNumber) {
+    const a = (inv.allowances || []).find(x => x.allowanceNumber === allowanceNumber);
+    if (!a || !a.pdfPath) return { success: false, message: "折讓單檔案不存在" };
+    path = a.pdfPath; name = "allowance_" + allowanceNumber + ".pdf";
+  }
+  if (!path) return { success: false, message: "此發票為載具/捐贈票，依法規中獎後才提供檔案下載" };
+  const [buf] = await admin.storage().bucket().file(path).download();
+  return { success: true, filename: name, base64: buf.toString("base64") };
+}
+exports.getInvoicePdfFile = authCallable(["system", "competition"], async (data, request) => {
+  const doc = await db.collection("invoices").doc(String(data.invId || "")).get();
+  if (!doc.exists) return { success: false, message: "找不到發票" };
+  const inv = doc.data();
+  const u = request.authUser.username;
+  if (request.authUser.role !== "system" && inv.buyerUsername !== u && inv.sellerUsername !== u)
+    return { success: false, message: "無權存取此發票" };
+  return _invoicePdfPayload(inv, data.allowanceNumber);
+});
+
+// 報名者端：發票與折讓紀錄（email 歸戶；沿用「我的報名」社群驗證；不依賴 teams 存活——v9）
+exports.getMyInvoices = callable(async (data, request) => {
+  const _rl = await checkRateLimit("myinv_ip_" + clientIp(request), 30, 600000);
+  if (!_rl.ok) return { success: false, message: "查詢過於頻繁，請稍後再試" };
+  let s;
+  try { s = await verifySocialIdentity(data.provider, data.token); }
+  catch (e) { return { success: false, message: "身分驗證失敗" }; }
+  if (!s.email) return { success: false, message: "無法取得帳號 Email" };
+  const email = s.email.trim().toLowerCase();
+  const snap = await db.collection("invoices").where("buyer.email", "==", email)
+    .where("kind", "==", "registration").limit(200).get();
+  return { success: true, email, invoices: snap.docs.map(d => { const v = d.data(); return {
+    invId: d.id, compId: v.compId, amount: v.amount, status: v.status,
+    invoiceNumber: v.invoiceNumber, invoiceDate: v.invoiceDate, randomNumber: v.randomNumber,
+    hasPdf: !!v.pdfPath, lottery: v.lottery || null,
+    allowances: (v.allowances || []).map(a => ({ no: a.allowanceNumber, date: a.date, amount: a.amount, hasPdf: !!a.pdfPath })),
+    createdAt: v.createdAt
+  }; }).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) };
+});
+exports.getMyInvoiceFile = callable(async (data, request) => {
+  const _rl = await checkRateLimit("myinvf_ip_" + clientIp(request), 30, 600000);
+  if (!_rl.ok) return { success: false, message: "查詢過於頻繁，請稍後再試" };
+  let s;
+  try { s = await verifySocialIdentity(data.provider, data.token); }
+  catch (e) { return { success: false, message: "身分驗證失敗" }; }
+  const doc = await db.collection("invoices").doc(String(data.invId || "")).get();
+  if (!doc.exists) return { success: false, message: "找不到發票" };
+  const inv = doc.data();
+  if (!s.email || inv.buyer.email !== s.email.trim().toLowerCase())
+    return { success: false, message: "無權存取此發票" };
+  return _invoicePdfPayload(inv, data.allowanceNumber);
+});
+
+// 匯出（CSV / XLSX）：主辦方自己的發票清單（10-6）
+exports.exportInvoices = authCallable(["system", "competition"], async (data, request) => {
+  const u = request.authUser.username;
+  const scope = data.scope === "issued" ? "sellerUsername" : "buyerUsername";
+  const snap = (request.authUser.role === "system" && data.scope === "all")
+    ? await db.collection("invoices").limit(2000).get()
+    : await db.collection("invoices").where(scope, "==", u).limit(2000).get();
+  const rows = snap.docs.map(d => { const v = d.data(); return [
+    v.invoiceDate || "", v.invoiceNumber || "", v.kind, v.buyer.name || "",
+    v.buyer.ban === "0000000000" ? "" : v.buyer.ban, v.amount, v.status,
+    (v.allowances || []).map(a => a.allowanceNumber).join("|"),
+    (v.allowances || []).reduce((sum, a) => sum + (a.amount || 0), 0) || ""
+  ]; }).sort((a, b) => String(b[0]).localeCompare(String(a[0])));
+  const headers = ["發票日期", "發票號碼", "類型", "買受人", "統編", "金額", "狀態", "折讓單號", "折讓金額"];
+  const stamp = fmtNow().slice(0, 10).replace(/-/g, "");
+  if (data.format === "xlsx") {
+    const ExcelJS = require("exceljs");   // lazy：只在匯出時載入，不拖慢冷啟動
+    const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet("發票清單");
+    ws.addRow(headers); rows.forEach(r => ws.addRow(r));
+    const buf = await wb.xlsx.writeBuffer();
+    return { success: true, filename: "invoices_" + stamp + ".xlsx", base64: Buffer.from(buf).toString("base64") };
+  }
+  const esc = (x) => `"${String(x).replace(/"/g, '""')}"`;
+  const csv = "﻿" + [headers, ...rows].map(r => r.map(esc).join(",")).join("\r\n");
+  return { success: true, filename: "invoices_" + stamp + ".csv", base64: Buffer.from(csv, "utf8").toString("base64") };
+});
+
+// 系統管理者：平台發票總覽（含異常件）＋手動重試
+exports.adminListInvoices = authCallable(["system"], async (data) => {
+  const q = data.onlyProblems
+    ? db.collection("invoices").where("status", "in", ["error", "dead", "pending_profile", "void_error"]).limit(500)
+    : db.collection("invoices").limit(500);
+  const snap = await q.get();
+  return { success: true, invoices: snap.docs.map(d => ({ invId: d.id, ...d.data() }))
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) };
+});
+exports.retryInvoiceNow = authCallable(["system"], async (data, request) => {
+  const ref = db.collection("invoices").doc(String(data.invId || ""));
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "找不到發票" };
+  const inv = doc.data();
+  if (!["error", "pending", "pending_profile", "void_error"].includes(inv.status))
+    return { success: false, message: "此狀態（" + inv.status + "）無需重試" };
+  if (inv.status === "pending_profile") return { success: false, message: "買受人發票資料尚未補齊，請通知主辦方至設定填寫" };
+  const creds = inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds();
+  if (!creds) return { success: false, message: "賣方光貿憑證不存在" };
+  if (inv.status === "void_error") { await voidOrAllowanceRetry(ref, inv, creds); }
+  else {
+    if (!(await _sourceStillBillable(inv))) { await ref.update({ status: "cancelled_before_issue" }); return { success: true, cancelled: true }; }
+    await _tryIssue(ref, inv, creds);
+  }
+  const after = (await ref.get()).data();
+  await auditLog(request.authUser.username, "發票手動重試", data.invId, after.status);
+  return { success: true, status: after.status, lastError: after.lastError || "" };
+});
+// void_error 重試（解鎖回 issued 後重跑狀態機；退款額取失敗當下記錄的 pendingRefund）
+async function voidOrAllowanceRetry(ref, inv, creds) {
+  await ref.update({ status: "issued" });
+  await voidOrAllowance(ref.id, Number(inv.pendingRefund) || inv.amount, creds);
+}
+
+// F7：系統管理者平台參數（appSecrets/amegoPlatform；金鑰永不回顯）
+exports.getAmegoPlatformStatus = authCallable(["system"], async () => {
+  const doc = await db.collection("appSecrets").doc("amegoPlatform").get();
+  const d = doc.exists ? doc.data() : {};
+  const sales = await db.collection("config").doc("sales").get();
+  return { success: true,
+    ban: d.ban || "", appKeySet: !!d.appKey, mode: d.mode || "test",
+    invoiceEnabled: !!(sales.exists && sales.data().invoiceEnabled === true) };
+});
+exports.saveAmegoPlatformConfig = authCallable(["system"], async (data, request) => {
+  const upd = { updatedAt: fmtNow() };
+  if (data.ban !== undefined) {
+    const ban = String(data.ban || "").trim();
+    if (ban && !validateTaxIdSrv(ban)) return { success: false, message: "統一編號格式或檢查碼錯誤" };
+    upd.ban = ban;
+  }
+  if (data.appKey) upd.appKey = String(data.appKey).trim();      // 留空＝不覆寫（M-3 慣例）
+  if (data.mode !== undefined) upd.mode = data.mode === "prod" ? "prod" : "test";
+  await db.collection("appSecrets").doc("amegoPlatform").set(upd, { merge: true });
+  _amegoCredsCache = null;                                        // 清快取
+  if (data.invoiceEnabled !== undefined)
+    await db.collection("config").doc("sales").set({ invoiceEnabled: data.invoiceEnabled === true }, { merge: true });
+  await auditLog(request.authUser.username, "電子發票平台設定", "", (upd.mode || "") + (data.invoiceEnabled !== undefined ? " enabled=" + (data.invoiceEnabled === true) : ""));
+  return { success: true };
+});
+exports.testAmegoConnection = authCallable(["system"], async () => {
+  try {
+    const creds = await getAmegoCreds();
+    const r = await amego.banQuery(creds, [creds.ban]);           // 唯讀，不真開票（10-3）
+    return { success: true, mode: creds.mode, ban: creds.ban,
+      name: (r.data && r.data[0] && r.data[0].name) || "" };
+  } catch (e) { return { success: false, message: String(e.message).slice(0, 120) }; }
+});
+
+// Phase 3：發票作廢重開（統編填錯救濟；同期別內、同金額；10-2）
+exports.reissueInvoice = compAuthCallable("manage", async (data, request) => {
+  const ref = db.collection("invoices").doc(String(data.invId || ""));
+  const doc = await ref.get();
+  if (!doc.exists) return { success: false, message: "找不到發票" };
+  const inv = doc.data();
+  if (inv.compId !== data.compId) return { success: false, message: "發票不屬此活動" };
+  if (inv.status !== "issued") return { success: false, message: "僅「已開立」的發票可作廢重開（目前：" + inv.status + "）" };
+  if (_periodOf(parseInt(inv.invoiceDate, 10)) !== _periodOf(_todayYmd()))
+    return { success: false, message: "已跨發票期別，無法作廢重開；請改以折讓處理或聯絡客服" };
+  const newBuyer = _sanitizeInvoiceChoice(data.newChoice);
+  if (!newBuyer) return { success: false, message: "請提供正確的發票資訊" };
+  if (newBuyer.kind === "company" && !validateTaxIdSrv(newBuyer.taxId))
+    return { success: false, message: "統一編號格式或檢查碼錯誤" };
+  const creds = inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds();
+  if (!creds) return { success: false, message: "賣方光貿憑證不存在" };
+  await amego.voidInvoice(creds, inv.invoiceNumber);
+  await ref.update({ status: "void", voidedAt: fmtNow(), voidReason: "作廢重開（更正買受人資訊）" });
+  const seq = (parseInt(String(doc.id).split("_r")[1], 10) || 0) + 1;
+  const baseOrderId = inv.orderId;
+  await issueInvoiceFor(inv.kind,
+    { orderId: baseOrderId, reissueSeq: seq, compId: inv.compId, teamId: inv.teamId,
+      sellerUsername: inv.sellerUsername, buyerUsername: inv.buyerUsername },
+    _buyerFromChoice(newBuyer, inv.buyer.email), inv.items, creds);
+  await auditLog(request.authUser.username, "發票作廢重開", doc.id, inv.invoiceNumber);
+  return { success: true };
+});
+
+// Phase 2：方案訂單退費（system 專用；新資金流出口——退刷＋停用授權＋發票作廢/折讓）
+exports.adminRefundPlanOrder = authCallable(["system"], async (data, request) => {
+  const orderId = String(data.orderId || "");
+  const doc = await db.collection("orders").doc(orderId).get();
+  if (!doc.exists) return { success: false, message: "找不到訂單" };
+  const order = doc.data();
+  if (order.status !== "paid") return { success: false, message: "此訂單非已付款狀態（" + order.status + "）" };
+  if (order.refundState === "refunded") return { success: false, message: "此訂單已退費" };
+  const refundAmt = Math.round(Number(data.refundAmt));
+  if (!(refundAmt > 0)) return { success: false, message: "請輸入有效退費金額" };
+  if (refundAmt > Math.round(Number(order.total))) return { success: false, message: "退費金額不可超過實付 NT$" + order.total };
+  const res = await payuniRefund(order, refundAmt);               // 沿用已上線驗證的退刷（未關帳僅能全額）
+  if (!res.ok) return { success: false, message: "PayUNI 退刷失敗：" + res.message, code: res.code || "" };
+  await doc.ref.update({ refundState: "refunded", refundedAmount: refundAmt,
+    payuniRefundNo: res.tradeNo || "", refundedAt: fmtNow(), refundedBy: request.authUser.username,
+    refundReason: String(data.reason || "").slice(0, 200) });
+  // 停用該訂單的授權（全額退才停用；部分退（降級差額）保留授權）
+  if (refundAmt >= Math.round(Number(order.total))) {
+    const licSnap = await db.collection("licenses").where("orderId", "==", orderId).get();
+    for (const l of licSnap.docs) await l.ref.update({ status: "已停用(退費)", disabledAt: fmtNow() });
+  }
+  // 發票處置（F2 規則引擎：全退+同期→作廢；否則折讓；未開出→cancelled_before_issue）
+  try { await voidOrAllowance("inv_" + orderId, refundAmt); }
+  catch (e) { console.warn("plan invoice void defer:", e.message); }
+  await auditLog(request.authUser.username, "方案訂單退費", orderId, "退NT$" + refundAmt);
+  try {
+    const acct = await _accountByUsername(order.username);
+    const to = acct && acct.data.email;
+    if (to) await queueMail([to], "[RegMaster] 方案退費通知 — 訂單 " + orderId,
+      emailWrap("方案退費已完成", `<p>您的訂單 <b>${escMail(orderId)}</b> 已退費 NT$${refundAmt}（退刷至原付款卡，依發卡行作業數個工作日入帳）。</p>`));
+  } catch (e) {}
+  return { success: true, refundedAmount: refundAmt, payuniRefundNo: res.tradeNo || "" };
+});
+// ===================== 電子發票 callables（結束）=====================
 
 // V3 Phase 9: update the caller's OWN profile (displayName / email / phone).
 exports.updateProfile = authCallable(["system", "competition"], async (data, request) => {
@@ -1983,6 +2590,7 @@ exports.getRegistrationBundle = callable(async (data) => {
   }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   // B.2: best-effort host display (organizationName preferred, fall back to displayName / username)
   let hostName = "";
+  let einvoiceMode = "off";   // Phase 3：主辦方報名費發票模式（off/assist/auto）— 前端據此渲染發票區塊
   const createdBy = r.createdBy || r.creator || "";   // 多數活動只有 creator；用它查主辦帳號的機構名稱/帳號名
   if (createdBy) {
     try {
@@ -1990,6 +2598,7 @@ exports.getRegistrationBundle = callable(async (data) => {
       if (!accSnap.empty) {
         const acc = accSnap.docs[0].data();
         hostName = acc.organizationName || acc.displayName || acc.username || "";
+        einvoiceMode = acc.einvoiceMode || "off";
       }
     } catch (e) { /* swallow — public bundle should not fail because of host lookup */ }
   }
@@ -2019,7 +2628,7 @@ exports.getRegistrationBundle = callable(async (data) => {
   else if (cfg.deadline && _now >= parseTW(cfg.deadline)) regStatus = "deadline_passed";
 
   return {
-    ownerTier, regStatus, openDate: cfg.openDate || "",
+    ownerTier, regStatus, openDate: cfg.openDate || "", einvoiceMode,
     config: cfg, announcements, isOpen: cfg.isOpen, currentAccepted: stats.accepted,
     sessionAccepted: stats.sessionAccepted || {},
     sessionWaitlist: stats.sessionWaitlist || {},
@@ -2233,6 +2842,7 @@ exports.submitRegistration = callable(async (data, request) => {
         waitlistNum: txWn, creditCardOrderNo: fd.creditCardOrderNo || "", fileUrl: "",
         selectedSessions: fd.selectedSessions || [fd.selectedSession || 0],
         customAnswers: fd.customAnswers || {},
+        invoiceChoice: _sanitizeInvoiceChoice(fd.invoiceChoice),   // Phase 3：ATM 路徑的報名者發票選擇
         // Registrant terms e-signature audit trail (#1): submitting = click-wrap acceptance.
         consentSignature: { agreed: true, signedAt: fmtNow(), ip: clientIp(request), version: TERMS_VERSION }
       });
@@ -3157,6 +3767,15 @@ exports.markRefunded = compAuthCallable(async (data, request) => {
   }
   await auditLog(request.authUser.username, "註記已退款", r.teamId, "實退NT$" + actual);
   await refreshRegistrantsForTeam(r.teamId);   // 增量更新（退費致取消）
+  // 電子發票（Phase 3 F4）：③模式線下退款註記 → 作廢/折讓（ATM 發票 orderId=teamId+"-ATM"）。
+  try {
+    const _compDoc2 = await db.collection("competitions").doc(r.compId).get();
+    const _creator2 = _compDoc2.exists ? (_compDoc2.data().creator || "") : "";
+    const _acct2 = _creator2 ? await _accountByUsername(_creator2) : null;
+    if (_acct2 && _acct2.data.einvoiceMode === "auto" && actual > 0) {
+      await voidOrAllowance("inv_" + r.teamId + "-ATM", actual, await getOrganizerCreds(_creator2));
+    }
+  } catch (e) { console.warn("atm invoice void defer:", e.message); }
   try {
     const compDoc = await db.collection("competitions").doc(r.compId).get();
     const compName = compDoc.exists ? ((compDoc.data().config && compDoc.data().config.competitionName) || compDoc.data().name || "活動") : "活動";
@@ -3220,6 +3839,14 @@ exports.payuniRefundAndDelete = compAuthCallable("manage", async (data, request)
   }
   // (c) 標記退費申請、刪除報名、釋名額（先取 email 再刪）
   await rRef.update({ status: "refunded", channel: "payuni_refund", actualRefund: refundAmt, refundedAmount: refundAmt, retainedAmount: retained, payuniRefundNo: refundNo, refundMethod: "PayUNI 退刷", operator: request.authUser.username, refundedAt: fmtNow() });
+  // 電子發票（Phase 3 F4）：③模式退刷 → 作廢/折讓（在刪隊「之前」執行；存根不依賴 teams 存活）。
+  // v9 狀態機：發票尚未開出（pending/error）→ 標 cancelled_before_issue，絕不補開。失敗不阻斷退費。
+  try {
+    const _acct = await _accountByUsername(creator);
+    if (_acct && _acct.data.einvoiceMode === "auto") {
+      await voidOrAllowance("inv_" + orderId, refundAmt, await getOrganizerCreds(creator));
+    }
+  } catch (e) { console.warn("reg invoice void defer:", e.message); }
   const teamId = r.teamId;
   let emails = [];
   const tDoc = await db.collection("teams").doc(teamId).get();
@@ -3942,6 +4569,25 @@ exports.confirmPayment = compAuthCallable(async (data, request) => {
   await db.collection("teams").doc(teamId).update({ paymentStatus: "已確認 " + fmtNow() });
   await auditLog(request.authUser.username, "確認付款", teamId, "");
   await refreshRegistrantsForTeam(teamId);   // 增量更新報名帳號摘要
+  // 電子發票（Phase 3 ③）：ATM/銀行轉帳於主辦確認收款時開立（金額=折後應付 owedAmount）。
+  try {
+    const _team = teamDoc.data();
+    const _amt = Math.round(Number(_team.owedAmount != null ? _team.owedAmount : cfg.registrationFee) || 0);
+    const _creator = (compDoc && compDoc.exists) ? (compDoc.data().creator || "") : "";
+    const _acct = _creator ? await _accountByUsername(_creator) : null;
+    if (_amt > 0 && _acct && _acct.data.einvoiceMode === "auto") {
+      const _orgCreds = await getOrganizerCreds(_creator);
+      if (_orgCreds) {
+        const _memSnap = await db.collection("members").where("teamId", "==", teamId).limit(20).get();
+        const _buyerEmail = (_memSnap.docs.map(d => d.data().email).filter(e => e)[0]) || "";
+        await issueInvoiceFor("registration",
+          { orderId: teamId + "-ATM", compId, teamId, sellerUsername: _creator },
+          _buyerFromChoice(_team.invoiceChoice, _buyerEmail),
+          [{ desc: (cfg.competitionName || compId) + " 報名費", qty: 1, unitPrice: _amt, amount: _amt }],
+          _orgCreds);
+      }
+    }
+  } catch (e) { console.warn("atm invoice defer:", e.message); }
   return { success: true };
 });
 
@@ -6338,6 +6984,9 @@ async function activatePlanOrderPaid(orderRef, order, orderId, tradeNo) {
     }
   }
   await auditLog("system", "payment_success", orderId, codes.join(","));
+  // 電子發票（F1）：失敗不阻斷付款主流程，進佇列補開
+  try { await issuePlanInvoice({ ...order, orderId }, order.username); }
+  catch (e) { console.warn("plan invoice defer:", e.message); }
   return true;
 }
 
@@ -6397,6 +7046,25 @@ async function activateRegPaymentPaid(orderRef, order, orderId, compId, tradeNo)
     `[RegMaster] 收到報名費 — ${compCfg.competitionName || ""}`,
     emailWrap("💰 收到一筆報名費", `<p>活動「<b>${escMail(compCfg.competitionName || "")}</b>」收到線上付款。</p>
       <p>報名編號：<b>${escMail(order.teamId)}</b><br>金額：NT$${Number(order.amount) || 0}</p>`));
+  // 電子發票（Phase 3 ③自動開立）：主辦方 einvoiceMode==="auto" 且已綁定光貿 → 代主辦開立給報名者。
+  // 失敗不阻斷付款主流程（進佇列補開）。
+  try {
+    const _creator = compDoc.exists ? (compDoc.data().creator || compDoc.data().createdBy || "") : "";
+    const _acct = _creator ? await _accountByUsername(_creator) : null;
+    if (_acct && _acct.data.einvoiceMode === "auto") {
+      const _orgCreds = await getOrganizerCreds(_creator);
+      if (_orgCreds) {
+        const _memSnap = await db.collection("members").where("teamId", "==", order.teamId).limit(20).get();
+        const _buyerEmail = (_memSnap.docs.map(d => d.data().email).filter(e => e)[0]) || "";
+        await issueInvoiceFor("registration",
+          { orderId: order.orderId || orderId, compId, teamId: order.teamId, sellerUsername: _creator },
+          _buyerFromChoice(order.invoiceChoice, _buyerEmail),
+          [{ desc: (compCfg.competitionName || compId) + " 報名費", qty: 1,
+             unitPrice: Math.round(Number(order.amount)), amount: Math.round(Number(order.amount)) }],
+          _orgCreds);
+      }
+    }
+  } catch (e) { console.warn("reg invoice defer:", e.message); }
   return true;
 }
 
@@ -6521,6 +7189,8 @@ exports.saveSalesConfig = authCallable(["system"], async (data) => {
   // secret instead of wiping it. (Empty MerID/Mode are still allowed to clear those.)
   if (!config.payuniHashKey) delete config.payuniHashKey;
   if (!config.payuniHashIV) delete config.payuniHashIV;
+  // 電子發票全平台總開關（布林正規化；預設關閉——未打開前不會開出任何發票）
+  if (config.invoiceEnabled !== undefined) config.invoiceEnabled = config.invoiceEnabled === true;
   await db.collection("config").doc("sales").set(config, { merge: true });
   return { success: true };
 });
@@ -6947,6 +7617,7 @@ exports.createRegistrationPayment = callable(async (data) => {
     orderId, compId, teamId, amount: fee,
     base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount, discountCode: q.codeValid ? q.code : "",
     teamNameCN: team.teamNameCN || "", teamNameEN: team.teamNameEN || "",
+    invoiceChoice: _sanitizeInvoiceChoice(data.invoiceChoice),   // Phase 3：報名者發票選擇（付款成功開立用）
     status: "pending", createdAt: fmtNow()
   });
   // #3-2: 把折後應付金額落地到 team，供帳務「報名費」分頁顯示正確應收（PayUNI 與銀行轉帳一致）。
@@ -7438,6 +8109,9 @@ exports.createSettlement = authCallable(["system"], async (data, request) => {
   });
   await auditLog(request.authUser.username, "平台結算匯款", creator,
     settlementId + " " + orderSnap.length + "筆 實匯NT$" + actualWire);
+  // 電子發票（F5）：手續費發票隨結算彙開一張（品項：金流手續費＋匯費）。失敗不阻斷結算。
+  try { await issueFeeInvoice(settlementId, creator, feeTotal, wireFee); }
+  catch (e) { console.warn("fee invoice defer:", e.message); }
   return { success: true, accumulated: false, settlementId, orderCount: orderSnap.length, grossTotal, feeTotal, netTotal, netRounded, wireFee, actualWire };
 });
 
@@ -7561,6 +8235,10 @@ exports.applyPayout = compAuthCallable("manage", async (data, request) => {
   if (!orderIds.length && !depositIds.length) return { success: false, message: "請至少勾選一筆" };
   const acct = await _ownerPayoutAcct(creator);
   if (!acct.has) return { success: false, code: "NO_PAYOUT_ACCOUNT", message: "請先至『帳戶設定 → 收款帳戶』填寫收款帳戶，平台才能匯款給您。" };
+  // 電子發票（Q5 決議）：撥款前必填發票資訊（_ownerPayoutAcct 回 {acc,has,snapshot}，帳號欄位在 .acc）
+  const _invP = acct.acc.invoiceProfile;
+  if (!_invP || !_invP.type) return { success: false, code: "NO_INVOICE_PROFILE",
+    message: "請先至『帳戶設定 → 電子發票』填寫發票資訊，平台才能開立手續費發票並匯款給您。" };
   const { feePct, cycle } = await _ownerFeePct(creator);
   const compDoc = await db.collection("competitions").doc(compId).get();
   const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
@@ -7704,6 +8382,9 @@ exports.markPayoutPaid = authCallable(["system"], async (data, request) => {
     createdAt: fmtNow(), createdBy: request.authUser.username, source: "payoutRequest"
   });
   await auditLog(request.authUser.username, "註記匯款完成", reqId, "實匯NT$" + r.actualWire);
+  // 電子發票（F5）：手續費發票隨撥款完成彙開一張。失敗不阻斷撥款註記。
+  try { await issueFeeInvoice(reqId, r.creator, Number(r.feeTotal) || 0, Number(r.wireFee) || 0); }
+  catch (e) { console.warn("fee invoice defer:", e.message); }
   try {
     const oEmail = await organiserEmail(r.creator);
     const html = emailWrap("款項已匯出", `
@@ -7864,6 +8545,142 @@ exports.dailyJobs = onSchedule({ schedule: "0 8 * * *", timeZone: "Asia/Taipei",
 exports.weeklyJobs = onSchedule({ schedule: "0 8 * * 1", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
   await _runNotifDigest("weekly").catch(e => console.error("[weeklyJobs] digest:", e));
 });
+// ===================== 電子發票排程（重試佇列 / 中獎通知 / 月報）=====================
+
+// 發票重試佇列：撿 error / 逾時 pending / void_error。v9：pending 15 分鐘緩衝＋撿件即鎖＋開立前重驗來源。
+exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+  if (!(await invoiceGloballyEnabled())) return;
+  const cutoff = Date.now() - 15 * 60000;
+  const snap = await db.collection("invoices")
+    .where("status", "in", ["error", "pending", "void_error"]).limit(50).get();
+  for (const d of snap.docs) {
+    const inv0 = d.data();
+    if (inv0.status === "pending" && (inv0.createdTs || 0) > cutoff) continue;   // 主流程還在路上，不搶跑
+    if ((inv0.retryCount || 0) >= 10) {
+      if (inv0.status !== "dead") await d.ref.update({ status: "dead" });
+      continue;
+    }
+    // 撿件即鎖（與主流程 / voidOrAllowance 互斥）
+    const locked = await db.runTransaction(async (tx) => {
+      const cur = (await tx.get(d.ref)).data();
+      if (!["error", "pending", "void_error"].includes(cur.status)) return null;
+      tx.update(d.ref, { status: cur.status === "void_error" ? "voiding" : "issuing" });
+      return cur;
+    });
+    if (!locked) continue;
+    try {
+      const creds = locked.sellerUsername ? await getOrganizerCreds(locked.sellerUsername) : await getAmegoCreds();
+      if (!creds) { await d.ref.update({ status: "dead", lastError: "賣方光貿憑證不存在" }); continue; }
+      if (locked.status === "void_error") {
+        await d.ref.update({ status: "issued" });                                // 解鎖回 issued 重跑狀態機
+        await voidOrAllowance(d.ref.id, Number(locked.pendingRefund) || locked.amount, creds);
+      } else {
+        // v9 第三層防呆：來源已退費/已刪 → 不開立
+        if (!(await _sourceStillBillable(locked))) { await d.ref.update({ status: "cancelled_before_issue" }); continue; }
+        await _tryIssue(d.ref, locked, creds);
+      }
+    } catch (e) {
+      await d.ref.update({ status: locked.status, lastError: String(e.message).slice(0, 300),
+        retryCount: FieldValue.increment(1) });
+    }
+  }
+});
+
+// 中獎自動通知（10-10）：每月 1 日 09:00 執行；僅開獎後月份（雙月）實跑。
+// 光貿 lottery_status 期別 API 明定 0-based（LOTTERY_RUN_MAP），勿改 1-based。
+exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+  if (!(await invoiceGloballyEnabled())) return;
+  const now = new Date(Date.now() + 8 * 3600000);
+  const run = LOTTERY_RUN_MAP[now.getUTCMonth() + 1];
+  if (!run) return;
+  const year = now.getUTCFullYear() + run.dy, period = run.period;
+  const credsList = [{ creds: await getAmegoCreds(), owner: "" }];
+  const secSnap = await db.collection("appSecrets").get();
+  secSnap.docs.forEach(d => {
+    if (d.id.startsWith("amego_")) {
+      const x = d.data();
+      if (x.ban && x.appKey) credsList.push({ creds: { ban: x.ban, appKey: x.appKey }, owner: d.id.slice(6) });
+    }
+  });
+  for (const { creds } of credsList) {
+    let hits = [];
+    try { hits = (await amego.lotteryStatus(creds, year, period)).data || []; } catch (e) { continue; }
+    for (const h of hits) {
+      const snap = await db.collection("invoices").where("invoiceNumber", "==", h.invoice_number).limit(1).get();
+      if (snap.empty) continue;                                    // ①②模式主辦自開的票平台無存根（範圍限制）
+      const ref = snap.docs[0].ref, inv = snap.docs[0].data();
+      if (inv.lottery && inv.lottery.notifiedAt) continue;         // 冪等
+      await ref.update({ lottery: { type: h.type, period: year + "-P" + period, notifiedAt: fmtNow() } });
+      try { await _storeInvoicePdf(ref, inv.invoiceNumber, creds); } catch (e) {}   // 載具票中獎後補抓 PDF（Q12）
+      if (inv.buyer && inv.buyer.email) {
+        try {
+          await queueMail([inv.buyer.email], "[RegMaster] 電子發票中獎通知",
+            emailWrap("🎉 您的電子發票中獎了！",
+              `<p>發票號碼 <b style="font-family:monospace">${escMail(inv.invoiceNumber)}</b>（開立日 ${escMail(String(inv.invoiceDate))}）已於本期統一發票開獎中獎。</p>
+               <p>發票檔案已可於 RegMaster 下載，請依財政部規定領獎。</p>`));
+        } catch (e) {}
+      }
+    }
+  }
+});
+
+// 主辦方發票月報（10-11）：每月 1 日 08:00 產上月 xlsx 存 Storage＋索引＋Email（notifPrefs.email.invoiceReport 可關）。
+exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+  if (!(await invoiceGloballyEnabled())) return;
+  const ExcelJS = require("exceljs");   // lazy
+  const now = new Date(Date.now() + 8 * 3600000);
+  const ym = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const ymKey = ym.getUTCFullYear() + "-" + String(ym.getUTCMonth() + 1).padStart(2, "0");
+  const inMonth = (v) => String(v.createdAt || "").startsWith(ymKey);
+  const headers = ["日期", "發票號碼", "類型", "買受人", "統編", "金額", "狀態", "折讓單號", "折讓金額"];
+  const toRow = (v) => [v.invoiceDate || "", v.invoiceNumber || "", v.kind, v.buyer.name || "",
+    v.buyer.ban === "0000000000" ? "" : v.buyer.ban, v.amount, v.status,
+    (v.allowances || []).map(a => a.allowanceNumber).join("|"),
+    (v.allowances || []).reduce((s, a) => s + (a.amount || 0), 0) || ""];
+  const orgSnap = await db.collection("accounts").where("role", "==", "competition").get();
+  const buildAndSave = async (username, recvRows, sentRows) => {
+    const wb = new ExcelJS.Workbook();
+    const w1 = wb.addWorksheet("收到的發票"); w1.addRow(headers); recvRows.forEach(r => w1.addRow(r));
+    const w2 = wb.addWorksheet("開出的發票"); w2.addRow(headers); sentRows.forEach(r => w2.addRow(r));
+    const buf = Buffer.from(await wb.xlsx.writeBuffer());
+    const path = "invoiceReports/" + username + "/" + ymKey + ".xlsx";
+    await admin.storage().bucket().file(path).save(buf,
+      { contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    await db.collection("invoiceReports").doc(username + "_" + ymKey).set({
+      username, month: ymKey, path, recvCount: recvRows.length, sentCount: sentRows.length, createdAt: fmtNow() });
+    return path;
+  };
+  for (const od of orgSnap.docs) {
+    const u = od.data().username;
+    try {
+      const [recvSnap, sentSnap] = await Promise.all([
+        db.collection("invoices").where("buyerUsername", "==", u).limit(1000).get(),
+        db.collection("invoices").where("sellerUsername", "==", u).limit(1000).get()
+      ]);
+      const recvRows = recvSnap.docs.map(d => d.data()).filter(inMonth).map(toRow);
+      const sentRows = sentSnap.docs.map(d => d.data()).filter(inMonth).map(toRow);
+      if (!recvRows.length && !sentRows.length) continue;          // 無資料不產報不寄信
+      await buildAndSave(u, recvRows, sentRows);
+      const prefDoc = await db.collection("notifPrefs").doc(u).get();
+      const pref = prefDoc.exists ? (prefDoc.data().email || {}) : {};
+      if (pref.invoiceReport !== false) {
+        const to = await organiserEmail(u);
+        if (to && to.length) await queueMail(to, "[RegMaster] " + ymKey + " 發票月報",
+          emailWrap("📊 發票月報已產生",
+            `<p>${ymKey} 月報已可下載：收到 ${recvRows.length} 張、開出 ${sentRows.length} 張。</p>
+             <p>請至 後台 → 帳務 → 發票分頁 → 月報下載。</p>`));
+      }
+    } catch (e) { console.warn("invoiceReport", u, e.message); }
+  }
+  // 平台全域月報（系統管理者）
+  try {
+    const allSnap = await db.collection("invoices").where("sellerType", "==", "platform").limit(2000).get();
+    const rows = allSnap.docs.map(d => d.data()).filter(inMonth).map(toRow);
+    if (rows.length) await buildAndSave("_platform", rows, []);
+  } catch (e) { console.warn("platform invoiceReport", e.message); }
+});
+// ===================== 電子發票排程（結束）=====================
+
 // #4: every 15 min, send any campaign whose scheduledFor time has arrived.
 exports.processScheduledCampaigns = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
   const now = Date.now();
@@ -9732,6 +10549,26 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
 
   const todos = [];
   const now = Date.now();
+
+  // 電子發票異常告警（帳號層級，一次彙總）：error/dead/void_error/pending_profile 需人工關注
+  try {
+    const _bad = ["error", "dead", "void_error", "pending_profile"];
+    const [pb, ps] = await Promise.all([
+      db.collection("invoices").where("buyerUsername", "==", username).limit(300).get(),
+      db.collection("invoices").where("sellerUsername", "==", username).limit(300).get()
+    ]);
+    const invProblemCount = pb.docs.filter(d => _bad.includes(d.data().status)).length
+      + ps.docs.filter(d => _bad.includes(d.data().status)).length;
+    if (invProblemCount > 0) {
+      todos.push({
+        priority: "med",
+        title: `處理 ${invProblemCount} 張發票異常`,
+        body: "有電子發票開立/作廢異常或待補發票資料，請至帳務發票分頁查看",
+        link: "/admin/events/index.html#invoices",
+        compId: ""
+      });
+    }
+  } catch (e) { /* 發票告警失敗不影響其他待辦 */ }
 
   for (const cDoc of compSnap.docs) {
     const c = cDoc.data();
