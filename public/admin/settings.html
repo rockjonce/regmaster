@@ -147,6 +147,41 @@
               <div class="save-bar save-bar-static"><button class="btn btn-primary" id="savePayoutBtn" data-i18n="adSetBtnSavePayout">儲存收款帳戶</button></div>
             </div>
           </div>
+
+          <!-- 電子發票：發票資訊（平台開立方案/手續費發票用；撥款前必填）＋報名費發票模式（Phase 3） -->
+          <div class="section">
+            <div class="sh"><h3 data-i18n="adSetInvH3">電子發票</h3><p data-i18n="adSetInvSub">平台開立方案／手續費發票給您時使用；申請撥款前必填。</p></div>
+            <div class="sb">
+              <div class="fld"><div class="lbl" data-i18n="adSetInvType">發票類型</div>
+                <label style="margin-right:16px"><input type="radio" name="invType" value="duplicate"> <span data-i18n="adSetInvDup">二聯式（個人）</span></label>
+                <label><input type="radio" name="invType" value="triplicate"> <span data-i18n="adSetInvTri">三聯式（公司，打統編）</span></label>
+              </div>
+              <div class="row-2">
+                <div class="fld inv-tri" style="display:none"><div class="lbl" data-i18n="adSetInvTaxId">統一編號</div><input id="inv-taxid" maxlength="8" inputmode="numeric" placeholder="8 碼數字，輸入後自動帶入抬頭" data-i18n-placeholder="adSetInvTaxIdPh"></div>
+                <div class="fld inv-tri" style="display:none"><div class="lbl" data-i18n="adSetInvTitle">發票抬頭</div><input id="inv-title"></div>
+                <div class="fld inv-dup" style="display:none"><div class="lbl" data-i18n="adSetInvCarrier">手機條碼載具（選填）</div><input id="inv-carrier" placeholder="/ABC+123"></div>
+                <div class="fld"><div class="lbl" data-i18n="adSetInvEmail">發票接收 Email</div><input id="inv-email" type="email"></div>
+              </div>
+              <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveInvBtn" data-i18n="adSetBtnSaveInv">儲存發票資訊</button></div>
+
+              <div style="border-top:1px solid var(--line-2); margin:18px 0 14px"></div>
+              <div class="lbl" data-i18n="adSetEinvModeH">報名費電子發票模式</div>
+              <p style="font:400 12px/1.6 var(--f-tc); color:var(--ink-3); margin:2px 0 10px" data-i18n="adSetEinvModeSub">決定報名者付費後的發票處理方式。「自動開立」需綁定貴單位自己的光貿電子發票帳號。</p>
+              <div class="fld">
+                <label style="display:block;margin:4px 0"><input type="radio" name="einvMode" value="off"> <span data-i18n="adSetEinvOff">關閉 — 我自行開立發票給報名者</span></label>
+                <label style="display:block;margin:4px 0"><input type="radio" name="einvMode" value="assist"> <span data-i18n="adSetEinvAssist">發票輔助 — 系統收集報名者發票資訊並提供建議金額，由我開立</span></label>
+                <label style="display:block;margin:4px 0"><input type="radio" name="einvMode" value="auto"> <span data-i18n="adSetEinvAuto">自動開立 — 綁定光貿帳號，付款成功自動開立、退費自動作廢／折讓</span></label>
+              </div>
+              <div id="einvBindBox" style="display:none">
+                <div class="row-2">
+                  <div class="fld"><div class="lbl" data-i18n="adSetEinvBan">貴單位統一編號</div><input id="einv-ban" maxlength="8" inputmode="numeric"></div>
+                  <div class="fld"><div class="lbl" data-i18n="adSetEinvKey">光貿 App Key</div><input id="einv-key" type="password" placeholder="已綁定則留空＝不變更" data-i18n-placeholder="adSetEinvKeyPh"></div>
+                </div>
+                <p style="font:400 11.5px/1.6 var(--f-tc); color:var(--ink-3)" data-i18n="adSetEinvBindHint">需先向光貿科技申請電子發票加值服務並設定字軌。儲存時系統以唯讀查詢驗證連線，不會開立任何發票。</p>
+              </div>
+              <div class="save-bar save-bar-static"><button class="btn btn-primary" id="saveEinvModeBtn" data-i18n="adSetBtnSaveEinvMode">儲存發票模式</button></div>
+            </div>
+          </div>
         </div>
 
         <!-- notifications -->
@@ -363,6 +398,18 @@
     TWBankUI.fillBranches(payoutBranchSel, p.payoutBankCode || '', p.payoutBranchCode || '');
     document.getElementById('payout-account').value = p.payoutAccount || '';
     document.getElementById('payout-name').value = p.payoutName || '';
+    // 電子發票資訊＋報名費發票模式（Phase 1/3）
+    var ip = p.invoiceProfile || {};
+    if (ip.type) { var t = document.querySelector('input[name="invType"][value="' + ip.type + '"]'); if (t) t.checked = true; }
+    document.getElementById('inv-taxid').value = ip.taxId || '';
+    document.getElementById('inv-title').value = ip.title || '';
+    document.getElementById('inv-carrier').value = ip.carrierId || '';
+    document.getElementById('inv-email').value = ip.email || p.email || '';
+    _invTypeSync();
+    var em = document.querySelector('input[name="einvMode"][value="' + (p.einvoiceMode || 'off') + '"]');
+    if (em) em.checked = true;
+    document.getElementById('einv-ban').value = p.amegoBan || '';
+    _einvModeSync();
   }).getMyProfile();
 
   document.getElementById('savePayoutBtn').addEventListener('click', function () {
@@ -380,6 +427,62 @@
       })
       .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = o; uiAlert(L('adSetFail') + (err && err.message)); })
       .savePayoutAccount(bankCode, TWBankUI.bankName(bankCode), branchCode, TWBankUI.branchName(bankCode, branchCode), accountNumber, accountName);
+  });
+
+  // ---- 電子發票（Phase 1 發票資訊 / Phase 3 發票模式）----
+  function _invType() { var r = document.querySelector('input[name="invType"]:checked'); return r ? r.value : ''; }
+  function _invTypeSync() {
+    var t = _invType();
+    document.querySelectorAll('.inv-tri').forEach(function (el) { el.style.display = t === 'triplicate' ? '' : 'none'; });
+    document.querySelectorAll('.inv-dup').forEach(function (el) { el.style.display = t === 'duplicate' ? '' : 'none'; });
+  }
+  function _einvModeSync() {
+    var r = document.querySelector('input[name="einvMode"]:checked');
+    document.getElementById('einvBindBox').style.display = (r && r.value === 'auto') ? '' : 'none';
+  }
+  document.querySelectorAll('input[name="invType"]').forEach(function (r) { r.addEventListener('change', _invTypeSync); });
+  document.querySelectorAll('input[name="einvMode"]').forEach(function (r) { r.addEventListener('change', _einvModeSync); });
+  // 統編 blur → 唯讀查詢自動帶抬頭（可改；查無不阻擋）
+  document.getElementById('inv-taxid').addEventListener('blur', function () {
+    var ban = this.value.trim();
+    if (!/^\d{8}$/.test(ban)) return;
+    runFn('banLookup', { ban: ban }).then(function (res) {
+      if (res && res.success && res.name && !document.getElementById('inv-title').value.trim())
+        document.getElementById('inv-title').value = res.name;
+    }).catch(function () {});
+  });
+  document.getElementById('saveInvBtn').addEventListener('click', function () {
+    var t = _invType();
+    if (!t) { uiAlert(L('adSetInvNeedType')); return; }
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetSavingBusy');
+    runFn('saveInvoiceProfile', {
+      type: t,
+      taxId: document.getElementById('inv-taxid').value.trim(),
+      title: document.getElementById('inv-title').value.trim(),
+      carrierType: document.getElementById('inv-carrier').value.trim() ? '3J0002' : '',
+      carrierId: document.getElementById('inv-carrier').value.trim(),
+      email: document.getElementById('inv-email').value.trim()
+    }).then(function (res) {
+      btn.disabled = false; btn.textContent = o;
+      if (res && res.success) { btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = o; }, 1400); }
+      else uiAlert((res && res.message) || L('adSetSaveFail'));
+    }).catch(function (err) { btn.disabled = false; btn.textContent = o; uiAlert(L('adSetFail') + (err && err.message)); });
+  });
+  document.getElementById('saveEinvModeBtn').addEventListener('click', function () {
+    var r = document.querySelector('input[name="einvMode"]:checked');
+    var mode = r ? r.value : 'off';
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetSavingBusy');
+    runFn('saveEinvoiceMode', {
+      mode: mode,
+      amegoBan: document.getElementById('einv-ban').value.trim(),
+      amegoAppKey: document.getElementById('einv-key').value.trim()
+    }).then(function (res) {
+      btn.disabled = false; btn.textContent = o;
+      if (res && res.success) {
+        document.getElementById('einv-key').value = '';
+        btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = o; }, 1400);
+      } else uiAlert((res && res.message) || L('adSetSaveFail'));
+    }).catch(function (err) { btn.disabled = false; btn.textContent = o; uiAlert(L('adSetFail') + (err && err.message)); });
   });
 
   document.querySelectorAll('.set-nav a').forEach(function (a) {

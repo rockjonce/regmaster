@@ -83,6 +83,7 @@ a.btn-back { display:inline-block; margin-top:18px; padding:10px 18px; backgroun
             // LINE-verified email — needed by /my.html to enable the check-in QR button
             if (res.email) sessionStorage.setItem('rm_social_email', String(res.email).toLowerCase());
             sessionStorage.setItem('rm_social_provider', 'line');
+            if (res.invoiceToken) sessionStorage.setItem('rm_social_invtok', res.invoiceToken);   // Phase 3：發票查詢權杖
           } catch (e) {}
           location.href = '/my.html?social=line';
         }

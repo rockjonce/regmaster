@@ -229,6 +229,13 @@ html, body { max-width:100%; overflow-x:hidden; }
   </div>
 
   <div class="reg-list" id="regList"></div>
+
+  <!-- Phase 3：發票與折讓紀錄（email 歸戶；獨立於報名卡，退刷刪隊後仍可下載折讓單——v9） -->
+  <div id="invHistory" style="display:none; margin-top:26px">
+    <h3 style="font:700 16px/1.4 var(--f-display); margin-bottom:10px" data-i18n="myInvH">🧾 發票與折讓紀錄</h3>
+    <p style="font:400 12px/1.6 var(--f-tc); color:var(--muted); margin-bottom:10px" data-i18n="myInvHint">載具／捐贈發票依法規中獎後才提供檔案下載；下載連結於點擊當下產生。</p>
+    <div id="invHistList"></div>
+  </div>
 </div>
 
 <script src="/shared/app-state.js"></script>
@@ -265,6 +272,7 @@ html, body { max-width:100%; overflow-x:hidden; }
   // up the QR for cards whose lookup-target email matches.
   // Shape: { provider: 'google'|'line', email: '<verified-email-lowercase>' }
   var OAUTH_VERIFIED = null;
+  var INV_TOKEN = '';   // Phase 3：發票查詢權杖（listMyRegistrationsBySocial 核發，30 天）
   // Email used to fetch the current registrations (the typed Email/phone in
   // the lookup form, or the verified social email). Compared to OAUTH_VERIFIED.email.
   var LOOKUP_EMAIL = '';
@@ -1140,6 +1148,54 @@ html, body { max-width:100%; overflow-x:hidden; }
   }
 
   // ===== 社群登入查詢 =====
+  // ===== Phase 3：發票與折讓紀錄（invoiceToken 驗證；email 歸戶，不依賴報名卡存活）=====
+  var INV_STATUS_LABEL = {
+    issued: '已開立', pending: '開立中…', pending_profile: '開立中…', error: '處理中',
+    dead: '處理中，如有問題請聯絡主辦方', voiding: '處理中…', issuing: '開立中…',
+    void_error: '處理中', "void": '已作廢', allowanced: '已開折讓', cancelled_before_issue: '已取消'
+  };
+  function _invDl(filename, base64) {
+    var bin = atob(base64), arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
+    var a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function loadInvoiceHistory() {
+    runFn('getMyInvoices', { invoiceToken: INV_TOKEN }).then(function (r) {
+      if (!r || !r.success || !(r.invoices || []).length) return;
+      document.getElementById('invHistory').style.display = '';
+      document.getElementById('invHistList').innerHTML = r.invoices.map(function (v) {
+        var rows = '<div style="display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; padding:10px 4px; border-bottom:1px solid var(--line, #e2e8f0); font:400 13px/1.6 var(--f-tc)">'
+          + '<span style="font-family:monospace; font-weight:600">' + escapeHtml(v.invoiceNumber || window.L('myInvPending')) + '</span>'
+          + (v.invoiceDate ? '<span>' + escapeHtml(String(v.invoiceDate)) + '</span>' : '')
+          + '<span>NT$' + Number(v.amount).toLocaleString() + '</span>'
+          + '<span>' + (INV_STATUS_LABEL[v.status] || '處理中') + (v.lottery ? ' 🏆' + window.L('myInvLottery') : '') + '</span>'
+          + (v.randomNumber ? '<span style="color:var(--muted)">' + window.L('myInvRandom') + ' ' + escapeHtml(v.randomNumber) + '</span>' : '')
+          + (v.hasPdf ? '<a href="#" data-myinvdl="' + escapeHtml(v.invId) + '" style="color:var(--acc, #2563eb)">' + window.L('myInvDl') + '</a>'
+                      : (v.status === 'issued' ? '<span style="color:var(--muted); font-size:11.5px">' + window.L('myInvNoPdf') + '</span>' : ''))
+          + '</div>';
+        (v.allowances || []).forEach(function (a) {
+          rows += '<div style="padding:4px 4px 8px 20px; border-bottom:1px solid var(--line, #e2e8f0); font:400 12px/1.5 var(--f-tc); color:var(--ink-2, #475569)">'
+            + window.L('myInvAllowance') + ' ' + escapeHtml(a.no) + ' · NT$' + Number(a.amount).toLocaleString()
+            + (a.hasPdf ? ' <a href="#" data-myinvdl="' + escapeHtml(v.invId) + '" data-allow="' + escapeHtml(a.no) + '" style="color:var(--acc, #2563eb)">' + window.L('myInvDl') + '</a>' : '')
+            + '</div>';
+        });
+        return rows;
+      }).join('');
+    }).catch(function () {});
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('a[data-myinvdl]'); if (!t) return;
+    e.preventDefault();
+    runFn('getMyInvoiceFile', { invoiceToken: INV_TOKEN, invId: t.dataset.myinvdl, allowanceNumber: t.dataset.allow || '' })
+      .then(function (r) {
+        if (r && r.success) _invDl(r.filename, r.base64);
+        else uiAlert((r && r.message) || window.L('myInvDlFail'));
+      }).catch(function (err) { uiAlert((err && err.message) || window.L('myInvDlFail')); });
+  });
+
   function showSocialRegs(regs, verifiedEmail, provider) {
     regs = regs || [];
     PWD_BY_TEAM = {}; MANAGE_BY_TEAM = {};
@@ -1153,6 +1209,7 @@ html, body { max-width:100%; overflow-x:hidden; }
       LOOKUP_EMAIL = OAUTH_VERIFIED.email;
     }
     ALL = regs; render();   // render() 會顯示 kpiRow + resultsArea（renderList 只畫卡片）
+    if (INV_TOKEN) loadInvoiceHistory();   // Phase 3：社群驗證成功 → 載入發票與折讓紀錄
     if (!regs.length) {
       var box = document.getElementById('lookupErr');
       box.textContent = window.L('myErrSocialNoRegs');
@@ -1178,6 +1235,7 @@ html, body { max-width:100%; overflow-x:hidden; }
         try { firebase.auth().signOut(); } catch (e) {}
         if (_b) _b.dismiss();
         if (res && res.success) {
+          INV_TOKEN = res.invoiceToken || '';   // Phase 3：發票查詢權杖
           // Prefer server-returned email (it's the verified one); fall back to
           // the client one we captured above.
           showSocialRegs(res.registrations, res.email || verifiedEmail, 'google');
@@ -1208,9 +1266,11 @@ html, body { max-width:100%; overflow-x:hidden; }
       var stashed = JSON.parse(sessionStorage.getItem('rm_social_regs') || '[]');
       var stashedEmail = sessionStorage.getItem('rm_social_email') || '';
       var stashedProv  = sessionStorage.getItem('rm_social_provider') || qs.get('social') || 'line';
+      INV_TOKEN = sessionStorage.getItem('rm_social_invtok') || '';   // Phase 3：LINE 流程帶回的發票權杖
       sessionStorage.removeItem('rm_social_regs');
       sessionStorage.removeItem('rm_social_email');
       sessionStorage.removeItem('rm_social_provider');
+      sessionStorage.removeItem('rm_social_invtok');
       if (stashed.length) showSocialRegs(stashed, stashedEmail, stashedProv);
     } catch (e) {}
   }

@@ -51,6 +51,16 @@
     rgStep2Title: '填寫成員資料',
     rgStep2Sub: '每位成員都需要提供基本資料。可以稍後再修改。',
     rgSecStudent: '報名者',
+    // ----- e-invoice block (Phase 3, Q11-A) -----
+    rgInvTitle: '發票開立資訊（開給付款人）', rgInvPersonal: '個人', rgInvCompany: '公司（打統編）',
+    rgInvCloud: '雲端發票（開立通知寄至 Email）', rgInvMobile: '手機條碼載具', rgInvDonate: '捐贈發票',
+    rgInvCarrierPh: '/ABC+123', rgInvNpobanPh: '捐贈碼（3-7 碼數字）',
+    rgInvTaxIdPh: '統一編號（8 碼）', rgInvTitlePh: '發票抬頭',
+    rgInvCarrierBad: '查無此手機條碼，請確認（仍可送出，開立時以財政部驗證為準）',
+    rgInvValTaxId: '統一編號格式或檢查碼錯誤，請確認 8 碼數字',
+    rgInvValTitle: '請填寫發票抬頭',
+    rgInvValCarrier: '手機條碼載具格式錯誤（斜線開頭共 8 碼，例：/ABC+123）',
+    rgInvValNpoban: '捐贈碼格式錯誤（3-7 碼數字）',
     rgSecTeacher: '指導者',
 
     // ----- step 3 -----
@@ -304,6 +314,16 @@
     rgStep2Title: 'Fill in member details',
     rgStep2Sub: 'Each member needs to provide basic information. You can edit it later.',
     rgSecStudent: 'Participants',
+    // ----- e-invoice block -----
+    rgInvTitle: 'Invoice info (issued to the payer)', rgInvPersonal: 'Personal', rgInvCompany: 'Company (with tax ID)',
+    rgInvCloud: 'Cloud invoice (notice sent to your email)', rgInvMobile: 'Mobile barcode carrier', rgInvDonate: 'Donate',
+    rgInvCarrierPh: '/ABC+123', rgInvNpobanPh: 'Donation code (3–7 digits)',
+    rgInvTaxIdPh: 'Tax ID (8 digits)', rgInvTitlePh: 'Invoice title',
+    rgInvCarrierBad: 'Barcode not found — please double-check (you may still submit; issuance validates against the MOF)',
+    rgInvValTaxId: 'Invalid tax ID format or checksum — 8 digits required',
+    rgInvValTitle: 'Please enter the invoice title',
+    rgInvValCarrier: 'Invalid mobile barcode (8 chars starting with "/", e.g. /ABC+123)',
+    rgInvValNpoban: 'Invalid donation code (3–7 digits)',
     rgSecTeacher: 'Instructors',
 
     rgStep3Eyebrow: 'STEP 03',

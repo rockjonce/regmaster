@@ -30,6 +30,11 @@
     myFilterPaid: '已付款',
     myFilterPast: '已過期',
     myChangeEmail: '↩ 改用其他 Email',
+    // ----- e-invoice history (Phase 3) -----
+    myInvH: '🧾 發票與折讓紀錄',
+    myInvHint: '載具／捐贈發票依法規中獎後才提供檔案下載；下載連結於點擊當下產生。',
+    myInvPending: '開立中…', myInvLottery: ' 中獎', myInvRandom: '隨機碼', myInvDl: '下載',
+    myInvNoPdf: '載具/捐贈票（中獎後可下載）', myInvAllowance: '折讓單', myInvDlFail: '下載失敗，請稍後再試',
     // ----- dynamic: lookup validation / button states -----
     myErrNeedEmail: '請輸入 Email',
     myErrNeedPhone: '請輸入 電話',
@@ -150,6 +155,11 @@
     myFilterPaid: 'Paid',
     myFilterPast: 'Past',
     myChangeEmail: '↩ Use a different email',
+    // ----- e-invoice history -----
+    myInvH: '🧾 Invoices & Allowances',
+    myInvHint: 'Carrier/donated invoices are downloadable only after winning the lottery (per regulation); links are generated on click.',
+    myInvPending: 'Issuing…', myInvLottery: ' Winner', myInvRandom: 'Random code', myInvDl: 'Download',
+    myInvNoPdf: 'Carrier/donated (downloadable after winning)', myInvAllowance: 'Allowance', myInvDlFail: 'Download failed, please retry later',
     myErrNeedEmail: 'Please enter your email',
     myErrNeedPhone: 'Please enter your phone number',
     myErrBadEmail: 'Invalid email format',

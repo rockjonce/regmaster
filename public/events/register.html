@@ -282,6 +282,28 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           <div class="review-section" style="border-color:var(--acc-soft); background:color-mix(in srgb, var(--acc) 5%, var(--surface))">
             <h5 style="border-bottom-color:var(--acc-soft)" data-i18n="rgPaySelect">選擇付款方式</h5>
             <div id="payMethodCards" style="display:flex; flex-direction:column; gap:10px"></div>
+
+            <!-- Phase 3：標準發票區塊（主辦啟用發票輔助/自動開立時顯示；Q11-A 固定顯示、開給付款人） -->
+            <div id="invoiceSection" style="display:none; margin-top:18px; padding-top:16px; border-top:1px solid var(--line)">
+              <h3 style="font:700 14px/1.4 var(--f-display); margin-bottom:10px" data-i18n="rgInvTitle">發票開立資訊（開給付款人）</h3>
+              <div class="opt-group" style="margin-bottom:10px">
+                <label class="opt-pill"><input type="radio" name="invKind" value="personal" checked> <span data-i18n="rgInvPersonal">個人</span></label>
+                <label class="opt-pill"><input type="radio" name="invKind" value="company"> <span data-i18n="rgInvCompany">公司（打統編）</span></label>
+              </div>
+              <div id="invPersonalBox">
+                <div class="fld"><select id="invCarrierType">
+                  <option value="" data-i18n="rgInvCloud">雲端發票（開立通知寄至 Email）</option>
+                  <option value="3J0002" data-i18n="rgInvMobile">手機條碼載具</option>
+                  <option value="donate" data-i18n="rgInvDonate">捐贈發票</option>
+                </select></div>
+                <div class="fld" id="invCarrierIdFld" style="display:none"><input id="invCarrierId" placeholder="/ABC+123" data-i18n-placeholder="rgInvCarrierPh"><div id="invCarrierHint" style="font:400 11.5px/1.5 var(--f-tc); color:var(--err-700, #b91c1c)"></div></div>
+                <div class="fld" id="invNpobanFld" style="display:none"><input id="invNpoban" inputmode="numeric" placeholder="捐贈碼（3-7 碼數字）" data-i18n-placeholder="rgInvNpobanPh"></div>
+              </div>
+              <div id="invCompanyBox" style="display:none">
+                <div class="fld"><input id="invTaxId" maxlength="8" inputmode="numeric" placeholder="統一編號（8 碼）" data-i18n-placeholder="rgInvTaxIdPh"></div>
+                <div class="fld"><input id="invTitle" placeholder="發票抬頭" data-i18n-placeholder="rgInvTitlePh"></div>
+              </div>
+            </div>
             <div id="atmFields" style="display:none; margin-top:14px; padding:14px; border:1px solid var(--line); border-radius:9px; background:var(--surface)">
               <div class="fields-2">
                 <div class="fld">
@@ -517,6 +539,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   var editTeamId = (qs.get('edit') || '').trim().toUpperCase();
   // Q2/Q3/Q4: payment computed after CFG loads
   var TOTAL_FEE = 0, NEEDS_PAYMENT = false, AVAILABLE_METHODS = [];
+  var EINV_MODE = 'off';   // Phase 3：主辦方報名費發票模式（off/assist/auto，來自 bundle）
   // T1: step 1 is only meaningful when group/session/team-name fields are configured
   var STEP1_NEEDED = true;
   function firstStep() { return STEP1_NEEDED ? 1 : 2; }
@@ -559,6 +582,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       CFG = data.config || {};
       CFG.sessionAccepted = data.sessionAccepted || {};
       CFG.sessionWaitlist = data.sessionWaitlist || {};
+      EINV_MODE = data.einvoiceMode || 'off';   // Phase 3：發票區塊顯示依據
       initWizard();
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('layout').style.display = 'grid';
@@ -724,6 +748,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       return false;
     });
     NEEDS_PAYMENT = TOTAL_FEE > 0 && methods.length > 0;
+    // Phase 3（Q11-A）：主辦啟用發票輔助/自動開立 → 付款步驟固定顯示標準發票區塊；off 完全不顯示
+    var _invSec = document.getElementById('invoiceSection');
+    if (_invSec) _invSec.style.display = (NEEDS_PAYMENT && EINV_MODE !== 'off') ? '' : 'none';
     AVAILABLE_METHODS = methods;
     if (NEEDS_PAYMENT) {
       var s4t = document.getElementById('step4Title');
@@ -1499,6 +1526,59 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     return true;
   }
 
+  // ===== Phase 3：標準發票區塊行為（Q11-A）=====
+  function _invKind() { var r = document.querySelector('input[name="invKind"]:checked'); return r ? r.value : 'personal'; }
+  function _invSync() {
+    var k = _invKind();
+    document.getElementById('invPersonalBox').style.display = k === 'personal' ? '' : 'none';
+    document.getElementById('invCompanyBox').style.display = k === 'company' ? '' : 'none';
+    var ct = document.getElementById('invCarrierType').value;
+    document.getElementById('invCarrierIdFld').style.display = (k === 'personal' && ct === '3J0002') ? '' : 'none';
+    document.getElementById('invNpobanFld').style.display = (k === 'personal' && ct === 'donate') ? '' : 'none';
+  }
+  document.querySelectorAll('input[name="invKind"]').forEach(function (r) { r.addEventListener('change', _invSync); });
+  document.getElementById('invCarrierType').addEventListener('change', _invSync);
+  // 統編 blur → 檢查碼（新制 %5）先過才查抬頭；查無不阻擋（光貿文件：查無不代表統編錯誤）
+  document.getElementById('invTaxId').addEventListener('blur', function () {
+    var ban = this.value.trim();
+    if (!/^\d{8}$/.test(ban) || !validateTaxId(ban)) return;
+    runFn('banLookup', { ban: ban }).then(function (res) {
+      if (res && res.success && res.name && !document.getElementById('invTitle').value.trim())
+        document.getElementById('invTitle').value = res.name;
+    }).catch(function () {});
+  });
+  // 載具 blur → 即時驗證（fail-open；正式把關在開立時）
+  document.getElementById('invCarrierId').addEventListener('blur', function () {
+    var v = this.value.trim().toUpperCase(); this.value = v;
+    var hint = document.getElementById('invCarrierHint'); hint.textContent = '';
+    if (!/^\/[0-9A-Z+\-.]{7}$/.test(v)) return;
+    runFn('carrierCheck', { barcode: v }).then(function (res) {
+      hint.textContent = (res && res.valid === false) ? window.L('rgInvCarrierBad') : '';
+    }).catch(function () {});
+  });
+  // 回傳發票選擇物件；驗證失敗回 false（已 showErr）
+  function collectInvoiceChoice() {
+    if (_invKind() === 'company') {
+      var ban = document.getElementById('invTaxId').value.trim();
+      var title = document.getElementById('invTitle').value.trim();
+      if (!/^\d{8}$/.test(ban) || !validateTaxId(ban)) { showErr(window.L('rgInvValTaxId')); return false; }
+      if (!title) { showErr(window.L('rgInvValTitle')); return false; }
+      return { kind: 'company', taxId: ban, title: title };
+    }
+    var ct = document.getElementById('invCarrierType').value;
+    if (ct === '3J0002') {
+      var cid = document.getElementById('invCarrierId').value.trim().toUpperCase();
+      if (!/^\/[0-9A-Z+\-.]{7}$/.test(cid)) { showErr(window.L('rgInvValCarrier')); return false; }
+      return { kind: 'personal', carrierType: '3J0002', carrierId: cid, npoban: '' };
+    }
+    if (ct === 'donate') {
+      var np = document.getElementById('invNpoban').value.trim();
+      if (!/^\d{3,7}$/.test(np)) { showErr(window.L('rgInvValNpoban')); return false; }
+      return { kind: 'personal', carrierType: 'donate', carrierId: '', npoban: np };
+    }
+    return { kind: 'personal', carrierType: '', carrierId: '', npoban: '' };   // 預設：雲端發票（Email）
+  }
+
   function validateStep(n) {
     hideErr();
     if (n === 1) {
@@ -1582,6 +1662,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           STATE.remitterBank = bank;
           STATE.remitterAccountTail = tail;
         }
+      }
+      // Phase 3（Q11-A）：發票區塊驗證與收集（僅主辦啟用②③且需付款時）
+      if (NEEDS_PAYMENT && EINV_MODE !== 'off' && !IS_EDIT) {
+        var ic = collectInvoiceChoice();
+        if (ic === false) return false;
+        STATE.invoiceChoice = ic;
       }
     }
     return true;
@@ -1691,6 +1777,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       students: STATE.students,
       teachers: STATE.teachers,
       customAnswers: STATE.customAnswers,
+      invoiceChoice: STATE.invoiceChoice || null,   // Phase 3：報名者發票選擇（存 teams，付款成功開立用）
       paymentMethod: STATE.payMethod || '',
       remitterName: '',
       remitterBank: STATE.payMethod === 'atm' ? (STATE.remitterBank || '') : '',

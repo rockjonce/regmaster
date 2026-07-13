@@ -284,6 +284,29 @@ body { background:var(--bg); }
           <button class="btn btn-primary" id="paramsSave" data-i18n="adSysParamsSave">儲存參數</button>
         </div>
 
+        <!-- 電子發票（光貿 Amego）：平台憑證與全平台總開關（樣式比照 PayUNI 參數卡） -->
+        <div class="card" style="margin-top:18px">
+          <div class="ch"><div><h3 data-i18n="adSysAmegoTitle">電子發票（光貿 Amego）</h3><p data-i18n="adSysAmegoSub">平台開立方案／手續費發票的憑證。App Key 為敏感資訊，儲存後不回顯；總開關關閉時全平台不會開立任何發票。</p></div></div>
+          <div class="cb">
+            <div class="row-2">
+              <div class="fld"><label class="lbl" data-i18n="adSysAmegoBan">賣方統一編號</label><input id="am-ban" maxlength="8" inputmode="numeric" placeholder="28469005"></div>
+              <div class="fld"><label class="lbl" data-i18n="adSysAmegoMode">環境</label><select id="am-mode"><option value="test" data-i18n="adSysAmegoModeTest">測試（光貿測試公司 12345678）</option><option value="prod" data-i18n="adSysAmegoModeProd">正式 (Production)</option></select></div>
+            </div>
+            <div class="row-2">
+              <div class="fld"><label class="lbl">App Key</label><input id="am-key" type="password" autocomplete="off"></div>
+              <div class="fld"><label class="lbl" data-i18n="adSysAmegoEnabled">全平台發票總開關</label>
+                <label style="font:400 12.5px/1.4 var(--f-tc); color:var(--ink-2); display:flex; align-items:center; gap:7px; margin-top:8px">
+                  <input type="checkbox" id="am-enabled" style="width:15px;height:15px"> <span data-i18n="adSysAmegoEnabledLbl">啟用電子發票開立</span></label>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-top:12px">
+              <button class="btn btn-ghost" id="amTestBtn" data-i18n="adSysAmegoTest">測試連線（唯讀）</button>
+              <button class="btn btn-primary" id="amSaveBtn" data-i18n="adSysAmegoSave">儲存電子發票設定</button>
+              <span id="amStatus" style="font:400 12px/1.5 var(--f-tc); color:var(--muted)"></span>
+            </div>
+          </div>
+        </div>
+
         <!-- AI 金鑰 + 知識庫（原「AI 金鑰」分頁整併至參數設定） -->
         <div class="card" style="margin-top:18px">
           <div class="ch"><div><h3><span data-i18n="adSysKeysTitle">Gemini API 金鑰</span> <span class="ct" id="ctKeys"></span></h3><p data-i18n="adSysKeysSub">AI 助理使用；系統會在多把金鑰間自動輪替以分散額度</p></div></div>
@@ -712,6 +735,39 @@ body { background:var(--bg); }
     document.getElementById('p-hashiv').type = t;
   });
   document.getElementById('paramsReload').addEventListener('click', loadParams);
+  // ---- 電子發票（光貿 Amego）平台設定 ----
+  function loadAmego() {
+    runFn('getAmegoPlatformStatus', {}).then(function (r) {
+      if (!r || !r.success) return;
+      document.getElementById('am-ban').value = r.ban || '';
+      document.getElementById('am-mode').value = r.mode || 'test';
+      document.getElementById('am-enabled').checked = !!r.invoiceEnabled;
+      var k = document.getElementById('am-key');
+      k.value = ''; k.placeholder = r.appKeySet ? '●●●●●●（已設定，留空不變更）' : '尚未設定';
+    }).catch(function () {});
+  }
+  loadAmego();
+  document.getElementById('amSaveBtn').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = window.L('adSysParamsSaving');
+    runFn('saveAmegoPlatformConfig', {
+      ban: document.getElementById('am-ban').value.trim(),
+      appKey: document.getElementById('am-key').value.trim(),
+      mode: document.getElementById('am-mode').value,
+      invoiceEnabled: document.getElementById('am-enabled').checked
+    }).then(function (r) {
+      btn.disabled = false; btn.textContent = o;
+      if (r && r.success) { toast(window.L('adSysParamsSaved')); loadAmego(); }
+      else toast((r && r.message) || window.L('adSysSaveFail'), 'err');
+    }).catch(function (e) { btn.disabled = false; btn.textContent = o; toast(e.message || window.L('adSysSaveFail'), 'err'); });
+  });
+  document.getElementById('amTestBtn').addEventListener('click', function () {
+    var st = document.getElementById('amStatus'); st.textContent = '測試中⋯';
+    runFn('testAmegoConnection', {}).then(function (r) {
+      st.textContent = (r && r.success)
+        ? ('✓ 連線成功（' + r.mode + '／' + r.ban + (r.name ? '／' + r.name : '') + '）')
+        : ('✗ ' + ((r && r.message) || '連線失敗'));
+    }).catch(function (e) { st.textContent = '✗ ' + (e.message || '連線失敗'); });
+  });
   document.getElementById('paramsSave').addEventListener('click', function () {
     var config = {
       taxRate: Number(document.getElementById('p-tax').value) || 0,
