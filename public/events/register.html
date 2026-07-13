@@ -1356,8 +1356,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     return code % 10 === 0;
   }
   // FB5: Taiwan 統一編號 checksum.
-  // Algorithm: weights [1,2,1,2,1,2,4,1]; product digit-sum each pair; total % 10 === 0.
-  // If digit[6] === 7, accept also (total + 1) % 10 === 0 (longstanding tax-office exception).
+  // Algorithm: weights [1,2,1,2,1,2,4,1]; product digit-sum each pair.
+  // 財政部 112 年 4 月新制：total % 5 === 0 即合法（舊制 %10 是其子集合，故僅放寬不誤擋）。
+  // If digit[6] === 7, accept also (total + 1) % 5 === 0 (tax-office exception).
   function validateTaxId(s) {
     s = String(s || '').trim();
     if (!/^\d{8}$/.test(s)) return false;
@@ -1367,8 +1368,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var p = parseInt(s[i], 10) * w[i];
       sum += Math.floor(p / 10) + (p % 10);
     }
-    if (sum % 10 === 0) return true;
-    if (s[6] === '7' && (sum + 1) % 10 === 0) return true;
+    if (sum % 5 === 0) return true;
+    if (s[6] === '7' && (sum + 1) % 5 === 0) return true;
     return false;
   }
   // FB5: today as YYYY-MM-DD (local), for date comparisons that should respect viewer TZ.
