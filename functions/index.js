@@ -340,8 +340,8 @@ async function invoiceGloballyEnabled() {
   const doc = await db.collection("config").doc("sales").get();
   return !!(doc.exists && doc.data().invoiceEnabled === true);
 }
-function _allowanceNo() {   // 折讓單號 ≤16 字、唯一
-  return "A" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 4).toUpperCase();
+function _allowanceNo() {   // 折讓單號 ≤16 字、唯一（QA#4：crypto 6 hex 碼後綴，防批次退款同毫秒碰撞）
+  return "A" + Date.now().toString(36).toUpperCase() + crypto.randomBytes(3).toString("hex").toUpperCase();
 }
 function _periodOf(ymd) {   // 雙月期別鍵（"2026-3"）：作廢/折讓同期判斷用
   const y = Math.floor(ymd / 10000), m = Math.floor(ymd / 100) % 100;
@@ -452,6 +452,7 @@ async function issueInvoiceFor(kind, refs, buyer, items, credsOverride) {
     status: buyer.incomplete ? "pending_profile" : "pending",
     invoiceNumber: "", invoiceDate: "", randomNumber: "", pdfPath: "",
     allowances: [], retryCount: 0, lastError: "",
+    refundRequested: false, pendingRefund: 0,   // QA#2：退費意圖標記（in-flight 退費不丟失）
     createdAt: fmtNow(), createdTs: Date.now(), issuedAt: ""
   };
   try { await ref.create(base); }
@@ -484,14 +485,67 @@ async function _tryIssue(ref, inv, creds) {
       invoiceNumber = r.invoice_number; randomNumber = r.random_number || "";
       invoiceDate = String(_todayYmd());
     }
-    await ref.update({ status: "issued", invoiceNumber, invoiceDate, randomNumber, issuedAt: fmtNow(), lastError: "" });
+    // 【QA#1/#2 修復】開立成功的落檔用 transaction 重讀：光貿呼叫期間（1-3 秒）若發生退費——
+    //  a) 狀態已被改成 cancelled_before_issue，或 b) in-flight 期間被標記 refundRequested 意圖——
+    // 都「不可」覆寫成 issued 放行，而是轉入沖銷程序（票已在光貿真實存在，必須作廢/折讓）。
+    const post = await db.runTransaction(async (tx) => {
+      const cur = (await tx.get(ref)).data() || {};
+      const upd = { invoiceNumber, invoiceDate, randomNumber, issuedAt: fmtNow(), lastError: "" };
+      if (cur.status === "cancelled_before_issue" || cur.refundRequested === true) {
+        upd.status = "voiding";                                   // 上鎖進沖銷；金額取退費意圖記錄，缺省=全額
+        upd.pendingRefund = Number(cur.pendingRefund) || inv.amount;
+        tx.update(ref, upd);
+        return { action: "void", refund: upd.pendingRefund };
+      }
+      upd.status = "issued";
+      tx.update(ref, upd);
+      return { action: "keep" };
+    });
+    if (post.action === "void") {
+      await _settleAfterLateIssue(ref, inv, creds, invoiceNumber, invoiceDate, post.refund);
+      return;
+    }
     // Q12：載具/捐贈票法規上中獎後才有 PDF；打統編或無載具紙本型 → 開立當下即存檔歸戶
     const isB2B = inv.buyer.ban && inv.buyer.ban !== "0000000000";
     const hasCarrier = !!inv.buyer.carrierType || !!inv.buyer.npoban;
     if (isB2B || !hasCarrier) { try { await _storeInvoicePdf(ref, invoiceNumber, creds); } catch (e) {} }
     try { await _sendInvoiceMail(inv, invoiceNumber, randomNumber); } catch (e) {}
   } catch (e) {
-    await ref.update({ status: "error", lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1) });
+    // 【QA#1 修復】失敗落檔同樣不可覆寫 cancelled_before_issue（退費已定案、票不存在 → 維持終態，
+    // 否則佇列會把已退費訂單的發票補開出來）
+    const msg = String(e.message).slice(0, 300);
+    await db.runTransaction(async (tx) => {
+      const cur = (await tx.get(ref)).data() || {};
+      if (cur.status === "cancelled_before_issue") return;
+      tx.update(ref, { status: "error", lastError: msg, retryCount: FieldValue.increment(1) });
+    });
+  }
+}
+// 【QA#1/#2】開立完成才發現退費已發生：票已在光貿存在 → 立即作廢；被拒（期別/折讓紀錄）→ 折讓；
+// 再失敗 → void_error＋pendingRefund 交佇列重試沖銷。
+async function _settleAfterLateIssue(ref, inv, creds, invoiceNumber, invoiceDate, refundGross) {
+  const gross = Math.round(Number(refundGross)) || inv.amount;
+  try {
+    if (gross >= inv.amount) {
+      try {
+        await amego.voidInvoice(creds, invoiceNumber);
+        await ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false });
+        return;
+      } catch (e) { /* 作廢被拒 → fallback 折讓 */ }
+    }
+    const no = _allowanceNo();
+    await amego.createAllowance(creds, {
+      allowanceNo: no, dateYmd: String(_todayYmd()), buyer: inv.buyer,
+      origInvoice: { number: invoiceNumber, dateYmd: parseInt(invoiceDate, 10) || _todayYmd() },
+      desc: (inv.items[0] && inv.items[0].desc) || "退費折讓", refundGross: gross
+    });
+    let pdfPath = "";
+    try { pdfPath = await _storeAllowancePdf(no, creds); } catch (e) {}
+    await ref.update({ status: "allowanced", lastError: "", refundRequested: false,
+      allowances: FieldValue.arrayUnion({ allowanceNumber: no, date: fmtNow(), amount: gross, pdfPath }) });
+  } catch (e) {
+    await ref.update({ status: "void_error", pendingRefund: gross,
+      lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1) });
   }
 }
 async function _storeInvoicePdf(ref, invoiceNumber, creds) {
@@ -529,13 +583,21 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
     const doc = await tx.get(ref);
     if (!doc.exists) return { act: "none" };
     const inv = doc.data();
+    const gross0 = Math.round(Number(refundGross)) || inv.amount;
     if (["pending", "error", "pending_profile", "dead"].includes(inv.status)) {
-      tx.update(ref, { status: "cancelled_before_issue", lastError: "退費於開立前發生" });   // 絕不呼叫光貿
+      // 絕不呼叫光貿；同時記錄退費意圖（QA#1：若光貿呼叫其實在途，_tryIssue 落檔時會據此轉沖銷）
+      tx.update(ref, { status: "cancelled_before_issue", refundRequested: true, pendingRefund: gross0,
+        lastError: "退費於開立前發生" });
       return { act: "none" };
     }
-    if (["void", "allowanced", "cancelled_before_issue", "voiding", "issuing"].includes(inv.status))
-      return { act: "none" };                                     // 冪等 / 處理中互斥
-    tx.update(ref, { status: "voiding" });
+    if (["issuing", "voiding"].includes(inv.status)) {
+      // QA#2：處理中不可丟棄退費意圖——標記後由 _tryIssue 落檔（或佇列）接手沖銷
+      tx.update(ref, { refundRequested: true, pendingRefund: gross0 });
+      return { act: "none" };
+    }
+    if (["void", "allowanced", "cancelled_before_issue"].includes(inv.status))
+      return { act: "none" };                                     // 終態冪等
+    tx.update(ref, { status: "voiding", pendingRefund: gross0 });
     return { act: "go", inv };
   });
   if (decision.act !== "go") return;
@@ -549,9 +611,9 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
     if (fullRefund && samePeriod && !inv.lottery) {
       try {
         await amego.voidInvoice(creds, inv.invoiceNumber);
-        await ref.update({ status: "void", voidedAt: fmtNow(), lastError: "" });
+        await ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false });
         return;
-      } catch (e) { /* 作廢被拒（期別/中獎等）→ fallback 折讓 */ }
+      } catch (e) { /* 作廢被拒（期別/中獎/已有折讓紀錄等）→ fallback 折讓 */ }
     }
     const no = _allowanceNo();
     await amego.createAllowance(creds, {
@@ -561,7 +623,7 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
     });
     let pdfPath = "";
     try { pdfPath = await _storeAllowancePdf(no, creds); } catch (e) {}
-    await ref.update({ status: "allowanced", lastError: "",
+    await ref.update({ status: "allowanced", lastError: "", refundRequested: false,
       allowances: FieldValue.arrayUnion({ allowanceNumber: no, date: fmtNow(), amount: gross, pdfPath }) });
   } catch (e) {
     await ref.update({ status: "void_error", pendingRefund: gross,
@@ -1590,28 +1652,41 @@ exports.testAmegoConnection = authCallable(["system"], async () => {
 // Phase 3：發票作廢重開（統編填錯救濟；同期別內、同金額；10-2）
 exports.reissueInvoice = compAuthCallable("manage", async (data, request) => {
   const ref = db.collection("invoices").doc(String(data.invId || ""));
-  const doc = await ref.get();
-  if (!doc.exists) return { success: false, message: "找不到發票" };
-  const inv = doc.data();
-  if (inv.compId !== data.compId) return { success: false, message: "發票不屬此活動" };
-  if (inv.status !== "issued") return { success: false, message: "僅「已開立」的發票可作廢重開（目前：" + inv.status + "）" };
-  if (_periodOf(parseInt(inv.invoiceDate, 10)) !== _periodOf(_todayYmd()))
-    return { success: false, message: "已跨發票期別，無法作廢重開；請改以折讓處理或聯絡客服" };
+  // 【QA#3 修復】比照 voidOrAllowance：transaction 上鎖（issued→voiding）才呼叫光貿，
+  // 與退費流程/佇列互斥；有退費意圖（refundRequested）時拒絕重開。
   const newBuyer = _sanitizeInvoiceChoice(data.newChoice);
   if (!newBuyer) return { success: false, message: "請提供正確的發票資訊" };
   if (newBuyer.kind === "company" && !validateTaxIdSrv(newBuyer.taxId))
     return { success: false, message: "統一編號格式或檢查碼錯誤" };
+  const lock = await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return { err: "找不到發票" };
+    const cur = doc.data();
+    if (cur.compId !== data.compId) return { err: "發票不屬此活動" };
+    if (cur.refundRequested === true) return { err: "此發票已有退費處理中，無法作廢重開" };
+    if (cur.status !== "issued") return { err: "僅「已開立」的發票可作廢重開（目前：" + cur.status + "）" };
+    if (_periodOf(parseInt(cur.invoiceDate, 10)) !== _periodOf(_todayYmd()))
+      return { err: "已跨發票期別，無法作廢重開；請改以折讓處理或聯絡客服" };
+    tx.update(ref, { status: "voiding" });
+    return { inv: cur };
+  });
+  if (lock.err) return { success: false, message: lock.err };
+  const inv = lock.inv;
   const creds = inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds();
-  if (!creds) return { success: false, message: "賣方光貿憑證不存在" };
-  await amego.voidInvoice(creds, inv.invoiceNumber);
+  if (!creds) { await ref.update({ status: "issued" }); return { success: false, message: "賣方光貿憑證不存在" }; }
+  try { await amego.voidInvoice(creds, inv.invoiceNumber); }
+  catch (e) {
+    await ref.update({ status: "issued" });                       // 作廢失敗 → 解鎖還原，不動原票
+    return { success: false, message: "光貿作廢失敗：" + String(e.message).slice(0, 120) };
+  }
   await ref.update({ status: "void", voidedAt: fmtNow(), voidReason: "作廢重開（更正買受人資訊）" });
-  const seq = (parseInt(String(doc.id).split("_r")[1], 10) || 0) + 1;
+  const seq = (parseInt(String(ref.id).split("_r")[1], 10) || 0) + 1;
   const baseOrderId = inv.orderId;
   await issueInvoiceFor(inv.kind,
     { orderId: baseOrderId, reissueSeq: seq, compId: inv.compId, teamId: inv.teamId,
       sellerUsername: inv.sellerUsername, buyerUsername: inv.buyerUsername },
     _buyerFromChoice(newBuyer, inv.buyer.email), inv.items, creds);
-  await auditLog(request.authUser.username, "發票作廢重開", doc.id, inv.invoiceNumber);
+  await auditLog(request.authUser.username, "發票作廢重開", ref.id, inv.invoiceNumber);
   return { success: true };
 });
 
