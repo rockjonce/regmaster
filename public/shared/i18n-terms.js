@@ -61,6 +61,9 @@
     tmC7_1: '主辦方啟用之線上付款（PayUNI）由本平台代收，扣除約定之金流手續費後，依平台公告之撥款週期匯入主辦方之收款帳戶。銀行/ATM 轉帳由報名者直接匯入主辦方帳戶，本平台不經手。',
     tmC7_2: '各活動之報名費退費，依該活動主辦方所公告之退費政策辦理，與本公司無涉。',
     tmC7_3: '主辦方方案費用之計費與升級差額，依購買當時本平台公告之方案價格與規則計算。',
+    tmC7_4: '本平台就線上付款僅居於代收轉付地位，非活動報名費之銷售人。報名費之統一發票，應由各活動主辦方（銷售人）依加值型及非加值型營業稅法等相關法令，自行開立予報名者；本公司僅就向主辦方收取之服務費用（含方案訂閱費、金流手續費、匯款手續費）開立統一發票予主辦方。',
+    tmC7_5: '主辦方應提供正確之發票資訊（發票類型、抬頭、統一編號等）。主辦方未提供或提供錯誤致生之稅務責任，由主辦方自負。',
+    tmC7_6: '主辦方啟用本平台之電子發票自動開立功能者，視為授權本平台以主辦方名義透過其指定之加值服務中心執行發票之開立、作廢與折讓；主辦方或報名者於平台完成之退費核准操作，視為買賣雙方就退回或折讓之合意證明。',
 
     // ----- 第八條 智慧財產權 -----
     tmH8: '第八條　智慧財產權',
@@ -137,6 +140,9 @@
     tmC7_1: 'Online payments (PayUNI) enabled by an organizer shall be collected by the Platform on the organizer\'s behalf and, after deduction of the agreed payment-processing fees, remitted to the organizer\'s designated receiving account in accordance with the disbursement cycle published by the Platform. Bank/ATM transfers shall be remitted by the registrant directly into the organizer\'s account, and the Platform shall not handle such funds.',
     tmC7_2: 'The refund of registration fees for each event shall be handled in accordance with the refund policy published by that event\'s organizer, and shall be of no concern to the Company.',
     tmC7_3: 'The billing of an organizer\'s plan fees and any upgrade price differential shall be calculated in accordance with the plan prices and rules published by the Platform at the time of purchase.',
+    tmC7_4: 'With respect to online payments, the Platform acts solely as a collection-and-disbursement agent and is not the seller of event registration fees. Uniform invoices for registration fees shall be issued to registrants by each event organizer (the seller) in accordance with the Value-added and Non-value-added Business Tax Act and related laws; the Company issues uniform invoices to organizers only for the service fees it charges them (including plan subscription fees, payment-processing fees and remittance fees).',
+    tmC7_5: 'Organizers shall provide correct invoicing information (invoice type, title, tax ID, etc.). Tax liabilities arising from missing or incorrect information shall be borne by the organizer.',
+    tmC7_6: 'An organizer who enables the Platform\'s automatic e-invoicing feature is deemed to authorize the Platform to issue, void and issue allowances for invoices in the organizer\'s name through its designated value-added service center; refund approvals completed on the Platform by the organizer or registrant are deemed evidence of mutual agreement on the return or allowance.',
 
     // ----- Article 8 Intellectual Property Rights -----
     tmH8: 'Article 8　Intellectual Property Rights',

@@ -80,7 +80,7 @@ function generatePassword() {
 }
 // Legal-document versions for click-wrap e-signing (EULA / Terms acceptance audit trail).
 const EULA_VERSION = "2026-01-01";
-const TERMS_VERSION = "2026-06-01";
+const TERMS_VERSION = "2026-07-13";   // 電子發票條款增訂（第七條 7-4~7-6）
 // Best-effort client IP from a callable's underlying request (behind the Firebase proxy,
 // the real client is the first entry of X-Forwarded-For).
 function clientIp(request) {
@@ -397,6 +397,37 @@ function _profileToBuyer(prof, fallbackName, fallbackEmail) {
 async function _accountByUsername(username) {
   const s = await db.collection("accounts").where("username", "==", username).limit(1).get();
   return s.empty ? null : { ref: s.docs[0].ref, data: s.docs[0].data() };
+}
+// 報名者發票查詢短效權杖（30 天；HMAC 沿用 checkinHmac secret）——「我的報名」社群驗證成功時核發，
+// 供之後查發票/下載 PDF 用（社群 idToken 用後即棄、LINE 流程無可重用 token，故需自簽權杖）。
+async function _signInvTok(email) {
+  const exp = Date.now() + 30 * 86400000;
+  const body = "INV|" + String(email).trim().toLowerCase() + "|" + exp;
+  const key = await getCheckinSecret();
+  const sig = crypto.createHmac("sha256", key).update(body).digest("hex").slice(0, 32);
+  return _b64url(Buffer.from(body + "|" + sig, "utf8"));
+}
+async function _verifyInvTok(tok) {
+  try {
+    const raw = _b64urlToBuf(String(tok || "")).toString("utf8");
+    const parts = raw.split("|");
+    if (parts.length !== 4 || parts[0] !== "INV") return null;
+    const email = parts[1], expStr = parts[2], sig = parts[3];
+    if (!email || Date.now() > Number(expStr)) return null;
+    const key = await getCheckinSecret();
+    const want = crypto.createHmac("sha256", key).update("INV|" + email + "|" + expStr).digest("hex").slice(0, 32);
+    if (sig.length !== want.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want))) return null;
+    return email;
+  } catch (e) { return null; }
+}
+// 報名者身分驗證：invoiceToken 優先，否則退回社群 idToken（Google 流程仍可直接用）
+async function _registrantEmail(data) {
+  let email = await _verifyInvTok(data.invoiceToken);
+  if (email) return email;
+  try {
+    const s = await verifySocialIdentity(data.provider, data.token);
+    return s.email ? s.email.trim().toLowerCase() : null;
+  } catch (e) { return null; }
 }
 
 // ---- 開立發票（核心）----
@@ -1419,11 +1450,8 @@ exports.getInvoicePdfFile = authCallable(["system", "competition"], async (data,
 exports.getMyInvoices = callable(async (data, request) => {
   const _rl = await checkRateLimit("myinv_ip_" + clientIp(request), 30, 600000);
   if (!_rl.ok) return { success: false, message: "查詢過於頻繁，請稍後再試" };
-  let s;
-  try { s = await verifySocialIdentity(data.provider, data.token); }
-  catch (e) { return { success: false, message: "身分驗證失敗" }; }
-  if (!s.email) return { success: false, message: "無法取得帳號 Email" };
-  const email = s.email.trim().toLowerCase();
+  const email = await _registrantEmail(data);
+  if (!email) return { success: false, message: "身分驗證失敗，請重新以 Google/LINE 登入「我的報名」" };
   const snap = await db.collection("invoices").where("buyer.email", "==", email)
     .where("kind", "==", "registration").limit(200).get();
   return { success: true, email, invoices: snap.docs.map(d => { const v = d.data(); return {
@@ -1437,14 +1465,12 @@ exports.getMyInvoices = callable(async (data, request) => {
 exports.getMyInvoiceFile = callable(async (data, request) => {
   const _rl = await checkRateLimit("myinvf_ip_" + clientIp(request), 30, 600000);
   if (!_rl.ok) return { success: false, message: "查詢過於頻繁，請稍後再試" };
-  let s;
-  try { s = await verifySocialIdentity(data.provider, data.token); }
-  catch (e) { return { success: false, message: "身分驗證失敗" }; }
+  const email = await _registrantEmail(data);
+  if (!email) return { success: false, message: "身分驗證失敗，請重新以 Google/LINE 登入「我的報名」" };
   const doc = await db.collection("invoices").doc(String(data.invId || "")).get();
   if (!doc.exists) return { success: false, message: "找不到發票" };
   const inv = doc.data();
-  if (!s.email || inv.buyer.email !== s.email.trim().toLowerCase())
-    return { success: false, message: "無權存取此發票" };
+  if (inv.buyer.email !== email) return { success: false, message: "無權存取此發票" };
   return _invoicePdfPayload(inv, data.allowanceNumber);
 });
 
@@ -1473,6 +1499,24 @@ exports.exportInvoices = authCallable(["system", "competition"], async (data, re
   const esc = (x) => `"${String(x).replace(/"/g, '""')}"`;
   const csv = "﻿" + [headers, ...rows].map(r => r.map(esc).join(",")).join("\r\n");
   return { success: true, filename: "invoices_" + stamp + ".csv", base64: Buffer.from(csv, "utf8").toString("base64") };
+});
+
+// 月報列表與下載（10-11；報表由 monthlyInvoiceReport 排程產生）
+exports.listMyInvoiceReports = authCallable(["system", "competition"], async (data, request) => {
+  const u = request.authUser.username;
+  const snap = await db.collection("invoiceReports").where("username", "==", u).limit(36).get();
+  return { success: true, reports: snap.docs.map(d => { const v = d.data(); return {
+    month: v.month, recvCount: v.recvCount || 0, sentCount: v.sentCount || 0, createdAt: v.createdAt
+  }; }).sort((a, b) => String(b.month).localeCompare(String(a.month))) };
+});
+exports.getInvoiceReportFile = authCallable(["system", "competition"], async (data, request) => {
+  const u = request.authUser.role === "system" && data.username ? String(data.username) : request.authUser.username;
+  const month = String(data.month || "");
+  if (!/^\d{4}-\d{2}$/.test(month)) return { success: false, message: "月份格式錯誤" };
+  const doc = await db.collection("invoiceReports").doc(u + "_" + month).get();
+  if (!doc.exists) return { success: false, message: "查無此月報" };
+  const [buf] = await admin.storage().bucket().file(doc.data().path).download();
+  return { success: true, filename: "invoice_report_" + month + ".xlsx", base64: buf.toString("base64") };
 });
 
 // 系統管理者：平台發票總覽（含異常件）＋手動重試
@@ -7617,7 +7661,7 @@ exports.createRegistrationPayment = callable(async (data) => {
     orderId, compId, teamId, amount: fee,
     base: q.base, groupDiscount: q.groupDiscount, codeDiscount: q.codeDiscount, discountCode: q.codeValid ? q.code : "",
     teamNameCN: team.teamNameCN || "", teamNameEN: team.teamNameEN || "",
-    invoiceChoice: _sanitizeInvoiceChoice(data.invoiceChoice),   // Phase 3：報名者發票選擇（付款成功開立用）
+    invoiceChoice: _sanitizeInvoiceChoice(team.invoiceChoice),   // Phase 3：報名時已存 team，複製到訂單（付款成功開立用）
     status: "pending", createdAt: fmtNow()
   });
   // #3-2: 把折後應付金額落地到 team，供帳務「報名費」分頁顯示正確應收（PayUNI 與銀行轉帳一致）。
@@ -10796,7 +10840,10 @@ exports.listMyRegistrationsBySocial = callable(async (data) => {
   // OAuth-verified owner → attach the signed check-in token (gates QR issuance) and a
   // short-lived manage token (authorises refund/modify without the plaintext password).
   for (const r of regs) { try { r.checkinToken = await signCheckin(r.compId, r.teamId); r.manageToken = await signManage(r.compId, r.teamId, s.email); } catch (e) {} }
-  return { success: true, email: s.email, registrations: regs };
+  // 電子發票：核發 30 天查詢權杖（社群 token 用後即棄，發票紀錄/下載改用此權杖驗證）
+  let invoiceToken = "";
+  try { invoiceToken = await _signInvTok(s.email); } catch (e) {}
+  return { success: true, email: s.email, registrations: regs, invoiceToken };
 });
 // Bind status for a set of emails (for 已綁定 display in the team manage view).
 exports.getRegistrantStatus = callable(async (data) => {
