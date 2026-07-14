@@ -8432,10 +8432,13 @@ exports.applyPayout = compAuthCallable("manage", async (data, request) => {
   if (!orderIds.length && !depositIds.length) return { success: false, message: "請至少勾選一筆" };
   const acct = await _ownerPayoutAcct(creator);
   if (!acct.has) return { success: false, code: "NO_PAYOUT_ACCOUNT", message: "請先至『帳戶設定 → 收款帳戶』填寫收款帳戶，平台才能匯款給您。" };
-  // 電子發票（Q5 決議）：撥款前必填發票資訊（_ownerPayoutAcct 回 {acc,has,snapshot}，帳號欄位在 .acc）
-  const _invP = acct.acc.invoiceProfile;
-  if (!_invP || !_invP.type) return { success: false, code: "NO_INVOICE_PROFILE",
-    message: "請先至『帳戶設定 → 電子發票』填寫發票資訊，平台才能開立手續費發票並匯款給您。" };
+  // 電子發票（Q5 決議）：撥款前必填發票資訊。【部署安全】僅在全平台發票功能實際啟用時才強制——
+  // invoiceEnabled=off（尚未上線）時不擋既有撥款流程，避免部署即影響現有主辦方申請匯款。
+  if (await invoiceGloballyEnabled()) {
+    const _invP = acct.acc.invoiceProfile;   // _ownerPayoutAcct 回 {acc,has,snapshot}，帳號欄位在 .acc
+    if (!_invP || !_invP.type) return { success: false, code: "NO_INVOICE_PROFILE",
+      message: "請先至『帳戶設定 → 電子發票』填寫發票資訊，平台才能開立手續費發票並匯款給您。" };
+  }
   const { feePct, cycle } = await _ownerFeePct(creator);
   const compDoc = await db.collection("competitions").doc(compId).get();
   const compName = (compDoc.exists && ((compDoc.data().config || {}).competitionName || compDoc.data().name)) || compId;
