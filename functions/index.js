@@ -605,7 +605,13 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
   const inv = decision.inv;
   const creds = credsOverride || (inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds());
   if (!creds) { await ref.update({ status: "void_error", lastError: "主辦方光貿憑證不存在" }); return; }
-  const gross = Math.round(Number(refundGross));
+  await _performVoidOrAllowance(ref, inv, creds, Math.round(Number(refundGross)));
+}
+// 沖銷核心：呼叫端必須已持有 voiding 鎖（status="voiding"＋新鮮 lockedTs）。
+// 【ULT#1b】全程不改回 issued——中途崩潰時發票停在 voiding，佇列以殭屍鎖重新救援，
+// 不會產生「issued 但其實需退費」且不被佇列查詢涵蓋的孤兒窗。
+async function _performVoidOrAllowance(ref, inv, creds, gross) {
+  gross = Math.round(Number(gross)) || inv.amount;
   const fullRefund = gross >= inv.amount;
   const samePeriod = _periodOf(parseInt(inv.invoiceDate, 10) || _todayYmd()) === _periodOf(_todayYmd());
   try {
@@ -8675,8 +8681,11 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
   const now = Date.now();
   const pendCutoff = now - 15 * 60000;    // pending 緩衝：主流程還在路上不搶跑
   const staleCutoff = now - 30 * 60000;   // 殭屍鎖判定：issuing/voiding 逾 30 分鐘（Function 上限遠低於此）
+  // 【ULT#1a】orderBy createdTs 最舊優先：防「新 pending 洪水佔滿 20 名額、深埋舊 error 永遠讀不到」的飢餓。
+  // 需複合索引 (status ASC, createdTs ASC)，已加入 firestore.indexes.json。
   const snap = await db.collection("invoices")
-    .where("status", "in", ["error", "pending", "void_error", "issuing", "voiding"]).limit(20).get();
+    .where("status", "in", ["error", "pending", "void_error", "issuing", "voiding"])
+    .orderBy("createdTs").limit(20).get();
   for (const d of snap.docs) {
     const inv0 = d.data();
     const isStaleLock = ["issuing", "voiding"].includes(inv0.status);
@@ -8702,17 +8711,17 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
       if (!creds) { await d.ref.update({ status: "dead", lastError: "賣方光貿憑證不存在" }); continue; }
       if (locked.status === "void_error" || locked.status === "voiding") {
         // 【FQA#1】殭屍 voiding 救援：先查光貿實況——作廢其實已成功 → 直接落終態，
-        // 避免對已作廢票再跑沖銷（錯開折讓）；尚未作廢 → 解鎖重跑狀態機。
+        // 避免對已作廢票再跑沖銷（錯開折讓）。
         let actualVoided = false;
         if (locked.invoiceNumber) {
           try {
             const q = await amego.queryByOrder(creds, locked.orderId);
             if (q.data && q.data.invoice_number === locked.invoiceNumber && q.data.cancel_date) actualVoided = true;
-          } catch (e) { /* 查詢失敗 → 保守走重跑路徑 */ }
+          } catch (e) { /* 查詢失敗 → 保守走沖銷路徑 */ }
         }
         if (actualVoided) { await d.ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false }); continue; }
-        await d.ref.update({ status: "issued" });                                // 解鎖回 issued 重跑狀態機
-        await voidOrAllowance(d.ref.id, Number(locked.pendingRefund) || locked.amount, creds);
+        // 【ULT#1b】直接在 voiding 鎖內沖銷，不經 issued 中繼——消除「解鎖→沖銷」兩步間崩潰的孤兒窗。
+        await _performVoidOrAllowance(d.ref, locked, creds, Number(locked.pendingRefund) || locked.amount);
       } else {
         // pending / error / 殭屍 issuing：v9 第三層防呆——來源已退費/已刪 → 不開立
         if (!(await _sourceStillBillable(locked))) { await d.ref.update({ status: "cancelled_before_issue" }); continue; }
@@ -8727,7 +8736,7 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
 
 // 中獎自動通知（10-10）：每月 1 日 09:00 執行；僅開獎後月份（雙月）實跑。
 // 光貿 lottery_status 期別 API 明定 0-based（LOTTERY_RUN_MAP），勿改 1-based。
-exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 540 }, async () => {
+exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 540, retryCount: 3 }, async () => {
   if (!(await invoiceGloballyEnabled())) return;
   const now = new Date(Date.now() + 8 * 3600000);
   const run = LOTTERY_RUN_MAP[now.getUTCMonth() + 1];
@@ -8752,28 +8761,33 @@ exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia
       else console.warn("lottery query fail:", batch[j].owner || "platform", r.reason && r.reason.message);
     });
   }
-  for (const { creds, hits } of lotteryHits) {
-    for (const h of hits) {
-      const snap = await db.collection("invoices").where("invoiceNumber", "==", h.invoice_number).limit(1).get();
-      if (snap.empty) continue;                                    // ①②模式主辦自開的票平台無存根（範圍限制）
-      const ref = snap.docs[0].ref, inv = snap.docs[0].data();
-      if (inv.lottery && inv.lottery.notifiedAt) continue;         // 冪等
-      await ref.update({ lottery: { type: h.type, period: year + "-P" + period, notifiedAt: fmtNow() } });
-      try { await _storeInvoicePdf(ref, inv.invoiceNumber, creds); } catch (e) {}   // 載具票中獎後補抓 PDF（Q12）
-      if (inv.buyer && inv.buyer.email) {
-        try {
-          await queueMail([inv.buyer.email], "[RegMaster] 電子發票中獎通知",
-            emailWrap("🎉 您的電子發票中獎了！",
-              `<p>發票號碼 <b style="font-family:monospace">${escMail(inv.invoiceNumber)}</b>（開立日 ${escMail(String(inv.invoiceDate))}）已於本期統一發票開獎中獎。</p>
-               <p>發票檔案已可於 RegMaster 下載，請依財政部規定領獎。</p>`));
-        } catch (e) {}
-      }
+  // 【ULT#3】中獎者處理（查 DB→補 PDF→發信）改 5 筆一批並行＋逐筆錯誤隔離，
+  // 避免上千中獎者循序 I/O 打破 540 秒；已冪等（notifiedAt），逾時由 retryConfig 重跑接續未處理者。
+  const work = [];
+  for (const { creds, hits } of lotteryHits) for (const h of hits) work.push({ creds, h });
+  const processHit = async ({ creds, h }) => {
+    const snap = await db.collection("invoices").where("invoiceNumber", "==", h.invoice_number).limit(1).get();
+    if (snap.empty) return;                                        // ①②模式主辦自開的票平台無存根（範圍限制）
+    const ref = snap.docs[0].ref, inv = snap.docs[0].data();
+    if (inv.lottery && inv.lottery.notifiedAt) return;            // 冪等
+    await ref.update({ lottery: { type: h.type, period: year + "-P" + period, notifiedAt: fmtNow() } });
+    try { await _storeInvoicePdf(ref, inv.invoiceNumber, creds); } catch (e) {}   // 載具票中獎後補抓 PDF（Q12）
+    if (inv.buyer && inv.buyer.email) {
+      try {
+        await queueMail([inv.buyer.email], "[RegMaster] 電子發票中獎通知",
+          emailWrap("🎉 您的電子發票中獎了！",
+            `<p>發票號碼 <b style="font-family:monospace">${escMail(inv.invoiceNumber)}</b>（開立日 ${escMail(String(inv.invoiceDate))}）已於本期統一發票開獎中獎。</p>
+             <p>發票檔案已可於 RegMaster 下載，請依財政部規定領獎。</p>`));
+      } catch (e) {}
     }
+  };
+  for (let i = 0; i < work.length; i += 5) {
+    await Promise.allSettled(work.slice(i, i + 5).map(processHit));
   }
 });
 
 // 主辦方發票月報（10-11）：每月 1 日 08:00 產上月 xlsx 存 Storage＋索引＋Email（notifPrefs.email.invoiceReport 可關）。
-exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 540 }, async () => {
+exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 540, retryCount: 3 }, async () => {
   if (!(await invoiceGloballyEnabled())) return;
   const ExcelJS = require("exceljs");   // lazy
   const now = new Date(Date.now() + 8 * 3600000);
@@ -8822,6 +8836,10 @@ exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "As
   const users = [...new Set([...Object.keys(byBuyer), ...Object.keys(bySeller)])];   // 只處理當月有發票的帳號
   for (const u of users) {
     try {
+      // 【ULT#2】續傳冪等：已產出的月報跳過。若上輪在中途逾時中斷，retryConfig 觸發的重跑
+      // 會接續未完成的帳號，不會讓後半段主辦永遠收不到月報。
+      const doneDoc = await db.collection("invoiceReports").doc(u + "_" + ymKey).get();
+      if (doneDoc.exists) continue;
       const recvRows = byBuyer[u] || [], sentRows = bySeller[u] || [];
       await buildAndSave(u, recvRows, sentRows);
       const prefDoc = await db.collection("notifPrefs").doc(u).get();
@@ -8836,8 +8854,10 @@ exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "As
     } catch (e) { console.warn("invoiceReport", u, e.message); }
   }
   // 平台全域月報（系統管理者）——直接用掃描分組結果，不再另發 Query
-  try { if (platformRows.length) await buildAndSave("_platform", platformRows, []); }
-  catch (e) { console.warn("platform invoiceReport", e.message); }
+  try {
+    const pDone = await db.collection("invoiceReports").doc("_platform_" + ymKey).get();
+    if (!pDone.exists && platformRows.length) await buildAndSave("_platform", platformRows, []);
+  } catch (e) { console.warn("platform invoiceReport", e.message); }
 });
 // ===================== 電子發票排程（結束）=====================
 

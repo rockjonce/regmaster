@@ -1154,16 +1154,15 @@ html, body { max-width:100%; overflow-x:hidden; }
     dead: '處理中，如有問題請聯絡主辦方', voiding: '處理中…', issuing: '開立中…',
     void_error: '處理中', "void": '已作廢', allowanced: '已開折讓', cancelled_before_issue: '已取消'
   };
-  // FQA#6：fetch(data:) 非同步解碼，避免同步 atob 迴圈凍結主執行緒（行動裝置尤甚）
+  // ULT#4：分塊 atob 解碼——不凍結主執行緒（行動裝置尤甚）且無 data: URI 長度依賴。
   function _invDl(filename, base64) {
-    return fetch('data:application/pdf;base64,' + base64)
-      .then(function (r) { return r.blob(); })
-      .then(function (blob) {
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a'); a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      });
+    var bin = atob(base64), len = bin.length, arr = new Uint8Array(len), CH = 0x8000;
+    for (var i = 0; i < len; i += CH) { var end = Math.min(i + CH, len); for (var j = i; j < end; j++) arr[j] = bin.charCodeAt(j); }
+    var url = URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
+    var a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    return Promise.resolve();
   }
   function loadInvoiceHistory() {
     runFn('getMyInvoices', { invoiceToken: INV_TOKEN }).then(function (r) {
@@ -1187,7 +1186,12 @@ html, body { max-width:100%; overflow-x:hidden; }
         });
         return rows;
       }).join('');
-    }).catch(function () {});
+    }).catch(function (e) {
+      // ULT#5：不靜默吞錯——網路異常時明確顯示，避免使用者誤以為沒有發票紀錄
+      document.getElementById('invHistory').style.display = '';
+      document.getElementById('invHistList').innerHTML =
+        '<span style="color:var(--err-700, #b91c1c); font:400 13px/1.6 var(--f-tc)">' + escapeHtml((e && e.message) || window.L('myInvDlFail')) + '</span>';
+    });
   }
   document.addEventListener('click', function (e) {
     var t = e.target.closest('a[data-myinvdl]'); if (!t) return;

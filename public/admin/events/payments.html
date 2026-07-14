@@ -797,6 +797,7 @@
   }
   function loadInvoices() {
     document.getElementById('invLoading').style.display = '';
+    document.getElementById('invContent').style.display = 'none';   // ULT#7：載入期間先藏內容，避免與上次錯誤表格重疊
     runFn('listMyInvoices', {}).then(function (r) {
       document.getElementById('invLoading').style.display = 'none';
       document.getElementById('invContent').style.display = '';
@@ -836,25 +837,35 @@
     });
   }
   function loadInvReports() {
+    var box = document.getElementById('invReports');
     runFn('listMyInvoiceReports', {}).then(function (r) {
-      if (!r || !r.success || !(r.reports || []).length) return;
-      document.getElementById('invReports').innerHTML = r.reports.map(function (x) {
+      if (!r || !r.success || !(r.reports || []).length) return;   // 真的沒月報 → 保留預設「尚無月報」提示
+      box.innerHTML = r.reports.map(function (x) {
         return '<div style="display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px solid var(--line-2); font:400 13px/1.5 var(--f-tc)">'
           + '<span>' + esc(x.month) + '（收到 ' + esc(String(x.recvCount)) + '／開出 ' + esc(String(x.sentCount)) + '）</span>'
           + '<a href="#" data-report="' + esc(x.month) + '" style="color:var(--acc)">下載 Excel</a></div>';
       }).join('');
-    }).catch(function () {});
+    }).catch(function (e) {
+      // ULT#5：不可靜默吞錯——否則網路異常會誤顯示「尚無月報」。明確標示載入失敗。
+      box.innerHTML = '<span style="color:var(--err-700)">月報載入失敗：' + esc((e && e.message) || '網路異常') + '</span>';
+    });
   }
-  // FQA#6：base64 → Blob 改走 fetch(data:) 非同步解碼，避免同步 for 迴圈在大檔（月報 xlsx 數 MB）凍結主執行緒
+  // ULT#4：base64 → Blob 改「分塊 atob」解碼——避免同步逐字迴圈凍結主執行緒（第二輪顧慮），
+  // 同時無 data: URI 長度依賴（第三輪顧慮；經 5.3MB 實測 fetch(data:) 其實可行，但此法更快且零依賴）。
+  function _b64ToBlob(base64, mime) {
+    var bin = atob(base64), len = bin.length, arr = new Uint8Array(len), CH = 0x8000;
+    for (var i = 0; i < len; i += CH) {
+      var end = Math.min(i + CH, len);
+      for (var j = i; j < end; j++) arr[j] = bin.charCodeAt(j);
+    }
+    return new Blob([arr], { type: mime || 'application/octet-stream' });
+  }
   function _dlBase64(filename, base64, mime) {
-    return fetch('data:' + (mime || 'application/octet-stream') + ';base64,' + base64)
-      .then(function (r) { return r.blob(); })
-      .then(function (blob) {
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a'); a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      });
+    var url = URL.createObjectURL(_b64ToBlob(base64, mime));
+    var a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    return Promise.resolve();
   }
   document.getElementById('invContent').addEventListener('click', function (e) {
     var t = e.target.closest('a'); if (!t) return;

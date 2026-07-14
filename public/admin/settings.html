@@ -451,39 +451,52 @@
         document.getElementById('inv-title').value = res.name;
     }).catch(function () {});
   });
-  document.getElementById('saveInvBtn').addEventListener('click', function () {
+  // ULT#6：儲存按鈕統一收發——原始標籤取自 data-label（綁定時鎖定，不受成功後暫顯文字污染）；
+  // disabled 維持到「已儲存」提示的 setTimeout 結束才解除，杜絕 1.4 秒視窗內連點卡死文字。
+  function _bindSaveBtn(id, buildArgs, fnName, onOk) {
+    var btn = document.getElementById(id);
+    btn.setAttribute('data-label', btn.textContent);
+    btn.addEventListener('click', function () {
+      if (btn.disabled) return;
+      var label = btn.getAttribute('data-label');
+      var args = buildArgs();
+      if (args === false) return;                                 // 前端驗證未過
+      btn.disabled = true; btn.textContent = L('adSetSavingBusy');
+      runFn(fnName, args).then(function (res) {
+        if (res && res.success) {
+          if (onOk) onOk(res);
+          btn.textContent = L('adSetSavedOk');
+          setTimeout(function () { btn.textContent = label; btn.disabled = false; }, 1400);
+        } else {
+          btn.textContent = label; btn.disabled = false;
+          uiAlert((res && res.message) || L('adSetSaveFail'));
+        }
+      }).catch(function (err) {
+        btn.textContent = label; btn.disabled = false;
+        uiAlert(L('adSetFail') + (err && err.message));
+      });
+    });
+  }
+  _bindSaveBtn('saveInvBtn', function () {
     var t = _invType();
-    if (!t) { uiAlert(L('adSetInvNeedType')); return; }
-    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetSavingBusy');
-    runFn('saveInvoiceProfile', {
+    if (!t) { uiAlert(L('adSetInvNeedType')); return false; }
+    return {
       type: t,
       taxId: document.getElementById('inv-taxid').value.trim(),
       title: document.getElementById('inv-title').value.trim(),
       carrierType: document.getElementById('inv-carrier').value.trim() ? '3J0002' : '',
       carrierId: document.getElementById('inv-carrier').value.trim(),
       email: document.getElementById('inv-email').value.trim()
-    }).then(function (res) {
-      btn.disabled = false; btn.textContent = o;
-      if (res && res.success) { btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = o; }, 1400); }
-      else uiAlert((res && res.message) || L('adSetSaveFail'));
-    }).catch(function (err) { btn.disabled = false; btn.textContent = o; uiAlert(L('adSetFail') + (err && err.message)); });
-  });
-  document.getElementById('saveEinvModeBtn').addEventListener('click', function () {
+    };
+  }, 'saveInvoiceProfile');
+  _bindSaveBtn('saveEinvModeBtn', function () {
     var r = document.querySelector('input[name="einvMode"]:checked');
-    var mode = r ? r.value : 'off';
-    var btn = this; btn.disabled = true; var o = btn.textContent; btn.textContent = L('adSetSavingBusy');
-    runFn('saveEinvoiceMode', {
-      mode: mode,
+    return {
+      mode: r ? r.value : 'off',
       amegoBan: document.getElementById('einv-ban').value.trim(),
       amegoAppKey: document.getElementById('einv-key').value.trim()
-    }).then(function (res) {
-      btn.disabled = false; btn.textContent = o;
-      if (res && res.success) {
-        document.getElementById('einv-key').value = '';
-        btn.textContent = L('adSetSavedOk'); setTimeout(function () { btn.textContent = o; }, 1400);
-      } else uiAlert((res && res.message) || L('adSetSaveFail'));
-    }).catch(function (err) { btn.disabled = false; btn.textContent = o; uiAlert(L('adSetFail') + (err && err.message)); });
-  });
+    };
+  }, 'saveEinvoiceMode', function () { document.getElementById('einv-key').value = ''; });
 
   document.querySelectorAll('.set-nav a').forEach(function (a) {
     a.addEventListener('click', function (e) {

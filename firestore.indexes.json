@@ -32,6 +32,14 @@
         { "fieldPath": "lastReg", "order": "DESCENDING" },
         { "fieldPath": "email", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "invoices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdTs", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
