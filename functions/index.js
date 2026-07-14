@@ -621,11 +621,35 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
   if (!creds) { await ref.update({ status: "void_error", lastError: "主辦方光貿憑證不存在" }); return; }
   await _performVoidOrAllowance(ref, inv, creds, Math.round(Number(refundGross)));
 }
+// 作廢重開的「開新票」步驟（冪等：inv_{orderId}_r{seq} 以 .create() 鎖，重放不重複開）。
+async function _issueReissue(ref, inv, creds) {
+  const seq = (parseInt(String(ref.id).split("_r")[1], 10) || 0) + 1;
+  await issueInvoiceFor(inv.kind,
+    { orderId: inv.orderId, reissueSeq: seq, compId: inv.compId, teamId: inv.teamId,
+      sellerUsername: inv.sellerUsername, buyerUsername: inv.buyerUsername, notifyByMail: inv.notifyByMail !== false ? undefined : false },
+    _buyerFromChoice(inv.reissueIntent, inv.buyer.email), inv.items, creds);
+}
 // 沖銷核心：呼叫端必須已持有 voiding 鎖（status="voiding"＋新鮮 lockedTs）。
 // 【ULT#1b】全程不改回 issued——中途崩潰時發票停在 voiding，佇列以殭屍鎖重新救援，
 // 不會產生「issued 但其實需退費」且不被佇列查詢涵蓋的孤兒窗。
 async function _performVoidOrAllowance(ref, inv, creds, gross) {
   gross = Math.round(Number(gross)) || inv.amount;
+  // 【V10#reissue】作廢重開：void 舊票 → 開新票(冪等) → 才落 void＋清 intent。
+  // 關鍵：保持 voiding 直到「兩步都完成」——任一步崩潰/timeout 都停在 voiding，
+  // 由 invoiceRetryWorker 殭屍救援重放（_issueReissue 冪等，不會重複開新票）。
+  // void 失敗先 queryByOrder 查證（timeout-after-success 也算已作廢，續開新票；真未作廢→void_error 重試）。
+  if (inv.reissueIntent) {
+    let voided = false;
+    try { await amego.voidInvoice(creds, inv.invoiceNumber); voided = true; }
+    catch (e) {
+      try { const q = await amego.queryByOrder(creds, inv.orderId); if (q.data && q.data.invoice_number === inv.invoiceNumber && q.data.cancel_date) voided = true; } catch (e2) {}
+      if (!voided) { await ref.update({ status: "void_error", lastError: "作廢重開-作廢失敗：" + String(e.message).slice(0, 200), retryCount: FieldValue.increment(1), queueTs: Date.now() }); return; }
+    }
+    try { await _issueReissue(ref, inv, creds); }
+    catch (e) { /* 新票開立失敗會落在新 doc 的 error 由其自身 retry；舊票已 void 不影響 */ }
+    await ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false, reissueIntent: FieldValue.delete() });
+    return;
+  }
   const fullRefund = gross >= inv.amount;
   const samePeriod = _periodOf(parseInt(inv.invoiceDate, 10) || _todayYmd()) === _periodOf(_todayYmd());
   try {
@@ -1681,42 +1705,36 @@ exports.testAmegoConnection = authCallable(["system"], async () => {
 // Phase 3：發票作廢重開（統編填錯救濟；同期別內、同金額；10-2）
 exports.reissueInvoice = compAuthCallable("manage", async (data, request) => {
   const ref = db.collection("invoices").doc(String(data.invId || ""));
-  // 【QA#3 修復】比照 voidOrAllowance：transaction 上鎖（issued→voiding）才呼叫光貿，
-  // 與退費流程/佇列互斥；有退費意圖（refundRequested）時拒絕重開。
   const newBuyer = _sanitizeInvoiceChoice(data.newChoice);
   if (!newBuyer) return { success: false, message: "請提供正確的發票資訊" };
   if (newBuyer.kind === "company" && !validateTaxIdSrv(newBuyer.taxId))
     return { success: false, message: "統一編號格式或檢查碼錯誤" };
+  // 【V10#reissue 崩潰安全】transaction 上鎖 issued→voiding 並持久化 reissueIntent；
+  // 之後的「作廢舊＋開新」交由 _performVoidOrAllowance 以「voiding 內兩步、任一步崩潰可重放」
+  // 模式完成——不再是 reissueInvoice 內兩個裸 await（消除兩步崩潰窗與 void-timeout 幽靈票）。
   const lock = await db.runTransaction(async (tx) => {
     const doc = await tx.get(ref);
     if (!doc.exists) return { err: "找不到發票" };
     const cur = doc.data();
     if (cur.compId !== data.compId) return { err: "發票不屬此活動" };
     if (cur.refundRequested === true) return { err: "此發票已有退費處理中，無法作廢重開" };
+    if (cur.lottery) return { err: "此發票已中獎，無法作廢重開" };
     if (cur.status !== "issued") return { err: "僅「已開立」的發票可作廢重開（目前：" + cur.status + "）" };
     if (_periodOf(parseInt(cur.invoiceDate, 10)) !== _periodOf(_todayYmd()))
       return { err: "已跨發票期別，無法作廢重開；請改以折讓處理或聯絡客服" };
-    tx.update(ref, { status: "voiding", lockedTs: Date.now() });   // FQA#1：鎖必帶時戳
+    tx.update(ref, { status: "voiding", lockedTs: Date.now(), reissueIntent: newBuyer });
     return { inv: cur };
   });
   if (lock.err) return { success: false, message: lock.err };
-  const inv = lock.inv;
+  const inv = Object.assign({}, lock.inv, { reissueIntent: newBuyer });
   const creds = inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds();
-  if (!creds) { await ref.update({ status: "issued" }); return { success: false, message: "賣方光貿憑證不存在" }; }
-  try { await amego.voidInvoice(creds, inv.invoiceNumber); }
-  catch (e) {
-    await ref.update({ status: "issued" });                       // 作廢失敗 → 解鎖還原，不動原票
-    return { success: false, message: "光貿作廢失敗：" + String(e.message).slice(0, 120) };
-  }
-  await ref.update({ status: "void", voidedAt: fmtNow(), voidReason: "作廢重開（更正買受人資訊）" });
-  const seq = (parseInt(String(ref.id).split("_r")[1], 10) || 0) + 1;
-  const baseOrderId = inv.orderId;
-  await issueInvoiceFor(inv.kind,
-    { orderId: baseOrderId, reissueSeq: seq, compId: inv.compId, teamId: inv.teamId,
-      sellerUsername: inv.sellerUsername, buyerUsername: inv.buyerUsername },
-    _buyerFromChoice(newBuyer, inv.buyer.email), inv.items, creds);
+  if (!creds) { await ref.update({ status: "issued", reissueIntent: FieldValue.delete() }); return { success: false, message: "賣方光貿憑證不存在" }; }
+  await _performVoidOrAllowance(ref, inv, creds, inv.amount);   // void 舊→開新→void+清intent（崩潰→voiding→worker 重放）
+  const after = (await ref.get()).data() || {};
   await auditLog(request.authUser.username, "發票作廢重開", ref.id, inv.invoiceNumber);
-  return { success: true };
+  if (after.status === "void") return { success: true, status: "void" };
+  if (after.status === "void_error") return { success: false, message: "作廢重開處理中，稍後將由系統自動完成（或至異常清單重試）" };
+  return { success: true, status: after.status };
 });
 
 // Phase 2：方案訂單退費（system 專用；新資金流出口——退刷＋停用授權＋發票作廢/折讓）
@@ -8778,8 +8796,14 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
             if (q.data && q.data.invoice_number === locked.invoiceNumber && q.data.cancel_date) actualVoided = true;
           } catch (e) { /* 查詢失敗 → 保守走沖銷路徑 */ }
         }
-        if (actualVoided) { await d.ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false }); continue; }
+        if (actualVoided) {
+          // 【V10#reissue】殭屍救援時若發現有遺留的作廢重開意圖，補開新票（冪等）——關閉兩步崩潰窗。
+          if (locked.reissueIntent) { try { await _issueReissue(d.ref, locked, creds); } catch (e) {} }
+          await d.ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false, reissueIntent: FieldValue.delete() });
+          continue;
+        }
         // 【ULT#1b】直接在 voiding 鎖內沖銷，不經 issued 中繼——消除「解鎖→沖銷」兩步間崩潰的孤兒窗。
+        // （若 locked.reissueIntent 存在，_performVoidOrAllowance 的 reissue 分支會作廢舊＋開新＋清 intent。）
         await _performVoidOrAllowance(d.ref, locked, creds, Number(locked.pendingRefund) || locked.amount);
       } else {
         // pending / error / 殭屍 issuing
