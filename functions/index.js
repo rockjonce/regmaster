@@ -449,6 +449,8 @@ async function issueInvoiceFor(kind, refs, buyer, items, credsOverride) {
       carrierType: buyer.carrierType || "", carrierId: buyer.carrierId || "", npoban: buyer.npoban || "",
       type: buyer.type || "duplicate" },
     amount, items,
+    // notifyByMail=false：由既有信件（購買/撥款）整合發票段落，抑制獨立開立通知信（10-5 減少信箱轟炸）
+    notifyByMail: refs.notifyByMail !== false,
     status: buyer.incomplete ? "pending_profile" : "pending",
     invoiceNumber: "", invoiceDate: "", randomNumber: "", pdfPath: "",
     allowances: [], retryCount: 0, lastError: "",
@@ -512,7 +514,8 @@ async function _tryIssue(ref, inv, creds) {
     const isB2B = inv.buyer.ban && inv.buyer.ban !== "0000000000";
     const hasCarrier = !!inv.buyer.carrierType || !!inv.buyer.npoban;
     if (isB2B || !hasCarrier) { try { await _storeInvoicePdf(ref, invoiceNumber, creds); } catch (e) {} }
-    try { await _sendInvoiceMail(inv, invoiceNumber, randomNumber); } catch (e) {}
+    // notifyByMail=false 時（plan/fee 由購買/撥款信整合發票段落）不另發獨立開立通知信
+    if (inv.notifyByMail !== false) { try { await _sendInvoiceMail(inv, invoiceNumber, randomNumber); } catch (e) {} }
   } catch (e) {
     // 【QA#1 修復】失敗落檔同樣不可覆寫 cancelled_before_issue（退費已定案、票不存在 → 維持終態，
     // 否則佇列會把已退費訂單的發票補開出來）
@@ -691,7 +694,7 @@ async function issuePlanInvoice(order, username, userEmail) {
     items[0].amount = Math.round(Number(order.total));
   }
   const mail = userEmail || (acct && acct.data.email) || "";
-  return issueInvoiceFor("plan", { orderId: order.orderId, buyerUsername: username },
+  return issueInvoiceFor("plan", { orderId: order.orderId, buyerUsername: username, notifyByMail: false },
     _profileToBuyer(prof, username, mail), items);
 }
 async function issueFeeInvoice(settlementId, creator, feeTotal, wireFee) {
@@ -702,7 +705,7 @@ async function issueFeeInvoice(settlementId, creator, feeTotal, wireFee) {
     { desc: "匯款手續費", qty: 1, unitPrice: Math.round(wireFee), amount: Math.round(wireFee) }
   ].filter(it => it.amount > 0);
   if (!items.length) return null;
-  return issueInvoiceFor("fee", { orderId: settlementId, settlementId, buyerUsername: creator },
+  return issueInvoiceFor("fee", { orderId: settlementId, settlementId, buyerUsername: creator, notifyByMail: false },
     _profileToBuyer(prof, creator, (acct && acct.data.email) || ""), items);
 }
 
@@ -1540,7 +1543,7 @@ exports.getMyInvoices = callable(async (data, request) => {
   const snap = await db.collection("invoices").where("buyer.email", "==", email)
     .where("kind", "==", "registration").limit(200).get();
   return { success: true, email, invoices: snap.docs.map(d => { const v = d.data(); return {
-    invId: d.id, compId: v.compId, amount: v.amount, status: v.status,
+    invId: d.id, compId: v.compId, teamId: v.teamId || "", amount: v.amount, status: v.status,
     invoiceNumber: v.invoiceNumber, invoiceDate: v.invoiceDate, randomNumber: v.randomNumber,
     hasPdf: !!v.pdfPath, lottery: v.lottery || null,
     allowances: (v.allowances || []).map(a => ({ no: a.allowanceNumber, date: a.date, amount: a.amount, hasPdf: !!a.pdfPath })),
@@ -4927,6 +4930,14 @@ exports.exportTeamsCSV = compAuthCallable(async (data, request) => {
     if (_showFile) _cols.push({ h: "檔案連結", f: t => t.fileUrl || "" });
     _cols.push({ h: "報名時間", f: t => t.registrationTime || "" });
     if (sessions.length > 1) _cols.push({ h: "參加梯次", f: t => { const ss = t.selectedSessions || [t.selectedSession || 0]; return ss.map(idx => "梯次" + (idx + 1)).join("、"); } });
+    // 輔助模式（F3/F4）：報名者發票資訊＋建議開票金額——供主辦方手動開立/對帳（僅在有收集時出現）
+    if (_teams.some(t => t.invoiceChoice)) {
+      _cols.push({ h: "建議開票金額", f: t => (t.owedAmount != null ? t.owedAmount : "") });
+      _cols.push({ h: "發票類型", f: t => { const c = t.invoiceChoice; return c ? (c.kind === "company" ? "三聯(統編)" : "二聯(個人)") : ""; } });
+      _cols.push({ h: "統一編號", f: t => { const c = t.invoiceChoice; return (c && c.kind === "company") ? (c.taxId || "") : ""; } });
+      _cols.push({ h: "發票抬頭", f: t => { const c = t.invoiceChoice; return (c && c.kind === "company") ? (c.title || "") : ""; } });
+      _cols.push({ h: "載具/捐贈", f: t => { const c = t.invoiceChoice; if (!c || c.kind !== "personal") return ""; return c.carrierType === "3J0002" ? ("手機條碼:" + (c.carrierId || "")) : c.carrierType === "donate" ? ("捐贈碼:" + (c.npoban || "")) : "雲端發票"; } });
+    }
     _stuSecs.forEach((sec, si) => (sec.fields || []).forEach(fld => {
       if (_isDisp(fld)) return;
       const key = fld.legacyKey || fld.id;
@@ -7093,12 +7104,30 @@ async function activatePlanOrderPaid(orderRef, order, orderId, tradeNo) {
     if (!cSnap.empty) await cSnap.docs[0].ref.update({ usedCount: FieldValue.increment(1) });
   }
 
+  // 電子發票（F1）：先於購買信開立，好把發票資訊整合進同一封信（10-5 減少信箱轟炸）。失敗不阻斷。
+  let _planInvId = null;
+  try { _planInvId = await issuePlanInvoice({ ...order, orderId }, order.username); }
+  catch (e) { console.warn("plan invoice defer:", e.message); }
+
   /* Send email to purchaser */
   if (order.username) {
     const userSnap = await db.collection("accounts").where("username", "==", order.username).limit(1).get();
     if (!userSnap.empty) {
       const userEmail = (userSnap.docs[0].data().email) || "";
       if (userEmail) {
+        // 整合發票段落：讀剛開立的發票 doc（已開立→附號碼；待補資料→提示補填）
+        let invoiceSection = "";
+        if (_planInvId) {
+          try {
+            const iv = (await db.collection("invoices").doc(_planInvId).get()).data() || {};
+            if (iv.status === "issued" && iv.invoiceNumber)
+              invoiceSection = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13.5px;color:#334155"><b>🧾 電子發票已開立</b><br>發票號碼：<span style="font-family:monospace">${iv.invoiceNumber}</span>　金額 NT$${iv.amount}<br><span style="color:#64748b">可於後台「帳務 → 發票」查詢與下載。</span></div>`;
+            else if (iv.status === "pending_profile")
+              invoiceSection = `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13.5px;color:#92400e"><b>🧾 電子發票</b><br>請先至「設定 → 電子發票」填寫發票資訊，系統將自動補開本次費用之電子發票。</div>`;
+            else
+              invoiceSection = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13.5px;color:#334155"><b>🧾 電子發票</b><br>本次費用之電子發票開立後，可於後台「帳務 → 發票」查詢與下載。</div>`;
+          } catch (e) {}
+        }
         const anyTier = codeDetails.some(d => d.type === "tier");
         let codesHtml = codeDetails.map(d =>
           `<div style="background:#E8F0F8;padding:14px 18px;border-radius:10px;margin:8px 0;font-family:monospace;font-size:18px;font-weight:700;color:#0A437A;letter-spacing:1px;text-align:center">${d.code}<br><span style="font-size:13px;font-weight:400;color:#475569">${d.type === "tier" ? d.desc : (d.type === "count" ? "次數授權 " + d.desc : "訂閱授權 " + d.desc)}</span></div>`
@@ -7115,6 +7144,7 @@ async function activatePlanOrderPaid(orderRef, order, orderId, tradeNo) {
               <p style="font-size:14px;color:#475569;margin-top:16px">${anyTier
                 ? '您的方案已自動啟用，登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 即可使用（上方代碼供您留存）。'
                 : '請登入 <a href="' + PROJECT_HOST + '" style="color:#0A437A;font-weight:600">RegMaster</a> 管理介面，點擊「方案與授權」輸入上述代碼即可啟用。'}</p>
+              ${invoiceSection}
               <p style="font-size:13px;color:#94a3b8;margin-top:16px;border-top:1px solid #e2e8f0;padding-top:12px">訂單編號：${orderId}<br>付款金額：NT$${order.total}</p>
             </div>
           </div>`;
@@ -7126,10 +7156,7 @@ async function activatePlanOrderPaid(orderRef, order, orderId, tradeNo) {
     }
   }
   await auditLog("system", "payment_success", orderId, codes.join(","));
-  // 電子發票（F1）：失敗不阻斷付款主流程，進佇列補開
-  try { await issuePlanInvoice({ ...order, orderId }, order.username); }
-  catch (e) { console.warn("plan invoice defer:", e.message); }
-  return true;
+  return true;   // 電子發票已於購買信前開立並整合入信（見上）
 }
 
 // Activation logic for a REGISTRATION-fee payment — shared by the webhook (payuniRegNotify)
@@ -8524,15 +8551,27 @@ exports.markPayoutPaid = authCallable(["system"], async (data, request) => {
     createdAt: fmtNow(), createdBy: request.authUser.username, source: "payoutRequest"
   });
   await auditLog(request.authUser.username, "註記匯款完成", reqId, "實匯NT$" + r.actualWire);
-  // 電子發票（F5）：手續費發票隨撥款完成彙開一張。失敗不阻斷撥款註記。
-  try { await issueFeeInvoice(reqId, r.creator, Number(r.feeTotal) || 0, Number(r.wireFee) || 0); }
+  // 電子發票（F5）：手續費發票隨撥款完成彙開一張（notifyByMail=false，整合進撥款信）。失敗不阻斷。
+  let _feeInvId = null;
+  try { _feeInvId = await issueFeeInvoice(reqId, r.creator, Number(r.feeTotal) || 0, Number(r.wireFee) || 0); }
   catch (e) { console.warn("fee invoice defer:", e.message); }
   try {
     const oEmail = await organiserEmail(r.creator);
+    let feeInvSection = "";
+    if (_feeInvId) {
+      try {
+        const iv = (await db.collection("invoices").doc(_feeInvId).get()).data() || {};
+        if (iv.status === "issued" && iv.invoiceNumber)
+          feeInvSection = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin:12px 0;font-size:13.5px;color:#334155"><b>🧾 手續費電子發票已開立</b><br>發票號碼：<span style="font-family:monospace">${escMail(iv.invoiceNumber)}</span>　金額 NT$${iv.amount}<br><span style="color:#64748b">可於後台「帳務 → 發票」查詢與下載。</span></div>`;
+        else
+          feeInvSection = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin:12px 0;font-size:13.5px;color:#334155"><b>🧾 手續費電子發票</b><br>開立後可於後台「帳務 → 發票」查詢與下載。</div>`;
+      } catch (e) {}
+    }
     const html = emailWrap("款項已匯出", `
       <p>您在活動「<b>${escMail(r.compName || r.compId)}</b>」的匯款申請（${escMail(reqId)}）已完成匯款。</p>
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin:12px 0;font-size:14px;line-height:1.8">
         <b>實匯金額：</b>NT$${r.actualWire}（已扣手續費與每批 NT$15 匯費）</div>
+      ${feeInvSection}
       <p>請留意您的收款帳戶入帳。</p>`);
     await queueMail(oEmail, "[RegMaster] 款項已匯出 — " + (r.compName || ""), html);
   } catch (e) {}
@@ -9043,7 +9082,8 @@ exports.listOrders = authCallable(["system"], async (data) => {
       orderId: o.orderId || doc.id, username: o.username || "", email: emailMap[o.username] || "",
       items: o.items || [], total: o.total || 0, status: o.status || "",
       createdAt: o.createdAt || "", paidAt: o.paidAt || "",
-      couponCode: o.couponCode || "", couponDiscount: o.couponDiscount || 0
+      couponCode: o.couponCode || "", couponDiscount: o.couponDiscount || 0,
+      refundState: o.refundState || "none", refundedAmount: o.refundedAmount || 0   // 供方案退費面板
     });
   }
   results.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));

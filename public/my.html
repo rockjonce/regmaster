@@ -273,6 +273,7 @@ html, body { max-width:100%; overflow-x:hidden; }
   // Shape: { provider: 'google'|'line', email: '<verified-email-lowercase>' }
   var OAUTH_VERIFIED = null;
   var INV_TOKEN = '';   // Phase 3：發票查詢權杖（listMyRegistrationsBySocial 核發，30 天）
+  var INV_BY_TEAM = {}; // Phase 3：teamId → 該筆報名的發票（供報名卡片徽章對應）
   // Email used to fetch the current registrations (the typed Email/phone in
   // the lookup form, or the verified social email). Compared to OAUTH_VERIFIED.email.
   var LOOKUP_EMAIL = '';
@@ -430,6 +431,13 @@ html, body { max-width:100%; overflow-x:hidden; }
       else if (_st === '正取') meta += '<span class="pill ok">' + window.L('myStAccepted') + '</span>';
       else if (_st.indexOf('備取') === 0) meta += '<span class="pill warn">' + escapeHtml(window.LS ? window.LS(_st) : _st) + '</span>';
       meta += statusPill(r, cls);
+      // Phase 3（10-5）：發票狀態徽章 — 直接顯示於報名卡
+      var _inv = INV_BY_TEAM[r.teamId];
+      if (_inv) {
+        if (_inv.status === 'issued') meta += '<span class="pill ok">🧾 ' + escapeHtml(_inv.invoiceNumber || window.L('myInvPending')) + '</span>';
+        else if (_inv.status === 'void' || _inv.status === 'allowanced') meta += '<span class="pill">🧾 ' + escapeHtml(window.L('myInvBadgeVoided')) + '</span>';
+        else meta += '<span class="pill warn">🧾 ' + escapeHtml(window.L('myInvPending')) + '</span>';
+      }
 
       // 完整權限僅限「社群登入（已驗證 Email）」查得的報名；Email/電話查詢為唯讀。
       var full = !!PWD_BY_TEAM[r.teamId];
@@ -1167,6 +1175,10 @@ html, body { max-width:100%; overflow-x:hidden; }
   function loadInvoiceHistory() {
     runFn('getMyInvoices', { invoiceToken: INV_TOKEN }).then(function (r) {
       if (!r || !r.success || !(r.invoices || []).length) return;
+      // 建 teamId→發票對應並刷新報名卡片徽章（10-5：卡片直接看到發票狀態）
+      INV_BY_TEAM = {};
+      r.invoices.forEach(function (v) { if (v.teamId && !INV_BY_TEAM[v.teamId]) INV_BY_TEAM[v.teamId] = v; });
+      if (Object.keys(INV_BY_TEAM).length) renderList();
       document.getElementById('invHistory').style.display = '';
       document.getElementById('invHistList').innerHTML = r.invoices.map(function (v) {
         var rows = '<div style="display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; padding:10px 4px; border-bottom:1px solid var(--line, #e2e8f0); font:400 13px/1.6 var(--f-tc)">'

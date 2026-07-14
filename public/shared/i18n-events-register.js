@@ -61,6 +61,7 @@
     rgInvValTitle: '請填寫發票抬頭',
     rgInvValCarrier: '手機條碼載具格式錯誤（斜線開頭共 8 碼，例：/ABC+123）',
     rgInvValNpoban: '捐贈碼格式錯誤（3-7 碼數字）',
+    rgReviewInvoice: '發票開立資訊', rgReviewInvType: '發票類型', rgReviewInvCarrier: '載具／開立方式',
     rgSecTeacher: '指導者',
 
     // ----- step 3 -----
@@ -324,6 +325,7 @@
     rgInvValTitle: 'Please enter the invoice title',
     rgInvValCarrier: 'Invalid mobile barcode (8 chars starting with "/", e.g. /ABC+123)',
     rgInvValNpoban: 'Invalid donation code (3–7 digits)',
+    rgReviewInvoice: 'Invoice details', rgReviewInvType: 'Invoice type', rgReviewInvCarrier: 'Carrier / method',
     rgSecTeacher: 'Instructors',
 
     rgStep3Eyebrow: 'STEP 03',

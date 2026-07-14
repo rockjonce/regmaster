@@ -307,6 +307,22 @@ body { background:var(--bg); }
           </div>
         </div>
 
+        <!-- 方案訂單與發票／退費（Phase 2：adminRefundPlanOrder 操作介面） -->
+        <div class="card" style="margin-top:18px">
+          <div class="ch"><div><h3 data-i18n="adSysPlanOrdTitle">方案訂單與發票／退費</h3><p data-i18n="adSysPlanOrdSub">主辦方方案購買訂單。可查看電子發票號碼並執行退刷（全額退款會自動停用授權並作廢/折讓發票）。</p></div>
+            <button class="btn btn-ghost btn-sm" id="poReload" data-i18n="adSysPlanOrdReload">↻ 重新整理</button></div>
+          <div class="cb">
+            <div class="tbl-wrap" style="overflow-x:auto"><table class="tbl" style="width:100%">
+              <thead><tr>
+                <th data-i18n="adSysPlanOrdThId">訂單編號</th><th data-i18n="adSysPlanOrdThBuyer">買方</th>
+                <th class="right" data-i18n="adSysPlanOrdThAmt">金額</th><th data-i18n="adSysPlanOrdThStatus">狀態</th>
+                <th data-i18n="adSysPlanOrdThInv">發票</th><th data-i18n="adSysPlanOrdThAct">動作</th>
+              </tr></thead>
+              <tbody id="poBody"><tr><td colspan="6" style="color:var(--muted)" data-i18n="adSysLoading">載入中⋯</td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
+
         <!-- AI 金鑰 + 知識庫（原「AI 金鑰」分頁整併至參數設定） -->
         <div class="card" style="margin-top:18px">
           <div class="ch"><div><h3><span data-i18n="adSysKeysTitle">Gemini API 金鑰</span> <span class="ct" id="ctKeys"></span></h3><p data-i18n="adSysKeysSub">AI 助理使用；系統會在多把金鑰間自動輪替以分散額度</p></div></div>
@@ -771,6 +787,51 @@ body { background:var(--bg); }
     }).catch(function (e) { st.textContent = '✗ ' + (e.message || '連線失敗'); })
       .finally(function () { btn.disabled = false; });
   });
+
+  // ---- 方案訂單與發票／退費（Phase 2）----
+  var PO_INV_STATUS = { issued: '已開立', pending: '開立中', pending_profile: '待補資料', error: '異常',
+    dead: '失敗', "void": '已作廢', allowanced: '已折讓', voiding: '處理中', issuing: '處理中',
+    void_error: '異常', cancelled_before_issue: '未開立' };
+  function esc2(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]; }); }
+  function loadPlanOrders() {
+    var body = document.getElementById('poBody');
+    body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">載入中⋯</td></tr>';
+    Promise.all([runFn('listOrders', {}), runFn('adminListInvoices', {})]).then(function (res) {
+      var orders = (res[0] || []).filter(function (o) { return (o.items || []).some(function (it) { return it.type === 'tier'; }) || o.total > 0; });
+      var invByOrder = {};
+      ((res[1] && res[1].invoices) || []).forEach(function (v) { if (v.kind === 'plan') invByOrder[v.orderId] = v; });
+      if (!orders.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">尚無方案訂單</td></tr>'; return; }
+      body.innerHTML = orders.map(function (o) {
+        var inv = invByOrder[o.orderId];
+        var invCell = inv ? (esc2(inv.invoiceNumber || '') + ' <span style="color:var(--muted)">' + (PO_INV_STATUS[inv.status] || inv.status) + '</span>') : '<span style="color:var(--muted)">—</span>';
+        var refunded = o.refundState && o.refundState !== 'none';
+        var statusCell = esc2(o.status) + (refunded ? ' <span style="color:var(--err-700)">已退 NT$' + o.refundedAmount + '</span>' : '');
+        var actCell = (o.status === 'paid' && !refunded)
+          ? '<button class="btn btn-ghost btn-sm" data-porefund="' + esc2(o.orderId) + '" data-pototal="' + o.total + '">退費</button>'
+          : '<span style="color:var(--muted)">—</span>';
+        return '<tr><td class="mono">' + esc2(o.orderId) + '</td><td>' + esc2(o.username || o.email) + '</td><td class="right">NT$' + Number(o.total).toLocaleString() + '</td><td>' + statusCell + '</td><td>' + invCell + '</td><td>' + actCell + '</td></tr>';
+      }).join('');
+    }).catch(function (e) { body.innerHTML = '<tr><td colspan="6" style="color:var(--err-700)">' + esc2(e.message || '載入失敗') + '</td></tr>'; });
+  }
+  document.getElementById('poReload').addEventListener('click', loadPlanOrders);
+  document.getElementById('poBody').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-porefund]'); if (!b) return;
+    var orderId = b.dataset.porefund, total = Number(b.dataset.pototal);
+    uiPrompt('方案訂單退費：輸入退款金額（NT$，最高 ' + total + '；全額退款會停用授權並作廢/折讓發票）', String(total)).then(function (val) {
+      if (val == null) return;
+      var amt = Math.round(Number(val));
+      if (!(amt > 0) || amt > total) { toast('退款金額須為 1~' + total, 'err'); return; }
+      uiConfirm('確定退款 NT$' + amt + '？此動作將透過 PayUNI 退刷。').then(function (ok) {
+        if (!ok) return;
+        b.disabled = true;
+        runFn('adminRefundPlanOrder', { orderId: orderId, refundAmt: amt, reason: '系統管理員退費' }).then(function (r) {
+          if (r && r.success) { toast('已退款 NT$' + r.refundedAmount); loadPlanOrders(); }
+          else { b.disabled = false; toast((r && r.message) || '退費失敗', 'err'); }
+        }).catch(function (err) { b.disabled = false; toast(err.message || '退費失敗', 'err'); });
+      });
+    });
+  });
+  loadPlanOrders();
   document.getElementById('paramsSave').addEventListener('click', function () {
     var config = {
       taxRate: Number(document.getElementById('p-tax').value) || 0,
