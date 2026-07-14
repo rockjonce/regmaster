@@ -1697,12 +1697,23 @@ exports.saveAmegoPlatformConfig = authCallable(["system"], async (data, request)
   return { success: true };
 });
 exports.testAmegoConnection = authCallable(["system"], async () => {
+  _amegoCredsCache = null;                                        // 強制重讀最新設定（避免同容器 5 分鐘快取造成「剛存卻測到舊值」）
+  let creds = null;
   try {
-    const creds = await getAmegoCreds();
-    const r = await amego.banQuery(creds, [creds.ban]);           // 唯讀，不真開票（10-3）
+    creds = await getAmegoCreds();
+    // 連線探測用一個「保證檢查碼合法」的統編查詢（唯讀、不開票）。
+    // 注意：光貿測試環境自身統編 12345678 檢查碼不合法，ban_query 會回「統一編號格式錯誤」，
+    // 故 test 模式不可拿 creds.ban 當探測目標；prod 模式賣方統編合法才用自己的。
+    const probe = validateTaxIdSrv(creds.ban) ? creds.ban : "28080623"; // 28080623＝光貿科技（doc 範例、合法且在資料集內）
+    const r = await amego.banQuery(creds, [probe]);
+    const nm = (r.data && r.data[0] && r.data[0].name) || "";
     return { success: true, mode: creds.mode, ban: creds.ban,
-      name: (r.data && r.data[0] && r.data[0].name) || "" };
-  } catch (e) { return { success: false, message: String(e.message).slice(0, 120) }; }
+      name: probe === creds.ban ? nm : ("連線正常（探測統編 " + probe + (nm ? "／" + nm : "") + "）") };
+  } catch (e) {
+    // 診斷用：回傳實際使用的環境與賣方統編（絕不含 App Key），方便判斷是設定問題還是光貿端問題
+    const diag = creds ? "（目前環境=" + creds.mode + "，賣方統編=" + creds.ban + "）" : "";
+    return { success: false, message: String(e.message).slice(0, 120) + " " + diag };
+  }
 });
 
 // Phase 3：發票作廢重開（統編填錯救濟；同期別內、同金額；10-2）
