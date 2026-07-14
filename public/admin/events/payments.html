@@ -270,6 +270,15 @@
   var SCHEMA_FIELDS = {};   // R6-11: 自訂成員欄位 id → 標籤
   var TEAMS = [];
   var IS_MANAGER = true; // #4-3/4-4: 僅 owner/manager 可見管理動作（後端已擋，前端隱藏避免誤觸）
+  var EINV_MODE = 'off';
+  // 輔助模式：報名者發票選擇＋建議開票金額摘要（報名費列內嵌）
+  function payInvAssist(t) {
+    if (EINV_MODE === 'off' || !t.invoiceChoice) return '';
+    var ic = t.invoiceChoice;
+    var who = ic.kind === 'company' ? ('三聯 ' + (ic.taxId || '') + (ic.title ? '／' + ic.title : ''))
+      : (ic.carrierType === '3J0002' ? ('手機條碼 ' + (ic.carrierId || '')) : ic.carrierType === 'donate' ? ('捐贈 ' + (ic.npoban || '')) : '雲端發票');
+    return '<div style="font:400 10.5px/1.5 var(--f-mono); color:var(--muted); margin-top:3px">🧾 ' + escapeHtml(who) + '</div>';
+  }
 
   function load() {
     Promise.all([
@@ -279,6 +288,7 @@
     ]).then(function (r) {
       var bundle = r[0] || {}; var cfg = bundle.config || {};
       FEE = parseInt(cfg.registrationFee || 0) || 0;
+      EINV_MODE = bundle.einvoiceMode || 'off';   // 輔助模式：報名費列內嵌發票資訊
       ACC_MODE = cfg.acceptanceMode || (cfg.allowWaitlist === false ? 'none' : 'auto');   // R9-5
       // R6-11: 自訂成員欄位 id→標籤（值存於 member[f.id]）— 查看彈窗與報名管理詳情一致
       SCHEMA_FIELDS = {};
@@ -352,7 +362,7 @@
         '<td>' + escapeHtml(window.LS(t.status || '')) + '</td>' +
         '<td><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(t.paymentStatus ? window.LS(t.paymentStatus) : window.L('aePayPillDefault')) + '</span></td>' +
         '<td>' + escapeHtml(t.paymentMethod ? window.LS(t.paymentMethod) : '—') + '</td>' +
-        '<td class="right">NT$ ' + owedOf(t).toLocaleString() + '</td>' +
+        '<td class="right">NT$ ' + owedOf(t).toLocaleString() + payInvAssist(t) + '</td>' +
         '<td>' +
           (IS_MANAGER && !paid ? '<button class="action-btn primary" data-act="confirm" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aePayBtnConfirm') + '</button>' : '') +
           (IS_MANAGER && paid && !(me && me.role === 'system') ? '<button class="action-btn" data-act="refund" data-tid="' + escapeHtml(t.teamId) + '" data-name="' + escapeHtml(t.teamNameCN || t.teamNameEN || '') + '">' + window.L('aePayBtnRefund') + '</button>' : '') +

@@ -302,7 +302,16 @@
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('meName').textContent = me.displayName || me.username;
 
-  var CFG = {}, TEAMS = [], STATS = {};
+  var CFG = {}, TEAMS = [], STATS = {}, EINV_MODE = 'off';
+  // 輔助模式：把報名者發票選擇＋建議開票金額整理成一行摘要（清單列內嵌用）
+  function invAssistLine(t) {
+    if (EINV_MODE === 'off' || !t.invoiceChoice) return '';
+    var ic = t.invoiceChoice, amt = (t.owedAmount != null ? t.owedAmount : (t.paidAmount != null ? t.paidAmount : null));
+    var who = ic.kind === 'company' ? (window.L('aeRegInvCompany') + ' ' + (ic.taxId || '') + (ic.title ? '／' + ic.title : ''))
+      : (ic.carrierType === '3J0002' ? (window.L('aeRegInvCarrier') + ' ' + (ic.carrierId || '')) : ic.carrierType === 'donate' ? (window.L('aeRegInvDonate') + ' ' + (ic.npoban || '')) : window.L('aeRegInvCloud'));
+    return '<div style="font:400 11px/1.5 var(--f-tc); color:var(--muted); margin-top:4px">🧾 ' + escapeHtml(who)
+      + (amt != null ? ('　' + window.L('aeRegInvSuggestAmt') + ' NT$' + Number(amt).toLocaleString()) : '') + '</div>';
+  }
   var charts = {};      // Chart.js instances keyed by id (so we can destroy & re-render)
   var TREND_MODE = 'date';
   // Time-range filter for the time-based charts. TSTATS holds dailyCounts/dailyPaidCounts/
@@ -322,6 +331,7 @@
     ]).then(function (results) {
       var bundle = results[0] || {};
       CFG = bundle.config || {};
+      EINV_MODE = bundle.einvoiceMode || 'off';   // 輔助模式清單列顯示依據
       TEAMS = results[1] || [];
       STATS = results[2] || {};
       IS_MANAGER = !(results[3] && (results[3].role === 'staff' || results[3].role === 'judge')); // #4-3/4-4
@@ -802,7 +812,7 @@
         '<td data-label="' + escapeHtml(window.L('aeRegColNameCN')) + '"><b>' + escapeHtml(t.teamNameCN || (t.studentNames && t.studentNames[0]) || window.L('aeRegDash')) + '</b></td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColNameEN')) + '">' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColStatus')) + '">' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
-        '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span></td>' +
+        '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span>' + invAssistLine(t) + '</td>' +
         '<td class="td-actions">' +
           /* 自訂正取（user 決策）：審核中＋已付款才可勾選；單向鎖於 handleAct 確認 */
           ((CFG.acceptanceMode === 'manual' && IS_MANAGER && t.status === '審核中' && paid)

@@ -4450,6 +4450,7 @@ exports.getAllTeams = compAuthCallable("view", async (data, request) => {
       // R6-3: 折後應付（confirmManualPayment 落地）— 不回傳的話帳務頁 owedOf() 永遠 fallback 全額
       owedAmount: (t.owedAmount != null && t.owedAmount !== "" ? (parseInt(t.owedAmount, 10) || 0) : null),
       discountCode: t.discountCode || "",
+      invoiceChoice: t.invoiceChoice || null,   // 輔助模式（F3/F4）：清單列直接顯示報名者發票選擇
       paidAmount: (paidAmountByTeam[t.teamId] !== undefined ? paidAmountByTeam[t.teamId] : null),  // actual收款(線上)；null=未知(走估算)
       studentNames: mInfo.studentNames,
       teacherNames: mInfo.teacherNames
