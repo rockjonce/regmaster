@@ -592,17 +592,32 @@
     if (!reqs.length) { rq.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px">' + T('aePayPoNoReq') + '</p>'; }
     else {
       var stMap = { requested: T('aePayPoStRequested'), approved: T('aePayPoStApproved'), paid: T('aePayPoStPaid'), rejected: T('aePayPoStRejected'), withdrawn: T('aePayPoStWithdrawn') };
-      rq.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th>' + T('aePayPoThReqId') + '</th><th>' + T('aePayPoThApplyAt') + '</th><th class="right">' + T('aePayPoThActual') + '</th><th>' + T('aePayPoThSchedule') + '</th><th>' + T('aePayPoThStatus') + '</th><th></th></tr></thead><tbody>' +
+      rq.innerHTML = '<div class="b-tbl-wrap"><table class="b-tbl"><thead><tr><th>' + T('aePayPoThReqId') + '</th><th>' + T('aePayPoThApplyAt') + '</th><th class="right">' + T('aePayPoThActual') + '</th><th>' + T('aePayPoThSchedule') + '</th><th>' + T('aePayPoThStatus') + '</th><th>' + T('aePayPoThFeeInv') + '</th><th></th></tr></thead><tbody>' +
         reqs.map(function (r) {
           var st = stMap[r.status] || r.status;
           var act = (r.status === 'requested' && !sysView) ? '<button class="btn btn-ghost btn-sm po-withdraw" data-req="' + escapeHtml(r.reqId) + '">' + T('aePayPoWithdraw') + '</button>' : (r.status === 'rejected' && r.rejectReasonText ? '<span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(r.rejectReasonText) + '</span>' : '');
           return '<tr><td><b style="font:500 11px/1.3 var(--f-mono)">' + escapeHtml(r.reqId) + '</b></td>' +
             '<td><span style="font:400 11px/1.4 var(--f-tc); color:var(--muted)">' + escapeHtml(String(r.appliedAt || r.createdAt).slice(0, 16)) + '</span></td>' +
             '<td class="right" style="font-weight:700">' + fmtMoney(r.actualWire) + '</td>' +
-            '<td>' + escapeHtml(r.scheduledPayoutDate || '—') + '</td><td>' + st + '</td><td class="right">' + act + '</td></tr>';
+            '<td>' + escapeHtml(r.scheduledPayoutDate || '—') + '</td><td>' + st + '</td>' +
+            '<td data-feeinv="' + escapeHtml(r.reqId) + '" style="font:400 11px/1.4 var(--f-mono); color:var(--muted)">—</td>' +
+            '<td class="right">' + act + '</td></tr>';
         }).join('') + '</tbody></table></div>';
       rq.querySelectorAll('.po-withdraw').forEach(function (b) { b.addEventListener('click', function () { doWithdraw(b.dataset.req); }); });
+      patchFeeInvoices();   // V7（10-5①）：填入各撥款申請對應之手續費發票號碼
     }
+  }
+  // 以 listMyInvoices（kind=fee，orderId=settlementId=reqId）補上撥款清單的手續費發票欄
+  function patchFeeInvoices() {
+    runFn('listMyInvoices', {}).then(function (r) {
+      if (!r || !r.success) return;
+      var map = {};
+      (r.issued || []).concat(r.received || []).forEach(function (v) { if (v.kind === 'fee' && v.orderId) map[v.orderId] = v; });
+      document.querySelectorAll('#payoutRequests [data-feeinv]').forEach(function (td) {
+        var v = map[td.getAttribute('data-feeinv')];
+        if (v) td.textContent = (v.invoiceNumber || '') + (v.status === 'issued' ? '' : '（' + (INV_STATUS_LABEL[v.status] || v.status) + '）');
+      });
+    }).catch(function () {});
   }
 
   function recomputeApplyTotals() {
@@ -786,9 +801,12 @@
     if (bad && v.lastError) s += '<div style="font:400 10.5px/1.4 var(--f-mono); color:var(--muted)">' + esc(String(v.lastError).slice(0, 60)) + '</div>';
     return s;
   }
-  function invDlHtml(v) {
+  function invDlHtml(v, canRetry) {
     var parts = [];
     if (v.hasPdf) parts.push('<a href="#" data-invdl="' + esc(v.invId) + '" style="color:var(--acc)">PDF</a>');
+    // V7（10-5/11-3）：主辦方可對自己開立的異常發票一鍵重試補開
+    if (canRetry && ['error', 'void_error', 'dead'].indexOf(v.status) >= 0)
+      parts.push('<button class="btn btn-ghost btn-sm" data-invretry="' + esc(v.invId) + '">' + T('aePayInvRetry') + '</button>');
     (v.allowances || []).forEach(function (a) {
       parts.push('<div style="font:400 11px/1.5 var(--f-tc)">折讓 ' + esc(a.no) + ' NT$' + a.amount
         + (a.hasPdf ? ' <a href="#" data-invdl="' + esc(v.invId) + '" data-allow="' + esc(a.no) + '" style="color:var(--acc)">PDF</a>' : '') + '</div>');
@@ -822,7 +840,7 @@
           return '<tr><td>' + esc(v.invoiceDate || v.createdAt.slice(0, 10)) + '</td><td class="mono">' + esc(v.invoiceNumber || '—')
             + '</td><td>' + esc(v.buyerName || '') + (v.buyerBan ? '<div style="font:400 10.5px/1.3 var(--f-mono); color:var(--muted)">' + esc(v.buyerBan) + '</div>' : '')
             + '</td><td class="right">NT$' + Number(v.amount).toLocaleString()
-            + '</td><td>' + invStatusHtml(v) + '</td><td>' + invDlHtml(v) + '</td></tr>';
+            + '</td><td>' + invStatusHtml(v) + '</td><td>' + invDlHtml(v, true) + '</td></tr>';   // 自己開立→可重試
         }).join('');
       }
       loadInvReports();
@@ -868,6 +886,17 @@
     return Promise.resolve();
   }
   document.getElementById('invContent').addEventListener('click', function (e) {
+    // V7：發票重試（主辦方自救異常發票）
+    var rb = e.target.closest('button[data-invretry]');
+    if (rb) {
+      if (rb.dataset.busy) return;                 // 防連點
+      rb.dataset.busy = '1'; rb.disabled = true;
+      runFn('retryInvoiceNow', { invId: rb.dataset.invretry }).then(function (r) {
+        if (r && r.success) { toast(r.cancelled ? '已標記為未開立' : ('已重試：' + (INV_STATUS_LABEL[r.status] || r.status))); loadInvoices(); }
+        else { rb.disabled = false; delete rb.dataset.busy; toast((r && r.message) || '重試失敗', 'err'); }
+      }).catch(function (err) { rb.disabled = false; delete rb.dataset.busy; toast(err.message || '重試失敗', 'err'); });
+      return;
+    }
     var t = e.target.closest('a'); if (!t) return;
     if (!t.dataset.invdl && !t.dataset.report) return;
     e.preventDefault();

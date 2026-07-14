@@ -816,20 +816,23 @@ body { background:var(--bg); }
   document.getElementById('poReload').addEventListener('click', loadPlanOrders);
   document.getElementById('poBody').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-porefund]'); if (!b) return;
+    if (b.dataset.busy) return;                        // V7：點擊當下即鎖，防連點堆疊確認框/重複 API
+    b.dataset.busy = '1';
+    var release = function () { delete b.dataset.busy; };
     var orderId = b.dataset.porefund, total = Number(b.dataset.pototal);
     uiPrompt('方案訂單退費：輸入退款金額（NT$，最高 ' + total + '；全額退款會停用授權並作廢/折讓發票）', String(total)).then(function (val) {
-      if (val == null) return;
+      if (val == null) { release(); return; }
       var amt = Math.round(Number(val));
-      if (!(amt > 0) || amt > total) { toast('退款金額須為 1~' + total, 'err'); return; }
+      if (!(amt > 0) || amt > total) { toast('退款金額須為 1~' + total, 'err'); release(); return; }
       uiConfirm('確定退款 NT$' + amt + '？此動作將透過 PayUNI 退刷。').then(function (ok) {
-        if (!ok) return;
+        if (!ok) { release(); return; }
         b.disabled = true;
         runFn('adminRefundPlanOrder', { orderId: orderId, refundAmt: amt, reason: '系統管理員退費' }).then(function (r) {
           if (r && r.success) { toast('已退款 NT$' + r.refundedAmount); loadPlanOrders(); }
-          else { b.disabled = false; toast((r && r.message) || '退費失敗', 'err'); }
-        }).catch(function (err) { b.disabled = false; toast(err.message || '退費失敗', 'err'); });
+          else { b.disabled = false; release(); toast((r && r.message) || '退費失敗', 'err'); }
+        }).catch(function (err) { b.disabled = false; release(); toast(err.message || '退費失敗', 'err'); });
       });
-    });
+    }).catch(function () { release(); });
   });
   loadPlanOrders();
   document.getElementById('paramsSave').addEventListener('click', function () {

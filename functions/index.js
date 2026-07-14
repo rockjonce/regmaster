@@ -1616,11 +1616,14 @@ exports.adminListInvoices = authCallable(["system"], async (data) => {
   return { success: true, invoices: snap.docs.map(d => ({ invId: d.id, ...d.data() }))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) };
 });
-exports.retryInvoiceNow = authCallable(["system"], async (data, request) => {
+exports.retryInvoiceNow = authCallable(["system", "competition"], async (data, request) => {
   const ref = db.collection("invoices").doc(String(data.invId || ""));
   const doc = await ref.get();
   if (!doc.exists) return { success: false, message: "找不到發票" };
   const inv = doc.data();
+  // 主辦方（競賽角色）只能重試「自己開立（sellerUsername===自己）」的異常發票；平台發票由系統管理員重試。
+  if (request.authUser.role !== "system" && inv.sellerUsername !== request.authUser.username)
+    return { success: false, message: "無權重試此發票" };
   if (!["error", "pending", "pending_profile", "void_error"].includes(inv.status))
     return { success: false, message: "此狀態（" + inv.status + "）無需重試" };
   if (inv.status === "pending_profile") return { success: false, message: "買受人發票資料尚未補齊，請通知主辦方至設定填寫" };
@@ -1635,10 +1638,10 @@ exports.retryInvoiceNow = authCallable(["system"], async (data, request) => {
   await auditLog(request.authUser.username, "發票手動重試", data.invId, after.status);
   return { success: true, status: after.status, lastError: after.lastError || "" };
 });
-// void_error 重試（解鎖回 issued 後重跑狀態機；退款額取失敗當下記錄的 pendingRefund）
+// void_error 重試：直接在 voiding 鎖內沖銷（比照 ULT#1b，不經 issued 中繼、無孤兒窗）。
 async function voidOrAllowanceRetry(ref, inv, creds) {
-  await ref.update({ status: "issued" });
-  await voidOrAllowance(ref.id, Number(inv.pendingRefund) || inv.amount, creds);
+  await ref.update({ status: "voiding", lockedTs: Date.now() });
+  await _performVoidOrAllowance(ref, inv, creds, Number(inv.pendingRefund) || inv.amount);
 }
 
 // F7：系統管理者平台參數（appSecrets/amegoPlatform；金鑰永不回顯）
