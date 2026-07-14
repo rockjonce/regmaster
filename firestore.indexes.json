@@ -38,7 +38,7 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "createdTs", "order": "ASCENDING" }
+        { "fieldPath": "queueTs", "order": "ASCENDING" }
       ]
     }
   ],

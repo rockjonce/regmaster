@@ -453,7 +453,9 @@ async function issueInvoiceFor(kind, refs, buyer, items, credsOverride) {
     invoiceNumber: "", invoiceDate: "", randomNumber: "", pdfPath: "",
     allowances: [], retryCount: 0, lastError: "",
     refundRequested: false, pendingRefund: 0,   // QA#2：退費意圖標記（in-flight 退費不丟失）
-    createdAt: fmtNow(), createdTs: Date.now(), issuedAt: ""
+    // ULT2#1：queueTs = 佇列排序鍵（初值＝createdTs；每次失敗推到隊尾，防少數卡死件霸佔 20 名額造成 HoL 阻塞）。
+    // 與 createdTs 分離，讓 createdTs 保持「建立時間／pending 緩衝」語意純淨。
+    createdAt: fmtNow(), createdTs: Date.now(), queueTs: Date.now(), issuedAt: ""
   };
   try { await ref.create(base); }
   catch (e) {
@@ -518,7 +520,7 @@ async function _tryIssue(ref, inv, creds) {
     await db.runTransaction(async (tx) => {
       const cur = (await tx.get(ref)).data() || {};
       if (cur.status === "cancelled_before_issue") return;
-      tx.update(ref, { status: "error", lastError: msg, retryCount: FieldValue.increment(1) });
+      tx.update(ref, { status: "error", lastError: msg, retryCount: FieldValue.increment(1), queueTs: Date.now() });
     });
   }
 }
@@ -546,7 +548,7 @@ async function _settleAfterLateIssue(ref, inv, creds, invoiceNumber, invoiceDate
       allowances: FieldValue.arrayUnion({ allowanceNumber: no, date: fmtNow(), amount: gross, pdfPath }) });
   } catch (e) {
     await ref.update({ status: "void_error", pendingRefund: gross,
-      lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1) });
+      lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1), queueTs: Date.now() });
   }
 }
 async function _storeInvoicePdf(ref, invoiceNumber, creds) {
@@ -634,7 +636,7 @@ async function _performVoidOrAllowance(ref, inv, creds, gross) {
       allowances: FieldValue.arrayUnion({ allowanceNumber: no, date: fmtNow(), amount: gross, pdfPath }) });
   } catch (e) {
     await ref.update({ status: "void_error", pendingRefund: gross,
-      lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1) });
+      lastError: String(e.message).slice(0, 300), retryCount: FieldValue.increment(1), queueTs: Date.now() });
   }
 }
 // 佇列開立前重驗來源單據（v9 第三層防呆：已退費/已刪隊 → 不開立）
@@ -8681,11 +8683,12 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
   const now = Date.now();
   const pendCutoff = now - 15 * 60000;    // pending 緩衝：主流程還在路上不搶跑
   const staleCutoff = now - 30 * 60000;   // 殭屍鎖判定：issuing/voiding 逾 30 分鐘（Function 上限遠低於此）
-  // 【ULT#1a】orderBy createdTs 最舊優先：防「新 pending 洪水佔滿 20 名額、深埋舊 error 永遠讀不到」的飢餓。
-  // 需複合索引 (status ASC, createdTs ASC)，已加入 firestore.indexes.json。
+  // 【ULT#1a＋ULT2#1】orderBy queueTs 最舊優先：防新 pending 洪水餓死舊 error；
+  // 且失敗件的 queueTs 每次被推到隊尾（見各失敗落檔），避免少數卡死件霸佔 20 名額 2.5 小時的 HoL 阻塞。
+  // 需複合索引 (status ASC, queueTs ASC)，已加入 firestore.indexes.json。
   const snap = await db.collection("invoices")
     .where("status", "in", ["error", "pending", "void_error", "issuing", "voiding"])
-    .orderBy("createdTs").limit(20).get();
+    .orderBy("queueTs").limit(20).get();
   for (const d of snap.docs) {
     const inv0 = d.data();
     const isStaleLock = ["issuing", "voiding"].includes(inv0.status);
@@ -8728,8 +8731,12 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
         await _tryIssue(d.ref, locked, creds);   // 內含 queryByOrder 防重：殭屍 issuing 若其實已開出只補存根
       }
     } catch (e) {
-      await d.ref.update({ status: "error", lastError: String(e.message).slice(0, 300),
-        retryCount: FieldValue.increment(1) });
+      // 【ULT2#2】絕不把準備作廢的單子降級為一般 error——否則下輪會被當「開立失敗」送去重開，
+      // _tryIssue 查到票已開立便改回 issued，退費意圖(voiding/void_error)被徹底洗掉。
+      // 保留 void 家族狀態，讓下輪正確走沖銷救援路徑。
+      const failStatus = (locked.status === "void_error" || locked.status === "voiding") ? "void_error" : "error";
+      await d.ref.update({ status: failStatus, lastError: String(e.message).slice(0, 300),
+        retryCount: FieldValue.increment(1), queueTs: Date.now() });   // ULT2#1：失敗推到隊尾
     }
   }
 });
@@ -8834,24 +8841,27 @@ exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "As
     return path;
   };
   const users = [...new Set([...Object.keys(byBuyer), ...Object.keys(bySeller)])];   // 只處理當月有發票的帳號
-  for (const u of users) {
-    try {
-      // 【ULT#2】續傳冪等：已產出的月報跳過。若上輪在中途逾時中斷，retryConfig 觸發的重跑
-      // 會接續未完成的帳號，不會讓後半段主辦永遠收不到月報。
-      const doneDoc = await db.collection("invoiceReports").doc(u + "_" + ymKey).get();
-      if (doneDoc.exists) continue;
-      const recvRows = byBuyer[u] || [], sentRows = bySeller[u] || [];
-      await buildAndSave(u, recvRows, sentRows);
-      const prefDoc = await db.collection("notifPrefs").doc(u).get();
-      const pref = prefDoc.exists ? (prefDoc.data().email || {}) : {};
-      if (pref.invoiceReport !== false) {
-        const to = await organiserEmail(u);
-        if (to && to.length) await queueMail(to, "[RegMaster] " + ymKey + " 發票月報",
-          emailWrap("📊 發票月報已產生",
-            `<p>${ymKey} 月報已可下載：收到 ${recvRows.length} 張、開出 ${sentRows.length} 張。</p>
-             <p>請至 後台 → 帳務 → 發票分頁 → 月報下載。</p>`));
-      }
-    } catch (e) { console.warn("invoiceReport", u, e.message); }
+  // 【ULT2#3】比照 lotteryCheckWorker 改 5 筆一批 Promise.allSettled 併發，逐帳號錯誤隔離；
+  // 搭配續傳冪等（已產出跳過）＋retryCount:3，大量主辦時降低破 540 秒逾時的機率、重跑更有效率。
+  const genOne = async (u) => {
+    // 續傳冪等：已產出的月報跳過。上輪中途逾時的重跑會接續未完成的帳號，不讓後半段主辦收不到。
+    const doneDoc = await db.collection("invoiceReports").doc(u + "_" + ymKey).get();
+    if (doneDoc.exists) return;
+    const recvRows = byBuyer[u] || [], sentRows = bySeller[u] || [];
+    await buildAndSave(u, recvRows, sentRows);
+    const prefDoc = await db.collection("notifPrefs").doc(u).get();
+    const pref = prefDoc.exists ? (prefDoc.data().email || {}) : {};
+    if (pref.invoiceReport !== false) {
+      const to = await organiserEmail(u);
+      if (to && to.length) await queueMail(to, "[RegMaster] " + ymKey + " 發票月報",
+        emailWrap("📊 發票月報已產生",
+          `<p>${ymKey} 月報已可下載：收到 ${recvRows.length} 張、開出 ${sentRows.length} 張。</p>
+           <p>請至 後台 → 帳務 → 發票分頁 → 月報下載。</p>`));
+    }
+  };
+  for (let i = 0; i < users.length; i += 5) {
+    const results = await Promise.allSettled(users.slice(i, i + 5).map(genOne));
+    results.forEach((r, j) => { if (r.status === "rejected") console.warn("invoiceReport", users[i + j], r.reason && r.reason.message); });
   }
   // 平台全域月報（系統管理者）——直接用掃描分組結果，不再另發 Query
   try {
