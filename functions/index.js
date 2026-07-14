@@ -587,10 +587,19 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
     if (!doc.exists) return { act: "none" };
     const inv = doc.data();
     const gross0 = Math.round(Number(refundGross)) || inv.amount;
-    if (["pending", "error", "pending_profile", "dead"].includes(inv.status)) {
-      // 絕不呼叫光貿；同時記錄退費意圖（QA#1：若光貿呼叫其實在途，_tryIssue 落檔時會據此轉沖銷）
-      tx.update(ref, { status: "cancelled_before_issue", refundRequested: true, pendingRefund: gross0,
-        lastError: "退費於開立前發生" });
+    if (inv.status === "pending_profile") {
+      // 買方資料未齊 → 光貿從未被呼叫 → 唯一可安全 terminal-cancel 的情況
+      tx.update(ref, { status: "cancelled_before_issue", refundRequested: false, pendingRefund: gross0,
+        lastError: "退費於開立前（資料未齊、光貿未開立）" });
+      return { act: "none" };
+    }
+    if (["pending", "error", "dead"].includes(inv.status)) {
+      // 【V5#1/#2】這些狀態「可能已在光貿開出」（HTTP timeout-after-success，invoiceNumber 尚空）——
+      // HTTP Timeout = 未知，非失敗。絕不在此單方 terminal-cancel；僅記錄退費意圖並確保進佇列，
+      // 交 invoiceRetryWorker 以 queryByOrder 向光貿查證後，才決定作廢（真有票）或安全註銷（確認無票）。
+      const upd = { refundRequested: true, pendingRefund: gross0, status: "error", queueTs: Date.now() };
+      if (inv.status === "dead") upd.retryCount = 0;               // dead 復活以便查證
+      tx.update(ref, upd);
       return { act: "none" };
     }
     if (["issuing", "voiding"].includes(inv.status)) {
@@ -654,7 +663,12 @@ async function _sourceStillBillable(inv) {
     }
     if (inv.kind === "plan") {
       const d = await db.collection("orders").doc(inv.orderId).get();
-      return d.exists && d.data().status === "paid";
+      if (!d.exists) return false;
+      const o = d.data();
+      // 【V5#D】方案退費（adminRefundPlanOrder）標 refundState:"refunded" 但保留 status:"paid"——
+      // 須一併檢查 refundState，否則已退費方案訂單會被誤判為仍可開票而重開。
+      if (o.refundState && o.refundState !== "none") return false;
+      return o.status === "paid";
     }
     return true;   // fee：結算批次不會消失
   } catch (e) { return true; }
@@ -8726,9 +8740,35 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
         // 【ULT#1b】直接在 voiding 鎖內沖銷，不經 issued 中繼——消除「解鎖→沖銷」兩步間崩潰的孤兒窗。
         await _performVoidOrAllowance(d.ref, locked, creds, Number(locked.pendingRefund) || locked.amount);
       } else {
-        // pending / error / 殭屍 issuing：v9 第三層防呆——來源已退費/已刪 → 不開立
-        if (!(await _sourceStillBillable(locked))) { await d.ref.update({ status: "cancelled_before_issue" }); continue; }
-        await _tryIssue(d.ref, locked, creds);   // 內含 queryByOrder 防重：殭屍 issuing 若其實已開出只補存根
+        // pending / error / 殭屍 issuing
+        const wantRefund = locked.refundRequested === true;
+        const billable = await _sourceStillBillable(locked);
+        if (wantRefund || !billable) {
+          // 【V5#1/#2】需退費 或 來源已不可開票——但發票（invoiceNumber 尚空）可能因 timeout-after-success
+          // 已在光貿存在。HTTP Timeout = 未知：絕不盲目 cancel，先 queryByOrder 向光貿查證：
+          //   真有票 → 收養票號走作廢/折讓；確認無票 → 才安全終態註銷；查證失敗 → 留 error 下輪再試。
+          let real = null, queryFailed = false;
+          try {
+            const q = await amego.queryByOrder(creds, locked.orderId);
+            if (q.data && q.data.invoice_number && q.data.invoice_type === "C0401" && !q.data.cancel_date) real = q.data;
+          } catch (e) { queryFailed = true; }
+          if (queryFailed) {
+            await d.ref.update({ status: "error", lastError: "光貿查證失敗待重試",
+              retryCount: FieldValue.increment(1), queueTs: Date.now() });
+            continue;
+          }
+          if (real) {
+            const adopted = Object.assign({}, locked, { invoiceNumber: real.invoice_number,
+              invoiceDate: String(real.invoice_date || _todayYmd()) });
+            await d.ref.update({ status: "voiding", invoiceNumber: adopted.invoiceNumber,
+              invoiceDate: adopted.invoiceDate, lockedTs: Date.now() });
+            await _performVoidOrAllowance(d.ref, adopted, creds, Number(locked.pendingRefund) || locked.amount);
+          } else {
+            await d.ref.update({ status: "cancelled_before_issue", refundRequested: false });   // 光貿確認無票 → 安全
+          }
+          continue;
+        }
+        await _tryIssue(d.ref, locked, creds);   // 正常補開（內含 queryByOrder 防重：殭屍 issuing 若已開出只補存根）
       }
     } catch (e) {
       // 【ULT2#2】絕不把準備作廢的單子降級為一般 error——否則下輪會被當「開立失敗」送去重開，
