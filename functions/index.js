@@ -494,6 +494,7 @@ async function _tryIssue(ref, inv, creds) {
       if (cur.status === "cancelled_before_issue" || cur.refundRequested === true) {
         upd.status = "voiding";                                   // 上鎖進沖銷；金額取退費意圖記錄，缺省=全額
         upd.pendingRefund = Number(cur.pendingRefund) || inv.amount;
+        upd.lockedTs = Date.now();                                // FQA#1：鎖必帶時戳
         tx.update(ref, upd);
         return { action: "void", refund: upd.pendingRefund };
       }
@@ -597,7 +598,7 @@ async function voidOrAllowance(invId, refundGross, credsOverride) {
     }
     if (["void", "allowanced", "cancelled_before_issue"].includes(inv.status))
       return { act: "none" };                                     // 終態冪等
-    tx.update(ref, { status: "voiding", pendingRefund: gross0 });
+    tx.update(ref, { status: "voiding", pendingRefund: gross0, lockedTs: Date.now() });   // FQA#1：鎖必帶時戳
     return { act: "go", inv };
   });
   if (decision.act !== "go") return;
@@ -1667,7 +1668,7 @@ exports.reissueInvoice = compAuthCallable("manage", async (data, request) => {
     if (cur.status !== "issued") return { err: "僅「已開立」的發票可作廢重開（目前：" + cur.status + "）" };
     if (_periodOf(parseInt(cur.invoiceDate, 10)) !== _periodOf(_todayYmd()))
       return { err: "已跨發票期別，無法作廢重開；請改以折讓處理或聯絡客服" };
-    tx.update(ref, { status: "voiding" });
+    tx.update(ref, { status: "voiding", lockedTs: Date.now() });   // FQA#1：鎖必帶時戳
     return { inv: cur };
   });
   if (lock.err) return { success: false, message: lock.err };
@@ -8666,40 +8667,59 @@ exports.weeklyJobs = onSchedule({ schedule: "0 8 * * 1", timeZone: "Asia/Taipei"
 });
 // ===================== 電子發票排程（重試佇列 / 中獎通知 / 月報）=====================
 
-// 發票重試佇列：撿 error / 逾時 pending / void_error。v9：pending 15 分鐘緩衝＋撿件即鎖＋開立前重驗來源。
-exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+// 發票重試佇列：撿 error / 逾時 pending / void_error，並【FQA#1】救援卡死的 issuing/voiding
+// （Function 超時/OOM 崩潰會把鎖留在半路——超過 30 分鐘視為殭屍鎖，佇列接手復原）。
+// v9：pending 15 分鐘緩衝＋撿件即鎖＋開立前重驗來源。timeoutSeconds 300、單輪上限 20 筆防超時。
+exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 300 }, async () => {
   if (!(await invoiceGloballyEnabled())) return;
-  const cutoff = Date.now() - 15 * 60000;
+  const now = Date.now();
+  const pendCutoff = now - 15 * 60000;    // pending 緩衝：主流程還在路上不搶跑
+  const staleCutoff = now - 30 * 60000;   // 殭屍鎖判定：issuing/voiding 逾 30 分鐘（Function 上限遠低於此）
   const snap = await db.collection("invoices")
-    .where("status", "in", ["error", "pending", "void_error"]).limit(50).get();
+    .where("status", "in", ["error", "pending", "void_error", "issuing", "voiding"]).limit(20).get();
   for (const d of snap.docs) {
     const inv0 = d.data();
-    if (inv0.status === "pending" && (inv0.createdTs || 0) > cutoff) continue;   // 主流程還在路上，不搶跑
+    const isStaleLock = ["issuing", "voiding"].includes(inv0.status);
+    if (inv0.status === "pending" && (inv0.createdTs || 0) > pendCutoff) continue;
+    if (isStaleLock && (inv0.lockedTs || inv0.createdTs || 0) > staleCutoff) continue;   // 鎖仍新鮮＝正常處理中
     if ((inv0.retryCount || 0) >= 10) {
       if (inv0.status !== "dead") await d.ref.update({ status: "dead" });
       continue;
     }
-    // 撿件即鎖（與主流程 / voidOrAllowance 互斥）
+    // 撿件即鎖（transaction 內重驗狀態與殭屍條件，與主流程 / voidOrAllowance 互斥）
     const locked = await db.runTransaction(async (tx) => {
       const cur = (await tx.get(d.ref)).data();
-      if (!["error", "pending", "void_error"].includes(cur.status)) return null;
-      tx.update(d.ref, { status: cur.status === "void_error" ? "voiding" : "issuing" });
+      if (["issuing", "voiding"].includes(cur.status)) {
+        if ((cur.lockedTs || cur.createdTs || 0) > staleCutoff) return null;   // tx 內再驗：鎖已被他人刷新
+      } else if (!["error", "pending", "void_error"].includes(cur.status)) return null;
+      tx.update(d.ref, { status: (cur.status === "void_error" || cur.status === "voiding") ? "voiding" : "issuing",
+        lockedTs: Date.now() });
       return cur;
     });
     if (!locked) continue;
     try {
       const creds = locked.sellerUsername ? await getOrganizerCreds(locked.sellerUsername) : await getAmegoCreds();
       if (!creds) { await d.ref.update({ status: "dead", lastError: "賣方光貿憑證不存在" }); continue; }
-      if (locked.status === "void_error") {
+      if (locked.status === "void_error" || locked.status === "voiding") {
+        // 【FQA#1】殭屍 voiding 救援：先查光貿實況——作廢其實已成功 → 直接落終態，
+        // 避免對已作廢票再跑沖銷（錯開折讓）；尚未作廢 → 解鎖重跑狀態機。
+        let actualVoided = false;
+        if (locked.invoiceNumber) {
+          try {
+            const q = await amego.queryByOrder(creds, locked.orderId);
+            if (q.data && q.data.invoice_number === locked.invoiceNumber && q.data.cancel_date) actualVoided = true;
+          } catch (e) { /* 查詢失敗 → 保守走重跑路徑 */ }
+        }
+        if (actualVoided) { await d.ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false }); continue; }
         await d.ref.update({ status: "issued" });                                // 解鎖回 issued 重跑狀態機
         await voidOrAllowance(d.ref.id, Number(locked.pendingRefund) || locked.amount, creds);
       } else {
-        // v9 第三層防呆：來源已退費/已刪 → 不開立
+        // pending / error / 殭屍 issuing：v9 第三層防呆——來源已退費/已刪 → 不開立
         if (!(await _sourceStillBillable(locked))) { await d.ref.update({ status: "cancelled_before_issue" }); continue; }
-        await _tryIssue(d.ref, locked, creds);
+        await _tryIssue(d.ref, locked, creds);   // 內含 queryByOrder 防重：殭屍 issuing 若其實已開出只補存根
       }
     } catch (e) {
-      await d.ref.update({ status: locked.status, lastError: String(e.message).slice(0, 300),
+      await d.ref.update({ status: "error", lastError: String(e.message).slice(0, 300),
         retryCount: FieldValue.increment(1) });
     }
   }
@@ -8707,7 +8727,7 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
 
 // 中獎自動通知（10-10）：每月 1 日 09:00 執行；僅開獎後月份（雙月）實跑。
 // 光貿 lottery_status 期別 API 明定 0-based（LOTTERY_RUN_MAP），勿改 1-based。
-exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 540 }, async () => {
   if (!(await invoiceGloballyEnabled())) return;
   const now = new Date(Date.now() + 8 * 3600000);
   const run = LOTTERY_RUN_MAP[now.getUTCMonth() + 1];
@@ -8721,9 +8741,18 @@ exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia
       if (x.ban && x.appKey) credsList.push({ creds: { ban: x.ban, appKey: x.appKey }, owner: d.id.slice(6) });
     }
   });
-  for (const { creds } of credsList) {
-    let hits = [];
-    try { hits = (await amego.lotteryStatus(creds, year, period)).data || []; } catch (e) { continue; }
+  // 【FQA#2】多租戶查詢改「5 個一批並行」＋逐租戶錯誤隔離（Promise.allSettled），
+  // 避免循序迴圈在大量主辦時打破 540 秒上限；單一租戶失敗不影響其他租戶對獎。
+  const lotteryHits = [];   // { creds, hits[] }
+  for (let i = 0; i < credsList.length; i += 5) {
+    const batch = credsList.slice(i, i + 5);
+    const results = await Promise.allSettled(batch.map(x => amego.lotteryStatus(x.creds, year, period)));
+    results.forEach((r, j) => {
+      if (r.status === "fulfilled") lotteryHits.push({ creds: batch[j].creds, hits: r.value.data || [] });
+      else console.warn("lottery query fail:", batch[j].owner || "platform", r.reason && r.reason.message);
+    });
+  }
+  for (const { creds, hits } of lotteryHits) {
     for (const h of hits) {
       const snap = await db.collection("invoices").where("invoiceNumber", "==", h.invoice_number).limit(1).get();
       if (snap.empty) continue;                                    // ①②模式主辦自開的票平台無存根（範圍限制）
@@ -8744,19 +8773,40 @@ exports.lotteryCheckWorker = onSchedule({ schedule: "0 9 1 * *", timeZone: "Asia
 });
 
 // 主辦方發票月報（10-11）：每月 1 日 08:00 產上月 xlsx 存 Storage＋索引＋Email（notifPrefs.email.invoiceReport 可關）。
-exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 540 }, async () => {
   if (!(await invoiceGloballyEnabled())) return;
   const ExcelJS = require("exceljs");   // lazy
   const now = new Date(Date.now() + 8 * 3600000);
   const ym = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
   const ymKey = ym.getUTCFullYear() + "-" + String(ym.getUTCMonth() + 1).padStart(2, "0");
-  const inMonth = (v) => String(v.createdAt || "").startsWith(ymKey);
   const headers = ["日期", "發票號碼", "類型", "買受人", "統編", "金額", "狀態", "折讓單號", "折讓金額"];
   const toRow = (v) => [v.invoiceDate || "", v.invoiceNumber || "", v.kind, v.buyer.name || "",
     v.buyer.ban === "0000000000" ? "" : v.buyer.ban, v.amount, v.status,
     (v.allowances || []).map(a => a.allowanceNumber).join("|"),
     (v.allowances || []).reduce((s, a) => s + (a.amount || 0), 0) || ""];
-  const orgSnap = await db.collection("accounts").where("role", "==", "competition").get();
+  // 【FQA#3】單次月份範圍掃描＋記憶體分組：查詢數＝當月發票量/500（分頁），
+  // 不再對每個主辦帳號 ×2 次查詢（舊法 N 萬帳號會發起 2N 萬次 Query 導致 OOM/連線池耗盡）。
+  // createdAt 為單欄位範圍＋排序（免複合索引）。
+  const nextMonth = new Date(Date.UTC(ym.getUTCFullYear(), ym.getUTCMonth() + 1, 1));
+  const endKey = nextMonth.getUTCFullYear() + "-" + String(nextMonth.getUTCMonth() + 1).padStart(2, "0") + "-01";
+  const byBuyer = {}, bySeller = {}, platformRows = [];
+  let lastDoc = null;
+  for (;;) {
+    let q = db.collection("invoices").where("createdAt", ">=", ymKey + "-01")
+      .where("createdAt", "<", endKey).orderBy("createdAt").limit(500);
+    if (lastDoc) q = q.startAfter(lastDoc);
+    const page = await q.get();
+    if (page.empty) break;
+    page.docs.forEach(doc => {
+      const v = doc.data();
+      const row = toRow(v);
+      if (v.buyerUsername) (byBuyer[v.buyerUsername] = byBuyer[v.buyerUsername] || []).push(row);
+      if (v.sellerUsername) (bySeller[v.sellerUsername] = bySeller[v.sellerUsername] || []).push(row);
+      if (v.sellerType === "platform") platformRows.push(row);
+    });
+    lastDoc = page.docs[page.docs.length - 1];
+    if (page.size < 500) break;
+  }
   const buildAndSave = async (username, recvRows, sentRows) => {
     const wb = new ExcelJS.Workbook();
     const w1 = wb.addWorksheet("收到的發票"); w1.addRow(headers); recvRows.forEach(r => w1.addRow(r));
@@ -8769,16 +8819,10 @@ exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "As
       username, month: ymKey, path, recvCount: recvRows.length, sentCount: sentRows.length, createdAt: fmtNow() });
     return path;
   };
-  for (const od of orgSnap.docs) {
-    const u = od.data().username;
+  const users = [...new Set([...Object.keys(byBuyer), ...Object.keys(bySeller)])];   // 只處理當月有發票的帳號
+  for (const u of users) {
     try {
-      const [recvSnap, sentSnap] = await Promise.all([
-        db.collection("invoices").where("buyerUsername", "==", u).limit(1000).get(),
-        db.collection("invoices").where("sellerUsername", "==", u).limit(1000).get()
-      ]);
-      const recvRows = recvSnap.docs.map(d => d.data()).filter(inMonth).map(toRow);
-      const sentRows = sentSnap.docs.map(d => d.data()).filter(inMonth).map(toRow);
-      if (!recvRows.length && !sentRows.length) continue;          // 無資料不產報不寄信
+      const recvRows = byBuyer[u] || [], sentRows = bySeller[u] || [];
       await buildAndSave(u, recvRows, sentRows);
       const prefDoc = await db.collection("notifPrefs").doc(u).get();
       const pref = prefDoc.exists ? (prefDoc.data().email || {}) : {};
@@ -8791,12 +8835,9 @@ exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "As
       }
     } catch (e) { console.warn("invoiceReport", u, e.message); }
   }
-  // 平台全域月報（系統管理者）
-  try {
-    const allSnap = await db.collection("invoices").where("sellerType", "==", "platform").limit(2000).get();
-    const rows = allSnap.docs.map(d => d.data()).filter(inMonth).map(toRow);
-    if (rows.length) await buildAndSave("_platform", rows, []);
-  } catch (e) { console.warn("platform invoiceReport", e.message); }
+  // 平台全域月報（系統管理者）——直接用掃描分組結果，不再另發 Query
+  try { if (platformRows.length) await buildAndSave("_platform", platformRows, []); }
+  catch (e) { console.warn("platform invoiceReport", e.message); }
 });
 // ===================== 電子發票排程（結束）=====================
 

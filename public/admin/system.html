@@ -761,12 +761,15 @@ body { background:var(--bg); }
     }).catch(function (e) { btn.disabled = false; btn.textContent = o; toast(e.message || window.L('adSysSaveFail'), 'err'); });
   });
   document.getElementById('amTestBtn').addEventListener('click', function () {
+    var btn = this; if (btn.disabled) return;                    // FQA#7：測試連線防連點
+    btn.disabled = true;
     var st = document.getElementById('amStatus'); st.textContent = '測試中⋯';
     runFn('testAmegoConnection', {}).then(function (r) {
       st.textContent = (r && r.success)
         ? ('✓ 連線成功（' + r.mode + '／' + r.ban + (r.name ? '／' + r.name : '') + '）')
         : ('✗ ' + ((r && r.message) || '連線失敗'));
-    }).catch(function (e) { st.textContent = '✗ ' + (e.message || '連線失敗'); });
+    }).catch(function (e) { st.textContent = '✗ ' + (e.message || '連線失敗'); })
+      .finally(function () { btn.disabled = false; });
   });
   document.getElementById('paramsSave').addEventListener('click', function () {
     var config = {

@@ -781,7 +781,7 @@
   function invStatusHtml(v) {
     var bad = ['error', 'dead', 'void_error', 'pending_profile'].indexOf(v.status) >= 0;
     var s = '<span style="' + (bad ? 'color:var(--err-700);font-weight:600' : '') + '">'
-      + (INV_STATUS_LABEL[v.status] || v.status) + '</span>';
+      + esc(INV_STATUS_LABEL[v.status] || v.status) + '</span>';   // FQA#4：fallback 值一律消毒
     if (v.lottery) s += ' 🏆';
     if (bad && v.lastError) s += '<div style="font:400 10.5px/1.4 var(--f-mono); color:var(--muted)">' + esc(String(v.lastError).slice(0, 60)) + '</div>';
     return s;
@@ -800,11 +800,17 @@
     runFn('listMyInvoices', {}).then(function (r) {
       document.getElementById('invLoading').style.display = 'none';
       document.getElementById('invContent').style.display = '';
-      if (!r || !r.success) return;
+      if (!r || !r.success) {
+        // FQA#5：失敗不留空殼——顯示錯誤列並允許重載（切分頁再回來會重試）
+        INV_LOADED = false;
+        document.getElementById('invRecvBody').innerHTML =
+          '<tr><td colspan="6" style="color:var(--err-700)">' + esc((r && r.message) || '載入失敗，請切換分頁重試') + '</td></tr>';
+        return;
+      }
       var kindL = { plan: '方案訂閱', fee: '平台手續費', registration: '報名費' };
       document.getElementById('invRecvBody').innerHTML = (r.received || []).map(function (v) {
         return '<tr><td>' + esc(v.invoiceDate || v.createdAt.slice(0, 10)) + '</td><td class="mono">' + esc(v.invoiceNumber || '—')
-          + '</td><td>' + (kindL[v.kind] || v.kind) + '</td><td class="right">NT$' + Number(v.amount).toLocaleString()
+          + '</td><td>' + esc(kindL[v.kind] || v.kind) + '</td><td class="right">NT$' + Number(v.amount).toLocaleString()
           + '</td><td>' + invStatusHtml(v) + '</td><td>' + invDlHtml(v) + '</td></tr>';
       }).join('') || '<tr><td colspan="6" style="color:var(--muted)">尚無發票</td></tr>';
       var sent = r.issued || [];
@@ -820,7 +826,12 @@
       }
       loadInvReports();
     }).catch(function (e) {
+      // FQA#5：網路失敗不鎖死——顯示內容區的錯誤列、重置 INV_LOADED 讓再次點分頁可重載
+      INV_LOADED = false;
       document.getElementById('invLoading').style.display = 'none';
+      document.getElementById('invContent').style.display = '';
+      document.getElementById('invRecvBody').innerHTML =
+        '<tr><td colspan="6" style="color:var(--err-700)">' + esc((e && e.message) || '網路異常，請切換分頁重試') + '</td></tr>';
       toast((e && e.message) || '載入失敗', 'err');
     });
   }
@@ -829,46 +840,57 @@
       if (!r || !r.success || !(r.reports || []).length) return;
       document.getElementById('invReports').innerHTML = r.reports.map(function (x) {
         return '<div style="display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px solid var(--line-2); font:400 13px/1.5 var(--f-tc)">'
-          + '<span>' + esc(x.month) + '（收到 ' + x.recvCount + '／開出 ' + x.sentCount + '）</span>'
+          + '<span>' + esc(x.month) + '（收到 ' + esc(String(x.recvCount)) + '／開出 ' + esc(String(x.sentCount)) + '）</span>'
           + '<a href="#" data-report="' + esc(x.month) + '" style="color:var(--acc)">下載 Excel</a></div>';
       }).join('');
     }).catch(function () {});
   }
+  // FQA#6：base64 → Blob 改走 fetch(data:) 非同步解碼，避免同步 for 迴圈在大檔（月報 xlsx 數 MB）凍結主執行緒
   function _dlBase64(filename, base64, mime) {
-    var bin = atob(base64), arr = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    var url = URL.createObjectURL(new Blob([arr], { type: mime || 'application/octet-stream' }));
-    var a = document.createElement('a'); a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    return fetch('data:' + (mime || 'application/octet-stream') + ';base64,' + base64)
+      .then(function (r) { return r.blob(); })
+      .then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      });
   }
   document.getElementById('invContent').addEventListener('click', function (e) {
     var t = e.target.closest('a'); if (!t) return;
+    if (!t.dataset.invdl && !t.dataset.report) return;
+    e.preventDefault();
+    if (t.dataset.busy) return;                                  // FQA#7：下載連結防連點
+    t.dataset.busy = '1'; var _o = t.style.opacity; t.style.opacity = '.4';
+    var done = function () { delete t.dataset.busy; t.style.opacity = _o; };
     if (t.dataset.invdl) {
-      e.preventDefault();
       runFn('getInvoicePdfFile', { invId: t.dataset.invdl, allowanceNumber: t.dataset.allow || '' })
         .then(function (r) {
-          if (r && r.success) _dlBase64(r.filename, r.base64, 'application/pdf');
-          else toast((r && r.message) || '下載失敗', 'err');
-        }).catch(function (err) { toast(err.message || '下載失敗', 'err'); });
-    } else if (t.dataset.report) {
-      e.preventDefault();
+          if (r && r.success) return _dlBase64(r.filename, r.base64, 'application/pdf');
+          toast((r && r.message) || '下載失敗', 'err');
+        }).catch(function (err) { toast(err.message || '下載失敗', 'err'); })
+        .finally(done);
+    } else {
       runFn('getInvoiceReportFile', { month: t.dataset.report })
         .then(function (r) {
-          if (r && r.success) _dlBase64(r.filename, r.base64, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-          else toast((r && r.message) || '下載失敗', 'err');
-        }).catch(function (err) { toast(err.message || '下載失敗', 'err'); });
+          if (r && r.success) return _dlBase64(r.filename, r.base64, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+          toast((r && r.message) || '下載失敗', 'err');
+        }).catch(function (err) { toast(err.message || '下載失敗', 'err'); })
+        .finally(done);
     }
   });
-  function _invExport(format) {
+  function _invExport(btn, format) {
+    if (btn.disabled) return;                                    // FQA#7：匯出鍵鎖定至完成
+    btn.disabled = true; var o = btn.textContent; btn.textContent = '匯出中⋯';
     runFn('exportInvoices', { scope: 'both', format: format }).then(function (r) {
-      if (r && r.success) _dlBase64(r.filename, r.base64,
+      if (r && r.success) return _dlBase64(r.filename, r.base64,
         format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv');
-      else toast((r && r.message) || '匯出失敗', 'err');
-    }).catch(function (e) { toast(e.message || '匯出失敗', 'err'); });
+      toast((r && r.message) || '匯出失敗', 'err');
+    }).catch(function (e) { toast(e.message || '匯出失敗', 'err'); })
+      .finally(function () { btn.disabled = false; btn.textContent = o; });
   }
-  document.getElementById('invExportCsv').addEventListener('click', function () { _invExport('csv'); });
-  document.getElementById('invExportXlsx').addEventListener('click', function () { _invExport('xlsx'); });
+  document.getElementById('invExportCsv').addEventListener('click', function () { _invExport(this, 'csv'); });
+  document.getElementById('invExportXlsx').addEventListener('click', function () { _invExport(this, 'xlsx'); });
 
   // Re-render stored status/enum cells (via window.LS) in the newly active language.
   AppState.on('lang-changed', function () {
