@@ -645,8 +645,11 @@ async function _performVoidOrAllowance(ref, inv, creds, gross) {
       try { const q = await amego.queryByOrder(creds, inv.orderId); if (q.data && q.data.invoice_number === inv.invoiceNumber && q.data.cancel_date) voided = true; } catch (e2) {}
       if (!voided) { await ref.update({ status: "void_error", lastError: "作廢重開-作廢失敗：" + String(e.message).slice(0, 200), retryCount: FieldValue.increment(1), queueTs: Date.now() }); return; }
     }
-    try { await _issueReissue(ref, inv, creds); }
-    catch (e) { /* 新票開立失敗會落在新 doc 的 error 由其自身 retry；舊票已 void 不影響 */ }
+    // 【V10.1】絕不吞 _issueReissue 例外：若新票 ref.create() 因 DB 超時等失敗（新 doc 根本沒建、
+    // 無自我救援），必須讓例外向上拋 → 下方 void＋清 intent 不會執行 → 舊 doc 停 voiding＋保留
+    // reissueIntent → invoiceRetryWorker 殭屍救援重放（_issueReissue 冪等）。杜絕「舊票已作廢、新票
+    // 未開、意圖被刪」的幽靈票。
+    await _issueReissue(ref, inv, creds);
     await ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false, reissueIntent: FieldValue.delete() });
     return;
   }
@@ -1729,11 +1732,14 @@ exports.reissueInvoice = compAuthCallable("manage", async (data, request) => {
   const inv = Object.assign({}, lock.inv, { reissueIntent: newBuyer });
   const creds = inv.sellerUsername ? await getOrganizerCreds(inv.sellerUsername) : await getAmegoCreds();
   if (!creds) { await ref.update({ status: "issued", reissueIntent: FieldValue.delete() }); return { success: false, message: "賣方光貿憑證不存在" }; }
-  await _performVoidOrAllowance(ref, inv, creds, inv.amount);   // void 舊→開新→void+清intent（崩潰→voiding→worker 重放）
+  // _performVoidOrAllowance 可能因新票開立失敗而拋（V10.1：不再吞錯）——此處捕捉僅為回覆友善訊息，
+  // 不動 doc 狀態：舊 doc 仍停 voiding＋reissueIntent，由 invoiceRetryWorker 接手完成，發票不會遺失。
+  try { await _performVoidOrAllowance(ref, inv, creds, inv.amount); } catch (e) {}
   const after = (await ref.get()).data() || {};
   await auditLog(request.authUser.username, "發票作廢重開", ref.id, inv.invoiceNumber);
   if (after.status === "void") return { success: true, status: "void" };
-  if (after.status === "void_error") return { success: false, message: "作廢重開處理中，稍後將由系統自動完成（或至異常清單重試）" };
+  if (["voiding", "void_error"].includes(after.status))
+    return { success: false, message: "作廢重開處理中，稍後將由系統自動完成（或至發票異常清單重試）" };
   return { success: true, status: after.status };
 });
 
@@ -8798,8 +8804,9 @@ exports.invoiceRetryWorker = onSchedule({ schedule: "*/15 * * * *", timeZone: "A
           } catch (e) { /* 查詢失敗 → 保守走沖銷路徑 */ }
         }
         if (actualVoided) {
-          // 【V10#reissue】殭屍救援時若發現有遺留的作廢重開意圖，補開新票（冪等）——關閉兩步崩潰窗。
-          if (locked.reissueIntent) { try { await _issueReissue(d.ref, locked, creds); } catch (e) {} }
+          // 【V10#reissue／V10.1】殭屍救援時若發現遺留的作廢重開意圖，補開新票（冪等）。
+          // 不吞例外：_issueReissue 失敗 → 拋至外層 catch 降級 void_error（保留 reissueIntent）下輪再救。
+          if (locked.reissueIntent) { await _issueReissue(d.ref, locked, creds); }
           await d.ref.update({ status: "void", voidedAt: fmtNow(), lastError: "", refundRequested: false, reissueIntent: FieldValue.delete() });
           continue;
         }
