@@ -1068,6 +1068,16 @@
       ((t.consentSignature && t.consentSignature.agreed) ? kv(window.L('aeRegFieldConsent'), window.L('aeRegConsentSigned').replace('{v}', t.consentSignature.version || '').replace('{t}', t.consentSignature.signedAt || '').replace('{ip}', t.consentSignature.ip || '—')) : '') +
       (t.fileUrl ? '<div class="k">' + window.L('aeRegFieldFile') + '</div><div class="v"><a class="file-link" href="' + escapeHtml(t.fileUrl) + '" target="_blank" rel="noopener">' + window.L('aeRegFileView') + '</a></div>' : '') +
     '</div></div>';
+    // 輔助模式（F3/F4）：報名者發票選擇＋建議開票金額——供主辦方手動開立/對帳
+    if (t.invoiceChoice) {
+      var ic = t.invoiceChoice, invKv = kv(window.L('aeRegInvSuggestAmt'), (t.owedAmount != null ? ('NT$ ' + Number(t.owedAmount).toLocaleString()) : '—'));
+      if (ic.kind === 'company') invKv += kv(window.L('aeRegInvType'), window.L('aeRegInvCompany')) + kv(window.L('aeRegInvTaxId'), ic.taxId || '') + kv(window.L('aeRegInvTitle'), ic.title || '');
+      else {
+        var cv = ic.carrierType === '3J0002' ? (window.L('aeRegInvCarrier') + ' ' + (ic.carrierId || '')) : ic.carrierType === 'donate' ? (window.L('aeRegInvDonate') + ' ' + (ic.npoban || '')) : window.L('aeRegInvCloud');
+        invKv += kv(window.L('aeRegInvType'), window.L('aeRegInvPersonal')) + kv(window.L('aeRegInvMethod'), cv);
+      }
+      html += '<div class="group"><h5>🧾 ' + window.L('aeRegInvH') + '</h5><div class="kv">' + invKv + '</div></div>';
+    }
     // 學員們
     (t.students || []).forEach(function (s, i) {
       html += '<div class="group"><h5>' + window.L('aeRegGrpStudent') + (i + 1) + '</h5><div class="kv">' + memberKVs(s, window.L('aeRegGrpStudent') + (i + 1)) + '</div></div>';

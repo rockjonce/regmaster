@@ -807,6 +807,9 @@
     // V7（10-5/11-3）：主辦方可對自己開立的異常發票一鍵重試補開
     if (canRetry && ['error', 'void_error', 'dead'].indexOf(v.status) >= 0)
       parts.push('<button class="btn btn-ghost btn-sm" data-invretry="' + esc(v.invId) + '">' + T('aePayInvRetry') + '</button>');
+    // V8（10-2/11-5#8）：已開立的報名發票可作廢重開（同期別內更正買受人統編/抬頭）
+    if (canRetry && v.status === 'issued' && v.kind === 'registration')
+      parts.push('<button class="btn btn-ghost btn-sm" data-invreissue="' + esc(v.invId) + '" data-invcomp="' + esc(v.compId || '') + '">' + T('aePayInvReissue') + '</button>');
     (v.allowances || []).forEach(function (a) {
       parts.push('<div style="font:400 11px/1.5 var(--f-tc)">折讓 ' + esc(a.no) + ' NT$' + a.amount
         + (a.hasPdf ? ' <a href="#" data-invdl="' + esc(v.invId) + '" data-allow="' + esc(a.no) + '" style="color:var(--acc)">PDF</a>' : '') + '</div>');
@@ -895,6 +898,31 @@
         if (r && r.success) { toast(r.cancelled ? '已標記為未開立' : ('已重試：' + (INV_STATUS_LABEL[r.status] || r.status))); loadInvoices(); }
         else { rb.disabled = false; delete rb.dataset.busy; toast((r && r.message) || '重試失敗', 'err'); }
       }).catch(function (err) { rb.disabled = false; delete rb.dataset.busy; toast(err.message || '重試失敗', 'err'); });
+      return;
+    }
+    // V8：作廢重開（更正買受人統編/抬頭；同期別內）
+    var xb = e.target.closest('button[data-invreissue]');
+    if (xb) {
+      if (xb.dataset.busy) return; xb.dataset.busy = '1';
+      var release = function () { delete xb.dataset.busy; };
+      var invId = xb.dataset.invreissue, invComp = xb.dataset.invcomp;
+      uiPrompt('作廢重開：輸入正確統一編號（留空＝改開個人雲端發票）', '').then(function (ban) {
+        if (ban == null) { release(); return; }
+        ban = String(ban).trim();
+        var doReissue = function (newChoice) {
+          xb.disabled = true;
+          runFn('reissueInvoice', { compId: invComp, invId: invId, newChoice: newChoice }).then(function (r) {
+            if (r && r.success) { toast('已作廢重開'); loadInvoices(); }
+            else { xb.disabled = false; release(); toast((r && r.message) || '作廢重開失敗', 'err'); }
+          }).catch(function (err) { xb.disabled = false; release(); toast(err.message || '作廢重開失敗', 'err'); });
+        };
+        if (!ban) { doReissue({ kind: 'personal', carrierType: '', carrierId: '', npoban: '' }); return; }
+        if (!/^\d{8}$/.test(ban)) { toast('統編須為 8 碼數字', 'err'); release(); return; }
+        uiPrompt('發票抬頭', '').then(function (title) {
+          if (title == null || !String(title).trim()) { toast('請輸入發票抬頭', 'err'); release(); return; }
+          doReissue({ kind: 'company', taxId: ban, title: String(title).trim() });
+        }).catch(function () { release(); });
+      }).catch(function () { release(); });
       return;
     }
     var t = e.target.closest('a'); if (!t) return;

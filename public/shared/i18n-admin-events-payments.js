@@ -48,7 +48,7 @@
     aePayInvSentH: '開出的發票（自動開立給報名者）',
     aePayInvReportH: '月報下載', aePayInvReportEmpty: '尚無月報（每月 1 日自動產生上月報表）',
     aePayInvThDate: '日期', aePayInvThNo: '發票號碼', aePayInvThKind: '類型', aePayInvThBuyer: '買受人',
-    aePayInvThAmt: '金額', aePayInvThStatus: '狀態', aePayInvThDl: '下載', aePayInvRetry: '重試', aePayPoThFeeInv: '手續費發票',
+    aePayInvThAmt: '金額', aePayInvThStatus: '狀態', aePayInvThDl: '下載', aePayInvRetry: '重試', aePayInvReissue: '作廢重開', aePayPoThFeeInv: '手續費發票',
 
     // ----- reconcile bar (enabled) -----
     aePayReconcileTitle: '快速銀行對帳',
@@ -252,7 +252,7 @@
     aePayInvSentH: 'Invoices issued (auto-issued to registrants)',
     aePayInvReportH: 'Monthly reports', aePayInvReportEmpty: 'No reports yet (generated on the 1st for the previous month)',
     aePayInvThDate: 'Date', aePayInvThNo: 'Invoice No.', aePayInvThKind: 'Type', aePayInvThBuyer: 'Buyer',
-    aePayInvThAmt: 'Amount', aePayInvThStatus: 'Status', aePayInvThDl: 'Download', aePayInvRetry: 'Retry', aePayPoThFeeInv: 'Fee invoice',
+    aePayInvThAmt: 'Amount', aePayInvThStatus: 'Status', aePayInvThDl: 'Download', aePayInvRetry: 'Retry', aePayInvReissue: 'Void & Reissue', aePayPoThFeeInv: 'Fee invoice',
 
     // ----- reconcile bar (enabled) -----
     aePayReconcileTitle: 'Quick Bank Reconciliation',
