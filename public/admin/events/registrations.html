@@ -1049,6 +1049,7 @@
     var eb = document.getElementById('tdEditBtn'); if (eb) eb.addEventListener('click', function () { TD_EDIT = true; tdRerender(); });
     var cb = document.getElementById('tdCancelBtn'); if (cb) cb.addEventListener('click', function () { TD_EDIT = false; tdRerender(); });
     var sb = document.getElementById('tdSaveBtn'); if (sb) sb.addEventListener('click', tdSave);
+    var sw = document.getElementById('tdSessWrap'); if (sw) { sw.addEventListener('change', tdSessGuard); tdSessGuard(); }
   }
   // editable cell — text input in edit mode (with data-* for collection), else read-only kv
   function tdField(scope, mid, who, key, label, value, custom) {
@@ -1070,7 +1071,16 @@
         '<input type="' + (multi ? 'checkbox' : 'radio') + '" name="tdSessPick" class="td-sess" value="' + i + '"' + (cur.indexOf(i) >= 0 ? ' checked' : '') + '> ' + escapeHtml(nameOf(i)) + '</label>';
     }).join('');
     return '<div class="k">' + escapeHtml(window.L('aeRegFieldSession')) + '</div>' +
-      '<div class="v" id="tdSessWrap" data-orig="' + escapeHtml(JSON.stringify(cur.slice().sort(function (a, b) { return a - b; }))) + '">' + inner + '</div>';
+      '<div class="v" id="tdSessWrap" data-orig="' + escapeHtml(JSON.stringify(cur.slice().sort(function (a, b) { return a - b; }))) + '">' + inner +
+      '<div id="tdSessErr" style="display:none; color:var(--err-700); font:400 12px/1.4 var(--f-tc); margin-top:4px">' + escapeHtml(window.L('aeRegSessMin')) + '</div></div>';
+  }
+  // 稽核修正：多選模式全數取消勾選時「即時」禁用儲存＋紅字提示，免等後端往返
+  // （radio 單選恆有一個選中不會觸發；後端驗證保留＝雙層防護）
+  function tdSessGuard() {
+    var sw = document.getElementById('tdSessWrap'); if (!sw) return;
+    var n = sw.querySelectorAll('.td-sess:checked').length;
+    var sb = document.getElementById('tdSaveBtn'); if (sb) sb.disabled = (n === 0);
+    var err = document.getElementById('tdSessErr'); if (err) err.style.display = (n === 0) ? '' : 'none';
   }
   function renderTeamDetailHtml(t) {
     var html = '';

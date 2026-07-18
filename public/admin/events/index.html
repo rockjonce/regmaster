@@ -25,8 +25,13 @@
 
 /* Stat strip */
 .stat-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:24px; }
-.stat-strip > div { background:var(--surface); padding:14px 18px; cursor:pointer; transition:.12s; position:relative; }
+.stat-strip > div { background:var(--surface); padding:14px 18px; cursor:pointer; transition:.12s; position:relative; user-select:none; }
 .stat-strip > div:hover { background:var(--surface-2); }
+/* 稽核修正：頁籤視覺語彙 — hover 浮現淡色「預覽底線」（與 .on 選中底線同位置），
+   一掃即知可點；不用位移/陰影（strip 為 overflow:hidden 格線，會被裁切出破綻）。 */
+.stat-strip > div::before { content:''; position:absolute; left:18px; right:18px; bottom:0; height:2px; background:transparent; transition:.12s; }
+.stat-strip > div:hover::before { background:var(--ink-3); }
+.stat-strip > div:hover .l-s { color:var(--ink-2); }
 .stat-strip > div.on { background:var(--surface-2); }
 .stat-strip > div.on::after { content:''; position:absolute; left:18px; right:18px; bottom:0; height:2px; background:var(--ink); }
 .stat-strip .l-s { font:500 11px/1 var(--f-mono); letter-spacing:.04em; color:var(--muted); display:flex; align-items:center; gap:6px; margin-bottom:6px; }
@@ -201,7 +206,6 @@
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
           <input id="filterInput" placeholder="篩選名稱、類別、主辦方帳號⋯" data-i18n-placeholder="aeIdxFilterPh">
         </div>
-        <span style="font:400 12px/1.4 var(--f-tc); color:var(--muted)" data-i18n="aeIdxFilterHint">點上方狀態卡可切換篩選</span>
       </div>
 
       <div id="contentArea">
