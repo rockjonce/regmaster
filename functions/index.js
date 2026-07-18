@@ -193,9 +193,12 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
   }
 
   const tSnap = await tx.get(db.collection("teams").where("compId", "==", compId));
-  let accepted = 0, waitlist = 0;
-  const sessionAccepted = {}, sessionWaitlist = {};
-  const sessionGroupAccepted = {}, sessionGroupWaitlist = {};
+  let accepted = 0, waitlistMaxWn = 0;
+  const sessionAccepted = {}, sessionMaxWn = {};
+  const sessionGroupAccepted = {}, sessionGroupMaxWn = {};
+  // 備取給號改「現存最大備取號+1」（原「現存備取數+1」在備1離隊後會重發已存在的號碼，
+  // 造成同格兩個備3）。號碼從 status 字串解析、waitlistNum 欄位為 fallback（相容舊資料）。
+  const wnOf = (t, st) => Math.max(parseInt(String(st).slice(2), 10) || 0, parseInt(t.waitlistNum, 10) || 0);
 
   tSnap.docs.forEach(d => {
     if (teamIdToIgnore && d.id === teamIdToIgnore) return; // 略過自己
@@ -205,8 +208,9 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
     if (st === "已取消" || st === "退費申請中") return;
     const isAcc = st === "正取";
     const isWL = st.startsWith("備取");
+    const wn = isWL ? wnOf(t, st) : 0;
     if (isAcc) accepted++;
-    if (isWL) waitlist++;
+    if (isWL) waitlistMaxWn = Math.max(waitlistMaxWn, wn);
     const grp = t.group || "";
     (t.selectedSessions || [t.selectedSession || 0]).forEach(idx => {
       if (isAcc) {
@@ -217,10 +221,10 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
         }
       }
       if (isWL) {
-        sessionWaitlist[idx] = (sessionWaitlist[idx] || 0) + 1;
+        sessionMaxWn[idx] = Math.max(sessionMaxWn[idx] || 0, wn);
         if (grp) {
-          sessionGroupWaitlist[idx] = sessionGroupWaitlist[idx] || {};
-          sessionGroupWaitlist[idx][grp] = (sessionGroupWaitlist[idx][grp] || 0) + 1;
+          sessionGroupMaxWn[idx] = sessionGroupMaxWn[idx] || {};
+          sessionGroupMaxWn[idx][grp] = Math.max(sessionGroupMaxWn[idx][grp] || 0, wn);
         }
       }
     });
@@ -240,8 +244,8 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
       const accCount = (sessionGroupAccepted[sIdx] || {})[newGroup] || 0;
       if (accCount >= cap) {
         if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:組別「" + newGroup + "」名額已滿，不接受新報名");
-        const wlCount = (sessionGroupWaitlist[sIdx] || {})[newGroup] || 0;
-        if (wlCount + 1 > txWn) txWn = wlCount + 1;
+        const wlMax = (sessionGroupMaxWn[sIdx] || {})[newGroup] || 0;
+        if (wlMax + 1 > txWn) txWn = wlMax + 1;
         txStatus = "備取" + txWn;
       }
     } else {
@@ -254,8 +258,8 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
           const sAcc = sessionAccepted[sIdx] || 0;
           if (sAcc >= sMax) {
             if (s.allowWaitlist === false) throw new Error("QUOTA:梯次 " + (sIdx + 1) + " 名額已滿，不接受新報名");
-            const sWait = sessionWaitlist[sIdx] || 0;
-            if (sWait + 1 > txWn) txWn = sWait + 1;
+            const sMaxWn = sessionMaxWn[sIdx] || 0;
+            if (sMaxWn + 1 > txWn) txWn = sMaxWn + 1;
             txStatus = "備取" + txWn;
           }
         }
@@ -264,7 +268,7 @@ async function checkAndReserveQuotaTx(tx, compId, teamIdToIgnore, compData, cfgI
         if (maxT === 0) throw new Error("QUOTA:目前不開放報名");
         if (maxT > 0 && accepted >= maxT) {
           if (cfgInTx.allowWaitlist === false) throw new Error("QUOTA:報名已額滿，不接受新報名");
-          if (waitlist + 1 > txWn) txWn = waitlist + 1;
+          if (waitlistMaxWn + 1 > txWn) txWn = waitlistMaxWn + 1;
           txStatus = "備取" + txWn;
         }
       }
