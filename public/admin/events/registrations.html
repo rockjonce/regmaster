@@ -1025,11 +1025,14 @@
 
   // ===== 報名詳情：檢視 + 編輯（擁有者/管理者）+ 逐項稽核 =====
   var TD_CUR = null, TD_OV = null, TD_EDIT = false;
+  // 稽核v2：儲存中狀態的唯一來源 — disabled 只准 tdSessGuard(裁決) 與 _tdUnlock(釋放後交裁決) 寫入
+  var TD_SAVING = false;
   var IS_MANAGER = true; // #4-3/4-4: staff/judge 隱藏管理/編輯動作（後端已擋）
   function openTeamDetail(tid) {
     var loadingHtml = '<p style="color:var(--muted)">' + window.L('aeRegLoadingShort') + '</p>';
     openModal(window.L('aeRegDetailTitle') + tid, loadingHtml, function (ov, close) {
       TD_OV = ov; TD_EDIT = false; TD_CUR = null;
+      TD_SAVING = false;   // 稽核v2：前一彈窗未歸的請求不得鎖死新彈窗
       google.script.run
         .withSuccessHandler(function (t) {
           if (!t) { ov.querySelector('.modal-body').innerHTML = '<p style="color:var(--err-700)">' + window.L('aeRegDetailNotFound') + '</p>'; return; }
@@ -1079,8 +1082,17 @@
   function tdSessGuard() {
     var sw = document.getElementById('tdSessWrap'); if (!sw) return;
     var n = sw.querySelectorAll('.td-sess:checked').length;
-    var sb = document.getElementById('tdSaveBtn'); if (sb) sb.disabled = (n === 0);
+    // 稽核v2修1：儲存中(TD_SAVING)永遠鎖定——勾選數只在閒置時參與裁決，
+    // 否則傳送期間點勾選框會把上鎖中的儲存鈕重新打開（連點/重複送出洞）。
+    var sb = document.getElementById('tdSaveBtn'); if (sb) sb.disabled = TD_SAVING || (n === 0);
     var err = document.getElementById('tdSessErr'); if (err) err.style.display = (n === 0) ? '' : 'none';
+  }
+  // 稽核v2修2：唯一解鎖出口——先釋放狀態、再交 guard 重新裁決。
+  // 若此刻勾選數為 0，guard 會立刻鎖回，按鈕狀態永遠與紅字一致（矛盾態結構上不可能）。
+  function _tdUnlock(btn) {
+    TD_SAVING = false;
+    if (btn) btn.disabled = false;
+    tdSessGuard();
   }
   function renderTeamDetailHtml(t) {
     var html = '';
@@ -1241,18 +1253,20 @@
     return { team: team, teamCustom: teamCustom, members: Object.keys(mmap).map(function (k) { return mmap[k]; }) };
   }
   function tdSave() {
-    if (!TD_CUR) return;
-    var p = tdCollect();
+    if (!TD_CUR || TD_SAVING) return;   // 稽核v2：狀態層連點防護（不只依賴 disabled 屬性）
+    var p = tdCollect();                // 鎖定前快照 payload——傳送期間的勾選變動不影響本次送出內容
+    TD_SAVING = true;
     var btn = document.getElementById('tdSaveBtn'); if (btn) btn.disabled = true;
     google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.success) {
+          TD_SAVING = false;            // 稽核v2：成功後釋放，否則下次進編輯模式 guard 會鎖死按鈕
           uiToast(window.L('aeRegEditSavedPre') + res.changes + window.L('aeRegEditSavedPost'));
           google.script.run.withSuccessHandler(function (t) { if (t) { TD_CUR = t; TD_EDIT = false; tdRerender(); } }).getTeamDetail(TD_CUR.teamId);
           if (typeof reload === 'function') reload();
-        } else { if (btn) btn.disabled = false; uiAlert((res && res.message) || window.L('aeRegEditFail')); }
+        } else { _tdUnlock(btn); uiAlert((res && res.message) || window.L('aeRegEditFail')); }
       })
-      .withFailureHandler(function (e) { if (btn) btn.disabled = false; uiAlert(window.L('aeRegEditFail') + '：' + ((e && e.message) || '')); })
+      .withFailureHandler(function (e) { _tdUnlock(btn); uiAlert(window.L('aeRegEditFail') + '：' + ((e && e.message) || '')); })
       .updateTeamDetailOwner(compId, TD_CUR.teamId, p.team, p.members, p.teamCustom);
   }
 
