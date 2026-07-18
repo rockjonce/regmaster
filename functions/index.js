@@ -9243,7 +9243,9 @@ exports.getUserAnalytics = authCallable(["system"], async (data) => {
   const totalAccounts = accSnap.size;
   for (const d of accSnap.docs) {
     const a = d.data();
-    const created = String(a.createdAt || "").slice(0, 10);
+    // createdAt 為 fmtNow() 的 zh-TW 斜線格式（"2026/7/13 下午…"）— 必須經 toDayKey 正規化
+    // 成 "YYYY-MM-DD" 才能與 fromDate/toDate 比較，naive slice(0,10) 會讓範圍過濾恆 false。
+    const created = toDayKey(a.createdAt);
     if (created && created >= fromDate && created <= toDate) {
       newRegMap[created] = (newRegMap[created] || 0) + 1;
     }
@@ -9274,7 +9276,7 @@ exports.getUserAnalytics = authCallable(["system"], async (data) => {
   accSnap.docs.forEach(d => {
     const a = d.data();
     if (a.role === 'system') return;
-    const created = String(a.createdAt || "").slice(0, 10);
+    const created = toDayKey(a.createdAt);   // 同上：fmtNow 格式需正規化
     if (created && created >= fromDate && created <= toDate) signups++;
   });
   // Paid count: organisers with an effective tier > free
@@ -9285,7 +9287,8 @@ exports.getUserAnalytics = authCallable(["system"], async (data) => {
   const regPaySnap = await db.collection("regPayments").where("status", "==", "paid").get();
   regPaySnap.docs.forEach(d => {
     const p = d.data();
-    const paidDate = String(p.paidAt || "").slice(0, 10);
+    // paidAt 為 fmtNow() 斜線格式 — toDayKey 正規化後才可作範圍比較與月分桶
+    const paidDate = toDayKey(p.paidAt);
     if (!paidDate || paidDate < fromDate || paidDate > toDate) return;
     const month = paidDate.slice(0, 7);
     revMap[month] = (revMap[month] || 0) + (parseInt(p.amount, 10) || 0);
@@ -9295,7 +9298,7 @@ exports.getUserAnalytics = authCallable(["system"], async (data) => {
     const orderSnap = await db.collection("orders").where("status", "==", "paid").get();
     orderSnap.docs.forEach(d => {
       const o = d.data();
-      const paidDate = String(o.paidAt || "").slice(0, 10);
+      const paidDate = toDayKey(o.paidAt);   // 同上
       if (!paidDate || paidDate < fromDate || paidDate > toDate) return;
       const month = paidDate.slice(0, 7);
       revMap[month] = (revMap[month] || 0) + (parseInt(o.total, 10) || 0);
