@@ -201,6 +201,7 @@
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
           <input id="filterInput" placeholder="篩選名稱、類別、主辦方帳號⋯" data-i18n-placeholder="aeIdxFilterPh">
         </div>
+        <span style="font:400 12px/1.4 var(--f-tc); color:var(--muted)" data-i18n="aeIdxFilterHint">點上方狀態卡可切換篩選</span>
       </div>
 
       <div id="contentArea">
@@ -271,7 +272,8 @@
   setTxt('orgPlan', me.role === 'system' ? '系統管理員' : '主辦方');
 
   var ALL = [];
-  var STATE = { filter: 'all', q: '' };
+  // 第5項(A案)：filter 延後至資料載入後決定（URL → 上次選擇 → 有進行中預設live、否則all）
+  var STATE = { filter: null, q: '' };
 
   function classifyComp(c) {
     var now = Date.now();
@@ -303,8 +305,9 @@
     setTxt('subline', window.L('aeIdxSublinePrefix') + ' · ' + window.L('aeIdxSublineLive') + ' ' + counts.live + ' / ' + window.L('aeIdxSublineDraft') + ' ' + counts.draft + ' / ' + window.L('aeIdxSublineEnded') + ' ' + counts.ended);
 
     var q = (STATE.q || '').toLowerCase();
+    var f = STATE.filter || 'all';   // 第5項：null 防護 — 未解析前以「全部」語意渲染，對任何呼叫時序穩健
     var filtered = ALL.filter(function (c) {
-      if (STATE.filter !== 'all' && classifyComp(c) !== STATE.filter) return false;
+      if (f !== 'all' && classifyComp(c) !== f) return false;
       if (!q) return true;
       // Z2: system admin can also search by 主辦方帳號 (c.creator).
       var haystack = c.name + ' ' + (c.category || '');
@@ -459,6 +462,7 @@
       document.querySelectorAll('#statStrip > div').forEach(function (x) { x.classList.remove('on'); });
       d.classList.add('on');
       STATE.filter = d.dataset.filter;
+      try { localStorage.setItem('rm_evtFilter', STATE.filter); } catch (e) {}   // 第5項：記憶選擇
       render();
     });
   });
@@ -485,6 +489,18 @@
     google.script.run
       .withSuccessHandler(function (list) {
         ALL = list || [];
+        // 第5項(A案)：首次載入後解析預設篩選 — URL ?filter= → localStorage 上次選擇 →
+        // 有進行中活動預設「進行中」、否則退回「全部」（避免新帳號/全結束時一進來空清單）
+        if (STATE.filter === null) {
+          var VALID = ['all', 'live', 'upcoming', 'draft', 'ended'];
+          var qf = new URLSearchParams(location.search).get('filter');
+          var saved = null; try { saved = localStorage.getItem('rm_evtFilter'); } catch (e) {}
+          var hasLive = ALL.some(function (c) { return classifyComp(c) === 'live'; });
+          STATE.filter = (VALID.indexOf(qf) >= 0 && qf) || (VALID.indexOf(saved) >= 0 && saved) || (hasLive ? 'live' : 'all');
+          document.querySelectorAll('#statStrip > div').forEach(function (x) {
+            x.classList.toggle('on', x.dataset.filter === STATE.filter);
+          });
+        }
         render();
       })
       .withFailureHandler(function (err) {

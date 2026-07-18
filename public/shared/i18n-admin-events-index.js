@@ -29,6 +29,7 @@
 
     // ----- toolbar -----
     aeIdxFilterPh: '篩選名稱、類別、主辦方帳號⋯',
+    aeIdxFilterHint: '點上方狀態卡可切換篩選',
 
     // ----- content states -----
     aeIdxLoading: '載入活動清單⋯',
@@ -126,6 +127,7 @@
 
     // ----- toolbar -----
     aeIdxFilterPh: 'Filter by name, category, organizer account…',
+    aeIdxFilterHint: 'Click a status card above to filter',
 
     // ----- content states -----
     aeIdxLoading: 'Loading events…',
