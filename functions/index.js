@@ -4712,18 +4712,43 @@ exports.updateTeamDetailOwner = compAuthCallable("manage", async (data, request)
     }
     teamUpd.customAnswers = ca;
   }
-  
-  if (Object.keys(teamUpd).length) {
-    if (teamUpd.group !== undefined && (team.status === "正取" || (team.status || "").startsWith("備取"))) {
+  // 第1項：梯次編輯 — 獨立於 TEAM_EDIT_FIELDS 白名單處理（需配額防護，不可走一般欄位路徑）。
+  const _sessCfg = (_cDoc.exists && _cDoc.data().config) || {};
+  const _sessList = Array.isArray(_sessCfg.sessions) ? _sessCfg.sessions : [];
+  let sessionsChanged = false, newSessions = null;
+  if (Array.isArray(teamIn.selectedSessions) && _sessList.length > 0) {
+    newSessions = [...new Set(teamIn.selectedSessions.map(n => parseInt(n, 10)))]
+      .filter(n => Number.isInteger(n) && n >= 0 && n < _sessList.length)
+      .sort((a, b) => a - b);
+    if (!newSessions.length) return { success: false, message: "至少需選擇一個梯次" };
+    if (_sessCfg.sessionSelectMode !== "multiple" && newSessions.length > 1)
+      return { success: false, message: "本活動梯次為單選，僅能選擇一個梯次" };
+    const oldSessions = team.selectedSessions || [team.selectedSession || 0];
+    sessionsChanged = JSON.stringify(newSessions) !== JSON.stringify(oldSessions);
+    if (sessionsChanged) {
+      const _sn = idxs => idxs.map(i => (_sessList[i] && _sessList[i].name) || ("梯次" + (i + 1))).join("、");
+      logs.push({ who: "", label: "參加梯次", old: _sn(oldSessions), neu: _sn(newSessions) });
+    }
+  }
+
+  if (Object.keys(teamUpd).length || sessionsChanged) {
+    if (sessionsChanged) { teamUpd.selectedSessions = newSessions; teamUpd.selectedSession = newSessions[0]; }
+    // v2 防護（QA 抓漏）：gate 必須認「組別或梯次」任一變更——原條件只認 group，
+    // 「只改梯次」會落到 else 分支盲寫、完全跳過配額檢查（超賣洞）。
+    const gridChanged = (teamUpd.group !== undefined) || sessionsChanged;
+    if (gridChanged && (team.status === "正取" || (team.status || "").startsWith("備取"))) {
       try {
         await db.runTransaction(async (tx) => {
           const compRef = db.collection("competitions").doc(compId);
           const compSnapInTx = await tx.get(compRef);
           const compInTx = compSnapInTx.data() || {};
           const cfgInTx = compInTx.config || {};
-          // isAcceptTeam=true：主辦改已核准隊伍的組別時，對「新格」做實質容量檢查，
+          // isAcceptTeam=true：主辦改已核准隊伍的組別/梯次時，對「新格」做實質容量檢查，
           // 有位維持正取、滿了才降備取/擋，不因 manual 模式被無腦打回審核中。
-          const qRes = await checkAndReserveQuotaTx(tx, compId, teamId, compInTx, cfgInTx, team.selectedSessions || [team.selectedSession || 0], teamUpd.group, true);
+          // v2 防護2：只改梯次時 group 必須帶「現值」而非 undefined，否則配額查錯格。
+          const qRes = await checkAndReserveQuotaTx(tx, compId, teamId, compInTx, cfgInTx,
+            sessionsChanged ? newSessions : (team.selectedSessions || [team.selectedSession || 0]),
+            teamUpd.group !== undefined ? teamUpd.group : (team.group || ""), true);
           teamUpd.status = qRes.status;
           teamUpd.waitlistNum = qRes.wn;
           tx.update(tDoc.ref, teamUpd);

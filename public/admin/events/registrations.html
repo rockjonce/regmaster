@@ -1056,6 +1056,22 @@
     var v = (value == null) ? '' : String(value);
     return '<div class="k">' + escapeHtml(label) + '</div><div class="v"><input class="td-in" data-scope="' + scope + '" data-mid="' + escapeHtml(mid || '') + '" data-who="' + escapeHtml(who || '') + '" data-key="' + escapeHtml(key) + '" data-custom="' + (custom ? '1' : '0') + '" data-orig="' + escapeHtml(v) + '" value="' + escapeHtml(v) + '" style="width:100%; padding:6px 9px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); font:400 13px/1.4 var(--f-tc)"></div>';
   }
+  // 第1項：隊伍資訊「參加梯次」列 — 非編輯顯示名稱；編輯模式依活動單/多選設定渲染。
+  // 僅設有梯次的活動顯示；選項與名稱皆取自 CFG.sessions（與統計卡 569 同源）。
+  function tdSessionRow(t) {
+    var sessions = CFG.sessions || [];
+    if (!sessions.length) return '';
+    var cur = (Array.isArray(t.selectedSessions) && t.selectedSessions.length) ? t.selectedSessions : [t.selectedSession || 0];
+    var nameOf = function (i) { return (sessions[i] && sessions[i].name) || (window.L('aeRegDsSessionPrefix') + (i + 1)); };
+    if (!TD_EDIT) return kv(window.L('aeRegFieldSession'), cur.map(nameOf).join('、'));
+    var multi = CFG.sessionSelectMode === 'multiple';
+    var inner = sessions.map(function (s, i) {
+      return '<label style="display:inline-flex; align-items:center; gap:5px; margin:2px 12px 2px 0; font:400 13px/1.5 var(--f-tc); cursor:pointer">' +
+        '<input type="' + (multi ? 'checkbox' : 'radio') + '" name="tdSessPick" class="td-sess" value="' + i + '"' + (cur.indexOf(i) >= 0 ? ' checked' : '') + '> ' + escapeHtml(nameOf(i)) + '</label>';
+    }).join('');
+    return '<div class="k">' + escapeHtml(window.L('aeRegFieldSession')) + '</div>' +
+      '<div class="v" id="tdSessWrap" data-orig="' + escapeHtml(JSON.stringify(cur.slice().sort(function (a, b) { return a - b; }))) + '">' + inner + '</div>';
+  }
   function renderTeamDetailHtml(t) {
     var html = '';
     // toolbar
@@ -1068,6 +1084,7 @@
       tdField('team', '', '', 'teamNameCN', window.L('aeRegFieldNameCN'), t.teamNameCN) +
       tdField('team', '', '', 'teamNameEN', window.L('aeRegFieldNameEN'), t.teamNameEN) +
       (TD_EDIT ? tdField('team', '', '', 'group', window.L('aeRegFieldGroup'), t.group) : kv(window.L('aeRegFieldGroup'), window.LO(t.group))) +
+      tdSessionRow(t) +
       kv(window.L('aeRegFieldStatus'), window.LS(t.status)) +
       kv(window.L('aeRegFieldPayStatus'), window.LS(t.paymentStatus)) +
       kv(window.L('aeRegFieldPayMethod'), window.LS(t.paymentMethod)) +
@@ -1205,6 +1222,12 @@
         if (custom) mmap[mid].customAnswers[key] = val; else mmap[mid].fields[key] = val;
       }
     });
+    // 第1項：梯次收集 — 與 .td-in 同一原則「僅送實際變更」；空選一樣送出交後端擋（至少一梯次）
+    var sw = TD_OV.querySelector('#tdSessWrap');
+    if (sw) {
+      var picked = Array.prototype.map.call(sw.querySelectorAll('.td-sess:checked'), function (c) { return parseInt(c.value, 10); }).sort(function (a, b) { return a - b; });
+      if (JSON.stringify(picked) !== (sw.dataset.orig || '')) team.selectedSessions = picked;
+    }
     return { team: team, teamCustom: teamCustom, members: Object.keys(mmap).map(function (k) { return mmap[k]; }) };
   }
   function tdSave() {
