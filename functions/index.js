@@ -2274,6 +2274,46 @@ exports.getCompetitionConfig = compAuthCallable(async (data) => {
   return cfg;
 });
 
+// v4 選配（業主核准）：儲存時把頂層 maxTeams 同步為「衍生值」— 單一資料來源維護。
+// 有組別上限（top-level groupCaps 或任一梯次覆寫）時，頂層數字只是顯示用衍生值，
+// 一律以伺服器端重算為準，杜絕歷史「newCfg 漏送家族」bug 留下的頂層/組別不一致資料。
+// 語意完全鏡射 checkAndReserveQuotaTx：逐梯有效上限 = 梯次覆寫 groupCaps → 缺則 top-level
+// groupCaps → 皆無則該梯 maxTeams（混合 edge）。任一 -1 → 整體 -1（無上限）。
+// 回傳 null = 單日且無組別上限：主辦輸入值即真實來源，不覆寫。
+function deriveTopMaxTeams(cfg) {
+  const sessions = Array.isArray(cfg.sessions) ? cfg.sessions : [];
+  const multi = cfg.dateMode === "multi" && sessions.length > 0;
+  const defCaps = (cfg.groupCaps && typeof cfg.groupCaps === "object") ? cfg.groupCaps : {};
+  const anyOverride = sessions.some(s => s && s.groupCaps && Object.keys(s.groupCaps).length > 0);
+  const hasGroupCaps = Object.keys(defCaps).length > 0 || anyOverride;
+  const sumCaps = (caps) => {
+    let s = 0;
+    for (const k of Object.keys(caps || {})) {
+      const v = parseInt(caps[k], 10);
+      if (v === -1) return -1;
+      if (v > 0) s += v;
+    }
+    return s;
+  };
+  if (!hasGroupCaps && !multi) return null;
+  if (!multi) return sumCaps(defCaps);   // 單日＋組別上限：Σ組別
+  let total = 0;
+  for (const s of sessions) {
+    const eff = (s && s.groupCaps && Object.keys(s.groupCaps).length) ? s.groupCaps
+      : (Object.keys(defCaps).length ? defCaps : null);
+    if (hasGroupCaps && eff) {
+      const t = sumCaps(eff);
+      if (t === -1) return -1;
+      total += t;
+    } else {   // 該梯無有效組別上限（或整活動無組別）→ 引擎走該梯 maxTeams 舊路徑
+      const v = parseInt(s && s.maxTeams, 10);
+      if (v === -1) return -1;
+      if (v > 0) total += v;
+    }
+  }
+  return total;
+}
+
 exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   const { compId, config } = data;
   const ref = db.collection("competitions").doc(compId);
@@ -2575,10 +2615,13 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     }
   }
 
+  // v4 選配：頂層 maxTeams 以伺服器端衍生值為準（有組別/多梯次時），杜絕頂層與組別上限不一致
+  const _derivedMax = deriveTopMaxTeams(jc);
+  if (_derivedMax !== null) jc.maxTeams = _derivedMax;
   const upd = {
     name: config.competitionName || "", category: config.category || "", config: jc,
     isVisible: !!config.isVisible,
-    deadline: config.deadline || "", maxTeams: config.maxTeams || 0
+    deadline: config.deadline || "", maxTeams: _derivedMax !== null ? _derivedMax : (config.maxTeams || 0)
   };
   if (wantOpen !== undefined) upd.isOpen = wantOpen;
   await ref.update(upd);
