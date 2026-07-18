@@ -2505,7 +2505,7 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
   let summaryReason = "";
   if (needsAI && newDesc) {
     try {
-      const summary = await generateDescriptionSummary(newDesc);
+      const summary = await generateDescriptionSummary(newDesc, compData.rulesText || "");   // 第2項：簡章作輔助資料源
       if (summary) {
         jc.descriptionSummaryDraft = summary;               // pending the organiser's approval
         summaryUpdated = true;
@@ -2611,19 +2611,41 @@ exports.approveDescriptionSummary = compAuthCallable("manage", async (data, requ
   return { success: true, approved: approve, descriptionSummary: cfg.descriptionSummary || "" };
 });
 
-// B.1 helper: ask Gemini for a 100–150 字 Chinese summary of an activity description.
-async function generateDescriptionSummary(rawDesc) {
+// B.1 helper: 依「活動描述＋簡章」的語言比例產生對應語言的摘要（第2項）。
+// CJK 佔比 ≥0.75 → 全中文 100–150 字；≤0.25 → 全英文 60–90 words；其間 → 中英雙語。
+// 簡章（rulesText）僅作輔助資料源；反杜撰條款對所有語言一體適用。
+async function generateDescriptionSummary(rawDesc, rulesText) {
   const text = String(rawDesc || "").replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   if (!text) return "";
+  let rules = String(rulesText || "").replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (/^\(PDF text extraction failed/.test(rules)) rules = "";   // 抽取失敗的殘句不可餵給模型
+  rules = rules.slice(0, 4000);
   const keyInfo = await getNextGeminiKey();
   if (!keyInfo) return "";
   try {
-    const prompt = "請將下列活動描述濃縮成 100 到 150 字的中文摘要。" +
-      "只能使用活動描述中明確出現的資訊；嚴禁推測、補充或杜撰任何未提供的內容，" +
+    // 語言比例偵測：對「描述＋簡章」合併樣本計 CJK 字元數 vs 拉丁字母數
+    const sample = text + " " + rules;
+    const zhN = (sample.match(/[぀-ヿ㐀-䶿一-鿿豈-﫿]/g) || []).length;
+    const enN = (sample.match(/[A-Za-z]/g) || []).length;
+    const zhRatio = (zhN + enN) > 0 ? zhN / (zhN + enN) : 1;
+    const guardZh = "只能使用下列資料中明確出現的資訊；嚴禁推測、補充或杜撰任何未提供的內容，" +
       "尤其是地點、日期、時間、金額、人數、主辦單位或聯絡方式——若原文沒寫就一律略過、不要提及。" +
-      "若原文有提到時間、地點、對象、特色等，才保留這些關鍵資訊。" +
-      "不要使用 markdown、標題、條列、表情符號，直接輸出純文字段落。摘要長度必須介於 100 到 150 個中文字。\n\n" +
-      "活動描述：\n" + text.slice(0, 4000) + "\n\n摘要：";
+      "不要使用 markdown、標題、條列、表情符號，直接輸出純文字。";
+    let ask;
+    if (zhRatio >= 0.75) {
+      ask = "請將下列活動資料濃縮成 100 到 150 字的中文摘要。" + guardZh +
+        "摘要長度必須介於 100 到 150 個中文字。";
+    } else if (zhRatio <= 0.25) {
+      ask = "Summarize the following event information into one English paragraph of 60 to 90 words. " +
+        "Use ONLY information explicitly present in the material; never invent or infer venues, dates, times, " +
+        "prices, capacities, organizers or contact details — omit anything not stated. " +
+        "No markdown, headings, lists or emojis; output plain text only.";
+    } else {
+      ask = "請依下列活動資料產出雙語摘要：先輸出 80 到 120 字的中文段落，換一行後再輸出 40 到 70 個英文單字的英文段落。" + guardZh;
+    }
+    const prompt = ask + "\n\n活動描述（主要資料）：\n" + text.slice(0, 4000) +
+      (rules ? "\n\n簡章內容（輔助資料，僅用於補充活動描述的細節，同樣不得杜撰）：\n" + rules : "") +
+      "\n\n摘要：";
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2644,21 +2666,38 @@ async function generateDescriptionSummary(rawDesc) {
       const parts = json && json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts;
       if (Array.isArray(parts)) parts.forEach(p => { if (p && p.text) out += p.text; });
     } catch (e) { out = ""; }
-    out = (out || "").replace(/\s+/g, ' ').trim();
+    // 空白正規化：保留單一換行（雙語模式的中/英段落分隔），其餘空白收斂為單一空格。
+    out = (out || "").replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{2,}/g, '\n').trim();
     // Light tidy: drop leading "摘要：" / "以下是" prefixes the model sometimes emits despite the prompt.
     out = out.replace(/^(摘要[:：]|以下是.{0,20}摘要[:：]?|這是.{0,10}摘要[:：]?)\s*/, '').trim();
     // #1-3: 於句界/詞界截斷並加省略號，避免英文字中途硬切（如「…使用Sam」）。
-    if (out.length <= 220) return out;
-    let cut = out.slice(0, 220);
+    // 上限依語言放寬：純中文 220；英文/雙語以字元計較長，放寬至 420（第2項 v2）。
+    const cap = zhRatio >= 0.75 ? 220 : 420, floor = zhRatio >= 0.75 ? 140 : 260;
+    if (out.length <= cap) return out;
+    let cut = out.slice(0, cap);
     const punct = Math.max(cut.lastIndexOf("。"), cut.lastIndexOf("！"), cut.lastIndexOf("？"), cut.lastIndexOf("."), cut.lastIndexOf("!"), cut.lastIndexOf("?"));
-    if (punct >= 140) return cut.slice(0, punct + 1);
+    if (punct >= floor) return cut.slice(0, punct + 1);
     const sp = cut.lastIndexOf(" ");
-    if (sp >= 140) cut = cut.slice(0, sp);
+    if (sp >= floor) cut = cut.slice(0, sp);
     return cut.trim() + "…";
   } catch (e) {
     await rotateGeminiKey();
     return "";
   }
+}
+
+// 第2項觸發補強：簡章 PDF 上傳/刪除後重產摘要「草稿」（仍需主辦方批准才公開，UX-001 閘門不變）。
+// ⚠️ 寫入限定 dot-path 單欄位：本函式中間夾著數秒 Gemini 呼叫，若「讀 config→等 AI→整包寫回」，
+// 期間主辦方儲存的其他設定會被舊快照蓋掉（lost update）——dot-path 只動這一個巢狀欄位，零競爭。
+async function regenSummaryDraftAfterRulesChange(ref, cfg, rulesText) {
+  try {
+    const desc = (cfg || {}).description || "";
+    if (String(desc).replace(/<[^>]*>/g, ' ').trim().length < 20) return;   // 與 2497 的門檻一致
+    const summary = await generateDescriptionSummary(desc, rulesText);
+    if (!summary) return;
+    await ref.update({ "config.descriptionSummaryDraft": summary });
+    cDel("cfg_" + ref.id);
+  } catch (e) { /* 摘要屬附加功能：任何失敗都不阻斷 PDF 上傳/刪除主流程 */ }
 }
 
 // UX-006: does the event's form collect at least one REQUIRED email? Legacy/no-schema
@@ -6132,7 +6171,8 @@ exports.uploadRulesPdf = compAuthCallable(async (data, request) => {
     const textPreview = extractedText.length > 50 ? extractedText.substring(0, 50) + "..." : extractedText;
     await ref.update({ rulesPdfId: viewUrl, pdfDocId: pdfRef.id, rulesText: extractedText });
     await auditLog(request.authUser.username, "upload rules", compId, fileName + " (" + Math.round(base64Data.length * 3/4/1024) + "KB, " + totalChunks + " chunks, text: " + extractedText.length + " chars)");
-    
+    // 第2項：簡章變更 → 依新語言比例重產摘要草稿（dot-path 寫入；失敗不阻斷上傳）
+    await regenSummaryDraftAfterRulesChange(ref, oldData.config, extractedText);
     return { success: true, fileId: pdfRef.id, viewUrl: "pfpdf:" + pdfRef.id, textExtracted: extractedText.length };
   } catch (e) {
     return { success: false, message: "上傳失敗: " + e.message };
@@ -6892,6 +6932,8 @@ exports.deleteRulesPdf = compAuthCallable(async (data, request) => {
   await ref.update({ rulesPdfId: "", pdfDocId: "", rulesText: "" });
 
   await auditLog(request.authUser.username, "delete rules pdf", compId, "pdfDocId: " + (pdfDocId || ""));
+  // 第2項：簡章移除 → 僅以活動描述重產摘要草稿（語言比例隨之重算）
+  await regenSummaryDraftAfterRulesChange(ref, oldData.config, "");
   return { success: true };
 });
 
