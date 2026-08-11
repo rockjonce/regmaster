@@ -64,6 +64,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
 .fld.error input, .fld.error select, .fld.error textarea { border-color:var(--err-500); background:rgba(239,68,68,.04); }
 .fld.error .err { display:block; }
 
+/* radio/checkbox 選項膠囊：.fld input 的 width:100% 會讓 radio 佔滿整行、
+   選項文字被擠到下一行且繼承 16px 基底字體 — 這裡明確定義並排除 */
+.opt-group { display:flex; flex-wrap:wrap; gap:8px; }
+.opt-pill { display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border:1px solid var(--line); border-radius:999px; background:var(--surface); font:400 13px/1.4 var(--f-tc); color:var(--ink); cursor:pointer; transition:border-color .15s, background .15s; }
+.opt-pill:hover { border-color:var(--ink-3); }
+.opt-pill input[type=radio], .opt-pill input[type=checkbox] { width:auto; padding:0; margin:0; flex:none; accent-color:var(--acc); }
+.opt-pill input[type=radio]:focus, .opt-pill input[type=checkbox]:focus { box-shadow:none; }
+.opt-pill:has(input:checked) { border-color:var(--acc); background:rgba(61,107,255,.06); }
+
 .member-card { padding:18px 20px; background:var(--surface-2); border:1px solid var(--line); border-radius:11px; margin-bottom:10px; }
 .member-card .mc-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
 .member-card .mc-head .b { width:24px; height:24px; border-radius:50%; background:var(--ink); color:var(--surface); display:grid; place-items:center; font:700 11px/1 var(--f-mono); }
