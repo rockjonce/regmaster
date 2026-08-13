@@ -407,7 +407,9 @@
     var cfg = COMP.config || {};
     var name = cfg.competitionName || window.L('aeHubUnnamed');
     document.title = name + ' · ' + window.L('aeHubCrumbHome') + ' · RegMaster';
-    document.getElementById('crumbName').textContent = name;
+    // 動態內容寫入後必須摘掉 data-i18n，否則 render() 末行的 applyI18n() 會把內容洗回字典字串
+    var crumbEl = document.getElementById('crumbName');
+    crumbEl.textContent = name; crumbEl.removeAttribute('data-i18n');
     document.getElementById('heroTitle').textContent = name;
 
     // Hero gradient varies by category
@@ -477,7 +479,9 @@
     // navRegCt lives in the shared shell's "本活動" group; guard in case it's absent.
     var _nrc = document.getElementById('navRegCt'); if (_nrc) _nrc.textContent = TEAMS.length;
     var _trc = document.getElementById('tabRegCt'); if (_trc) _trc.textContent = TEAMS.length;
-    document.getElementById('kTotalSub').textContent = TEAMS.length === 0 ? window.L('aeHubKpiTotalNone') : (window.L('aeHubCapPre') + (cfg.maxCapacityLimit || COMP.config.maxTeams || window.L('aeHubCapNone')) + '');
+    var kSubEl = document.getElementById('kTotalSub');
+    kSubEl.textContent = TEAMS.length === 0 ? window.L('aeHubKpiTotalNone') : (window.L('aeHubCapPre') + (cfg.maxCapacityLimit || COMP.config.maxTeams || window.L('aeHubCapNone')) + '');
+    kSubEl.removeAttribute('data-i18n');   // 同 crumbName：防 applyI18n() 洗回「尚無報名」
 
     // Info table
     var info = [];
@@ -505,6 +509,8 @@
       var tb = parseRegTime(b.registrationTime), ta = parseRegTime(a.registrationTime);
       return (tb ? tb.getTime() : 0) - (ta ? ta.getTime() : 0);
     }).slice(0, 5);
+    // 摘掉 data-i18n：此容器由下方動態填入，applyI18n() 不得再以 aeHubRecentEmpty 覆寫（會剷掉整個清單）
+    document.getElementById('recentRegs').removeAttribute('data-i18n');
     if (sortedTeams.length === 0) {
       document.getElementById('recentRegs').innerHTML = '<p style="color:var(--muted); padding:20px 0; text-align:center">' + window.L('aeHubRecentEmpty') + '</p>';
     } else {
