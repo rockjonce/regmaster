@@ -517,10 +517,14 @@
       document.getElementById('recentRegs').innerHTML =
         '<div style="display:flex; flex-direction:column; gap:8px">' +
         sortedTeams.map(function (t) {
+          // 無隊名（個人賽等）改列報名者/指導者姓名（「、」分隔）；評審受限視角拿不到姓名 → 退回「(無隊名)」
+          var _names = (t.studentNames || []).concat(t.teacherNames || []).filter(Boolean);
+          var dispName = t.teamNameCN || t.teamNameEN || _names.join('、');
+          var avChar = (dispName || t.teamId || '?').charAt(0);
           return '<div style="display:flex; gap:12px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:8px; align-items:center">' +
-            '<div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--blue-500), #1F3FB8); color:white; display:grid; place-items:center; font:700 13px/1 var(--f-display); flex-shrink:0">' + escapeHtml((t.teamNameCN || t.teamId || '?').charAt(0)) + '</div>' +
+            '<div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--blue-500), #1F3FB8); color:white; display:grid; place-items:center; font:700 13px/1 var(--f-display); flex-shrink:0">' + escapeHtml(avChar) + '</div>' +
             '<div style="flex:1; min-width:0">' +
-              '<div style="font:600 13px/1.3 var(--f-display)">' + escapeHtml(t.teamNameCN || t.teamNameEN || window.L('aeHubNoTeamName')) + (t.group ? '<span style="margin-left:8px; padding:1px 6px; background:var(--surface); border:1px solid var(--line); border-radius:4px; font:500 11px/1.4 var(--f-mono); color:var(--ink-3)">' + escapeHtml(t.group) + '</span>' : '') + '</div>' +
+              '<div style="font:600 13px/1.3 var(--f-display)">' + escapeHtml(dispName || window.L('aeHubNoTeamName')) + (t.group ? '<span style="margin-left:8px; padding:1px 6px; background:var(--surface); border:1px solid var(--line); border-radius:4px; font:500 11px/1.4 var(--f-mono); color:var(--ink-3)">' + escapeHtml(t.group) + '</span>' : '') + '</div>' +
               '<div style="font:500 11px/1.4 var(--f-mono); color:var(--muted)">' + escapeHtml(t.teamId) + ' · ' + escapeHtml(t.registrationTime || '') + '</div>' +
             '</div>' +
             '<div style="font:500 11px/1.3 var(--f-tc); color:' + (t.status === '正取' ? 'var(--ok-700)' : 'var(--amber-700, var(--warn-700))') + '">' + escapeHtml(window.LS(t.status || '')) + '</div>' +
