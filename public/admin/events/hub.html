@@ -351,6 +351,25 @@
   function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
   function parseDate(s) { if (!s) return null; var d = new Date(s); if (!isNaN(d.getTime())) return d; var m = String(s).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (m) return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3])); return null; }
 
+  // Parse a registrationTime string ("YYYY-MM-DD HH:MM[:SS]" or ISO) into a Date — mirrors the
+  // server's _parseRegTime so client-recomputed stats match the original aggregates.
+  function parseRegTime(rt) {
+    if (!rt) return null;
+    var s = String(rt).replace('T', ' ').trim();
+    // ISO-ish：YYYY-MM-DD HH:MM[:SS]
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0);
+    // zh-TW 在地化（fmtNow）：YYYY/M/D 上午|下午H:MM[:SS]（斜線、不補零、12 小時）
+    m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s*(上午|下午)?\s*(\d{1,2}):(\d{2})/);
+    if (m) {
+      var h = +m[5];
+      if (m[4] === '下午' && h < 12) h += 12;
+      if (m[4] === '上午' && h === 12) h = 0;
+      return new Date(+m[1], +m[2] - 1, +m[3], h, +m[6], 0);
+    }
+    return null;
+  }
+
   document.getElementById('meAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('meName').textContent = me.displayName || me.username;
   document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
@@ -480,9 +499,11 @@
       info.map(function (r) { return '<tr><td style="padding:6px 12px 6px 0; color:var(--muted); font:500 12.5px/1.5 var(--f-tc); width:120px; vertical-align:top">' + escapeHtml(r.k) + '</td><td style="padding:6px 0; font:400 13.5px/1.5 var(--f-tc); color:var(--ink-2)">' + r.v + '</td></tr>'; }).join('') +
       '</table>';
 
-    // Recent regs (top 5 by registrationTime)
+    // Recent regs (top 5 by registrationTime). fmtNow() 寫入的是 zh-TW 在地化字串
+    // （"2026/8/9 下午10:33:44"，不補零），字典序排序必亂 — 必須解析成時間戳再比。
     var sortedTeams = TEAMS.slice().sort(function (a, b) {
-      return (b.registrationTime || '').localeCompare(a.registrationTime || '');
+      var tb = parseRegTime(b.registrationTime), ta = parseRegTime(a.registrationTime);
+      return (tb ? tb.getTime() : 0) - (ta ? ta.getTime() : 0);
     }).slice(0, 5);
     if (sortedTeams.length === 0) {
       document.getElementById('recentRegs').innerHTML = '<p style="color:var(--muted); padding:20px 0; text-align:center">' + window.L('aeHubRecentEmpty') + '</p>';
