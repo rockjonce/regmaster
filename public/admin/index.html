@@ -120,12 +120,10 @@
 
 .todo-it { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-2); align-items:flex-start; }
 .todo-it:last-child { border-bottom:0; padding-bottom:0; }
-.todo-it .ck-t { width:18px; height:18px; border:1.5px solid var(--line); border-radius:5px; flex-shrink:0; cursor:pointer; margin-top:2px; transition:.15s; display:grid; place-items:center; }
-.todo-it .ck-t:hover { border-color:var(--ink-3); }
-.todo-it .ck-t.checked { background:var(--ok-500); border-color:var(--ok-500); }
-.todo-it .ck-t.checked::after { content:''; width:9px; height:5px; border-left:2px solid white; border-bottom:2px solid white; transform:rotate(-45deg) translate(1px,-1px); }
-.todo-it.done .body-t { opacity:.4; }
-.todo-it.done .body-t h6 { text-decoration:line-through; }
+a.todo-it { text-decoration:none; color:inherit; border-radius:8px; transition:background .15s; }
+a.todo-it:hover { background:var(--surface-2); }
+a.todo-it:hover .go-t { color:var(--acc); }
+.todo-it .go-t { align-self:center; flex-shrink:0; color:var(--muted); font:500 13px/1 var(--f-mono); transition:color .15s; }
 .todo-it .body-t { flex:1; }
 .todo-it .body-t h6 { font:600 13.5px/1.35 var(--f-display); margin-bottom:3px; }
 .todo-it .body-t p { font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin:0; }
@@ -702,15 +700,16 @@
       document.getElementById('todoList').innerHTML = '<div class="empty-c" style="padding:30px 20px; background:transparent; border:0"><div class="ic" style="width:48px;height:48px;font-size:22px">✓</div><h3 style="font-size:16px">' + window.L('adIdxNoTodoTitle') + '</h3><p style="font-size:13px">' + window.L('adIdxNoTodoSub') + '</p></div>';
       return;
     }
+    // 待辦是後端每次即時推導出來的提醒（不是可勾銷的清單）—— 底層條件處理完就會自動消失。
+    // 因此不提供打勾（打勾無處可存，重載必復原），改為整列可點擊直接前往待處理的頁面。
     document.getElementById('todoList').innerHTML = todos.map(function (t) {
       var pri = t.priority || 'low';
       var priLabel = pri === 'high' ? window.L('adIdxPriHigh') : pri === 'med' ? window.L('adIdxPriMed') : window.L('adIdxPriLow');
-      var linkHtml = t.link ? '<a href="' + escapeHtml(t.link) + '" style="font:500 11px/1 var(--f-mono)">' + window.L('adIdxTodoView') + '</a>' : '';
-      return '<div class="todo-it">' +
-        '<div class="ck-t" onclick="this.classList.toggle(\'checked\'); this.closest(\'.todo-it\').classList.toggle(\'done\')"></div>' +
-        '<div class="body-t"><h6>' + escapeHtml(t.title) + '</h6><p>' + escapeHtml(t.body || '') + ' ' + linkHtml + '</p></div>' +
-        '<span class="pri-t ' + pri + '">' + priLabel + '</span>' +
-      '</div>';
+      var inner = '<div class="body-t"><h6>' + escapeHtml(t.title) + '</h6><p>' + escapeHtml(t.body || '') + '</p></div>' +
+        '<span class="pri-t ' + pri + '">' + priLabel + '</span>';
+      return t.link
+        ? '<a class="todo-it" href="' + escapeHtml(t.link) + '">' + inner + '<span class="go-t">→</span></a>'
+        : '<div class="todo-it">' + inner + '</div>';
     }).join('');
   }
 

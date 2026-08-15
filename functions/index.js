@@ -3536,7 +3536,10 @@ exports.loginTeam = callable(async (data, request) => {
     await upgradeTeamPwd(doc.ref, doc.data(), password);
   }
   const team = doc.data();
-  const { password: _, ...safeTeam } = team;
+  // note = 主辦方後台註記，可能含敏感內容。這裡回的是整份 team 文件、對象是報名者本人，
+  // 故必須連同 password 一起排除，否則報名者可在開發者工具的回應內容中讀到。
+  // 主辦方端的讀寫走 getTeamDetail / updateTeamDetailOwner（皆經 compAuth 驗證），不受影響。
+  const { password: _, note: _note, ...safeTeam } = team;
   const memSnap = await db.collection("members").where("teamId", "==", teamId).get();
   const students = [], teachers = [];
   memSnap.docs.forEach(d => {
@@ -10985,6 +10988,7 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
 
   const todos = [];
   const now = Date.now();
+  const TODO_STALE_DAYS = 30;   // 活動結束逾此天數即停止提醒（見下方迴圈內的過期判斷）
 
   // 電子發票異常告警（帳號層級，一次彙總）：error/dead/void_error/pending_profile 需人工關注
   try {
@@ -11009,6 +11013,15 @@ exports.getTodoList = authCallable(["system", "competition"], async (data, reque
   for (const cDoc of compSnap.docs) {
     const c = cDoc.data();
     const cfg = c.config || {};
+
+    // 活動結束逾 TODO_STALE_DAYS 天就不再產生該活動的待辦。儀表板回答的是「現在該處理什麼」，
+    // 而付款/檔案待辦只看筆數、不看日期，早年辦完的活動若當時沒收完款會永遠卡在清單上。
+    // 保留一段寬限期讓主辦方賽後對帳；過期後資料仍在該活動的報名/帳務頁查得到，只是不再提醒。
+    const _endRaw = cfg.competitionDate || cfg.deadline || c.deadline || "";
+    if (_endRaw) {
+      const _endTs = parseTW(_endRaw);   // 回傳時間戳（非 Date）；無法解析時為 NaN
+      if (!isNaN(_endTs) && (now - _endTs) > TODO_STALE_DAYS * 86400000) continue;
+    }
 
     // Todo 1: pending payments
     if ((c.teamCount || 0) > 0) {

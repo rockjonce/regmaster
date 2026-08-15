@@ -206,9 +206,9 @@ aside.filters { padding:24px 0; }
     </div>
     <div class="filter-group">
       <h5 data-i18n="evFilterScale">規模</h5>
-      <label><input type="checkbox"><span class="ck"></span><span data-i18n="evScaleSmall">50 人以下</span></label>
-      <label><input type="checkbox"><span class="ck"></span><span data-i18n="evScaleMid">50–500 人</span></label>
-      <label><input type="checkbox"><span class="ck"></span><span data-i18n="evScaleLarge">500+ 人</span></label>
+      <label><input type="checkbox" data-scale="small"><span class="ck"></span><span data-i18n="evScaleSmall">50 人以下</span></label>
+      <label><input type="checkbox" data-scale="mid"><span class="ck"></span><span data-i18n="evScaleMid">50–500 人</span></label>
+      <label><input type="checkbox" data-scale="large"><span class="ck"></span><span data-i18n="evScaleLarge">500+ 人</span></label>
     </div>
   </aside>
 
@@ -233,7 +233,9 @@ aside.filters { padding:24px 0; }
   var STATE = {
     q: '',
     cat: '',
+    cats: {},   // 側欄類別複選（有勾選時優先於 cat 單選）
     statusFilter: { open: true, upcoming: false, closed: false },
+    scale: { small: false, mid: false, large: false },
     sort: 'popular'
   };
 
@@ -318,13 +320,23 @@ aside.filters { padding:24px 0; }
         var hay = (c.name + ' ' + c.category).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
-      if (cat && c.category !== cat) return false;
+      // 類別：側欄複選有勾選時以複選為準，否則退回快速標籤/下拉的單選
+      var catChecked = Object.keys(STATE.cats).filter(function (k) { return STATE.cats[k]; });
+      if (catChecked.length) { if (catChecked.indexOf(c.category) < 0) return false; }
+      else if (cat && c.category !== cat) return false;
       var status = comp2Status(c);
       var any = STATE.statusFilter.open || STATE.statusFilter.upcoming || STATE.statusFilter.closed;
       if (any) {
         if (status === 'open' && !STATE.statusFilter.open) return false;
         if (status === 'upcoming' && !STATE.statusFilter.upcoming) return false;
         if (status === 'closed' && !STATE.statusFilter.closed) return false;
+      }
+      // 規模：有設名額上限就用上限，未設上限（不限人數）則以目前報名數歸類
+      var anyScale = STATE.scale.small || STATE.scale.mid || STATE.scale.large;
+      if (anyScale) {
+        var n = (c.maxTeams > 0) ? c.maxTeams : (c.teamCount || 0);
+        var bucket = n < 50 ? 'small' : (n <= 500 ? 'mid' : 'large');
+        if (!STATE.scale[bucket]) return false;
       }
       return true;
     });
@@ -373,6 +385,7 @@ aside.filters { padding:24px 0; }
         c.classList.add('on');
         STATE.cat = c.dataset.cat || '';
         document.getElementById('categorySelect').value = STATE.cat;
+        clearCatChecks();   // 單選與複選只留一套生效，避免兩者相衝變成空結果
         applyFilters();
       });
     });
@@ -401,11 +414,31 @@ aside.filters { padding:24px 0; }
   document.getElementById('categorySelect').addEventListener('change', function (e) {
     STATE.cat = e.target.value;
     document.querySelectorAll('.qchip').forEach(function (x) { x.classList.toggle('on', (x.dataset.cat || '') === STATE.cat); });
+    clearCatChecks();
     applyFilters();
   });
   document.getElementById('filterOpen').addEventListener('change', function (e) { STATE.statusFilter.open = e.target.checked; applyFilters(); });
   document.getElementById('filterUpcoming').addEventListener('change', function (e) { STATE.statusFilter.upcoming = e.target.checked; applyFilters(); });
   document.getElementById('filterClosed').addEventListener('change', function (e) { STATE.statusFilter.closed = e.target.checked; applyFilters(); });
+  // 側欄「類別」複選：委派綁定（清單是動態產生的，重建後仍有效）
+  function clearCatChecks() {
+    STATE.cats = {};
+    document.querySelectorAll('#catFilterList input[data-cat]').forEach(function (x) { x.checked = false; });
+  }
+  document.getElementById('catFilterList').addEventListener('change', function (e) {
+    var cb = e.target && e.target.closest ? e.target.closest('input[data-cat]') : null;
+    if (!cb) return;
+    STATE.cats[cb.dataset.cat] = cb.checked;
+    // 改用複選時，把快速標籤/下拉的單選歸零回「全部」
+    STATE.cat = '';
+    document.getElementById('categorySelect').value = '';
+    document.querySelectorAll('.qchip').forEach(function (x) { x.classList.toggle('on', !x.dataset.cat); });
+    applyFilters();
+  });
+  // 側欄「規模」複選
+  document.querySelectorAll('[data-scale]').forEach(function (el) {
+    el.addEventListener('change', function () { STATE.scale[el.dataset.scale] = el.checked; applyFilters(); });
+  });
   document.querySelectorAll('#sortToggles button').forEach(function (b) {
     b.addEventListener('click', function () {
       document.querySelectorAll('#sortToggles button').forEach(function (x) { x.classList.remove('on'); });

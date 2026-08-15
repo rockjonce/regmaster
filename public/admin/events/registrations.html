@@ -818,6 +818,7 @@
           ((CFG.acceptanceMode === 'manual' && IS_MANAGER && t.status === '審核中' && paid)
             ? '<button class="action-btn primary" data-act="accept" data-tid="' + escapeHtml(t.teamId) + '">✓ ' + window.L('aeRegBtnAccept') + '</button>' : '') +
           '<button class="action-btn primary" data-act="view" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnView') + '</button>' +
+          (IS_MANAGER ? '<button class="action-btn" data-act="note" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnNote') + '</button>' : '') +
           (IS_MANAGER ? '<button class="action-btn" data-act="email" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnEmail') + '</button>' : '') +
           (IS_MANAGER ? '<button class="action-btn danger" data-act="del" data-tid="' + escapeHtml(t.teamId) + '">' + window.L('aeRegBtnDelete') + '</button>' : '') +
         '</td>' +
@@ -845,8 +846,32 @@
       return;
     }
     if (act === 'view') openTeamDetail(tid);
+    else if (act === 'note') openNoteDialog(tid);
     else if (act === 'email') openEmailComposer(tid);
     else if (act === 'del') confirmDelete(tid);
+  }
+
+  // 後台備註：僅主辦方可見（loginTeam 已將 note 排除於報名者的回應之外）。
+  // 沿用既有端點：getTeamDetail 讀、updateTeamDetailOwner 只送 note 做部分更新
+  // （空成員陣列不動成員，且只改 note 不會觸發名額檢查交易），變更由後端自動寫入操作紀錄。
+  function openNoteDialog(tid) {
+    google.script.run
+      .withSuccessHandler(function (t) {
+        uiPrompt(window.L('aeRegNotePrompt'), (t && t.note) || '', {
+          title: window.L('aeRegNoteTitle'), placeholder: window.L('aeRegNotePlaceholder')
+        }).then(function (val) {
+          if (val === null) return;   // 取消
+          google.script.run
+            .withSuccessHandler(function (res) {
+              if (res && res.success) { uiToast(window.L('aeRegNoteSaved')); if (typeof reload === 'function') reload(); }
+              else uiAlert((res && res.message) || window.L('aeRegNoteFail'));
+            })
+            .withFailureHandler(function (e) { uiAlert(window.L('aeRegNoteFail') + '：' + ((e && e.message) || '')); })
+            .updateTeamDetailOwner(compId, tid, { note: val }, [], {});
+        });
+      })
+      .withFailureHandler(function (e) { uiAlert(window.L('aeRegNoteFail') + '：' + ((e && e.message) || '')); })
+      .getTeamDetail(tid);
   }
 
   document.getElementById('searchInp').addEventListener('input', function () {
