@@ -20,6 +20,9 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
+<!-- 進場動效的開關：必須在 body 繪製前同步加上，否則內容會先顯示再隱藏而閃爍。
+     沒有 JS（含爬蟲）時這個 class 不存在，styles.css 的隱藏規則就完全不生效。 -->
+<script>document.documentElement.classList.add('js-reveal')</script>
 <style>
 .nav { position:sticky; top:0; z-index:50; height:64px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
 .nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); }
@@ -215,7 +218,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
 </section>
 
-<section>
+<section data-reveal>
   <div class="container">
     <div class="feat-block" id="f-form" style="scroll-margin-top:80px">
       <div class="copy">
@@ -435,7 +438,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
 </section>
 
-<section style="background:var(--surface-2)">
+<section style="background:var(--surface-2)" data-reveal>
   <div class="section-head">
     <h2 data-i18n="feMiniHeadH2">還有這些貼心的小細節</h2>
     <p data-i18n="feMiniHeadP">每一個小功能，都來自客戶實際的痛點。</p>
@@ -453,7 +456,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
 </section>
 
-<section class="cta-strip">
+<section class="cta-strip" data-reveal>
   <h2 data-i18n-html="feCtaH2">看完功能，<br>不如直接玩玩看？</h2>
   <p data-i18n="feCtaP">Free 終生免費，立即開始；各項功能依方案開放體驗。</p>
   <div class="flex aic gap-3 jcc">
@@ -532,5 +535,6 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 })();
 </script>
 <script src="/shared/public-nav.js" defer></script>
+<script src="/shared/reveal.js" defer></script>
 </body>
 </html>

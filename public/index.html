@@ -106,6 +106,9 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
+<!-- 進場動效的開關：必須在 body 繪製前同步加上，否則內容會先顯示再隱藏而閃爍。
+     沒有 JS（含爬蟲）時這個 class 不存在，styles.css 的隱藏規則就完全不生效。 -->
+<script>document.documentElement.classList.add('js-reveal')</script>
 <style>
 /* ============ LANDING-SPECIFIC ============ */
 body { background: var(--bg); }
@@ -316,7 +319,9 @@ section { padding: 96px 32px; border-bottom: 1px solid var(--hairline); }
 /* === USE CASES === */
 .uses { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
 .use { padding: 28px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; position: relative; overflow: hidden; transition: all .25s var(--easing); }
-.use:hover { border-color: var(--ink-3); }
+/* 與 .bento-cell 一致的抬升回饋（原本只換邊框，滑過去幾乎沒感覺） */
+.use { transition: border-color .18s var(--easing), transform .18s var(--easing), box-shadow .18s var(--easing); }
+.use:hover { border-color: var(--ink-3); transform: translateY(-2px); box-shadow: var(--sh-md); }
 .use .pic { height: 120px; border-radius: 10px; background: var(--surface-2); margin-bottom: 18px; position: relative; overflow: hidden; border: 1px solid var(--line-2); }
 .use h4 { font: 700 16px/1.3 var(--f-display); margin-bottom: 6px; }
 .use p { font: 400 13px/1.5 var(--f-tc); color: var(--ink-3); }
@@ -350,6 +355,12 @@ section { padding: 96px 32px; border-bottom: 1px solid var(--hairline); }
 .faq-item summary .plus { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 6px; font: 400 16px/1 var(--f-mono); color: var(--muted); transition: transform .2s var(--easing); }
 .faq-item[open] summary .plus { transform: rotate(45deg); background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .faq-item p { margin-top: 14px; font: 400 14.5px/1.65 var(--f-tc); color: var(--ink-3); max-width: 720px; }
+/* 展開時答案輕微下滑：<details> 無法用純 CSS 過渡高度，改以短動畫讓內容不要突然彈出。
+   ⚠️ 刻意「只動 transform、不動 opacity」：動畫在背景分頁或不繪製畫面的環境會凍結在第一幀，
+   若第一幀是 opacity:0，答案就會整段看不見。只位移的話最差情況也只是偏移 4px，仍可閱讀。 */
+.faq-item[open] p { animation: faqReveal .24s ease-out; }
+@keyframes faqReveal { from { transform: translateY(-4px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .faq-item[open] p { animation: none; } }
 
 /* === CTA === */
 .cta-section { background: var(--ink); color: var(--surface); text-align: center; position: relative; overflow: hidden; }
@@ -556,7 +567,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 
 <!-- ============ LOGOS ============ -->
 <section class="logos" style="padding:48px 32px">
-  <div class="logos-inner">
+  <div class="logos-inner" data-reveal>
     <div class="logos-label" data-i18n="logosLabel">適用於各類主辦單位</div>
     <div class="logos-grid">
       <div class="lg-item" data-i18n="lgUni">大專院校</div>
@@ -570,7 +581,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 </section>
 
 <!-- ============ FEATURES BENTO ============ -->
-<section>
+<section data-reveal>
   <div class="section-head">
     <div class="eyebrow">PRODUCT FEATURES</div>
     <h2 data-i18n-html="bentoH2">把所有麻煩，<br>都交給 RegMaster。</h2>
@@ -636,7 +647,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 </section>
 
 <!-- ============ HOW IT WORKS ============ -->
-<section>
+<section data-reveal>
   <div class="section-head">
     <div class="eyebrow">HOW IT WORKS</div>
     <h2 data-i18n-html="howH2">三步上線。<br>一晚搞定。</h2>
@@ -678,7 +689,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 </section>
 
 <!-- ============ USE CASES ============ -->
-<section>
+<section data-reveal>
   <div class="section-head">
     <div class="eyebrow">USE CASES</div>
     <h2 data-i18n-html="usesH2">每種活動<br>都有適合的姿勢。</h2>
@@ -720,7 +731,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 </section>
 
 <!-- ============ PRICING TEASER ============ -->
-<section>
+<section data-reveal>
   <div class="section-head">
     <div class="eyebrow">PRICING</div>
     <h2 data-i18n-html="ptH2">從免費開始，<br>用得越多越划算。</h2>
@@ -790,7 +801,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 </section>
 
 <!-- ============ FAQ ============ -->
-<section>
+<section data-reveal>
   <div class="section-head">
     <div class="eyebrow">FAQ</div>
     <h2 data-i18n="faqH2">常見問題</h2>
@@ -825,7 +836,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 
 <!-- ============ CTA ============ -->
 <section class="cta-section" style="border-bottom:0">
-  <div class="inner">
+  <div class="inner" data-reveal>
     <h2 data-i18n-html="ctaH2">10 分鐘後，<br>你的活動就<em>上線了</em>。</h2>
     <p class="lead" data-i18n-html="ctaLead">不需要信用卡 · 不需要工程師 · 不需要客服打擾你。<br>用熱忱去辦活動，剩下的交給 RegMaster。</p>
     <div class="flex aic gap-3 jcc">
@@ -889,6 +900,7 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
 <script src="/__/firebase/init.js"></script>
 <script src="/shared/firebase-bridge.js"></script>
 <script src="/shared/track-visit.js"></script>
+<script src="/shared/reveal.js" defer></script>
 <script>
 // Hydrate the pricing cards from config/sales.plans (public). Static cards are the fallback.
 // Cards are rendered in the current language (labels via i18n) and re-rendered on lang change.

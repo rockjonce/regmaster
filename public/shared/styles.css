@@ -195,6 +195,9 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid transparent;
 }
 .btn:focus-visible { outline: 0; box-shadow: var(--ring); }
+/* 按下回饋：純視覺確認「這一下有按到」，位移僅 1px。屬於操作回饋而非裝飾動效，
+   因此不受 prefers-reduced-motion 停用（該設定針對的是大範圍位移與視差）。 */
+.btn:active { transform: translateY(1px); }
 .btn .ic { width: 16px; height: 16px; flex-shrink: 0; }
 
 .btn-primary {
@@ -718,3 +721,46 @@ a { color: inherit; text-decoration: none; }
   [class*="tbl-wrap"] > .tbl:not(.reg-cards) { min-width: 600px; }
 }
 
+
+/* === SCROLL REVEAL（landing pages）=========================================
+   進場動效：區塊捲入視窗時，其直接子元素淡入並微幅上移。
+
+   兩道必要防護：
+   1) no-JS / SEO —— 隱藏樣式全部掛在 html.js-reveal 之下，而該 class 由各頁
+      <head> 內的同步 inline script 加上。爬蟲或停用 JS 時 class 不存在，
+      內容完全可見（絕不可讓 SEO 需要的內容預設 opacity:0）。
+      class 在 head 同步加入亦可避免內容先顯示再隱藏的閃爍。
+   2) prefers-reduced-motion —— 使用者要求減少動態時一律直接顯示、不做動畫。
+
+   位移刻意只有 12px、時長 .35s ease-out：讀起來像淡入而非滑動。 */
+html.js-reveal [data-reveal] > * {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .35s ease-out, transform .35s ease-out;
+}
+html.js-reveal [data-reveal].in > * { opacity: 1; transform: none; }
+/* 同一區塊內的子元素依序進場；只做到第 4 個，再多會顯得拖沓 */
+html.js-reveal [data-reveal].in > *:nth-child(2) { transition-delay: .07s; }
+html.js-reveal [data-reveal].in > *:nth-child(3) { transition-delay: .14s; }
+html.js-reveal [data-reveal].in > *:nth-child(n+4) { transition-delay: .21s; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.js-reveal [data-reveal] > *,
+  html.js-reveal [data-reveal].in > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* === STICKY NAV：捲動後分層 =================================================
+   捲離頁首後加深底色並加上陰影，讓固定導覽列與內容之間有明確層次。
+   .scrolled 由 shared/reveal.js 掛上（僅 landing page 載入該檔），
+   因此其他頁面即使有 .nav 也不受影響。 */
+.nav { transition: box-shadow .2s var(--easing), background .2s var(--easing); }
+.nav.scrolled {
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, .06);
+}
+[data-theme="dark"] .nav.scrolled { box-shadow: 0 1px 12px rgba(0, 0, 0, .5); }

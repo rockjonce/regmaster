@@ -74,6 +74,9 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
+<!-- 進場動效的開關：必須在 body 繪製前同步加上，否則內容會先顯示再隱藏而閃爍。
+     沒有 JS（含爬蟲）時這個 class 不存在，styles.css 的隱藏規則就完全不生效。 -->
+<script>document.documentElement.classList.add('js-reveal')</script>
 <style>
 .nav { position:sticky; top:0; z-index:50; height:64px; display:flex; align-items:center; padding:0 32px; border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:saturate(1.4) blur(12px); }
 .nav .brand { display:flex; align-items:center; gap:10px; font:700 16px/1 var(--f-display); }
@@ -213,7 +216,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   <p data-i18n="prHeroSub">透明定價、無隱藏費用、隨時可降級或取消。價格與功能以實際方案設定為準。</p>
 </section>
 
-<section style="padding-top:48px">
+<section style="padding-top:48px" data-reveal>
   <!-- Plan cards — hydrated from config/sales.plans via getPublicPlans(); the static
        cards below are an SEO/no-JS fallback that mirrors the default plan matrix. -->
   <div class="plans-row" id="plansRow">
@@ -295,7 +298,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </p>
 </section>
 
-<section>
+<section data-reveal>
   <div class="section-head">
     <h2 data-i18n="prCmpH2">逐項比較</h2>
     <p data-i18n="prCmpSub">看清楚每一分錢買到了什麼。</p>
@@ -331,7 +334,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
 </section>
 
-<section>
+<section data-reveal>
   <div class="section-head">
     <h2 data-i18n="prFaqH2">關於付費，你可能想問</h2>
   </div>
@@ -363,7 +366,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
   </div>
 </section>
 
-<section class="cta-strip" style="border-bottom:0">
+<section class="cta-strip" style="border-bottom:0" data-reveal>
   <h2 data-i18n="prCtaH2">還在猶豫？</h2>
   <p data-i18n="prCtaSub">Free 版永久免費，就能跑完整個流程。先試試，需要時再升級。</p>
   <div class="flex aic gap-3 jcc">
@@ -498,5 +501,6 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 })();
 </script>
 <script src="/shared/public-nav.js" defer></script>
+<script src="/shared/reveal.js" defer></script>
 </body>
 </html>
