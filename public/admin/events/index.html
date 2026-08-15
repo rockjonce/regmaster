@@ -351,20 +351,28 @@
   // 海報以 base64 存在 Firestore、須經 getPosterData 解析（無 CDN、無瀏覽器快取，平均約 300KB），
   // 因此一律「捲動到可視範圍才載入」，並以 compId 快取——本頁在搜尋/篩選時會整批重繪，
   // 沒有快取會重複抓取。載入完全在關鍵路徑之外：卡片先出現，海報之後淡入。
-  var POSTER_CACHE = {};
+  var POSTER_CACHE = {};                  // compId -> { src, focus }
   var _posterIO = null;
+  var FOCUS_RE = /^\d{1,3}% \d{1,3}%$/;   // 與 detail.html、後端 setPosterFocus 同一道驗證
+  // 套用海報：焦點是主辦方在活動設定拖曳的 posterFocus，未設定或格式異常一律置中（＝原行為）。
+  // 先設 objectPosition 再設 src，避免圖片先以錯誤位置閃現一下。
+  function applyPoster(img, entry) {
+    if (!entry || !entry.src) return;
+    img.style.objectPosition = FOCUS_RE.test(entry.focus || '') ? entry.focus : '50% 50%';
+    img.src = entry.src;
+  }
   function fillPoster(img) {
     var id = img.getAttribute('data-poster');
     if (!id) return;
     img.removeAttribute('data-poster');   // 先認領，避免同一張被重複請求
-    if (POSTER_CACHE[id] !== undefined) { if (POSTER_CACHE[id]) img.src = POSTER_CACHE[id]; return; }
+    if (POSTER_CACHE[id] !== undefined) { applyPoster(img, POSTER_CACHE[id]); return; }
     google.script.run
       .withSuccessHandler(function (res) {
-        var src = (res && res.success && res.dataUri) ? res.dataUri : '';
-        POSTER_CACHE[id] = src;          // 空字串也快取：沒有海報的活動不再重試
-        if (src) img.src = src;
+        var entry = { src: (res && res.success && res.dataUri) ? res.dataUri : '', focus: (res && res.posterFocus) || '' };
+        POSTER_CACHE[id] = entry;         // src 為空也快取：沒有海報的活動不再重試
+        applyPoster(img, entry);
       })
-      .withFailureHandler(function () { POSTER_CACHE[id] = ''; })
+      .withFailureHandler(function () { POSTER_CACHE[id] = { src: '', focus: '' }; })
       .getPosterData(id);
   }
   function hydratePosters(scope) {
@@ -375,7 +383,7 @@
       var id = el.getAttribute('data-poster');
       if (POSTER_CACHE[id] === undefined) return true;
       el.removeAttribute('data-poster');
-      if (POSTER_CACHE[id]) el.src = POSTER_CACHE[id];
+      applyPoster(el, POSTER_CACHE[id]);
       return false;
     });
     if (!pending.length) return;

@@ -6773,12 +6773,16 @@ exports.getPosterData = callable(async (data) => {
   const { compId } = data;
   const doc = await db.collection("competitions").doc(compId).get();
   if (!doc.exists) return { success: false };
-  const posterDocId = doc.data().posterDocId;
+  const c = doc.data();
+  const posterDocId = c.posterDocId;
   if (!posterDocId) return { success: false };
   const pDoc = await db.collection("posterFiles").doc(posterDocId).get();
   if (!pDoc.exists) return { success: false };
   const p = pDoc.data();
-  return { success: true, dataUri: "data:" + (p.mimeType || "image/png") + ";base64," + (p.data || "") };
+  // posterFocus（setPosterFocus 寫入的 "NN% NN%"）順帶回傳：本函式已經讀過活動文件，
+  // 帶上它是零額外讀取，且卡片列表拿得到焦點才能正確裁切（清單端點沒有這個欄位）。
+  // 純新增欄位，既有呼叫端（詳情頁/報名頁）忽略即可，不影響行為。
+  return { success: true, dataUri: "data:" + (p.mimeType || "image/png") + ";base64," + (p.data || ""), posterFocus: c.posterFocus || "" };
 });
 
 /* ===== Form display-image assets (通用欄位「圖片內容」) ===== */
