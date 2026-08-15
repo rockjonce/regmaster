@@ -294,7 +294,16 @@ aside.filters { padding:24px 0; }
     var teamMeta = c.maxTeams > 0
       ? '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + _shown + ' / ' + c.maxTeams + _wl + '</strong></div><div class="bar ' + barClass + '"><div style="width:' + (ratio*100).toFixed(0) + '%"></div></div></div>'
       : '<div class="progress-mini"><div class="lbl"><span>' + window.L('evRegistered') + '</span><strong>' + _cnt + '</strong></div></div>';
-    var posterImg = c.posterUrl ? '<img class="poster-img" src="' + escapeHtml(c.posterUrl) + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\'">' : '';
+    // posterUrl 可能是 data:/http(s): 直接可用，也可能是 pfid:DOC_ID 內部參照（海報以 base64
+    // 存在 Firestore）。後者不能當 src 用（瀏覽器會以 ERR_UNKNOWN_URL_SCHEME 失敗並靜默退回漸層），
+    // 改掛 data-poster 交給 hydratePosters()：捲動到才向後端取，並以 compId 快取。
+    var posterImg = '';
+    if (c.posterUrl) {
+      var _direct = (String(c.posterUrl).indexOf('data:') === 0 || /^https?:\/\//.test(c.posterUrl));
+      posterImg = '<img class="poster-img" '
+        + (_direct ? 'src="' + escapeHtml(c.posterUrl) + '"' : 'data-poster="' + escapeHtml(c.compId) + '"')
+        + ' alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\'">';
+    }
     return '<a class="event-card" href="/events/detail.html?id=' + encodeURIComponent(c.compId) + '">' +
       '<div class="ev-cover ' + pickCover(idx) + '">' + posterImg + statusLabel + dateLabel +
         (status === 'open' ? '<div class="badge-bottom"><span class="dot-l"></span>' + (c.teamCount||0) + ' ' + window.L('evRegistered') + '</div>' : '') +
@@ -357,7 +366,62 @@ aside.filters { padding:24px 0; }
       return;
     }
     grid.innerHTML = FILTERED.map(renderCard).join('');
+    hydratePosters(grid);
     if (window.applyI18n) window.applyI18n();
+  }
+
+  // 海報以 base64 存在 Firestore、須經 getPosterData 解析（無 CDN、無瀏覽器快取，平均約 300KB），
+  // 因此一律「捲動到可視範圍才載入」，並以 compId 快取——本頁在篩選/排序/切換語言時都會整批重繪，
+  // 沒有快取會重複抓取。載入完全在關鍵路徑之外：卡片先出現，海報之後淡入。
+  var POSTER_CACHE = {};
+  var _posterIO = null;
+  function fillPoster(img) {
+    var id = img.getAttribute('data-poster');
+    if (!id) return;
+    img.removeAttribute('data-poster');   // 先認領，避免同一張被重複請求
+    if (POSTER_CACHE[id] !== undefined) { if (POSTER_CACHE[id]) img.src = POSTER_CACHE[id]; return; }
+    google.script.run
+      .withSuccessHandler(function (res) {
+        var src = (res && res.success && res.dataUri) ? res.dataUri : '';
+        POSTER_CACHE[id] = src;          // 空字串也快取：沒有海報的活動不再重試
+        if (src) img.src = src;
+      })
+      .withFailureHandler(function () { POSTER_CACHE[id] = ''; })
+      .getPosterData(id);
+  }
+  function hydratePosters(scope) {
+    var imgs = Array.prototype.slice.call(scope.querySelectorAll('img.poster-img[data-poster]'));
+    if (!imgs.length) return;
+    // 已快取的直接補上（零網路成本），其餘才交給 observer 等捲動
+    var pending = imgs.filter(function (el) {
+      var id = el.getAttribute('data-poster');
+      if (POSTER_CACHE[id] === undefined) return true;
+      el.removeAttribute('data-poster');
+      if (POSTER_CACHE[id]) el.src = POSTER_CACHE[id];
+      return false;
+    });
+    if (!pending.length) return;
+    if (!('IntersectionObserver' in window)) { pending.forEach(fillPoster); return; }
+    // 首屏（含 200px 預載邊界）同步直接載入，不等 observer 首次回呼 —— 首屏海報早一個來回出現，
+    // 也避免在不合成畫面的環境（背景分頁/嵌入式檢視）中 observer 遲遲不觸發而完全沒圖。
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    var rest = [];
+    pending.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.bottom >= -200 && r.top <= vh + 200) fillPoster(el); else rest.push(el);
+    });
+    pending = rest;
+    if (!pending.length) return;
+    if (!_posterIO) {
+      _posterIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          _posterIO.unobserve(e.target);
+          fillPoster(e.target);
+        });
+      }, { rootMargin: '200px' });
+    }
+    pending.forEach(function (el) { _posterIO.observe(el); });
   }
 
   function buildCategoryFilters() {

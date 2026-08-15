@@ -62,7 +62,8 @@
 .evt-card .cover.c6 .ph-bg { background:linear-gradient(135deg, #06B6D4, #155E75); }
 .evt-card .cover.c7 .ph-bg { background:linear-gradient(135deg, #475569, #1e293b); }
 .evt-card .cover.c8 .ph-bg { background:linear-gradient(135deg, #EC4899, #9D174D); }
-.evt-card .cover img.poster-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.evt-card .cover img.poster-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .3s; }
+.evt-card .cover img.poster-img.loaded { opacity:1; }
 .evt-card .cover .status-c { position:absolute; top:12px; left:12px; display:inline-flex; align-items:center; gap:5px; padding:4px 10px; background:rgba(0,0,0,.5); backdrop-filter:blur(8px); color:white; border-radius:5px; font:600 10.5px/1.4 var(--f-mono); letter-spacing:.06em; }
 .evt-card .cover .status-c .dot-c { width:6px; height:6px; border-radius:50%; }
 .evt-card .cover .status-c.live .dot-c { background:#34d77a; box-shadow:0 0 0 3px rgba(52,215,122,.3); animation:pulse-c 2s infinite; }
@@ -335,6 +336,7 @@
       '</div></div>';
     var html = newCard + filtered.map(renderCard).join('');
     grid.innerHTML = '<div class="events-grid">' + html + '</div>';
+    hydratePosters(grid);
     if (window.applyI18n) window.applyI18n(grid);
 
     document.getElementById('newCardBtn').addEventListener('click', openCreateModal);
@@ -344,6 +346,60 @@
         location.href = '/admin/events/' + encodeURIComponent(card.dataset.id);
       });
     });
+  }
+
+  // 海報以 base64 存在 Firestore、須經 getPosterData 解析（無 CDN、無瀏覽器快取，平均約 300KB），
+  // 因此一律「捲動到可視範圍才載入」，並以 compId 快取——本頁在搜尋/篩選時會整批重繪，
+  // 沒有快取會重複抓取。載入完全在關鍵路徑之外：卡片先出現，海報之後淡入。
+  var POSTER_CACHE = {};
+  var _posterIO = null;
+  function fillPoster(img) {
+    var id = img.getAttribute('data-poster');
+    if (!id) return;
+    img.removeAttribute('data-poster');   // 先認領，避免同一張被重複請求
+    if (POSTER_CACHE[id] !== undefined) { if (POSTER_CACHE[id]) img.src = POSTER_CACHE[id]; return; }
+    google.script.run
+      .withSuccessHandler(function (res) {
+        var src = (res && res.success && res.dataUri) ? res.dataUri : '';
+        POSTER_CACHE[id] = src;          // 空字串也快取：沒有海報的活動不再重試
+        if (src) img.src = src;
+      })
+      .withFailureHandler(function () { POSTER_CACHE[id] = ''; })
+      .getPosterData(id);
+  }
+  function hydratePosters(scope) {
+    var imgs = Array.prototype.slice.call(scope.querySelectorAll('img.poster-img[data-poster]'));
+    if (!imgs.length) return;
+    // 已快取的直接補上（零網路成本），其餘才交給 observer 等捲動
+    var pending = imgs.filter(function (el) {
+      var id = el.getAttribute('data-poster');
+      if (POSTER_CACHE[id] === undefined) return true;
+      el.removeAttribute('data-poster');
+      if (POSTER_CACHE[id]) el.src = POSTER_CACHE[id];
+      return false;
+    });
+    if (!pending.length) return;
+    if (!('IntersectionObserver' in window)) { pending.forEach(fillPoster); return; }
+    // 首屏（含 200px 預載邊界）同步直接載入，不等 observer 首次回呼 —— 首屏海報早一個來回出現，
+    // 也避免在不合成畫面的環境（背景分頁/嵌入式檢視）中 observer 遲遲不觸發而完全沒圖。
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    var rest = [];
+    pending.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.bottom >= -200 && r.top <= vh + 200) fillPoster(el); else rest.push(el);
+    });
+    pending = rest;
+    if (!pending.length) return;
+    if (!_posterIO) {
+      _posterIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          _posterIO.unobserve(e.target);
+          fillPoster(e.target);
+        });
+      }, { rootMargin: '200px' });
+    }
+    pending.forEach(function (el) { _posterIO.observe(el); });
   }
 
   function renderCard(c, idx) {
@@ -374,8 +430,11 @@
     }
 
     var coverClass = 'c' + ((idx % 8) + 1);
-    var coverInner = '<div class="ph-bg"></div>';
-    // We don't have posterUrl in listCompetitions result, so just use gradients
+    // listCompetitions 不回傳海報欄位，但 getPosterData 只需要 compId（後端自己查 posterDocId），
+    // 所以掛上 data-poster 即可，毋須改動後端。實際取圖由 hydratePosters() 在捲動到時才觸發，
+    // 沒有海報的活動會快取空值、不再重試；抓不到就維持底下的漸層。
+    var coverInner = '<div class="ph-bg"></div>'
+      + '<img class="poster-img" data-poster="' + escapeHtml(c.compId) + '" alt="" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\'">';
 
     // Z1: 主辦方帳號 tag — only the system role sees this; protects organiser privacy in shared screenshots.
     var creatorTag = '';
