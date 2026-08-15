@@ -83,9 +83,10 @@
       navAbout: '關於', navContact: '聯絡', navMy: '我的報名', navLogin: '主辦方登入', navTrial: '免費開始',
       dtIndex: 'RegMaster — 為認真辦活動的人，打造的報名系統', dtPricing: '方案定價 · RegMaster', dtFeatures: '產品功能 · RegMaster', dtEventDetail: '活動詳情 · RegMaster', dtEventsIndex: '探索活動 · RegMaster',
       // ----- shared footer -----
-      ftTagline: '為認真辦活動的人，打造的線上報名系統。', ftColProduct: '產品', ftColCompany: '公司', ftColSupport: '支援',
+      ftTagline: '為認真辦活動的人，打造的線上報名系統。', ftColProduct: '產品', ftColCompany: '公司', ftColSupport: '支援', ftColSocial: '社群',
       ftFeatures: '功能', ftPricing: '方案定價', ftExplore: '探索活動', ftAbout: '關於我們', ftPrivacy: '隱私權政策',
       ftTerms: '服務條款', ftManual: '說明文件', ftTutorials: '教學中心', ftContact: '聯絡我們', ftSupport: '客戶支援',
+      ftFacebook: '臉書', ftInstagram: 'Instagram', ftYoutube: 'YouTube',
       ftCopyright: '© 2026 RegMaster · 廣天國際有限公司', ftCopyrightPre: '© 2026 RegMaster · ', ftCompany: '廣天國際有限公司', ftCompliance: 'SSL 加密傳輸 · 個資法合規',
       // ----- hero -----
       heroBadge: 'v3 · AI 智慧助理已上線',
@@ -189,9 +190,10 @@
       navAbout: 'About', navContact: 'Contact', navMy: 'My Registrations', navLogin: 'Organizer Login', navTrial: 'Start Free',
       dtIndex: 'RegMaster — the registration system for people serious about events', dtPricing: 'Pricing · RegMaster', dtFeatures: 'Features · RegMaster', dtEventDetail: 'Event details · RegMaster', dtEventsIndex: 'Explore events · RegMaster',
       // ----- shared footer -----
-      ftTagline: 'The online registration platform built for people who take their events seriously.', ftColProduct: 'Product', ftColCompany: 'Company', ftColSupport: 'Support',
+      ftTagline: 'The online registration platform built for people who take their events seriously.', ftColProduct: 'Product', ftColCompany: 'Company', ftColSupport: 'Support', ftColSocial: 'Social',
       ftFeatures: 'Features', ftPricing: 'Pricing', ftExplore: 'Explore Events', ftAbout: 'About Us', ftPrivacy: 'Privacy Policy',
       ftTerms: 'Terms of Service', ftManual: 'Documentation', ftTutorials: 'Learning Center', ftContact: 'Contact Us', ftSupport: 'Customer Support',
+      ftFacebook: 'Facebook', ftInstagram: 'Instagram', ftYoutube: 'YouTube',
       ftCopyright: '© 2026 RegMaster · Kuang-Tien International Co., Ltd.', ftCopyrightPre: '© 2026 RegMaster · ', ftCompany: 'Kuang-Tien International Co., Ltd.', ftCompliance: 'SSL encrypted · PDPA compliant',
       // ----- hero -----
       heroBadge: 'v3 · AI Assistant now live',

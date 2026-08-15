@@ -9,6 +9,7 @@ Allow: /privacy.html
 Allow: /terms.html
 Allow: /Manual.html
 Allow: /events/
+Allow: /tutorials/
 Disallow: /admin/
 Disallow: /legacy/
 Disallow: /login.html

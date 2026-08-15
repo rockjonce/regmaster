@@ -17,6 +17,60 @@
 <meta name="twitter:title" content="方案定價 · RegMaster">
 <meta name="twitter:description" content="透明定價：免費版到 Team 版。所有方案皆含金流、通知、QR 報到。">
 <meta name="twitter:image" content="https://regmaster-pro.web.app/favicon.png">
+<!-- 結構化資料：方案與價格逐字取自本頁的靜態方案卡（該卡本身即無 JS 後備），
+     若日後於後台調整 config/sales.plans 價格，這裡需一併更新以免與畫面不符。 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "RegMaster",
+  "url": "https://regmaster-pro.web.app/",
+  "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "Event Registration Software",
+  "operatingSystem": "Web",
+  "inLanguage": ["zh-Hant", "en"],
+  "description": "RegMaster 是一套讓主辦方在 10 分鐘內上線的線上報名平台：表單設計、報名審核、金流串接、QR 報到、證書產生與即時統計，一個後台完成。",
+  "publisher": { "@id": "https://regmaster-pro.web.app/#organization" },
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "免費版 Free",
+      "description": "想先試試水溫，或只辦小型活動",
+      "price": "0",
+      "priceCurrency": "TWD",
+      "availability": "https://schema.org/InStock",
+      "url": "https://regmaster-pro.web.app/pricing.html"
+    },
+    {
+      "@type": "Offer",
+      "name": "入門版 Starter",
+      "description": "適合單次活動、小型工作室",
+      "price": "4990",
+      "priceCurrency": "TWD",
+      "availability": "https://schema.org/InStock",
+      "url": "https://regmaster-pro.web.app/pricing.html"
+    },
+    {
+      "@type": "Offer",
+      "name": "專業版 Pro",
+      "description": "學校 / 中型機構 · 完整功能 · 含 AI",
+      "price": "13990",
+      "priceCurrency": "TWD",
+      "availability": "https://schema.org/InStock",
+      "url": "https://regmaster-pro.web.app/pricing.html"
+    },
+    {
+      "@type": "Offer",
+      "name": "團隊版 Team",
+      "description": "大型機構 / 政府單位 / 跨團隊協作",
+      "price": "39900",
+      "priceCurrency": "TWD",
+      "availability": "https://schema.org/InStock",
+      "url": "https://regmaster-pro.web.app/pricing.html"
+    }
+  ]
+}
+</script>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -99,7 +153,7 @@ footer { background:var(--bg); padding:48px 32px 24px; }
 .f-inner { max-width:1280px; margin:0 auto; }
 
 /* full footer (同首頁) */
-.f-grid { display:grid; grid-template-columns:2fr repeat(3,1fr); gap:48px; padding-bottom:40px; border-bottom:1px solid var(--line); }
+.f-grid { display:grid; grid-template-columns:2fr repeat(4,1fr); gap:36px; padding-bottom:40px; border-bottom:1px solid var(--line); }
 .f-brand { max-width:320px; }
 .f-brand .logo-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; font:700 16px/1 var(--f-display); }
 .f-brand p { font:400 13.5px/1.6 var(--f-tc); color:var(--muted); }
@@ -350,6 +404,12 @@ footer { background:var(--bg); padding:48px 32px 24px; }
         <a href="/tutorials/" data-i18n="ftTutorials">教學中心</a>
         <a href="/contact.html" data-i18n="ftContact">聯絡我們</a>
         <a href="mailto:support@calculator.com.tw" data-i18n="ftSupport">客戶支援</a>
+      </div>
+      <div class="f-col">
+        <h5 data-i18n="ftColSocial">社群</h5>
+        <a href="https://www.facebook.com/profile.php?id=61591265080617" target="_blank" rel="noopener noreferrer" data-i18n="ftFacebook">臉書</a>
+        <a href="https://www.instagram.com/regmaster__pro/" target="_blank" rel="noopener noreferrer" data-i18n="ftInstagram">Instagram</a>
+        <a href="https://www.youtube.com/@RegMaster-Pro" target="_blank" rel="noopener noreferrer" data-i18n="ftYoutube">YouTube</a>
       </div>
     </div>
 

@@ -17,6 +17,92 @@
 <meta name="twitter:title" content="RegMaster — 為認真辦活動的人，打造的報名系統">
 <meta name="twitter:description" content="讓主辦方在 10 分鐘內上線的線上報名平台。一個後台搞定報名、金流、證書、統計。">
 <meta name="twitter:image" content="https://regmaster-pro.web.app/favicon.png">
+<!-- 結構化資料（AEO）：Organization 的 sameAs 是搜尋／AI 問答引擎確認品牌實體身分的依據，
+     必須與頁尾社群連結一致；FAQPage 內容逐字取自本頁下方的常見問題區塊（不得與畫面不符）。 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://regmaster-pro.web.app/#organization",
+      "name": "RegMaster",
+      "url": "https://regmaster-pro.web.app/",
+      "logo": "https://regmaster-pro.web.app/favicon.png",
+      "description": "為認真辦活動的人，打造的線上報名系統。",
+      "parentOrganization": {
+        "@type": "Organization",
+        "name": "廣天國際有限公司",
+        "url": "https://www.calculator.com.tw/"
+      },
+      "sameAs": [
+        "https://www.facebook.com/profile.php?id=61591265080617",
+        "https://www.instagram.com/regmaster__pro/",
+        "https://www.youtube.com/@RegMaster-Pro"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "support@calculator.com.tw",
+        "areaServed": "TW",
+        "availableLanguage": ["zh-Hant", "en"]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://regmaster-pro.web.app/#website",
+      "url": "https://regmaster-pro.web.app/",
+      "name": "RegMaster",
+      "inLanguage": "zh-Hant",
+      "publisher": { "@id": "https://regmaster-pro.web.app/#organization" },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://regmaster-pro.web.app/events/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://regmaster-pro.web.app/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "RegMaster 跟 Google Form 有什麼不一樣？",
+          "acceptedAnswer": { "@type": "Answer", "text": "Google Form 適合內部問卷，但無法收費、無法寄通知、無法做名單管理。RegMaster 是專門為「對外的活動報名」設計：金流串接、自動發信、即時統計、QR 報到、證書產生 —— 你需要的全套功能都在後台一個地方，不用串 5 個工具。" }
+        },
+        {
+          "@type": "Question",
+          "name": "免費版真的能用來辦活動嗎？",
+          "acceptedAnswer": { "@type": "Answer", "text": "可以。免費版包含完整的表單設計、報名審核、Email 通知，甚至能收費（每筆收 5% 手續費）。如果你一年只辦 1–2 場小型活動，免費版完全夠用。" }
+        },
+        {
+          "@type": "Question",
+          "name": "金流怎麼結算？多久撥款？",
+          "acceptedAnswer": { "@type": "Answer", "text": "我們串接 PayUNI 線上金流，支援信用卡與 ATM 轉帳（其他付款方式依 PayUNI 商店設定而定）。平台代收後依轉帳週期撥款至你綁定的收款帳戶；銀行轉帳則由報名者直接匯入主辦方帳戶。報名者可於表單填寫統一編號，自動電子發票寄送功能即將推出。" }
+        },
+        {
+          "@type": "Question",
+          "name": "可以遷移既有的報名資料嗎？",
+          "acceptedAnswer": { "@type": "Answer", "text": "可以。我們提供 CSV / Excel 匯入工具，並有專人協助大型遷移（500+ 筆）。你既有的 Google Form、Excel 名單、Typeform 都能無縫轉入 RegMaster。" }
+        },
+        {
+          "@type": "Question",
+          "name": "資料安全嗎？符合個資法嗎？",
+          "acceptedAnswer": { "@type": "Answer", "text": "系統建置於 Google Cloud / Firebase，全程採 HTTPS（TLS）加密傳輸，並設有存取控制與權限管理。我們遵循個人資料保護法之規範處理資料；詳見隱私權政策。" }
+        },
+        {
+          "@type": "Question",
+          "name": "可以開立統編發票嗎？",
+          "acceptedAnswer": { "@type": "Answer", "text": "報名者可在表單填寫統一編號，資料會一併匯出供你開立發票。系統自動開立與寄送電子發票功能即將推出；在此之前請依統編資料自行或來信客服協助開立。" }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <link rel="stylesheet" href="/shared/styles.css">
@@ -280,7 +366,7 @@ section { padding: 96px 32px; border-bottom: 1px solid var(--hairline); }
 /* === FOOTER === */
 footer { background: var(--bg); padding: 48px 32px 24px; }
 .f-inner { max-width: 1280px; margin: 0 auto; }
-.f-grid { display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 48px; padding-bottom: 40px; border-bottom: 1px solid var(--line); }
+.f-grid { display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 36px; padding-bottom: 40px; border-bottom: 1px solid var(--line); }
 .f-brand { max-width: 320px; }
 .f-brand .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font: 700 16px/1 var(--f-display); }
 .f-brand p { font: 400 13.5px/1.6 var(--f-tc); color: var(--muted); }
@@ -782,6 +868,12 @@ footer { background: var(--bg); padding: 48px 32px 24px; }
         <a href="/tutorials/" data-i18n="ftTutorials">教學中心</a>
         <a href="/contact.html" data-i18n="ftContact">聯絡我們</a>
         <a href="mailto:support@calculator.com.tw" data-i18n="ftSupport">客戶支援</a>
+      </div>
+      <div class="f-col">
+        <h5 data-i18n="ftColSocial">社群</h5>
+        <a href="https://www.facebook.com/profile.php?id=61591265080617" target="_blank" rel="noopener noreferrer" data-i18n="ftFacebook">臉書</a>
+        <a href="https://www.instagram.com/regmaster__pro/" target="_blank" rel="noopener noreferrer" data-i18n="ftInstagram">Instagram</a>
+        <a href="https://www.youtube.com/@RegMaster-Pro" target="_blank" rel="noopener noreferrer" data-i18n="ftYoutube">YouTube</a>
       </div>
     </div>
     <div class="f-foot">

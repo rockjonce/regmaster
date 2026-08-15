@@ -1,0 +1,47 @@
+# RegMaster
+
+> 專為活動主辦方打造的線上報名平台。由廣天國際有限公司（Kuang-Tien International Co., Ltd.）開發與營運，主要服務台灣地區的學校、政府機關、公協會、研究機構與企業。介面提供繁體中文與英文。
+
+RegMaster 把「活動報名」從表單到結案的整條流程收在同一個後台：表單設計、報名審核、線上金流收款、名額與備取管理、Email 群發通知、QR 碼報到、評分作業、證書與名牌產生、即時統計分析。設計目標是讓主辦方在 10 分鐘內讓活動上線，不需要工程師。
+
+## 常見問答重點
+
+- **與 Google 表單的差異**：Google 表單適合內部問卷，無法收費、寄送通知或管理名單。RegMaster 專為對外活動報名設計，金流、發信、統計、報到、證書都在同一後台完成。
+- **免費方案**：包含完整表單設計、報名審核與 Email 通知，也能收費（依方案設定收取金流手續費）。一年辦 1–2 場小型活動可完全使用免費版。
+- **金流**：串接 PayUNI，支援信用卡與 ATM 轉帳（實際可用方式依商店設定）。平台代收後依轉帳週期撥款至主辦方綁定帳戶；亦支援報名者直接銀行轉帳。
+- **資料遷移**：提供 CSV / Excel 匯入，大型遷移（500 筆以上）有專人協助。
+- **資料安全**：建置於 Google Cloud / Firebase，全程 HTTPS（TLS）加密，具存取控制與權限管理，依個人資料保護法規範處理資料。
+- **發票**：報名者可填寫統一編號並隨資料匯出；系統自動開立與寄送電子發票功能開發中。
+
+## 方案與價格（新台幣，年費、含稅）
+
+- 免費版 Free：NT$0，1 個活動、每活動 60 筆報名
+- 入門版 Starter：NT$4,990／年，適合單次活動、小型工作室
+- 專業版 Pro：NT$13,990／年，適合學校與中型機構，含 AI 功能
+- 團隊版 Team：NT$39,900／年，適合大型機構、政府單位與跨團隊協作
+
+## 主要頁面
+
+- [首頁](https://regmaster-pro.web.app/)：產品總覽與常見問題
+- [產品功能](https://regmaster-pro.web.app/features.html)：完整功能說明
+- [方案定價](https://regmaster-pro.web.app/pricing.html)：四種方案與功能比較表
+- [探索活動](https://regmaster-pro.web.app/events/)：平台上公開報名中的活動
+- [教學中心](https://regmaster-pro.web.app/tutorials/)：25 部教學影片，涵蓋建立活動到結案的完整流程
+- [說明文件](https://regmaster-pro.web.app/Manual.html)：操作手冊
+- [關於我們](https://regmaster-pro.web.app/about.html)
+- [聯絡我們](https://regmaster-pro.web.app/contact.html)
+
+## 條款與政策
+
+- [服務條款](https://regmaster-pro.web.app/terms.html)
+- [隱私權政策](https://regmaster-pro.web.app/privacy.html)
+
+## 官方社群
+
+- Facebook: https://www.facebook.com/profile.php?id=61591265080617
+- Instagram: https://www.instagram.com/regmaster__pro/
+- YouTube: https://www.youtube.com/@RegMaster-Pro
+
+## 聯絡方式
+
+客戶支援：support@calculator.com.tw
