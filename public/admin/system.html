@@ -21,6 +21,10 @@ body { background:var(--bg); }
 
 /* tab bar */
 .tabbar { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:22px; overflow-x:auto; }
+/* 桌機讓分頁換行而非橫向捲動：本頁有 9 個分頁，英文標籤合計約 1342px，橫捲要來回拉才找得到
+   後面的分頁；換行可一次看見全部。窄視窗（≤768px）維持原本的橫捲，避免擠成好幾行。
+   斷點沿用 admin-layout.css 的 768/769 分界。 */
+@media (min-width:769px) { .tabbar { flex-wrap:wrap; overflow-x:visible; } }
 .tabbar a { padding:11px 16px; font:600 13.5px/1 var(--f-tc); color:var(--ink-3); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; display:flex; align-items:center; gap:7px; text-decoration:none; }
 .tabbar a:hover { color:var(--ink); }
 .tabbar a.on { color:var(--acc); border-bottom-color:var(--acc); }
@@ -1331,7 +1335,7 @@ body { background:var(--bg); }
   document.getElementById('pa-reload').addEventListener('click', loadPayoutAdmin);
   document.getElementById('pa-excel').addEventListener('click', paExcel);
   document.getElementById('pa-all').addEventListener('change', function () { var c = this.checked; document.getElementById('pa-list').querySelectorAll('.pa-pick').forEach(function (cb) { cb.checked = c; }); });
-  if (window.AppState && typeof window.AppState.on === 'function') { window.AppState.on('lang-changed', function () { if (PA_DATA && PA_DATA.length) renderPayoutAdmin(); }); }
+  if (window.AppState && typeof window.AppState.on === 'function') { window.AppState.on('lang-changed', function () { if (PA_DATA && PA_DATA.length) renderPayoutAdmin(); if (ANA) renderAnalytics(); }); }
   loadPayoutAdmin();
 
   // ================= 使用者分析 (CC1: 5-tab dashboard) =================
@@ -1379,11 +1383,11 @@ body { background:var(--bg); }
     if (!ANA || typeof Chart === 'undefined') return;
     var k = ANA.kpis || {};
     document.getElementById('ana-kpis').innerHTML =
-      '<div class="k featured"><div class="l">總瀏覽</div><div class="v">' + (k.totalVisits || 0).toLocaleString() + '</div><div class="sub">期間內</div></div>' +
-      '<div class="k"><div class="l">不重複裝置</div><div class="v">' + (k.uniqueDevices || 0).toLocaleString() + '</div></div>' +
-      '<div class="k"><div class="l">總帳號</div><div class="v">' + (k.totalAccounts || 0).toLocaleString() + '</div><div class="sub">付費 ' + (k.paidAccounts || 0) + ' 帳號</div></div>' +
-      '<div class="k"><div class="l">當月收入 (MRR)</div><div class="v">NT$ ' + (k.mrr || 0).toLocaleString() + '</div></div>' +
-      '<div class="k"><div class="l">2FA 啟用率</div><div class="v">' + (k.twoFactorRate || 0) + '%</div></div>';
+      '<div class="k featured"><div class="l">' + window.L('adSysAnaKpiVisits') + '</div><div class="v">' + (k.totalVisits || 0).toLocaleString() + '</div><div class="sub">' + window.L('adSysAnaKpiPeriod') + '</div></div>' +
+      '<div class="k"><div class="l">' + window.L('adSysAnaKpiUniqueDev') + '</div><div class="v">' + (k.uniqueDevices || 0).toLocaleString() + '</div></div>' +
+      '<div class="k"><div class="l">' + window.L('adSysAnaKpiTotalAcct') + '</div><div class="v">' + (k.totalAccounts || 0).toLocaleString() + '</div><div class="sub">' + window.L('adSysAnaKpiPaidPre') + (k.paidAccounts || 0) + window.L('adSysAnaKpiPaidPost') + '</div></div>' +
+      '<div class="k"><div class="l">' + window.L('adSysAnaKpiMrr') + '</div><div class="v">NT$ ' + (k.mrr || 0).toLocaleString() + '</div></div>' +
+      '<div class="k"><div class="l">' + window.L('adSysAnaKpi2fa') + '</div><div class="v">' + (k.twoFactorRate || 0) + '%</div></div>';
     renderTraffic();
     renderAccounts();
     renderRevenue();
@@ -1400,8 +1404,8 @@ body { background:var(--bg); }
       data: {
         labels: daily.map(function (d) { return d.date; }),
         datasets: [
-          { label: '總瀏覽數', data: daily.map(function (d) { return d.views; }), borderColor: '#3d6bff', backgroundColor: 'rgba(61,107,255,.08)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 },
-          { label: '不重複裝置', data: daily.map(function (d) { return d.uniqueDevices; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', fill: false, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 }
+          { label: window.L('adSysAnaDsViews'), data: daily.map(function (d) { return d.views; }), borderColor: '#3d6bff', backgroundColor: 'rgba(61,107,255,.08)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 },
+          { label: window.L('adSysAnaDsUniqueDev'), data: daily.map(function (d) { return d.uniqueDevices; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', fill: false, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 }
         ]
       },
       options: ANA_BASE
@@ -1424,7 +1428,7 @@ body { background:var(--bg); }
     _anaDestroy('newreg');
     anaCharts.newreg = new Chart(document.getElementById('ana-newreg').getContext('2d'), {
       type: 'bar',
-      data: { labels: nr.map(function (d) { return d.date; }), datasets: [{ label: '新註冊主辦方', data: nr.map(function (d) { return d.count; }), backgroundColor: '#9b6bff', borderRadius: 4 }] },
+      data: { labels: nr.map(function (d) { return d.date; }), datasets: [{ label: window.L('adSysAnaDsNewReg'), data: nr.map(function (d) { return d.count; }), backgroundColor: '#9b6bff', borderRadius: 4 }] },
       options: Object.assign({}, ANA_BASE, { plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }) })
     });
     var tc = ANA.tierCounts || {};
@@ -1439,7 +1443,7 @@ body { background:var(--bg); }
     _anaDestroy('inactive');
     anaCharts.inactive = new Chart(document.getElementById('ana-inactive').getContext('2d'), {
       type: 'bar',
-      data: { labels: ['30 天未登入', '60 天未登入', '90 天以上'], datasets: [{ label: '帳號數', data: [ia.d30 || 0, ia.d60 || 0, ia.d90 || 0], backgroundColor: ['#f59e0b', '#e94560', '#7c2d12'], borderRadius: 4 }] },
+      data: { labels: [window.L('adSysAnaInactive30'), window.L('adSysAnaInactive60'), window.L('adSysAnaInactive90')], datasets: [{ label: window.L('adSysAnaDsAcctCount'), data: [ia.d30 || 0, ia.d60 || 0, ia.d90 || 0], backgroundColor: ['#f59e0b', '#e94560', '#7c2d12'], borderRadius: 4 }] },
       options: Object.assign({}, ANA_BASE, { plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false } }) })
     });
   }
@@ -1449,7 +1453,7 @@ body { background:var(--bg); }
     _anaDestroy('funnel');
     anaCharts.funnel = new Chart(document.getElementById('ana-funnel').getContext('2d'), {
       type: 'bar',
-      data: { labels: ['訪客', '註冊', '付費'], datasets: [{ label: '人數', data: [f.visitors, f.signups, f.paid], backgroundColor: ['#3d6bff', '#9b6bff', '#10b981'], borderRadius: 4 }] },
+      data: { labels: [window.L('adSysAnaFunnelVisitors'), window.L('adSysAnaFunnelSignups'), window.L('adSysAnaFunnelPaid')], datasets: [{ label: window.L('adSysAnaDsPeople'), data: [f.visitors, f.signups, f.paid], backgroundColor: ['#3d6bff', '#9b6bff', '#10b981'], borderRadius: 4 }] },
       // 同 topevents：水平長條自帶 scales，避免沿用被垂直圖表污染的共用 ANA_BASE.scales。
       options: Object.assign({}, ANA_BASE, {
         indexAxis: 'y',
@@ -1464,7 +1468,7 @@ body { background:var(--bg); }
     _anaDestroy('mrr');
     anaCharts.mrr = new Chart(document.getElementById('ana-mrr').getContext('2d'), {
       type: 'line',
-      data: { labels: mr.map(function (m) { return m.month; }), datasets: [{ label: '月度收入', data: mr.map(function (m) { return m.revenue; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.10)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 }] },
+      data: { labels: mr.map(function (m) { return m.month; }), datasets: [{ label: window.L('adSysAnaDsMonthlyRev'), data: mr.map(function (m) { return m.revenue; }), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.10)', fill: true, tension: 0.25, pointRadius: 3, pointHoverRadius: 6 }] },
       options: Object.assign({}, ANA_BASE, {
         plugins: Object.assign({}, ANA_BASE.plugins, { legend: { display: false }, tooltip: Object.assign({}, ANA_BASE.plugins.tooltip, { callbacks: { label: function (ctx) { return 'NT$ ' + Number(ctx.parsed.y).toLocaleString(); } } }) }),
         scales: { x: ANA_BASE.scales.x, y: Object.assign({}, ANA_BASE.scales.y, { ticks: Object.assign({}, ANA_BASE.scales.y.ticks, { callback: function (v) { return 'NT$ ' + Number(v).toLocaleString(); } }) }) }
@@ -1480,8 +1484,8 @@ body { background:var(--bg); }
       data: {
         labels: te.map(function (e) { return e.name.length > 22 ? e.name.slice(0, 22) + '⋯' : e.name; }),
         datasets: [
-          { label: '瀏覽數', data: te.map(function (e) { return e.views; }), backgroundColor: '#3d6bff', borderRadius: 3 },
-          { label: '報名數', data: te.map(function (e) { return e.regs; }), backgroundColor: '#10b981', borderRadius: 3 }
+          { label: window.L('adSysAnaDsTopViews'), data: te.map(function (e) { return e.views; }), backgroundColor: '#3d6bff', borderRadius: 3 },
+          { label: window.L('adSysAnaDsTopRegs'), data: te.map(function (e) { return e.regs; }), backgroundColor: '#10b981', borderRadius: 3 }
         ]
       },
       // 水平長條（indexAxis:'y'）必須自帶 scales，不可共用 ANA_BASE.scales：前面的垂直圖表
@@ -1502,7 +1506,7 @@ body { background:var(--bg); }
     _anaDestroy('totp');
     anaCharts.totp = new Chart(document.getElementById('ana-totp').getContext('2d'), {
       type: 'doughnut',
-      data: { labels: ['已啟用 2FA', '未啟用 2FA'], datasets: [{ data: [ts.enabled, ts.disabled], backgroundColor: ['#10b981', '#e94560'], borderColor: '#fff', borderWidth: 2 }] },
+      data: { labels: [window.L('adSysAna2faOn'), window.L('adSysAna2faOff')], datasets: [{ data: [ts.enabled, ts.disabled], backgroundColor: ['#10b981', '#e94560'], borderColor: '#fff', borderWidth: 2 }] },
       options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom' }, tooltip: ANA_BASE.plugins.tooltip } }
     });
     renderHeatmap('ana-fail-heatmap', ANA.loginFailHourOfWeek || {}, '#e94560');
@@ -1511,7 +1515,7 @@ body { background:var(--bg); }
   function renderHeatmap(elId, byHour, baseColor) {
     var max = 1;
     Object.keys(byHour).forEach(function (k) { if (byHour[k] > max) max = byHour[k]; });
-    var DOW = ['週日','週一','週二','週三','週四','週五','週六'];
+    var DOW = ['adSysDowSun','adSysDowMon','adSysDowTue','adSysDowWed','adSysDowThu','adSysDowFri','adSysDowSat'].map(function (k) { return window.L(k); });
     var c = (baseColor || '#3d6bff').replace('#', '');
     var rgb = [parseInt(c.slice(0,2),16), parseInt(c.slice(2,4),16), parseInt(c.slice(4,6),16)];
     var rgbStr = rgb.join(',');
@@ -1524,16 +1528,16 @@ body { background:var(--bg); }
         var ct = byHour[key] || 0;
         var pct = ct / max;
         var bg = ct === 0 ? 'var(--surface-2)' : 'rgba(' + rgbStr + ',' + Math.max(0.12, pct).toFixed(2) + ')';
-        html += '<div class="h-cell" style="background:' + bg + '" title="' + DOW[dow] + ' ' + hr + ':00 — ' + ct + ' 筆"></div>';
+        html += '<div class="h-cell" style="background:' + bg + '" title="' + DOW[dow] + ' ' + hr + ':00 — ' + ct + window.L('adSysHeatLegendHighPost') + '"></div>';
       }
     }
-    html += '<div class="h-legend">少 <div class="swatch">' +
+    html += '<div class="h-legend">' + window.L('adSysHeatLegendLow') + '<div class="swatch">' +
       '<span style="background:rgba(' + rgbStr + ',.12)"></span>' +
       '<span style="background:rgba(' + rgbStr + ',.30)"></span>' +
       '<span style="background:rgba(' + rgbStr + ',.55)"></span>' +
       '<span style="background:rgba(' + rgbStr + ',.85)"></span>' +
       '<span style="background:rgba(' + rgbStr + ',1.00)"></span>' +
-    '</div> 多　·　最高 ' + max + ' 筆</div>';
+    '</div>' + window.L('adSysHeatLegendHighPre') + max + window.L('adSysHeatLegendHighPost') + '</div>';
     document.getElementById(elId).innerHTML = html;
   }
   document.querySelectorAll('.ana-subtabs a').forEach(function (a) {

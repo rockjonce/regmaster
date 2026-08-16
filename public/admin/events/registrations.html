@@ -272,7 +272,7 @@
         </div>
         <div class="tbl-wrap">
           <table class="tbl reg-cards">
-            <thead><tr><th data-i18n="aeRegColId">編號</th><th data-i18n="aeRegColNameCN">中文隊名</th><th data-i18n="aeRegColNameEN">英文隊名</th><th data-i18n="aeRegColStatus">狀態</th><th data-i18n="aeRegColPayStatus">付款狀態</th><th data-i18n="aeRegColActions">動作</th></tr></thead>
+            <thead><tr><th data-i18n="aeRegColId">編號</th><th data-i18n="aeRegColNameCN">中文隊名</th><th data-i18n="aeRegColNameEN">英文隊名</th><th data-i18n="aeRegColStatus">狀態</th><th data-i18n="aeRegColPayStatus">付款狀態</th><th data-i18n="aeRegFieldNote">備註</th><th data-i18n="aeRegColActions">動作</th></tr></thead>
             <tbody id="listBody"></tbody>
           </table>
         </div>
@@ -802,7 +802,7 @@
     lc.textContent = window.L('aeRegCount').replace('{n}', rows.length)
       + (CFG.acceptanceMode === 'manual' ? ('　·　' + window.L('aeRegAcceptedCount').replace('{n}', rows.filter(function (t) { return t.status === '正取'; }).length)) : '');
     if (rows.length === 0) {
-      document.getElementById('listBody').innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:40px">' + window.L('aeRegEmpty') + '</td></tr>';
+      document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:40px">' + window.L('aeRegEmpty') + '</td></tr>';
       return;
     }
     document.getElementById('listBody').innerHTML = rows.map(function (t) {
@@ -813,6 +813,12 @@
         '<td data-label="' + escapeHtml(window.L('aeRegColNameEN')) + '">' + escapeHtml(t.teamNameEN || window.L('aeRegDash')) + '</td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColStatus')) + '">' + escapeHtml(window.LS(t.status || '正取')) + '</td>' +
         '<td data-label="' + escapeHtml(window.L('aeRegColPayStatus')) + '"><span class="pay-pill ' + (paid ? 'confirmed' : 'pending') + '">' + escapeHtml(window.LS(t.paymentStatus || '待確認')) + '</span>' + invAssistLine(t) + '</td>' +
+        /* 備註：後台內部註記（報名者看不到）。上限 500 字，列表只顯示前 20 字並以 title
+           提供全文，避免撐爆欄寬；完整編輯仍走同列的「備註」按鈕。 */
+        '<td data-label="' + escapeHtml(window.L('aeRegFieldNote')) + '" style="font:400 12.5px/1.5 var(--f-tc); color:var(--ink-3); max-width:180px"' +
+          (t.note ? ' title="' + escapeHtml(t.note) + '"' : '') + '>' +
+          (t.note ? escapeHtml(t.note.length > 20 ? t.note.slice(0, 20) + '⋯' : t.note) : '<span style="color:var(--muted-2)">' + window.L('aeRegDash') + '</span>') +
+        '</td>' +
         '<td class="td-actions">' +
           /* 自訂正取（user 決策）：審核中＋已付款才可勾選；單向鎖於 handleAct 確認 */
           ((CFG.acceptanceMode === 'manual' && IS_MANAGER && t.status === '審核中' && paid)

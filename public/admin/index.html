@@ -513,9 +513,25 @@ a.todo-it:hover .go-t { color:var(--acc); }
     renderTrendChart(TREND_COMPS, TREND_DAYS);
     return Promise.all([fetchInsights(), fetchTodos()]);
   }).then(function (results) {
-    renderInsights(results[0]);
-    renderTodos(results[1]);
+    INSIGHTS_DATA = results[0]; TODOS_DATA = results[1];   // 留著供語言切換時重繪
+    renderInsights(INSIGHTS_DATA);
+    renderTodos(TODOS_DATA);
   });
+
+  // 切換語言時重繪所有由 JS 產生的區塊。這些區塊在組字串時就把 window.L() 的結果寫死，
+  // 且沒有 data-i18n，applyI18n() 碰不到它們（趨勢圖副標「最近 N 天 · 跨所有活動」、
+  // 圖例的「N 筆 / 後半段 vs 前半段」、KPI 的單位「人 / 場」都屬此類）。
+  // 這 5 個 render 內部都沒有 addEventListener（範圍切換鈕綁在最外層），故重跑安全。
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () {
+      if (!TREND_COMPS.length) return;
+      renderKPIs(TREND_COMPS);
+      renderActiveEvents(TREND_COMPS);
+      renderTrendChart(TREND_COMPS, TREND_DAYS);
+      if (INSIGHTS_DATA) renderInsights(INSIGHTS_DATA);
+      if (TODOS_DATA) renderTodos(TODOS_DATA);
+    });
+  }
 
   function renderKPIs(comps) {
     var totalRegs = 0, paidCount = 0, pendingCount = 0;
@@ -612,6 +628,7 @@ a.todo-it:hover .go-t { color:var(--acc); }
   }
 
   var TREND_COMPS = [], TREND_DAYS = 30;
+  var INSIGHTS_DATA = null, TODOS_DATA = null;   // 保留原始資料，供切換語言時重繪
   function renderTrendChart(comps, days) {
     days = days || TREND_DAYS || 30;
     comps = comps || TREND_COMPS || [];

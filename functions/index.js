@@ -4559,7 +4559,11 @@ exports.getAllTeams = compAuthCallable("view", async (data, request) => {
       invoiceChoice: t.invoiceChoice || null,   // 輔助模式（F3/F4）：清單列直接顯示報名者發票選擇
       paidAmount: (paidAmountByTeam[t.teamId] !== undefined ? paidAmountByTeam[t.teamId] : null),  // actual收款(線上)；null=未知(走估算)
       studentNames: mInfo.studentNames,
-      teacherNames: mInfo.teacherNames
+      teacherNames: mInfo.teacherNames,
+      // 主辦方後台註記，供報名列表直接顯示一欄（免得每列各打一次 getTeamDetail）。
+      // ⚠️ 僅加在這條完整分支：上方 judgeInfoAllowed 為 false 的受限評審分支只回
+      // teamId/隊名/組別/狀態，內部註記不得流到那裡。報名者端亦無此欄位（loginTeam 已排除 note）。
+      note: t.note || ""
     };
   });
 });

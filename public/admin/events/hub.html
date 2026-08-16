@@ -480,7 +480,19 @@
     var _nrc = document.getElementById('navRegCt'); if (_nrc) _nrc.textContent = TEAMS.length;
     var _trc = document.getElementById('tabRegCt'); if (_trc) _trc.textContent = TEAMS.length;
     var kSubEl = document.getElementById('kTotalSub');
-    kSubEl.textContent = TEAMS.length === 0 ? window.L('aeHubKpiTotalNone') : (window.L('aeHubCapPre') + (cfg.maxCapacityLimit || COMP.config.maxTeams || window.L('aeHubCapNone')) + '');
+    // 名額副標。maxCapacityLimit / maxTeams 皆可能以 0 或 -1 表示「無上限」，
+    // 舊寫法以 || 串接取值，而 -1 在 JS 是 truthy，於是原樣印出「上限 -1」。
+    // 改為取兩者中第一個「正數」，非正數一律視為無上限。
+    var _cap = [cfg.maxCapacityLimit, cfg.maxTeams].filter(function (v) { return Number(v) > 0; })[0] || 0;
+    if (TEAMS.length === 0) {
+      kSubEl.textContent = window.L('aeHubKpiTotalNone');
+    } else if (_cap > 0) {
+      // 百分比取兩位小數：名額基數大時整數會失真（6/450 四捨五入後只剩 1%）
+      kSubEl.textContent = window.L('aeHubCapLimitPre') + _cap
+        + window.L('aeHubCapUsedPre') + (TEAMS.length / _cap * 100).toFixed(2) + window.L('aeHubCapUsedSuf');
+    } else {
+      kSubEl.textContent = window.L('aeHubCapUnlimited');
+    }
     kSubEl.removeAttribute('data-i18n');   // 同 crumbName：防 applyI18n() 洗回「尚無報名」
 
     // Info table
@@ -554,6 +566,12 @@
     var _togBtn = document.getElementById('toggleOpenBtn');
     _togBtn.setAttribute('data-i18n', _togKey);   // keep data-i18n in sync with state so applyI18n() (e.g. on language switch) re-applies the correct label instead of the static "關閉報名"
     _togBtn.textContent = window.L(_togKey);
+    // ⚠️ 以下三顆按鈕存在於靜態 HTML（不像 copyShareBtn 每次由 innerHTML 重建），
+    // 而 render() 會在語言切換時重跑，若不設一次性旗標就會重複綁定事件——
+    // 「關閉報名」被綁兩次等於一次點擊送出兩次 setRegistrationOpen（開→關→開），
+    // 「複製連結」會複製兩次。旗標作法比照本檔既有的 window.__hubRoleGated。
+    if (!window.__hubBtnBound) {
+      window.__hubBtnBound = true;
     document.getElementById('toggleOpenBtn').addEventListener('click', function () {
       var btn = this;
       uiConfirm((COMP.isOpen ? window.L('aeHubToggleClose') : window.L('aeHubToggleOpen')) + window.L('aeHubToggleConfirmSuf'), { title: window.L('aeHubToggleTitle') }).then(function (ok) {
@@ -576,6 +594,7 @@
       }.bind(this));
     });
     document.getElementById('publicBtn').addEventListener('click', function () { window.open('/events/detail.html?id=' + encodeURIComponent(compId), '_blank'); });
+    }   // end __hubBtnBound
 
     // Phase 5 + 6 page links (all now v3 native)
     var base = '/admin/events/' + encodeURIComponent(compId);
@@ -613,9 +632,16 @@
     document.getElementById('legacyCheckinLink').textContent = window.L('aeHubStubCheckinBtn');
 
     // Re-run the i18n applier so freshly-injected DOM (hero, KPIs, info table,
-    // status, recent regs) picks up the active language; also re-applies on
-    // language switch via the engine's 'lang-changed' hook.
+    // status, recent regs) picks up the active language.
     if (window.applyI18n) window.applyI18n();
+  }
+
+  // 切換語言時整段重繪。applyI18n() 只處理帶 data-i18n 的元素，而本頁的主視覺列、
+  // 活動資訊表、活動狀態、最近報名、名額副標都是 JS 組字串時就把 window.L() 的結果
+  // 寫死進去、且沒有 data-i18n（部分還刻意移除過，以免被 applyI18n 洗掉），
+  // 因此非重繪不可。render() 內的靜態按鈕綁定已用 __hubBtnBound 防止重複綁定。
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () { if (COMP) render(); });
   }
 
   // Tab switching

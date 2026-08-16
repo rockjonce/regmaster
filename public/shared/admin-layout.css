@@ -7,6 +7,13 @@
 
 body { background: var(--bg); }
 .admin { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+/* <main> 是本網格的第二個項目，而網格項目的 min-width 預設是 auto（＝內容的最小寬度）。
+   只要內部有一段不可換行的寬內容（例如系統設定的分頁列，9 個分頁皆 white-space:nowrap，
+   英文標籤下最小寬度約 1342px），1fr 軌道就會被撐到那個寬度，整個頁面連同頂列一起
+   超出視窗；子元素自己寫的 overflow-x:auto 也永遠不會生效，因為父層已先長大去容納它。
+   允許它縮到 0，寬內容才會回到各自的捲動容器內處理。
+   注意：styles.css 已在 max-width:768px 做過同一修補（當時判斷桌機不需要），這裡補上桌機。 */
+.admin > main { min-width: 0; }
 
 /* SIDEBAR */
 .side {
