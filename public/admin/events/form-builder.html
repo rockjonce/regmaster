@@ -1041,32 +1041,66 @@ body { background:var(--bg); overflow:hidden; }
     });
   }
 
-  // 「＋ 新增欄位」的型別選擇彈窗。列出 FIELD_META 全部型別（與屬性面板下拉一致），
-  // 點選即在該區塊建立欄位；顯示型欄位依既有規則強制非必填。
+  // 「＋ 新增欄位」的型別選擇彈窗（v2：涵蓋全部欄位，與左側 palette 完全同步）。
+  // 直接讀取 palette 的 .ft-item DOM 產生選項 —— 通用欄位（無 data-legacy）與特殊欄位
+  // （有 data-legacy，按 .sp-group 分類分組）兩個分頁；未來 palette 增減欄位這裡自動跟上，
+  // 不存在第二份需要人工同步的清單。點選即在該區塊建立欄位，特殊欄位沿用 palette 的
+  // 預設標籤（labelForLegacy）與內建選項（optsForKey）；顯示型欄位依既有規則強制非必填。
   function pickFieldType(secId) {
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.45);display:grid;place-items:center;z-index:9999;padding:20px';
-    var cells = Object.keys(FIELD_META).map(function (t) {
-      var m = FIELD_META[t];
-      return '<button type="button" data-pick="' + t + '" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font:500 12.5px/1.3 var(--f-tc);color:var(--ink-2);cursor:pointer;text-align:left">' +
-        '<span class="ic-f ' + m.ic + '" style="flex-shrink:0"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + m.icon + '</svg></span>' + escapeHtml(metaLabel(m)) + '</button>';
+    function itemBtn(it) {
+      var ic = it.querySelector('.ic'); var h6 = it.querySelector('h6');
+      return '<button type="button" data-pick-type="' + escapeHtml(it.dataset.type) + '" data-pick-legacy="' + escapeHtml(it.dataset.legacy || '') + '"' +
+        ' style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font:500 12.5px/1.3 var(--f-tc);color:var(--ink-2);cursor:pointer;text-align:left">' +
+        (ic ? '<span style="flex-shrink:0;display:inline-flex;width:16px;height:16px">' + ic.innerHTML + '</span>' : '') +
+        escapeHtml(h6 ? h6.textContent : it.dataset.type) + '</button>';
+    }
+    var generalItems = [], groups = [];
+    document.querySelectorAll('.palette .ft-item').forEach(function (it) { if (!it.dataset.legacy) generalItems.push(itemBtn(it)); });
+    document.querySelectorAll('.palette .sp-group').forEach(function (g) {
+      var head = g.querySelector('.sp-head span');
+      var items = [];
+      g.querySelectorAll('.ft-item[data-legacy]').forEach(function (it) { items.push(itemBtn(it)); });
+      if (items.length) groups.push({ title: head ? head.textContent : '', items: items });
+    });
+    var generalHtml = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + generalItems.join('') + '</div>';
+    var specialHtml = groups.map(function (g) {
+      return '<div style="font:600 10.5px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px">' + escapeHtml(g.title) + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + g.items.join('') + '</div>';
     }).join('');
+    var tabBtn = 'flex:1;padding:9px 0;border-radius:8px;font:600 12.5px/1 var(--f-tc);cursor:pointer;text-align:center;border:1px solid var(--line)';
     ov.innerHTML =
-      '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:var(--sh-lg)">' +
-        '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:14px">' + escapeHtml(window.L('aeFormPickTypeTitle')) + '</h3>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:56vh;overflow-y:auto">' + cells + '</div>' +
+      '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:460px;padding:22px;box-shadow:var(--sh-lg)">' +
+        '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:12px">' + escapeHtml(window.L('aeFormPickTypeTitle')) + '</h3>' +
+        '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+          '<button type="button" id="ptTabG" style="' + tabBtn + ';background:var(--ink);color:var(--surface);border-color:var(--ink)">' + escapeHtml(window.L('aeFormPaletteGeneralH')) + '</button>' +
+          '<button type="button" id="ptTabS" style="' + tabBtn + ';background:var(--surface);color:var(--ink-2)">' + escapeHtml(window.L('aeFormPaletteSpecialH')) + '</button>' +
+        '</div>' +
+        '<div id="ptPaneG" style="max-height:52vh;overflow-y:auto">' + generalHtml + '</div>' +
+        '<div id="ptPaneS" style="max-height:52vh;overflow-y:auto;display:none;margin-top:-8px">' + specialHtml + '</div>' +
         '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button type="button" class="btn btn-ghost btn-sm" id="ptCancel">' + escapeHtml(window.L('aeFormAsCancel')) + '</button></div>' +
       '</div>';
     document.body.appendChild(ov);
+    var tG = ov.querySelector('#ptTabG'), tS = ov.querySelector('#ptTabS'), pG = ov.querySelector('#ptPaneG'), pS = ov.querySelector('#ptPaneS');
+    function setTab(g) {
+      pG.style.display = g ? '' : 'none'; pS.style.display = g ? 'none' : '';
+      tG.style.background = g ? 'var(--ink)' : 'var(--surface)'; tG.style.color = g ? 'var(--surface)' : 'var(--ink-2)'; tG.style.borderColor = g ? 'var(--ink)' : 'var(--line)';
+      tS.style.background = g ? 'var(--surface)' : 'var(--ink)'; tS.style.color = g ? 'var(--ink-2)' : 'var(--surface)'; tS.style.borderColor = g ? 'var(--line)' : 'var(--ink)';
+    }
+    tG.addEventListener('click', function () { setTab(true); });
+    tS.addEventListener('click', function () { setTab(false); });
     function close() { if (ov.parentNode) document.body.removeChild(ov); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ov.querySelector('#ptCancel').addEventListener('click', close);
-    ov.querySelectorAll('[data-pick]').forEach(function (b) {
+    ov.querySelectorAll('[data-pick-type]').forEach(function (b) {
       b.addEventListener('click', function () {
-        var type = b.dataset.pick;
+        var type = b.dataset.pickType, legacy = b.dataset.pickLegacy || null;
         var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
         if (sec) {
-          var nf = { id: uid('f'), type: type, label: metaLabel(FIELD_META[type]), req: !LOCKED, opts: [] };
+          var label = labelForLegacy(legacy) || metaLabel(FIELD_META[type] || FIELD_META.text);
+          var nf = { id: uid('f'), type: type, label: label, legacyKey: legacy || undefined, req: !LOCKED, opts: [] };
+          nf.opts = optsForKey(legacy);
           if (type === 'contentText' || type === 'contentImage') nf.req = false;   // 顯示型欄位無必填
           sec.fields = sec.fields || [];
           sec.fields.push(nf);
