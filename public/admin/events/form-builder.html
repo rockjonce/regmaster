@@ -1236,7 +1236,24 @@ body { background:var(--bg); overflow:hidden; }
     return tmp.innerHTML;
   }
   document.getElementById('saveBtn').addEventListener('click', function () {
-    var btn = this; btn.disabled = true; btn.textContent = window.L('aeFormSaving');
+    var btn = this;
+    // 一區塊一頁：報名端每個區塊是一頁。區塊多時提醒一次（user 決策：不設上限、僅提醒不阻擋）。
+    // 門檻 >6 個區塊 ≈ 報名端 >8 頁，與進度條的 compact 門檻對齊；頁數含首/末固定頁、
+    // 首頁是否存在取決於活動設定（組別/梯次/隊名），故用「約」。取消不置旗標（下次仍提醒）。
+    var _secN = (SCHEMA.sections || []).length;
+    if (_secN > 6 && !window.__fbManyPagesWarned) {
+      var _msg = window.L('aeFormManyPagesWarn').replace('{n}', _secN).replace('{p}', String(_secN + 1) + '–' + String(_secN + 2));
+      uiConfirm(_msg, { title: window.L('aeFormSaveBtn') }).then(function (ok) {
+        if (!ok) return;
+        window.__fbManyPagesWarned = true;
+        doSave(btn);
+      });
+      return;
+    }
+    doSave(btn);
+  });
+  function doSave(btn) {
+    btn.disabled = true; btn.textContent = window.L('aeFormSaving');
     // Sanitize all help strings in place before save
     (SCHEMA.sections || []).forEach(function (sec) {
       (sec.fields || []).forEach(function (f) { if (f.help) f.help = sanitizeHelpInline(f.help); });
@@ -1261,7 +1278,7 @@ body { background:var(--bg); overflow:hidden; }
         alert(window.L('aeFormSaveFailPre') + (err && err.message));
       })
       .saveFormSchema(compId, SCHEMA);
-  });
+  }
 
   window.addEventListener('beforeunload', function (e) {
     if (JSON.stringify(SCHEMA) !== ORIGINAL_JSON) { e.preventDefault(); e.returnValue = ''; }

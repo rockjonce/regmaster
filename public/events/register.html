@@ -29,7 +29,21 @@
 .layout { display:grid; grid-template-columns:1fr 380px; max-width:1280px; margin:0 auto; min-height:calc(100vh - 60px); }
 .main { padding:48px 56px 96px; border-right:1px solid var(--line); }
 
-.steps-row { display:flex; gap:0; margin-bottom:32px; padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:14px; }
+.steps-row { display:flex; gap:0; margin-bottom:32px; padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow-x:auto; }
+/* PAGED：可回跳的已完成頁顯示手型；頁數多（>8）時縮小圓點、僅當前頁顯示標題（user 決策：不自動退化為細條） */
+.steps-row .step-item.clickable { cursor:pointer; }
+.steps-row.compact { padding:14px 12px; }
+.steps-row.compact .step-item .n { width:24px; height:24px; font-size:11px; }
+.steps-row.compact .step-item .l { display:none; }
+.steps-row.compact .step-item.on .l { display:block; white-space:nowrap; }
+.steps-row.compact .bar { min-width:12px; }
+/* 行動版（≤640px）：圓點列改為細進度條（pg-fill 由 showPage 設定寬度%），頁碼與標題看 footer */
+.steps-row .pg-fill { display:none; }
+@media (max-width:640px) {
+  .steps-row.paged { padding:0; height:6px; background:var(--surface-2); border:0; border-radius:99px; position:relative; overflow:hidden; }
+  .steps-row.paged .step-item, .steps-row.paged > .bar { display:none; }
+  .steps-row.paged .pg-fill { display:block; position:absolute; left:0; top:0; bottom:0; width:0; background:var(--acc); border-radius:99px; transition:width .25s var(--easing); }
+}
 .step-item { display:flex; gap:12px; align-items:center; flex:1; }
 .step-item .n { width:28px; height:28px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--line); color:var(--muted); display:grid; place-items:center; font:700 12px/1 var(--f-mono); flex-shrink:0; transition:.2s; }
 .step-item.on .n { background:var(--acc); border-color:var(--acc); color:white; }
@@ -40,6 +54,9 @@
 .step-item.on .l { color:var(--ink); font-weight:600; }
 .step-item .bar { flex:1; height:1.5px; background:var(--line); margin:0 8px; }
 .step-item.done .bar { background:var(--ok-500); }
+/* 外審#6：.bar 實際是 .step-item 的「兄弟」節點，上兩條規則從未命中——補正確選擇器 */
+.steps-row > .bar { flex:1 1 16px; height:1.5px; background:var(--line); margin:0 8px; align-self:center; min-width:10px; }
+.steps-row > .bar.done { background:var(--ok-500); }
 
 .page-eyebrow { display:inline-flex; align-items:center; gap:8px; font:500 11px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--acc); margin-bottom:14px; }
 .page-eyebrow::before { content:''; width:14px; height:1px; background:var(--acc); }
@@ -245,6 +262,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       </div>
 
       <!-- STEP 2: 學員 + 指導者 -->
+      <!-- PAGED 模式（formSchema 存在時）：一區塊一頁的動態 pane 都掛在這裡；
+           下方 pane 2/3 僅供無 schema 的 legacy 活動使用（PAGED 時不啟用）。 -->
+      <div id="dynPanes"></div>
+
       <div class="pane" data-pane="2">
         <div class="page-eyebrow" data-i18n="rgStep2Eyebrow">STEP 02</div>
         <h1 class="page-title" data-i18n="rgStep2Title">填寫成員資料</h1>
@@ -551,6 +572,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   var EINV_MODE = 'off';   // Phase 3：主辦方報名費發票模式（off/assist/auto，來自 bundle）
   // T1: step 1 is only meaningful when group/session/team-name fields are configured
   var STEP1_NEEDED = true;
+  // ── PAGED（一區塊一頁）模式：formSchema 存在時啟用。PAGES 為頁描述陣列
+  //    （intro｜sec:每區塊一頁｜final），頁序＝設計器區塊序。legacy（無 schema）活動
+  //    完全走原本的 1-4 步流程，兩套並存互不干擾。
+  var PAGED = false, PAGES = [], PAGE_IDX = 0, MAX_REACHED = 0;
   function firstStep() { return STEP1_NEEDED ? 1 : 2; }
   function lastStep()  { return NEEDS_PAYMENT ? 4 : 3; }
   function activeStepCount() { return lastStep() - firstStep() + 1; }
@@ -609,6 +634,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     EDIT = { teamId: editTeamId, pwd: pwd, tok: tok || '' }; IS_EDIT = true;
     NEEDS_PAYMENT = false;
     try { prefillFromTeam(res.team || {}, res.students || [], res.teachers || []); } catch (e) {}
+    // 編輯模式不重新付款：隱藏付款與發票區塊（legacy 因 pane4 永不顯示而天然看不到；
+    // PAGED 的 final 頁就是 pane4，不藏的話使用者會誤選付款方式、送出時覆寫既有付款紀錄）。
+    var _pbEdit = document.getElementById('paymentBlock'); if (_pbEdit) _pbEdit.style.display = 'none';
+    var _invEdit = document.getElementById('invoiceSection'); if (_invEdit) _invEdit.style.display = 'none';
+    if (PAGED) { MAX_REACHED = PAGES.length - 1; showPage(PAGE_IDX); }   // 編輯模式：全部頁可直接點跳修改
     document.title = window.L('rgEditTitleDoc') + ' · ' + (CFG.competitionName || '');
     var hd = document.querySelector('#layout h1, .wizard-title'); if (hd) { hd.removeAttribute('data-i18n'); hd.textContent = window.L('rgEditTitle'); }
     updateSubmitButtonLabel();
@@ -1053,6 +1083,16 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var tchSecs = sectionsByRole('teacher');
     var tCount = tchSecs.length;
     TCH_DEFS_PER_CARD = teacherFieldDefsPerCard(tCount);
+    if (SCHEMA) {
+      // PAGED：一區塊一頁。成員卡/附加欄位改掛在各自的動態頁；
+      // legacy 的 pane 2（studentList/teacherList）與 pane 3（customQuestionsList）不啟用。
+      buildPagedWizard();
+      showPage(0);
+      // legacy 路徑在函式尾才 applyI18n(layout)；PAGED 提前 return，必須在此補上，
+      // 否則動態欄位的 chrome（請選擇/必填錯誤字/placeholder）在英文模式不會翻譯。
+      if (window.applyI18n) window.applyI18n(document.getElementById('layout'));
+      return;
+    }
     document.getElementById('studentCount').textContent = window.L('rgCountPrefix') + mCount + window.L('rgCountUnit');
     var sList = document.getElementById('studentList');
     sList.innerHTML = '';
@@ -1372,8 +1412,193 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     return card;
   }
 
+  // ══════════════ PAGED（一區塊一頁）模式核心 ══════════════
+  // 由 initWizard 於 SCHEMA 存在時呼叫。頁序＝schema.sections 序（跨角色亦生效，
+  // 一併解決「設計器區塊順序對報名頁無效」的問題）。intro（組別/梯次/隊名）與
+  // final（確認+付款）沿用既有 pane 1 / pane 4 的 DOM 與驗證，零複製。
+  function buildPagedWizard() {
+    PAGED = true;
+    var dyn = document.getElementById('dynPanes');
+    dyn.innerHTML = '';
+    PAGES = [];
+    if (STEP1_NEEDED) PAGES.push({ kind: 'intro', pane: document.querySelector('.pane[data-pane="1"]'), title: window.L('rgStep1Label') });
+    var stuIdx = 0, tchIdx = 0;
+    SCHEMA.sections.forEach(function (sec, si) {
+      var role = sec.role || 'custom';
+      var pane = document.createElement('div');
+      pane.className = 'pane';
+      pane.dataset.pane = 'sec' + si;
+      var page = { kind: 'sec', role: role, pane: pane, secIdx: si };
+      var body;
+      if (role === 'student' || role === 'teacher') {
+        var roleIdx = (role === 'student') ? stuIdx++ : tchIdx++;
+        var defs = (role === 'student')
+          ? (STU_DEFS_PER_CARD[roleIdx] || STU_DEFS)
+          : (TCH_DEFS_PER_CARD[roleIdx] || TCH_DEFS);
+        page.roleIdx = roleIdx;
+        page.defs = defs;
+        page.title = sec.title || ((role === 'student' ? window.L('rgStudentN') : window.L('rgTeacherN')) + ' ' + (roleIdx + 1));
+        // buildMemberCard 沿用同一 domId prefix（student_N_ / teacher_N_）——
+        // 驗證、收集、編輯回填（prefillFromTeam/setDefValue）全部零改動直接生效。
+        body = buildMemberCard(role, roleIdx, defs, page.title);
+      } else {
+        page.defs = (sec.fields || []).map(toDef);
+        page.title = sec.title || window.L('rgStep3Title');
+        body = document.createElement('div');
+        body.innerHTML = page.defs.map(function (d) { return buildFieldHtml(d, 'cq_'); }).join('');
+        // 條件顯隱（logic）作用域＝本頁容器，與現行 member-card 的 per-card 作用域一致；
+        // 跨區塊條件本就不受支援，分頁未改變此語意。
+        wireFieldContainer(body, page.defs, 'cq_');
+      }
+      var eyebrow = document.createElement('div');
+      eyebrow.className = 'page-eyebrow';
+      eyebrow.textContent = 'STEP ' + String(PAGES.length + 1).padStart(2, '0');
+      var h1 = document.createElement('h1');
+      h1.className = 'page-title';
+      h1.textContent = page.title;
+      pane.appendChild(eyebrow);
+      pane.appendChild(h1);
+      if (sec.desc) {
+        var sub = document.createElement('p');
+        sub.className = 'page-sub';
+        sub.textContent = sec.desc;
+        pane.appendChild(sub);
+      }
+      pane.appendChild(body);
+      dyn.appendChild(pane);
+      PAGES.push(page);
+    });
+    PAGES.push({ kind: 'final', pane: document.querySelector('.pane[data-pane="4"]'), title: window.L('rgStep4Label') });
+    renumberEyebrows();
+    buildStepsRow();
+    if (window.applyI18n) window.applyI18n(dyn);
+  }
+
+  // 外審#5：所有頁的 eyebrow 統一為「步驟 NN / STEP NN」（隨語系），含 intro/final——
+  // 這兩頁的靜態 eyebrow 掛著 data-i18n（步驟 01/步驟 04），頁碼在 PAGED 下不一定正確，
+  // 必須摘除屬性後改寫，否則 applyI18n（含切語言）會把正確頁碼洗回固定文字。
+  function renumberEyebrows() {
+    PAGES.forEach(function (p, i) {
+      var eb = p.pane.querySelector('.page-eyebrow');
+      if (!eb) return;
+      eb.removeAttribute('data-i18n');
+      eb.textContent = window.L('rgPagedStepPre') + String(i + 1).padStart(2, '0');
+    });
+  }
+
+  function buildStepsRow() {
+    var row = document.getElementById('stepsRow');
+    row.classList.add('paged');
+    row.classList.toggle('compact', PAGES.length > 8);   // user 決策：不自動退化，多頁時縮小圓點＋橫捲
+    row.innerHTML = '<div class="pg-fill"></div>' + PAGES.map(function (p, i) {
+      return (i ? '<div class="bar"></div>' : '') +
+        '<div class="step-item" data-pageidx="' + i + '"><div class="n"><span>' + (i + 1) + '</span></div><div class="l"></div></div>';
+    }).join('');
+    row.querySelectorAll('.step-item').forEach(function (el) {
+      var i = parseInt(el.dataset.pageidx, 10);
+      el.querySelector('.l').textContent = PAGES[i].title;   // textContent：區塊標題是主辦方資料
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      function go() { if (i <= MAX_REACHED && i !== PAGE_IDX) showPage(i); }   // 僅已到達過的頁可回跳（user 決策）
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+  }
+
+  function showPage(i) {
+    hideErr();   // 跳頁後不殘留指向他頁欄位的錯誤（需要重現錯誤的呼叫端自行在切頁後重跑驗證）
+    PAGE_IDX = i;
+    if (i > MAX_REACHED) MAX_REACHED = i;
+    document.querySelectorAll('.pane').forEach(function (p) { p.classList.remove('on'); });
+    PAGES[i].pane.classList.add('on');
+    var row = document.getElementById('stepsRow');
+    row.querySelectorAll('.step-item').forEach(function (el) {
+      var k = parseInt(el.dataset.pageidx, 10);
+      el.classList.remove('on', 'done', 'clickable');
+      if (k === i) el.classList.add('on');
+      else if (k <= MAX_REACHED) el.classList.add('done');   // 「到過的頁」都算完成（回跳後中間頁不變灰）
+      if (k <= MAX_REACHED && k !== i) el.classList.add('clickable');
+    });
+    row.querySelectorAll('.bar').forEach(function (b, bi) { b.classList.toggle('done', bi < i); });
+    var onDot = row.querySelector('.step-item.on');
+    if (onDot && row.scrollWidth > row.clientWidth) onDot.scrollIntoView({ block: 'nearest', inline: 'center' });
+    var cs = document.getElementById('curStep');
+    if (cs) cs.textContent = (i + 1);
+    var fill = row.querySelector('.pg-fill');
+    if (fill) fill.style.width = Math.round((i + 1) / PAGES.length * 100) + '%';
+    var onEl = row.querySelector('.step-item.on');
+    row.querySelectorAll('.step-item').forEach(function (el) { el.removeAttribute('aria-current'); });
+    if (onEl) onEl.setAttribute('aria-current', 'step');
+    var fm = document.getElementById('footMeta');
+    if (fm) fm.innerHTML = window.L('rgFootStep') + ' <b id="curStep">' + (i + 1) + '</b> / ' + PAGES.length + ' · <span style="color:var(--ink-2)">' + escapeHtml(PAGES[i].title) + '</span>';
+    document.getElementById('prevBtn').disabled = (i === 0);
+    var isLast = (i === PAGES.length - 1);
+    document.getElementById('nextBtn').style.display = (isLast ? 'none' : '');
+    document.getElementById('submitBtn').style.display = (isLast ? '' : 'none');
+    if (isLast) { refreshStateFromDom(); renderReview(); }
+    updateSubmitButtonLabel();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // 驗當頁：intro/final 直接沿用 validateStep(1)/(4)（含付款與發票），零複製規則；
+  // 成員頁驗單卡並寫回 STATE 對應 index；custom 頁只驗本頁欄位。
+  function validatePage(i) {
+    hideErr();
+    var p = PAGES[i];
+    if (p.kind === 'intro') return validateStep(1);
+    if (p.kind === 'final') return validateStep(4);
+    if (p.role === 'student' || p.role === 'teacher') {
+      var label = (p.role === 'student' ? window.L('rgStudentN') : window.L('rgTeacherN')) + ' ' + (p.roleIdx + 1);
+      var m = readMember(p.defs, p.role + '_' + p.roleIdx + '_', label);
+      if (m === false) return false;
+      if (p.role === 'student') {
+        STATE.students[p.roleIdx] = m;
+        var ageMsg = _ageRuleError(m, p.roleIdx);
+        if (ageMsg) { showErr(ageMsg); return false; }
+      } else {
+        STATE.teachers[p.roleIdx] = m;
+      }
+      return true;
+    }
+    // custom 區塊頁
+    STATE.customAnswers = STATE.customAnswers || {};
+    return readCustomSection(p.defs) !== false;
+  }
+  // 進確認頁前把 STATE 與 DOM 現況對齊（外審#3）：使用者可能點進度條回跳修改後直接跳回
+  // 確認頁（不經過中間頁的 next 驗證），或編輯模式一進站就直跳末頁（STATE 尚空）。
+  // 這裡「盡力收集、不擋、不噴錯」：暫時把 showErr 換成 no-op 再跑既有驗證器；
+  // 收集失敗的部分維持原值，真正的把關仍在送出時的全量複驗。
+  function refreshStateFromDom() {
+    var _origShowErr = showErr;
+    try {
+      showErr = function () {};
+      if (STEP1_NEEDED) validateStep(1);
+      validateStep(2);
+      STATE.customAnswers = {};
+      readCustom();
+    } catch (e) { /* 收集失敗不阻擋確認頁 */ }
+    finally { showErr = _origShowErr; hideErr(); }
+  }
+
+  // 切語言：PAGES 中 intro/final 的標題是 window.L 的快照、stepsRow 為重建式 UI，
+  // 不隨 applyI18n 更新 → 重算固定頁標題並重繪進度條與 footer。區塊頁標題為主辦方資料不譯。
+  if (window.AppState && typeof window.AppState.on === 'function') {
+    window.AppState.on('lang-changed', function () {
+      if (!PAGED) return;
+      PAGES.forEach(function (p) {
+        if (p.kind === 'intro') p.title = window.L('rgStep1Label');
+        if (p.kind === 'final') p.title = window.L('rgStep4Label');
+      });
+      renumberEyebrows();
+      buildStepsRow();
+      showPage(PAGE_IDX);
+    });
+  }
+  // ══════════════ PAGED 模式核心結束 ══════════════
+
   // ---- Navigation ----
   function showStep(n) {
+    if (PAGED) return;   // PAGED 模式一律走 showPage；防 legacy 呼叫點誤入
     STATE.step = n;
     document.querySelectorAll('.pane').forEach(function (p) {
       p.classList.toggle('on', parseInt(p.dataset.pane, 10) === n);
@@ -1576,9 +1801,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     }
     return obj;
   }
-  function readCustom() {
-    for (var i = 0; i < CUSTOM_DEFS.length; i++) {
-      var def = CUSTOM_DEFS[i];
+  function readCustom() { return readCustomSection(CUSTOM_DEFS); }
+  function readCustomSection(defs) {
+    for (var i = 0; i < defs.length; i++) {
+      var def = defs[i];
       if (def.type === 'contentText' || def.type === 'contentImage') continue;   // 顯示型欄位：純資訊，不收集/驗證
       var wrap = fieldWrap(def, 'cq_');
       if (wrap && wrap.style.display === 'none') continue;
@@ -1589,6 +1815,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var cqErr = validateSpecial(def, v);
       if (cqErr) { if (wrap) wrap.classList.add('error'); showErr(cqErr); return false; }
       if (v) STATE.customAnswers[def.label] = v;
+      else delete STATE.customAnswers[def.label];   // PAGED 回跳清空欄位後，殘值不得留在答案裡
     }
     return true;
   }
@@ -1646,6 +1873,28 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     return { kind: 'personal', carrierType: '', carrierId: '', npoban: '' };   // 預設：雲端發票（Email）
   }
 
+  // 單一學生的年齡/出生日規則檢查；回傳錯誤訊息字串或 null（規則與訊息與原 validateStep(2) 逐字相同）
+  function _ageRuleError(stu, k) {
+    var ageRule = (CFG.groupAgeRules || {})[STATE.group];
+    if (!ageRule || (ageRule.type !== 'age' && ageRule.type !== 'birth')) return null;
+    var bd = stu && stu.birthday;
+    if (!bd) return null; // skip if birthday field absent from this schema
+    if (ageRule.type === 'age') {
+      var today = new Date();
+      var birth = new Date(bd);
+      if (isNaN(birth.getTime())) return window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValBirthdayFmt');
+      var age = today.getFullYear() - birth.getFullYear();
+      var m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      if (ageRule.minAge != null && age < ageRule.minAge) return window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValAgeMinA') + STATE.group + window.L('rgValAgeMinB') + ageRule.minAge + window.L('rgValAgeMinC') + age + window.L('rgValAgeMinD');
+      if (ageRule.maxAge != null && age > ageRule.maxAge) return window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValAgeMaxA') + STATE.group + window.L('rgValAgeMaxB') + ageRule.maxAge + window.L('rgValAgeMaxC') + age + window.L('rgValAgeMaxD');
+    } else if (ageRule.type === 'birth') {
+      if (ageRule.birthFrom && bd < ageRule.birthFrom) return window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValBirthFromA') + STATE.group + window.L('rgValBirthFromB') + ageRule.birthFrom + window.L('rgValBirthFromC');
+      if (ageRule.birthTo && bd > ageRule.birthTo) return window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValBirthToA') + STATE.group + window.L('rgValBirthToB') + ageRule.birthTo + window.L('rgValBirthToC');
+    }
+    return null;
+  }
+
   function validateStep(n) {
     hideErr();
     if (n === 1) {
@@ -1674,7 +1923,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       // Derive counts the same way the renderer did, so each card reads with its own defs
       var stuSecs = sectionsByRole('student');
       // 1 區塊 = 1 人 — section count is the card count.
-      var mCount = Math.max(1, stuSecs.length);
+      // PAGED：依實際區塊數（可為 0——schema 可以只有 teacher/custom 區塊，此時頁面上
+      // 根本沒有 student_0_ 欄位，硬讀會產生指向不存在欄位的必填錯誤＝報名死路）。
+      // legacy 維持至少 1：其渲染端無條件渲染一張報名者卡，讀寫配對。
+      var mCount = PAGED ? stuSecs.length : Math.max(1, stuSecs.length);
       var defsPerCard = STU_DEFS_PER_CARD.length ? STU_DEFS_PER_CARD : studentFieldDefsPerCard(mCount);
       for (var i = 0; i < mCount; i++) {
         var s = readMember(defsPerCard[i] || STU_DEFS, 'student_' + i + '_', window.L('rgStudentN') + ' ' + (i + 1));
@@ -1692,27 +1944,10 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           STATE.teachers.push(t);
         }
       }
-      // --- Age-rule validation (ported from legacy regmaster-pro) ---
-      var ageRule = (CFG.groupAgeRules || {})[STATE.group];
-      if (ageRule && (ageRule.type === 'age' || ageRule.type === 'birth')) {
-        for (var k = 0; k < STATE.students.length; k++) {
-          var stu = STATE.students[k];
-          var bd = stu.birthday;
-          if (!bd) continue; // skip if birthday field absent from this schema
-          if (ageRule.type === 'age') {
-            var today = new Date();
-            var birth = new Date(bd);
-            if (isNaN(birth.getTime())) { showErr(window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValBirthdayFmt')); return false; }
-            var age = today.getFullYear() - birth.getFullYear();
-            var m = today.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-            if (ageRule.minAge != null && age < ageRule.minAge) { showErr(window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValAgeMinA') + STATE.group + window.L('rgValAgeMinB') + ageRule.minAge + window.L('rgValAgeMinC') + age + window.L('rgValAgeMinD')); return false; }
-            if (ageRule.maxAge != null && age > ageRule.maxAge) { showErr(window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValAgeMaxA') + STATE.group + window.L('rgValAgeMaxB') + ageRule.maxAge + window.L('rgValAgeMaxC') + age + window.L('rgValAgeMaxD')); return false; }
-          } else if (ageRule.type === 'birth') {
-            if (ageRule.birthFrom && bd < ageRule.birthFrom) { showErr(window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValBirthFromA') + STATE.group + window.L('rgValBirthFromB') + ageRule.birthFrom + window.L('rgValBirthFromC')); return false; }
-            if (ageRule.birthTo && bd > ageRule.birthTo) { showErr(window.L('rgStudentN') + ' ' + (k + 1) + window.L('rgValBirthToA') + STATE.group + window.L('rgValBirthToB') + ageRule.birthTo + window.L('rgValBirthToC')); return false; }
-          }
-        }
+      // --- Age-rule validation（單人邏輯抽在 _ageRuleError，供 PAGED 單頁驗證共用）---
+      for (var k = 0; k < STATE.students.length; k++) {
+        var _ageMsg = _ageRuleError(STATE.students[k], k);
+        if (_ageMsg) { showErr(_ageMsg); return false; }
       }
     } else if (n === 3) {
       STATE.customAnswers = {};
@@ -1806,9 +2041,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   document.getElementById('prevBtn').addEventListener('click', function () {
+    if (PAGED) { if (PAGE_IDX > 0) showPage(PAGE_IDX - 1); return; }
     if (STATE.step > firstStep()) showStep(STATE.step - 1);
   });
   document.getElementById('nextBtn').addEventListener('click', function () {
+    if (PAGED) { if (validatePage(PAGE_IDX)) showPage(PAGE_IDX + 1); return; }
     if (!validateStep(STATE.step)) return;
     showStep(STATE.step + 1);
   });
@@ -1822,7 +2059,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   function liveRevalidate() {
     var box = document.getElementById('errBox');
     if (!box || box.style.display === 'none') return;   // no error showing → nothing to reconcile
-    try { _liveValidating = true; validateStep(STATE.step); }
+    try { _liveValidating = true; if (PAGED) validatePage(PAGE_IDX); else validateStep(STATE.step); }
     catch (e) { /* never let live validation break the user's typing */ }
     finally { _liveValidating = false; }
   }
@@ -1847,9 +2084,22 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   document.getElementById('submitBtn').addEventListener('click', function () {
-    // Validate the step the submit button lives on (3 when no payment needed, 4 otherwise)
-    var submitStep = NEEDS_PAYMENT ? 4 : 3;
-    if (!validateStep(submitStep)) return;
+    if (PAGED) {
+      // 全量複驗（外審#4 改法）：逐頁 validatePage —— 除了與逐頁 next 用同一套規則外，
+      // 失敗時能精確定位出錯的「頁」：自動切過去並重跑一次該頁驗證以重現錯誤與紅框
+      // （showPage 會清錯誤橫幅，故需重跑）。防「點進度條回跳修改後直接送出」繞過重驗。
+      STATE.customAnswers = {};
+      for (var _pi = 0; _pi < PAGES.length; _pi++) {
+        if (!validatePage(_pi)) {
+          if (_pi !== PAGE_IDX) { showPage(_pi); validatePage(_pi); }
+          return;
+        }
+      }
+    } else {
+      // Validate the step the submit button lives on (3 when no payment needed, 4 otherwise)
+      var submitStep = NEEDS_PAYMENT ? 4 : 3;
+      if (!validateStep(submitStep)) return;
+    }
     var btn = this;
     btn.disabled = true; btn.removeAttribute('data-i18n'); btn.textContent = window.L('rgBtnSubmitting');
     var fd = {

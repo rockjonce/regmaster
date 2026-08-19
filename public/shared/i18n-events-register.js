@@ -31,6 +31,7 @@
 
     // ----- step indicator labels -----
     rgStep1Label: '組別 / 場次',
+    rgPagedStepPre: '步驟 ',
     rgStep2Label: '報名者資料',
     rgStep3Label: '附加問題',
     rgStep4Label: '確認送出',
@@ -297,6 +298,7 @@
     rgBackToList: 'Back to event list',
 
     rgStep1Label: 'Group / Session',
+    rgPagedStepPre: 'STEP ',
     rgStep2Label: 'Participant Info',
     rgStep3Label: 'Additional Questions',
     rgStep4Label: 'Confirm & Submit',
