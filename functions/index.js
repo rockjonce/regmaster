@@ -10804,7 +10804,9 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
           if (f.legacyKey && LEGACY_FIELD_KEYS.has(f.legacyKey)) cleanF.legacyKey = f.legacyKey;
           if (f.logic && typeof f.logic === 'object') cleanF.logic = f.logic;
           // 顯示型欄位（純資訊、不收報名者輸入）：保留內容/圖片參照，否則會被上面的欄位清理剝掉。
-          if (f.type === 'contentText' && f.content) cleanF.content = String(f.content).slice(0, 2000);
+          // content 可含內聯 HTML（報名端以 innerHTML 呈現）→ 必須經 sanitizeInlineHtml 消毒
+          // （去 script/style/事件屬性/class；與活動描述同一套白名單），否則為儲存型 XSS 注入面。
+          if (f.type === 'contentText' && f.content) cleanF.content = sanitizeInlineHtml(String(f.content)).slice(0, 2000);
           if (f.type === 'contentImage' && f.imageRef) cleanF.imageRef = String(f.imageRef).slice(0, 60);
           return cleanF;
         })
@@ -10813,18 +10815,8 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
     })
   };
 
-  // Enforce single 附加問題: if multiple custom-role sections slip through, merge their
-  // fields into the first and drop the rest. Defends against direct-API calls.
-  {
-    const customs = cleanSchema.sections.filter(s => s.role === 'custom');
-    if (customs.length > 1) {
-      const first = customs[0];
-      for (let i = 1; i < customs.length; i++) {
-        first.fields = first.fields.concat(customs[i].fields || []).slice(0, 50);
-      }
-      cleanSchema.sections = cleanSchema.sections.filter(s => s.role !== 'custom' || s === first);
-    }
-  }
+  // 附加問題（custom）區塊可有多個（2026-08 user 決策取消單一限制）：報名端步驟 3 依
+  // schema 順序逐區塊渲染並顯示各自標題；匯出 CSV 與 legacy 衍生本就遍歷全部 sections。
 
   // R5 H-2: 必填的選擇題（select/radio/checkbox）沒有任何選項 → 報名端永遠過不了必填驗證
   // （只剩「請選擇」佔位），所有報名者被擋死 — 儲存時直接拒絕。

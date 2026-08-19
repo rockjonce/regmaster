@@ -59,7 +59,8 @@
     aeFormFtContentImage: '圖片內容',
     aeFormFtContentImageDesc: '顯示圖片資訊',
     aeFormInsContentText: '顯示文字',
-    aeFormInsContentTextPh: '輸入要顯示給報名者的文字…',
+    aeFormInsContentTextPh: '輸入要顯示給報名者的文字…（支援多段文字、emoji，也可貼內聯 HTML）',
+    aeFormPickTypeTitle: '選擇欄位類型',
     aeFormInsContentImg: '圖片',
     aeFormInsContentImgBtn: '圖片上傳',
     aeFormInsContentImgBusy: '上傳中…',
@@ -213,7 +214,6 @@
     aeFormAsOptStudent: '報名者（可新增多個 → 每個代表一位報名者）',
     aeFormAsOptTeacher: '指導者（可新增多個 → 每個代表一位指導者）',
     aeFormAsOptCustom: '附加問題（限一個）',
-    aeFormAsOptCustomExists: '附加問題（已存在，僅允許一個）',
     aeFormAsTitleLbl: '區塊標題',
     aeFormAsCancel: '取消',
     aeFormAsOk: '建立',
@@ -242,7 +242,6 @@
     aeFormConfirmDelSecTitle: '刪除區塊',
     aeFormConfirmDelSecOk: '刪除',
     aeFormNeedSectionFirst: '請先新增區塊，再加入欄位',
-    aeFormCustomOnlyOne: '附加問題區塊只能有一個。請編輯既有的「附加問題」區塊新增題目。',
 
     // ----- errors (dynamic) -----
     aeFormNoCompId: '未指定活動編號',
@@ -297,7 +296,8 @@
     aeFormFtContentImage: 'Image content',
     aeFormFtContentImageDesc: 'Display an image',
     aeFormInsContentText: 'Display text',
-    aeFormInsContentTextPh: 'Text shown to registrants…',
+    aeFormInsContentTextPh: 'Text shown to registrants… (multi-paragraph, emoji, and inline HTML supported)',
+    aeFormPickTypeTitle: 'Choose a field type',
     aeFormInsContentImg: 'Image',
     aeFormInsContentImgBtn: 'Upload image',
     aeFormInsContentImgBusy: 'Uploading…',
@@ -451,7 +451,6 @@
     aeFormAsOptStudent: 'Participant (add multiple → each is one participant)',
     aeFormAsOptTeacher: 'Instructor (add multiple → each is one instructor)',
     aeFormAsOptCustom: 'Additional Questions (one only)',
-    aeFormAsOptCustomExists: 'Additional Questions (already exists, only one allowed)',
     aeFormAsTitleLbl: 'Section Title',
     aeFormAsCancel: 'Cancel',
     aeFormAsOk: 'Create',
@@ -480,7 +479,6 @@
     aeFormConfirmDelSecTitle: 'Delete Section',
     aeFormConfirmDelSecOk: 'Delete',
     aeFormNeedSectionFirst: 'Please add a section before adding fields',
-    aeFormCustomOnlyOne: 'There can only be one Additional Questions section. Please edit the existing "Additional Questions" section to add items.',
 
     // ----- errors (dynamic) -----
     aeFormNoCompId: 'No event ID specified',

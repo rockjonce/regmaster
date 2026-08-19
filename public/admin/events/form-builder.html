@@ -222,7 +222,7 @@ body { background:var(--bg); overflow:hidden; }
           <div class="ft-item b4" draggable="true" data-type="date"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div><h6 data-i18n="aeFormFtDate">日期</h6><p data-i18n="aeFormFtDateDesc">生日 / 截止</p></div>
           <div class="ft-item b4" draggable="true" data-type="number"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16"/></svg></div><h6 data-i18n="aeFormFtNumber">數字</h6><p data-i18n="aeFormFtNumberDesc">年齡 / 數量</p></div>
           <div class="ft-item b2" draggable="true" data-type="file"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><h6 data-i18n="aeFormFtFile">上傳檔案</h6><p data-i18n="aeFormFtFileDesc">附件 / 作品</p></div>
-          <div class="ft-item b1" draggable="true" data-type="contentText"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><h6 data-i18n="aeFormFtContentText">文字內容</h6><p data-i18n="aeFormFtContentTextDesc">純文字資訊</p></div>
+          <div class="ft-item b1" draggable="true" data-type="contentText"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1.2v4M11 16h2.4"/></svg></div><h6 data-i18n="aeFormFtContentText">文字內容</h6><p data-i18n="aeFormFtContentTextDesc">純文字資訊</p></div>
           <div class="ft-item b2" draggable="true" data-type="contentImage"><div class="ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div><h6 data-i18n="aeFormFtContentImage">圖片內容</h6><p data-i18n="aeFormFtContentImageDesc">顯示圖片資訊</p></div>
         </div>
 
@@ -407,7 +407,7 @@ body { background:var(--bg); overflow:hidden; }
     file: { labelKey: 'aeFormFtFile', ic: 'b2', icon: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>' },
     phoneIntl: { labelKey: 'aeFormSpMobileIntl', ic: 'b2', icon: '<rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="18" r="1"/>' },
     url: { labelKey: 'aeFormFtUrl', ic: 'b2', icon: '<path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/>' },
-    contentText: { labelKey: 'aeFormFtContentText', ic: 'b1', icon: '<path d="M4 6h16M4 12h16M4 18h10"/>' },
+    contentText: { labelKey: 'aeFormFtContentText', ic: 'b1', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1.2v4M11 16h2.4"/>' },
     contentImage: { labelKey: 'aeFormFtContentImage', ic: 'b2', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>' }
   };
   function metaLabel(meta) { return window.L((meta && meta.labelKey) || 'aeFormFtText'); }
@@ -575,14 +575,10 @@ body { background:var(--bg); overflow:hidden; }
             render(); markDirty();
           }
         } else if (act === 'add-field') {
-          var secId = btn.dataset.secId;
-          var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
-          if (sec) {
-            sec.fields = sec.fields || [];
-            // 鎖定時新增欄位預設為「選填」，避免既有報名變成缺漏必填
-            sec.fields.push({ id: uid('f'), type: 'text', label: window.L('aeFormDefaultFieldLabel'), req: !LOCKED, opts: [] });
-            render(); markDirty();
-          }
+          // CUFAPKF 案的根因修正：原本這裡默默塞入一個「單行文字、必填」欄位，想放說明文字的
+          // 主辦方拿到輸入框後只好把文字塞進「說明文字」→ 報名端出現無意義的必填輸入框。
+          // 改為先選型別（與左側 palette 同一套 FIELD_META），選定才建立。
+          pickFieldType(btn.dataset.secId);
         } else if (act === 'field-del') {
           var fid = btn.dataset.fid;
           if (LOCKED && ORIG_FIELD_IDS[fid]) { lockedMsg(); return; }
@@ -930,6 +926,15 @@ body { background:var(--bg); overflow:hidden; }
         var file = this.files[0]; if (!file) return;
         this.value = '';
         fimgBtn.disabled = true; var orig = fimgBtn.textContent; fimgBtn.textContent = window.L('aeFormInsContentImgBusy');
+        // GIF 動畫：canvas 重壓會輸出靜態 JPEG（動畫全滅），不可交給 compressImage 的壓縮分支。
+        // ≤500KB 的 GIF 在 compressImage 內走「原樣保留」路徑安全；超過就明確拒絕並提示縮小。
+        if (file.type === 'image/gif' && file.size > 500 * 1024) {
+          fimgBtn.disabled = false; fimgBtn.textContent = orig;
+          uiAlert(window.LANG === 'en'
+            ? 'Animated GIFs cannot be auto-compressed (animation would be lost). Please use a GIF under 500KB.'
+            : 'GIF 動畫無法自動壓縮（壓縮會失去動畫），請改用 500KB 以內的 GIF。');
+          return;
+        }
         compressImage(file, { maxKB: 500, maxDim: 1200 }).then(function (im) {
           if (!im || !im.ok) { fimgBtn.disabled = false; fimgBtn.textContent = orig; uiAlert(window.LANG === 'en' ? 'This image is too large to compress within the limit; please use a smaller image.' : '圖片過大、壓縮後仍超過上限，請改用較小的圖片。'); return; }
           if (im.compressed) uiToast((window.LANG === 'en' ? 'Image auto-compressed: ' : '圖片已自動壓縮：') + im.origKB + 'KB → ' + im.newKB + 'KB');
@@ -1036,6 +1041,43 @@ body { background:var(--bg); overflow:hidden; }
     });
   }
 
+  // 「＋ 新增欄位」的型別選擇彈窗。列出 FIELD_META 全部型別（與屬性面板下拉一致），
+  // 點選即在該區塊建立欄位；顯示型欄位依既有規則強制非必填。
+  function pickFieldType(secId) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.45);display:grid;place-items:center;z-index:9999;padding:20px';
+    var cells = Object.keys(FIELD_META).map(function (t) {
+      var m = FIELD_META[t];
+      return '<button type="button" data-pick="' + t + '" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font:500 12.5px/1.3 var(--f-tc);color:var(--ink-2);cursor:pointer;text-align:left">' +
+        '<span class="ic-f ' + m.ic + '" style="flex-shrink:0"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' + m.icon + '</svg></span>' + escapeHtml(metaLabel(m)) + '</button>';
+    }).join('');
+    ov.innerHTML =
+      '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:var(--sh-lg)">' +
+        '<h3 style="font:700 16px/1.2 var(--f-display);margin-bottom:14px">' + escapeHtml(window.L('aeFormPickTypeTitle')) + '</h3>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:56vh;overflow-y:auto">' + cells + '</div>' +
+        '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button type="button" class="btn btn-ghost btn-sm" id="ptCancel">' + escapeHtml(window.L('aeFormAsCancel')) + '</button></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) document.body.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#ptCancel').addEventListener('click', close);
+    ov.querySelectorAll('[data-pick]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var type = b.dataset.pick;
+        var sec = SCHEMA.sections.find(function (s) { return s.id === secId; });
+        if (sec) {
+          var nf = { id: uid('f'), type: type, label: metaLabel(FIELD_META[type]), req: !LOCKED, opts: [] };
+          if (type === 'contentText' || type === 'contentImage') nf.req = false;   // 顯示型欄位無必填
+          sec.fields = sec.fields || [];
+          sec.fields.push(nf);
+          SELECTED = { secId: sec.id, fieldId: nf.id };
+          render(); markDirty();
+        }
+        close();
+      });
+    });
+  }
+
   // Build + append a field from a palette type (shared by drag-drop and tap-to-add).
   function addPaletteField(type, legacyKey) {
     var targetSec = null;
@@ -1082,9 +1124,6 @@ body { background:var(--bg); overflow:hidden; }
   function defaultSectionTitle(role) { return role === 'student' ? window.L('aeFormDefaultTitleStudent') : role === 'teacher' ? window.L('aeFormRoleTeacher') : window.L('aeFormRoleCustom'); }
   document.getElementById('addSectionBtn').addEventListener('click', function () {
     if (LOCKED) { lockedMsg(); return; }
-    // 附加問題 (custom) is single-instance — show "(已存在)" on the option when there's
-    // already one in the schema, and disable it so the user can't pick it again.
-    var customExists = (SCHEMA.sections || []).some(function (s) { return s.role === 'custom'; });
     var ov = document.createElement('div');
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,28,61,.45);display:grid;place-items:center;z-index:9999;padding:20px';
     ov.innerHTML =
@@ -1094,7 +1133,7 @@ body { background:var(--bg); overflow:hidden; }
           '<select id="asRole" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink);background:var(--surface)">' +
             '<option value="student">' + escapeHtml(window.L('aeFormAsOptStudent')) + '</option>' +
             '<option value="teacher">' + escapeHtml(window.L('aeFormAsOptTeacher')) + '</option>' +
-            '<option value="custom"' + (customExists ? ' disabled' : '') + '>' + escapeHtml(customExists ? window.L('aeFormAsOptCustomExists') : window.L('aeFormAsOptCustom')) + '</option>' +
+            '<option value="custom">' + escapeHtml(window.L('aeFormAsOptCustom')) + '</option>' +
           '</select></div>' +
         '<div style="margin-bottom:18px"><div style="font:500 12.5px/1.4 var(--f-tc);color:var(--ink-2);margin-bottom:6px">' + escapeHtml(window.L('aeFormAsTitleLbl')) + '</div>' +
           '<input id="asTitle" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:9px;font:400 14px/1.4 var(--f-tc);color:var(--ink)" value="' + escapeHtml(window.L('aeFormDefaultTitleStudent')) + '"></div>' +
@@ -1111,11 +1150,6 @@ body { background:var(--bg); overflow:hidden; }
     ov.querySelector('#asCancel').addEventListener('click', close);
     ov.querySelector('#asOk').addEventListener('click', function () {
       var role = roleSel.value, title = (titleInp.value || '').trim() || ROLE_LABELS[role];
-      // Belt-and-braces: even if someone bypasses the disabled option, block here too.
-      if (role === 'custom' && (SCHEMA.sections || []).some(function (s) { return s.role === 'custom'; })) {
-        uiAlert(window.L('aeFormCustomOnlyOne'));
-        return;
-      }
       SCHEMA.sections.push({ id: uid('sec'), title: title, role: role, repeat: 1, fields: [] });
       close(); render(); markDirty();
     });

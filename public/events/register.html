@@ -1073,10 +1073,21 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('teacherSection').style.display = 'none';
     }
 
-    // Custom questions (Step 3)
+    // Custom questions (Step 3)。附加問題區塊可有多個（單一限制已於 2026-08 取消）：
+    // 多區塊時各組前顯示該區塊的標題與說明；單一區塊維持原樣不加標題（舊活動零視覺變化）。
     var cqList = document.getElementById('customQuestionsList');
     if (CUSTOM_DEFS.length > 0) {
-      cqList.innerHTML = CUSTOM_DEFS.map(function (d) { return buildFieldHtml(d, 'cq_'); }).join('');
+      var cqGroups = SCHEMA
+        ? sectionsByRole('custom').map(function (sec) { return { title: sec.title || '', desc: sec.desc || '', defs: (sec.fields || []).map(toDef) }; })
+        : [{ title: '', desc: '', defs: CUSTOM_DEFS }];
+      cqList.innerHTML = cqGroups.map(function (g) {
+        var head = (cqGroups.length > 1 && g.title)
+          ? '<h4 style="font:700 15px/1.3 var(--f-display); margin:22px 0 4px; padding-top:18px; border-top:1px solid var(--line-2)">' + escapeHtml(g.title) + '</h4>'
+            + (g.desc ? '<p style="font:400 12.5px/1.5 var(--f-tc); color:var(--muted); margin:0 0 10px">' + escapeHtml(g.desc) + '</p>' : '')
+          : '';
+        return head + g.defs.map(function (d) { return buildFieldHtml(d, 'cq_'); }).join('');
+      }).join('');
+      var _cqFirstHead = cqList.querySelector('h4'); if (_cqFirstHead) { _cqFirstHead.style.marginTop = '0'; _cqFirstHead.style.paddingTop = '0'; _cqFirstHead.style.borderTop = '0'; }
       wireFieldContainer(cqList, CUSTOM_DEFS, 'cq_');
     } else { cqList.innerHTML = ''; }
     // Translate the dynamically-injected field chrome (placeholders, select prompts,
@@ -1215,12 +1226,59 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     ov.addEventListener('click', function () { if (ov.parentNode) ov.parentNode.removeChild(ov); });
     document.body.appendChild(ov);
   }
+  // 顯示型「文字內容」的消毒器：與 sanitizeHelpInline 同一套 inert DOMParser + 白名單模式，
+  // 但允許區塊級排版（段落/清單/標題/表格/圖片）與 style 屬性 —— 對齊後端 sanitizeInlineHtml
+  // （儲存時已消毒；此處為縱深防禦，防直寫 DB 或歷史資料繞過）。style 屬性無法執行 JS，
+  // 最壞情況只是排版破格。IMG src 僅允許 https?:/data:image。
+  function sanitizeContentBlock(html) {
+    var ALLOWED = { A: ['href','style'], B: ['style'], STRONG: ['style'], EM: ['style'], I: ['style'], U: ['style'],
+      BR: [], SPAN: ['style'], P: ['style'], DIV: ['style'], UL: ['style'], OL: ['style'], LI: ['style'],
+      H1: ['style'], H2: ['style'], H3: ['style'], H4: ['style'], BLOCKQUOTE: ['style'], HR: ['style'],
+      TABLE: ['style'], THEAD: [], TBODY: [], TR: ['style'], TD: ['style','colspan','rowspan'], TH: ['style','colspan','rowspan'],
+      IMG: ['src','alt','style'] };
+    var tmp = new DOMParser().parseFromString(String(html || ''), 'text/html').body;
+    function walk(node) {
+      var children = Array.prototype.slice.call(node.childNodes);
+      children.forEach(function (n) {
+        if (n.nodeType === 3) return;
+        if (n.nodeType !== 1) { n.remove(); return; }
+        var tag = n.tagName;
+        if (!ALLOWED.hasOwnProperty(tag)) {
+          while (n.firstChild) node.insertBefore(n.firstChild, n);
+          n.remove();
+          return;
+        }
+        Array.prototype.slice.call(n.attributes).forEach(function (a) {
+          if (ALLOWED[tag].indexOf(a.name.toLowerCase()) === -1) n.removeAttribute(a.name);
+        });
+        if (tag === 'A') {
+          var href = n.getAttribute('href') || '';
+          if (!/^(https?:|mailto:|tel:|\/)/i.test(href)) n.removeAttribute('href');
+          n.setAttribute('rel', 'noopener noreferrer');
+          n.setAttribute('target', '_blank');
+        }
+        if (tag === 'IMG') {
+          var src = n.getAttribute('src') || '';
+          if (!/^(https?:|data:image\/)/i.test(src)) { n.remove(); return; }
+          n.style.maxWidth = '100%';
+        }
+        walk(n);
+      });
+    }
+    walk(tmp);
+    return tmp.innerHTML;
+  }
   // Build a .fld wrapper for a field (prefix scopes the id; e.g. "student_0_" or "cq_")
   function buildFieldHtml(def, prefix) {
     // 顯示型欄位（純資訊、不收報名者輸入）：只顯示標題＋文字/圖片，無輸入框、無必填星號、無錯誤列。
     if (def.type === 'contentText') {
       var ctLbl = def.label ? '<div class="lbl">' + escapeHtml(window.LF(def.key, def.label)) + '</div>' : '';
-      var ctBody = def.content ? '<div class="content-text" style="white-space:pre-wrap;font:400 13.5px/1.65 var(--f-tc);color:var(--ink-2)">' + escapeHtml(def.content) + '</div>' : '';
+      var ctBody = '';
+      if (def.content) {
+        ctBody = /<[a-z][^>]*>/i.test(def.content)
+          ? '<div class="content-text" style="font:400 13.5px/1.65 var(--f-tc);color:var(--ink-2);overflow-x:auto">' + sanitizeContentBlock(def.content) + '</div>'
+          : '<div class="content-text" style="white-space:pre-wrap;font:400 13.5px/1.65 var(--f-tc);color:var(--ink-2)">' + escapeHtml(def.content) + '</div>';
+      }
       return '<div class="fld field-full content-fld" data-fld-key="' + escapeHtml(def.key) + '">' + ctLbl + ctBody + '</div>';
     }
     if (def.type === 'contentImage') {
