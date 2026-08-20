@@ -32,6 +32,9 @@
 .steps-row { display:flex; gap:0; margin-bottom:32px; padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow-x:auto; }
 /* PAGED：可回跳的已完成頁顯示手型；頁數多（>8）時縮小圓點、僅當前頁顯示標題（user 決策：不自動退化為細條） */
 .steps-row .step-item.clickable { cursor:pointer; }
+/* PAGED：流式換行取代橫向捲動（醜捲軸），頁數多自動折行、全部可見 */
+.steps-row.paged { flex-wrap:wrap; gap:8px 18px; overflow-x:visible; }
+.steps-row.paged > .bar { display:none; }
 .steps-row.compact { padding:14px 12px; }
 .steps-row.compact .step-item .n { width:24px; height:24px; font-size:11px; }
 .steps-row.compact .step-item .l { display:none; }
@@ -1564,9 +1567,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var row = document.getElementById('stepsRow');
     row.classList.add('paged');
     row.classList.toggle('compact', PAGES.length > 8);   // user 決策：不自動退化，多頁時縮小圓點＋橫捲
+    // 流式換行版：不輸出連接線（換行下會行尾拉長/跨行斷裂），零橫向捲軸
     row.innerHTML = '<div class="pg-fill"></div>' + PAGES.map(function (p, i) {
-      return (i ? '<div class="bar"></div>' : '') +
-        '<div class="step-item" data-pageidx="' + i + '"><div class="n"><span>' + (i + 1) + '</span></div><div class="l"></div></div>';
+      return '<div class="step-item" data-pageidx="' + i + '"><div class="n"><span>' + (i + 1) + '</span></div><div class="l"></div></div>';
     }).join('');
     row.querySelectorAll('.step-item').forEach(function (el) {
       var i = parseInt(el.dataset.pageidx, 10);
@@ -1594,9 +1597,6 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       else if (k <= MAX_REACHED) el.classList.add('done');   // 「到過的頁」都算完成（回跳後中間頁不變灰）
       if (k <= MAX_REACHED && k !== i) el.classList.add('clickable');
     });
-    row.querySelectorAll('.bar').forEach(function (b, bi) { b.classList.toggle('done', bi < i); });
-    var onDot = row.querySelector('.step-item.on');
-    if (onDot && row.scrollWidth > row.clientWidth) onDot.scrollIntoView({ block: 'nearest', inline: 'center' });
     var cs = document.getElementById('curStep');
     if (cs) cs.textContent = (i + 1);
     var fill = row.querySelector('.pg-fill');
