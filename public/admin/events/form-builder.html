@@ -115,6 +115,12 @@ body { background:var(--bg); overflow:hidden; }
 .field-c .actions-f button:hover { background:var(--surface); color:var(--ink-2); }
 .field-c .actions-f svg { width:11px; height:11px; }
 .field-c .preview-f { padding-left:34px; padding-top:2px; font:400 11.5px/1.4 var(--f-mono); color:var(--muted); }
+/* 文字內容的畫布完整預覽：渲染實際 HTML、預設限高、點擊展開/收合 */
+.field-c .ct-prev { position:relative; margin:6px 0 4px 34px; padding:10px 12px; background:var(--surface); border:1px solid var(--line-2); border-radius:8px; max-height:160px; overflow:hidden; cursor:pointer; font:400 12.5px/1.6 var(--f-tc); color:var(--ink-2); }
+.field-c .ct-prev table { max-width:100%; border-collapse:collapse; }
+.field-c .ct-prev .ct-prev-fade { position:absolute; left:0; right:0; bottom:0; height:44px; background:linear-gradient(transparent, var(--surface)); pointer-events:none; }
+.field-c .ct-prev.expanded { max-height:none; }
+.field-c .ct-prev.expanded .ct-prev-fade { display:none; }
 
 .drop-zone-empty { padding:24px; border:1.5px dashed var(--line); border-radius:10px; text-align:center; color:var(--muted); font:500 12px/1.4 var(--f-tc); }
 .drop-zone-empty.drag-over { border-color:var(--acc); background:var(--acc-soft); color:var(--acc-2); }
@@ -714,7 +720,7 @@ body { background:var(--bg); overflow:hidden; }
 
   // 「顯示文字」字數計數：上限 8000（後端 saveFormSchema slice 同值）。超限紅字提醒；
   // 不用 textarea maxlength——瀏覽器對超長貼上會「靜默截斷」，比存檔截斷更隱形（實案教訓）。
-  var CONTENT_MAX = 8000;
+  var CONTENT_MAX = 20000;
   function updateContentCount(f) {
     var el = document.getElementById('contentCount');
     if (!el) return;
@@ -822,11 +828,17 @@ body { background:var(--bg); overflow:hidden; }
           if (lbl) lbl.innerHTML = escapeHtml(f.label || window.L('aeFormFieldUnnamed')) + (f.req ? ' <span class="req">*</span>' : '');
         }
         if (key === 'content') {
-          // 畫布同步：原本只有 label 有 surgical update，content 輸入後畫布仍顯示「(尚無文字)」，
-          // 主辦方會誤以為沒貼進去或被截掉。一併更新字數計數（上限 8000＝後端 saveFormSchema 的
-          // slice 上限；超限以紅字警告，儲存時再明確擋下——絕不靜默截斷）。
-          var pv = document.querySelector('.field-c[data-field-id="' + f.id + '"] .preview-f');
-          if (pv) pv.textContent = f.content ? String(f.content).slice(0, 50) : window.L('aeFormContentTextEmpty');
+          // 畫布同步：即時重建該卡的完整渲染預覽（限高+展開），並更新字數計數
+          // （超限紅字警告、儲存時明確擋下——絕不靜默截斷）。
+          var card = document.querySelector('.field-c[data-field-id="' + f.id + '"]');
+          if (card) {
+            var old = card.querySelector('.ct-prev'); if (old) old.remove();
+            var pv = card.querySelector('.preview-f');
+            if (pv) {
+              pv.textContent = f.content ? '' : window.L('aeFormContentTextEmpty');
+              pv.insertAdjacentHTML('beforebegin', contentPreviewHtml(f));
+            }
+          }
           updateContentCount(f);
         }
         markDirty();
@@ -1201,6 +1213,12 @@ body { background:var(--bg); overflow:hidden; }
     return LEGACY_LABEL_KEYS[k] ? window.L(LEGACY_LABEL_KEYS[k], 'zh') : '';
   }
 
+  // 文字內容預覽的展開/收合（事件委派：render() 重建卡片後仍有效）
+  document.addEventListener('click', function (e) {
+    var prev = e.target.closest ? e.target.closest('.ct-prev') : null;
+    if (prev && !e.target.closest('a')) prev.classList.toggle('expanded');
+  });
+
   // ---- Add section (item 1: 學員 / 指導者 / 自訂 dropdown) ----
   function roleLabel(role) { return role === 'student' ? window.L('aeFormRoleStudent') : role === 'teacher' ? window.L('aeFormRoleTeacher') : window.L('aeFormRoleFallback'); }   // 外審P9：即時取值，不做語言快照
   function defaultSectionTitle(role) { return role === 'student' ? window.L('aeFormDefaultTitleStudent') : role === 'teacher' ? window.L('aeFormRoleTeacher') : window.L('aeFormRoleCustom'); }
@@ -1296,7 +1314,7 @@ body { background:var(--bg); overflow:hidden; }
       });
     });
     if (_overF) {
-      uiAlert(window.L('aeFormContentTooLongA') + (_overF.label || '') + window.L('aeFormContentTooLongB') + String(_overF.content).length.toLocaleString() + window.L('aeFormContentTooLongC'));
+      uiAlert(window.L('aeFormContentTooLongA') + (_overF.label || '') + window.L('aeFormContentTooLongB') + String(_overF.content).length.toLocaleString() + window.L('aeFormContentTooLongC').replace('{max}', CONTENT_MAX.toLocaleString()));
       return;
     }
     var _secN = (SCHEMA.sections || []).length;
