@@ -712,6 +712,18 @@ body { background:var(--bg); overflow:hidden; }
       '</div></div>';
   }
 
+  // 「顯示文字」字數計數：上限 8000（後端 saveFormSchema slice 同值）。超限紅字提醒；
+  // 不用 textarea maxlength——瀏覽器對超長貼上會「靜默截斷」，比存檔截斷更隱形（實案教訓）。
+  var CONTENT_MAX = 8000;
+  function updateContentCount(f) {
+    var el = document.getElementById('contentCount');
+    if (!el) return;
+    var n = (f && f.content) ? String(f.content).length : 0;
+    var over = n > CONTENT_MAX;
+    el.textContent = n.toLocaleString() + ' / ' + CONTENT_MAX.toLocaleString() + (over ? ' — ' + window.L('aeFormContentOverPre') + (n - CONTENT_MAX).toLocaleString() + window.L('aeFormContentOverSuf') : '');
+    el.style.color = over ? 'var(--err-700)' : 'var(--muted)';
+  }
+
   function renderInspector() {
     if (!SELECTED) {
       document.getElementById('emptyInspector').style.display = 'block';
@@ -759,7 +771,8 @@ body { background:var(--bg); overflow:hidden; }
       '</select></div>' +
       '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsLabel')) + '</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
       ((f.type === 'contentText') ?
-        '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsContentText')) + '</div><textarea data-ins="content" rows="5" maxlength="8000" placeholder="' + escapeHtml(window.L('aeFormInsContentTextPh')) + '">' + escapeHtml(f.content || '') + '</textarea></div>' : '') +
+        '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsContentText')) + '</div><textarea data-ins="content" rows="5" placeholder="' + escapeHtml(window.L('aeFormInsContentTextPh')) + '">' + escapeHtml(f.content || '') + '</textarea>' +
+        '<div id="contentCount" style="font:400 11px/1.4 var(--f-mono); margin-top:4px"></div></div>' : '') +
       ((f.type === 'contentImage') ?
         '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsContentImg')) + '</div>' +
           '<div id="fimgPrev" style="margin-bottom:8px"></div>' +
@@ -797,6 +810,7 @@ body { background:var(--bg); overflow:hidden; }
     // Wire inspector. FB1 fix: typing into label/help re-rendered the inspector on every
     // keystroke, which destroyed the input and lost focus. For text inputs we now mutate
     // the model + update just the matching canvas preview, leaving the inspector intact.
+    if (f.type === 'contentText') updateContentCount(f);   // 開啟面板即顯示目前字數
     ins.querySelectorAll('[data-ins]').forEach(function (el) {
       var key = el.dataset.ins;
       var isTextInput = (el.tagName === 'INPUT' && el.type === 'text') || el.tagName === 'TEXTAREA';
@@ -806,6 +820,14 @@ body { background:var(--bg); overflow:hidden; }
           // surgical canvas update: replace just the label span's innerHTML
           var lbl = document.querySelector('.field-c[data-field-id="' + f.id + '"] .label-f');
           if (lbl) lbl.innerHTML = escapeHtml(f.label || window.L('aeFormFieldUnnamed')) + (f.req ? ' <span class="req">*</span>' : '');
+        }
+        if (key === 'content') {
+          // 畫布同步：原本只有 label 有 surgical update，content 輸入後畫布仍顯示「(尚無文字)」，
+          // 主辦方會誤以為沒貼進去或被截掉。一併更新字數計數（上限 8000＝後端 saveFormSchema 的
+          // slice 上限；超限以紅字警告，儲存時再明確擋下——絕不靜默截斷）。
+          var pv = document.querySelector('.field-c[data-field-id="' + f.id + '"] .preview-f');
+          if (pv) pv.textContent = f.content ? String(f.content).slice(0, 50) : window.L('aeFormContentTextEmpty');
+          updateContentCount(f);
         }
         markDirty();
       });
@@ -1266,6 +1288,17 @@ body { background:var(--bg); overflow:hidden; }
     // 一區塊一頁：報名端每個區塊是一頁。區塊多時提醒一次（user 決策：不設上限、僅提醒不阻擋）。
     // 門檻 >6 個區塊 ≈ 報名端 >8 頁，與進度條的 compact 門檻對齊；頁數含首/末固定頁、
     // 首頁是否存在取決於活動設定（組別/梯次/隊名），故用「約」。取消不置旗標（下次仍提醒）。
+    // 「顯示文字」超過後端上限（8000）時明確擋下——絕不讓 saveFormSchema 的 slice 靜默截斷
+    var _overF = null;
+    (SCHEMA.sections || []).forEach(function (sec) {
+      (sec.fields || []).forEach(function (fl) {
+        if (fl.type === 'contentText' && fl.content && String(fl.content).length > CONTENT_MAX && !_overF) _overF = fl;
+      });
+    });
+    if (_overF) {
+      uiAlert(window.L('aeFormContentTooLongA') + (_overF.label || '') + window.L('aeFormContentTooLongB') + String(_overF.content).length.toLocaleString() + window.L('aeFormContentTooLongC'));
+      return;
+    }
     var _secN = (SCHEMA.sections || []).length;
     if (_secN > 6 && !window.__fbManyPagesWarned) {
       var _msg = window.L('aeFormManyPagesWarn').replace('{n}', _secN).replace('{p}', String(_secN + 1) + '–' + String(_secN + 2));
