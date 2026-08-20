@@ -32,8 +32,10 @@
 .steps-row { display:flex; gap:0; margin-bottom:32px; padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow-x:auto; }
 /* PAGED：可回跳的已完成頁顯示手型；頁數多（>8）時縮小圓點、僅當前頁顯示標題（user 決策：不自動退化為細條） */
 .steps-row .step-item.clickable { cursor:pointer; }
-/* PAGED：流式換行取代橫向捲動（醜捲軸），頁數多自動折行、全部可見 */
-.steps-row.paged { flex-wrap:wrap; gap:8px 18px; overflow-x:visible; }
+/* PAGED：等寬格線取代橫向捲動——頁數多自動折行、全部可見，且跨行「縱向對齊成欄」
+   （.step-item 的 flex:1 會讓第二行少數項目均分整行、間距爆開＝無條理，故用 grid） */
+.steps-row.paged { display:grid; grid-template-columns:repeat(auto-fill, minmax(158px, 1fr)); gap:10px 14px; overflow-x:visible; }
+.steps-row.paged .step-item { flex:initial; }
 .steps-row.paged > .bar { display:none; }
 .steps-row.compact { padding:14px 12px; }
 .steps-row.compact .step-item .n { width:24px; height:24px; font-size:11px; }
