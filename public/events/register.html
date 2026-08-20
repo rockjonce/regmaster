@@ -50,7 +50,8 @@
 .step-item.done .n { background:var(--ok-500); border-color:var(--ok-500); color:white; }
 .step-item.done .n::before { content:'✓'; }
 .step-item.done .n span { display:none; }
-.step-item .l { font:500 12.5px/1.3 var(--f-tc); color:var(--muted); }
+.step-item { flex-shrink:0; }   /* 防 flex 壓縮把中文標題擠成一字一行的直排 */
+.step-item .l { font:500 12.5px/1.3 var(--f-tc); color:var(--muted); white-space:nowrap; max-width:9em; overflow:hidden; text-overflow:ellipsis; }
 .step-item.on .l { color:var(--ink); font-weight:600; }
 .step-item .bar { flex:1; height:1.5px; background:var(--line); margin:0 8px; }
 .step-item.done .bar { background:var(--ok-500); }
@@ -619,6 +620,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
         return;
       }
       CFG = data.config || {};
+      CFG.__posterFocus = data.posterFocus || '';   // Bug2：右欄海報縮圖對齊主辦方設定的焦點
       CFG.sessionAccepted = data.sessionAccepted || {};
       CFG.sessionWaitlist = data.sessionWaitlist || {};
       EINV_MODE = data.einvoiceMode || 'off';   // Phase 3：發票區塊顯示依據
@@ -782,10 +784,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var meta = [];
     if (CFG.competitionDate) meta.push('<div>📅 ' + escapeHtml(CFG.competitionDate) + '</div>');
     if (CFG.deadline) meta.push('<div>⏰ ' + escapeHtml(window.L('rgDeadlinePrefix')) + escapeHtml(String(CFG.deadline).replace('T', ' ').slice(0, 16)) + '</div>');
-    if (CFG.category) meta.push('<div>🏷 ' + escapeHtml(CFG.category) + '</div>');
+    if (CFG.category) meta.push('<div>🏷 ' + escapeHtml(window.LO(CFG.category)) + '</div>');
     document.getElementById('sumMeta').innerHTML = meta.join('');
     if (CFG.posterUrl) {
       var poImg = document.createElement('img');
+      poImg.style.objectPosition = (CFG.__posterFocus && /^\d{1,3}% \d{1,3}%$/.test(CFG.__posterFocus)) ? CFG.__posterFocus : '50% 50%';
       // B.4: resolve pfid:DOCID via backend; fall through for data: / http(s):
       if (String(CFG.posterUrl).indexOf('pfid:') === 0) {
         google.script.run.withSuccessHandler(function (res) {
@@ -798,9 +801,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('sumPh').appendChild(poImg);
     }
     if ((CFG.paymentMethods || []).length > 0) {
-      // A-2: map enum keys → readable labels (was printing raw "payuni / bankTransfer / cash").
-      // UGC display — drop the i18n binding so it isn't overwritten on language change.
-      var PM_LBL = { payuni: '線上付款（PayUNI）', atm: '銀行 / ATM 轉帳', bankTransfer: '銀行轉帳', cash: '現場付款' };
+      // A-2: map enum keys → readable labels。這些是內建 enum 的顯示名（非 UGC）——
+      // 走 i18n 即時取值；摘掉 data-i18n 是防 applyI18n 洗回預設字串（值為組合結果）。
+      var PM_LBL = { payuni: window.L('rgPayuniName'), atm: window.L('rgAtmName'), bankTransfer: window.L('rgBankTransferName'), cash: window.L('rgCashName') };
       var pml = document.getElementById('payMethodsList');
       pml.removeAttribute('data-i18n');
       pml.textContent = CFG.paymentMethods.map(function (m) { return PM_LBL[m] || m; }).join('、');
@@ -1466,6 +1469,27 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   // 由 initWizard 於 SCHEMA 存在時呼叫。頁序＝schema.sections 序（跨角色亦生效，
   // 一併解決「設計器區塊順序對報名頁無效」的問題）。intro（組別/梯次/隊名）與
   // final（確認+付款）沿用既有 pane 1 / pane 4 的 DOM 與驗證，零複製。
+  // 區塊標題的顯示層反查：設計器建立區塊時把「當下語言」的預設標題快照存進 schema
+  // （報名者 1／指導者／附加問題……），schema 內是資料、沒有語言概念——顯示時若標題
+  // 匹配內建預設模式就用 i18n 重組（隨當前語言），主辦方自訂的標題（改過字的）原樣呈現。
+  function displaySecTitle(title, role, roleIdx) {
+    var t = String(title || '').trim();
+    var m;
+    if (role === 'student') {
+      if (!t) return window.L('rgStudentN') + ' ' + (roleIdx + 1);
+      m = t.match(/^(?:報名者|學員|Participant|Registrant)\s*(\d*)$/i);
+      if (m) return window.L('rgStudentN') + ' ' + (m[1] || (roleIdx + 1));
+    } else if (role === 'teacher') {
+      if (!t) return window.L('rgTeacherN') + ' ' + (roleIdx + 1);
+      m = t.match(/^(?:指導者|指導老師|教練|老師|Instructor|Teacher|Coach)\s*(\d*)$/i);
+      if (m) return window.L('rgTeacherN') + (m[1] ? ' ' + m[1] : '');
+    } else {
+      if (!t) return window.L('rgStep3Title');
+      if (/^(?:附加問題|Additional questions)$/i.test(t)) return window.L('rgStep3Title');
+    }
+    return t;
+  }
+
   function buildPagedWizard() {
     PAGED = true;
     var dyn = document.getElementById('dynPanes');
@@ -1487,13 +1511,13 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           : (TCH_DEFS_PER_CARD[roleIdx] || TCH_DEFS);
         page.roleIdx = roleIdx;
         page.defs = defs;
-        page.title = sec.title || ((role === 'student' ? window.L('rgStudentN') : window.L('rgTeacherN')) + ' ' + (roleIdx + 1));
+        page.title = displaySecTitle(sec.title, role, roleIdx);
         // buildMemberCard 沿用同一 domId prefix（student_N_ / teacher_N_）——
         // 驗證、收集、編輯回填（prefillFromTeam/setDefValue）全部零改動直接生效。
         body = buildMemberCard(role, roleIdx, defs, page.title);
       } else {
         page.defs = (sec.fields || []).map(toDef);
-        page.title = sec.title || window.L('rgStep3Title');
+        page.title = displaySecTitle(sec.title, role, 0);
         body = document.createElement('div');
         body.innerHTML = page.defs.map(function (d) { return buildFieldHtml(d, 'cq_'); }).join('');
         // 條件顯隱（logic）作用域＝本頁容器，與現行 member-card 的 per-card 作用域一致；
@@ -1547,6 +1571,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     row.querySelectorAll('.step-item').forEach(function (el) {
       var i = parseInt(el.dataset.pageidx, 10);
       el.querySelector('.l').textContent = PAGES[i].title;   // textContent：區塊標題是主辦方資料
+      el.title = PAGES[i].title;   // 標題過長被省略號截斷時，滑鼠懸停可看全文
       el.setAttribute('role', 'button');
       el.setAttribute('tabindex', '0');
       function go() { if (i <= MAX_REACHED && i !== PAGE_IDX) showPage(i); }   // 僅已到達過的頁可回跳（user 決策）
@@ -1643,6 +1668,13 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       PAGES.forEach(function (p) {
         if (p.kind === 'intro') p.title = window.L('rgStep1Label');
         if (p.kind === 'final') p.title = window.L('rgStep4Label');
+        // 區塊頁標題也要重算：displaySecTitle 的內建預設反查是「當下語言」的快照，
+        // 載入後切語言若不重算，圓點與頁標題會停留在舊語言（自訂標題不受影響、原樣）。
+        if (p.kind === 'sec') {
+          p.title = displaySecTitle((SCHEMA.sections[p.secIdx] || {}).title, p.role, p.roleIdx || 0);
+          var h1 = p.pane.querySelector('.page-title');
+          if (h1) h1.textContent = p.title;
+        }
       });
       renumberEyebrows();
       buildStepsRow();

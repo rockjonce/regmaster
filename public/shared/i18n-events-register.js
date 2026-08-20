@@ -175,6 +175,7 @@
     rgPayuniName: '線上付款（PayUNI）',
     rgPayuniDesc: '信用卡（一次付清），立即完成付款',
     rgAtmName: '銀行轉帳 / ATM',
+    rgBankTransferName: '銀行轉帳', rgCashName: '現場付款',
     rgAtmDescFallback: '主辦方銀行帳戶',
     rgAtmCardAcc: '帳號',
 
@@ -431,6 +432,7 @@
     rgPayuniName: 'Online payment (PayUNI)',
     rgPayuniDesc: 'Credit card (pay in full), instant payment',
     rgAtmName: 'Bank transfer / ATM',
+    rgBankTransferName: 'Bank transfer', rgCashName: 'Pay on site',
     rgAtmDescFallback: 'Organizer bank account',
     rgAtmCardAcc: 'Acct',
 

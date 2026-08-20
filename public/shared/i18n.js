@@ -427,6 +427,8 @@
     // emergency contact relation
     '父親': 'Father', '母親': 'Mother', '配偶': 'Spouse', '子女': 'Child', '兄弟姐妹': 'Sibling',
     '祖父母': 'Grandparent', '監護人': 'Guardian', '親戚': 'Relative', '朋友': 'Friend', '師長': 'Teacher / mentor',
+    // 活動類別（報名頁右欄/探索頁 tag 經 LO 顯示）
+    '競賽': 'Competition', '研討會': 'Seminar', '夏令營': 'Camp', '工作坊': 'Workshop', '展覽會': 'Exhibition', '教育訓練': 'Training',
     // misc / shared
     '其他': 'Other',
     // phone country-code dropdown labels (country part only; the value is the dial code)

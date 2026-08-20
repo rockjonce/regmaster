@@ -759,7 +759,7 @@ body { background:var(--bg); overflow:hidden; }
       '</select></div>' +
       '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsLabel')) + '</div><input type="text" data-ins="label" value="' + escapeHtml(f.label || '') + '"></div>' +
       ((f.type === 'contentText') ?
-        '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsContentText')) + '</div><textarea data-ins="content" rows="5" placeholder="' + escapeHtml(window.L('aeFormInsContentTextPh')) + '">' + escapeHtml(f.content || '') + '</textarea></div>' : '') +
+        '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsContentText')) + '</div><textarea data-ins="content" rows="5" maxlength="8000" placeholder="' + escapeHtml(window.L('aeFormInsContentTextPh')) + '">' + escapeHtml(f.content || '') + '</textarea></div>' : '') +
       ((f.type === 'contentImage') ?
         '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsContentImg')) + '</div>' +
           '<div id="fimgPrev" style="margin-bottom:8px"></div>' +

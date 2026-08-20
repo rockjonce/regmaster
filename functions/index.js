@@ -10806,7 +10806,8 @@ exports.saveFormSchema = compAuthCallable(async (data, request) => {
           // 顯示型欄位（純資訊、不收報名者輸入）：保留內容/圖片參照，否則會被上面的欄位清理剝掉。
           // content 可含內聯 HTML（報名端以 innerHTML 呈現）→ 必須經 sanitizeInlineHtml 消毒
           // （去 script/style/事件屬性/class；與活動描述同一套白名單），否則為儲存型 XSS 注入面。
-          if (f.type === 'contentText' && f.content) cleanF.content = sanitizeInlineHtml(String(f.content)).slice(0, 2000);
+          // 上限 8000（比照活動描述）：2000 會把長 HTML 攔腰截斷（表格切半＋標籤未閉合，CUFAPKF 實案）
+          if (f.type === 'contentText' && f.content) cleanF.content = sanitizeInlineHtml(String(f.content)).slice(0, 8000);
           if (f.type === 'contentImage' && f.imageRef) cleanF.imageRef = String(f.imageRef).slice(0, 60);
           return cleanF;
         })
