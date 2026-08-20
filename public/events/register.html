@@ -567,6 +567,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   // Edit mode (?edit=<報名編號>): prefill + save via updateRegistration, skip payment.
   var IS_EDIT = false, EDIT = null;
   var editTeamId = (qs.get('edit') || '').trim().toUpperCase();
+  // ── 預覽模式（表單設計器「預覽」開啟）：只看版面、不做任何驗證、絕不建立報名。
+  //    與編輯模式互斥；所有預覽行為都以這個旗標把關。
+  var IS_PREVIEW = qs.get('preview') === '1' && !editTeamId;
   // Q2/Q3/Q4: payment computed after CFG loads
   var TOTAL_FEE = 0, NEEDS_PAYMENT = false, AVAILABLE_METHODS = [];
   var EINV_MODE = 'off';   // Phase 3：主辦方報名費發票模式（off/assist/auto，來自 bundle）
@@ -583,7 +586,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var btn = document.getElementById('submitBtn');
     if (!btn) return;
     var key;
-    if (IS_EDIT) key = 'rgEditSaveBtn';
+    if (IS_PREVIEW) key = 'rgPreviewEndBtn';
+    else if (IS_EDIT) key = 'rgEditSaveBtn';
     else if (NEEDS_PAYMENT && STATE.payMethod === 'payuni') key = 'rgBtnPayuni';
     else if (NEEDS_PAYMENT && STATE.payMethod === 'atm') key = 'rgBtnAtm';
     else if (NEEDS_PAYMENT) key = 'rgBtnChooseMethod';
@@ -604,6 +608,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       // S2-2: block the whole wizard (not just show a dead button) when registration isn't
       // open right now — distinguishing 尚未開放 / 已截止 / 未開放 by the backend regStatus.
       var rs = data.regStatus || (data.isOpen ? 'open' : 'closed');
+      if (IS_PREVIEW) rs = 'open';   // 預覽：未開放/已截止的活動也要能看版面（送出已被攔截，無實際影響）
       if (rs !== 'open') {
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('errorState').style.display = 'block';
@@ -617,6 +622,15 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       CFG.sessionAccepted = data.sessionAccepted || {};
       CFG.sessionWaitlist = data.sessionWaitlist || {};
       EINV_MODE = data.einvoiceMode || 'off';   // Phase 3：發票區塊顯示依據
+      if (IS_PREVIEW) {
+        // 優先採用設計器塞進 sessionStorage 的「編輯中」schema（免先儲存即可預覽）；
+        // 沒有（例如直接輸網址）就用已儲存的版本。
+        try {
+          var _ps = sessionStorage.getItem('rm_preview_schema_' + compId);
+          if (_ps) { var _pj = JSON.parse(_ps); if (_pj && Array.isArray(_pj.sections)) CFG.formSchema = _pj; }
+        } catch (e) {}
+        mountPreviewBanner();
+      }
       initWizard();
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('layout').style.display = 'grid';
@@ -628,6 +642,39 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('errorMsg').textContent = (err && err.message) || window.L('rgErrNetwork');
     })
     .getRegistrationBundle(compId);
+
+  // ===== 預覽模式：頂端固定橫幅＋離開；submit 第一行被攔截（見 submit handler）=====
+  function exitPreview() {
+    try { sessionStorage.removeItem('rm_preview_schema_' + compId); } catch (e) {}   // 清本分頁副本（防同分頁後續導航沿用；設計器原分頁不受影響）
+    var back = '/admin/events/' + encodeURIComponent(compId) + '/form-builder';
+    window.close();                                   // 由設計器 window.open 開啟的分頁可直接關閉
+    setTimeout(function () { location.href = back; }, 150);   // 手動開網址（close 無效）→ 導回表單設計
+  }
+  function mountPreviewBanner() {
+    var bar = document.createElement('div');
+    bar.id = 'previewBar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;gap:12px;justify-content:center;' +
+      'padding:9px 16px;background:var(--amber-500);color:#fff;font:600 13px/1.3 var(--f-tc);box-shadow:0 2px 8px rgba(0,0,0,.15)';
+    var txt = document.createElement('span');
+    txt.textContent = '🔍 ' + window.L('rgPreviewBanner');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = window.L('rgPreviewExit');
+    btn.style.cssText = 'padding:5px 14px;border-radius:7px;background:rgba(255,255,255,.92);color:var(--amber-600);font:700 12.5px/1 var(--f-tc);cursor:pointer;border:0';
+    btn.addEventListener('click', exitPreview);
+    bar.appendChild(txt); bar.appendChild(btn);
+    document.body.insertBefore(bar, document.body.firstChild);
+    // fixed 橫幅會蓋住頁面頂部與同在 top:0 的 sticky 導覽列——把兩者一起下移橫幅的高度。
+    // 同步執行、不用 rAF：背景分頁/嵌入式檢視不產生動畫幀，rAF 回呼會永遠不跑（實測踩過）。
+    // 夾在 30–90px：未合成畫面的環境（背景分頁）rect 可能回未布局的怪值（實測 220px）
+    var h = Math.max(30, Math.min(bar.getBoundingClientRect().height || 38, 90));
+    document.body.style.paddingTop = h + 'px';
+    var nav = document.querySelector('.nav');
+    if (nav && getComputedStyle(nav).position === 'sticky') nav.style.top = h + 'px';
+    if (window.AppState && typeof window.AppState.on === 'function') {
+      window.AppState.on('lang-changed', function () { txt.textContent = '🔍 ' + window.L('rgPreviewBanner'); btn.textContent = window.L('rgPreviewExit'); });
+    }
+  }
 
   // ===== 編輯模式：報名編號+密碼 → 預填 → 以 updateRegistration 儲存（不重新付款）=====
   function applyEdit(pwd, res, tok) {
@@ -1350,6 +1397,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       var stat = container.querySelector('#' + CSS.escape(prefix + def.key + '_s'));
       if (!fInp) return;
       fInp.addEventListener('change', function () {
+        // 外審P1：預覽模式絕不打任何後端——uploadRegFile 無 auth/開放狀態檢查，會在 regFiles
+        // 留下永久孤兒文件。預覽只需看得到上傳欄位的樣子，不需要真的上傳。
+        if (IS_PREVIEW) { this.value = ''; if (stat) { stat.textContent = window.L('rgPreviewNoUpload'); stat.style.color = 'var(--muted)'; } return; }
         var file = this.files[0]; if (!file) return;
         // FB4: per-field size + extension constraints (default 5MB, no ext restriction)
         var maxMB = (def.maxFileSize && def.maxFileSize > 0) ? def.maxFileSize : 5;
@@ -1577,7 +1627,12 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       STATE.customAnswers = {};
       readCustom();
     } catch (e) { /* 收集失敗不阻擋確認頁 */ }
-    finally { showErr = _origShowErr; hideErr(); }
+    finally {
+      showErr = _origShowErr; hideErr();
+      // 預覽模式（user 決策：不做任何驗證檢查）：收集器借用了驗證器，會給空必填欄位標紅框
+      // ——預覽不得留任何驗證痕跡，全部清掉。
+      if (IS_PREVIEW) document.querySelectorAll('.fld.error').forEach(function (w) { w.classList.remove('error'); });
+    }
   }
 
   // 切語言：PAGES 中 intro/final 的標題是 window.L 的快照、stepsRow 為重建式 UI，
@@ -1618,7 +1673,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     var last = lastStep();
     document.getElementById('nextBtn').style.display = (n < last ? '' : 'none');
     document.getElementById('submitBtn').style.display = (n === last ? '' : 'none');
-    if (n === 4 || (n === 3 && !NEEDS_PAYMENT)) renderReview();
+    if (n === 4 || (n === 3 && !NEEDS_PAYMENT)) { if (IS_PREVIEW) refreshStateFromDom(); renderReview(); }
     updateSubmitButtonLabel();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -2045,6 +2100,11 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     if (STATE.step > firstStep()) showStep(STATE.step - 1);
   });
   document.getElementById('nextBtn').addEventListener('click', function () {
+    if (IS_PREVIEW) {   // 預覽只看版面：跳過所有驗證，任何輸入都放行（user 決策）
+      if (PAGED) { if (PAGE_IDX < PAGES.length - 1) showPage(PAGE_IDX + 1); }
+      else if (STATE.step < lastStep()) showStep(STATE.step + 1);
+      return;
+    }
     if (PAGED) { if (validatePage(PAGE_IDX)) showPage(PAGE_IDX + 1); return; }
     if (!validateStep(STATE.step)) return;
     showStep(STATE.step + 1);
@@ -2084,6 +2144,7 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   }
 
   document.getElementById('submitBtn').addEventListener('click', function () {
+    if (IS_PREVIEW) { exitPreview(); return; }   // 預覽絕不建立報名：不驗證、不打任何後端，直接回表單設計
     if (PAGED) {
       // 全量複驗（外審#4 改法）：逐頁 validatePage —— 除了與逐頁 next 用同一套規則外，
       // 失敗時能精確定位出錯的「頁」：自動切過去並重跑一次該頁驗證以重現錯誤與紅框

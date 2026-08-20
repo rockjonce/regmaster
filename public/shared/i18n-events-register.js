@@ -32,6 +32,7 @@
     // ----- step indicator labels -----
     rgStep1Label: '組別 / 場次',
     rgPagedStepPre: '步驟 ',
+    rgPreviewBanner: '預覽模式──呈現未儲存的草稿、不會建立任何報名；實際樣式以儲存後為準', rgPreviewExit: '離開預覽', rgPreviewEndBtn: '結束預覽 →', rgPreviewNoUpload: '預覽模式不會實際上傳檔案',
     rgStep2Label: '報名者資料',
     rgStep3Label: '附加問題',
     rgStep4Label: '確認送出',
@@ -299,6 +300,7 @@
 
     rgStep1Label: 'Group / Session',
     rgPagedStepPre: 'STEP ',
+    rgPreviewBanner: 'Preview mode — showing the unsaved draft; no registration will be created. Final look may differ after saving', rgPreviewExit: 'Exit preview', rgPreviewEndBtn: 'End preview →', rgPreviewNoUpload: 'Files are not actually uploaded in preview mode',
     rgStep2Label: 'Participant Info',
     rgStep3Label: 'Additional Questions',
     rgStep4Label: 'Confirm & Submit',

@@ -398,7 +398,7 @@
     // gender (student)
     '男生': 'Male', '女生': 'Female', '男': 'Male', '女': 'Female',
     // salutation
-    '先生': 'Mr.', '小姐': 'Ms.', '女士': 'Madam', '太太': 'Mrs.', '老師': 'Teacher', '教授': 'Professor', '博士': 'Dr.', '醫師': 'Doctor',
+    '先生': 'Mr.', '小姐': 'Ms.', '女士': 'Madam', '太太': 'Mrs.', '老師': 'Teacher', '教授': 'Professor', '博士': 'Ph.D. / Dr.', '醫師': 'Doctor',
     // Taiwan cities / counties
     '台北市': 'Taipei City', '新北市': 'New Taipei City', '桃園市': 'Taoyuan City', '台中市': 'Taichung City',
     '台南市': 'Tainan City', '高雄市': 'Kaohsiung City', '基隆市': 'Keelung City', '新竹市': 'Hsinchu City', '嘉義市': 'Chiayi City',
@@ -422,6 +422,11 @@
     '需要': 'Required', '不需要': 'Not required',
     // invoice type
     '二聯式': 'Duplicate (B2C)', '三聯式': 'Triplicate (B2B)',
+    // dietary preference (form-builder 內建預設選項)
+    '豬肉': 'Pork', '牛肉': 'Beef', '雞肉': 'Chicken', '海鮮': 'Seafood',
+    // emergency contact relation
+    '父親': 'Father', '母親': 'Mother', '配偶': 'Spouse', '子女': 'Child', '兄弟姐妹': 'Sibling',
+    '祖父母': 'Grandparent', '監護人': 'Guardian', '親戚': 'Relative', '朋友': 'Friend', '師長': 'Teacher / mentor',
     // misc / shared
     '其他': 'Other',
     // phone country-code dropdown labels (country part only; the value is the dial code)
