@@ -34,7 +34,9 @@
 .steps-row .step-item.clickable { cursor:pointer; }
 /* PAGED：等寬格線取代橫向捲動——頁數多自動折行、全部可見，且跨行「縱向對齊成欄」
    （.step-item 的 flex:1 會讓第二行少數項目均分整行、間距爆開＝無條理，故用 grid） */
-.steps-row.paged { display:grid; grid-template-columns:repeat(auto-fill, minmax(158px, 1fr)); gap:10px 14px; overflow-x:visible; }
+.steps-row.paged { display:grid; grid-template-columns:repeat(auto-fit, minmax(158px, 1fr)); gap:10px 14px; overflow-x:visible; }
+/* auto-fit（非 auto-fill）：頁數少於單行欄數時收合空欄、讓項目均分整行（3 頁實測 173→235px）；
+   多於一行時兩者行為相同＝維持等寬格線跨行對齊 */
 .steps-row.paged .step-item { flex:initial; }
 .steps-row.paged > .bar { display:none; }
 .steps-row.compact { padding:14px 12px; }
