@@ -631,6 +631,50 @@ body { background:var(--bg); overflow:hidden; }
     markDirty();
   }
 
+  // 畫布上的「文字內容」完整預覽：渲染實際 HTML（消毒後）、預設限高 160px＋漸層遮罩，
+  // 點擊切換展開/收合。消毒器與報名端 sanitizeContentBlock 同款（inert DOMParser＋白名單）。
+  function sanitizeContentBlockFb(html) {
+    var ALLOWED = { A: ['href','style'], B: ['style'], STRONG: ['style'], EM: ['style'], I: ['style'], U: ['style'],
+      BR: [], SPAN: ['style'], P: ['style'], DIV: ['style'], UL: ['style'], OL: ['style'], LI: ['style'],
+      H1: ['style'], H2: ['style'], H3: ['style'], H4: ['style'], BLOCKQUOTE: ['style'], HR: ['style'],
+      TABLE: ['style','cellpadding','cellspacing','border'], THEAD: [], TBODY: [], TR: ['style'], TD: ['style','colspan','rowspan'], TH: ['style','colspan','rowspan'],
+      IMG: ['src','alt','style'] };
+    var tmp = new DOMParser().parseFromString(String(html || ''), 'text/html').body;
+    (function walk(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) return;
+        if (n.nodeType !== 1) { n.remove(); return; }
+        var tag = n.tagName;
+        if (!ALLOWED.hasOwnProperty(tag)) {
+          while (n.firstChild) node.insertBefore(n.firstChild, n);
+          n.remove(); return;
+        }
+        Array.prototype.slice.call(n.attributes).forEach(function (a) {
+          if (ALLOWED[tag].indexOf(a.name.toLowerCase()) === -1) n.removeAttribute(a.name);
+        });
+        if (tag === 'A') {
+          var href = n.getAttribute('href') || '';
+          if (!/^(https?:|mailto:|tel:|\/)/i.test(href)) n.removeAttribute('href');
+          n.setAttribute('rel', 'noopener noreferrer'); n.setAttribute('target', '_blank');
+        }
+        if (tag === 'IMG') {
+          var src = n.getAttribute('src') || '';
+          if (!/^(https?:|data:image\/)/i.test(src)) { n.remove(); return; }
+          n.style.maxWidth = '100%';
+        }
+        walk(n);
+      });
+    })(tmp);
+    return tmp.innerHTML;
+  }
+  function contentPreviewHtml(f) {
+    if (!f.content) return '';
+    var isHtml = /<[a-z][^>]*>/i.test(f.content);
+    var inner = isHtml ? sanitizeContentBlockFb(f.content)
+      : '<div style="white-space:pre-wrap">' + escapeHtml(f.content) + '</div>';
+    return '<div class="ct-prev" data-ct-toggle="' + f.id + '" title="' + escapeHtml(window.L('aeFormCtPrevToggle')) + '">' + inner + '<div class="ct-prev-fade"></div></div>';
+  }
+
   function renderField(secId, f, idx) {
     var meta = FIELD_META[f.type] || FIELD_META.text;
     return '<div class="field-c" data-field-id="' + f.id + '" draggable="true">' +
@@ -645,8 +689,9 @@ body { background:var(--bg); overflow:hidden; }
           '<button data-act="field-del" data-fid="' + f.id + '"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/></svg></button>' +
         '</span>' +
       '</div>' +
+      (f.type === 'contentText' ? contentPreviewHtml(f) : '') +
       '<div class="preview-f">' + (
-        f.type === 'contentText' ? (f.content ? escapeHtml(String(f.content).slice(0, 50)) : window.L('aeFormContentTextEmpty')) :
+        f.type === 'contentText' ? (f.content ? '' : window.L('aeFormContentTextEmpty')) :
         f.type === 'contentImage' ? (f.imageRef ? '🖼 ' + window.L('aeFormContentImgSet') : window.L('aeFormContentImgEmpty')) :
         metaLabel(meta) + (f.opts && f.opts.length ? ' · ' + f.opts.length + ' ' + window.L('aeFormOptUnit') : '')
       ) + '</div>' +
