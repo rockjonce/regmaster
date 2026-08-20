@@ -749,7 +749,10 @@ body { background:var(--bg); overflow:hidden; }
           '<button type="button" class="btn btn-primary btn-sm" id="fimgBtn">' + escapeHtml(window.L('aeFormInsContentImgBtn')) + '</button>' +
           '<div style="font:400 11px/1.4 var(--f-tc); color:var(--muted); margin-top:6px">' + escapeHtml(window.L('aeFormInsContentImgHint')) + '</div>' +
         '</div>' : '') +
-      '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsHelp')) + '</div><input type="text" data-ins="help" value="' + escapeHtml(f.help || '') + '" placeholder="' + escapeHtml(window.L('aeFormInsHelpPh')) + '"></div>' +
+      // 顯示型欄位（contentText/contentImage）不出「說明文字」列：報名端對這兩型根本不渲染 help，
+      // 留著只會誤導主辦方把內容貼進去（CUFAPKF 案）。內容一律走上方「顯示文字」（支援內聯 HTML）。
+      ((f.type === 'contentText' || f.type === 'contentImage') ? '' :
+        '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsHelp')) + '</div><input type="text" data-ins="help" value="' + escapeHtml(f.help || '') + '" placeholder="' + escapeHtml(window.L('aeFormInsHelpPh')) + '"></div>') +
 
       ((['select','radio','checkbox'].indexOf(f.type) >= 0) ? (
         '<div class="ins-row"><div class="lbl">' + escapeHtml(window.L('aeFormInsOptions')) + '</div><div class="opts-editor" id="opts-editor">' +
