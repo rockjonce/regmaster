@@ -283,11 +283,13 @@
 
     // V3 Phase 6 additions
     listCampaigns:["compId"],
-    getCampaignRecipients:["compId","filter"],
+    getCampaignRecipients:["compId","filter","recipientIds","recipientRoles"],
     createCampaign:["compId","payload"],
     updateCampaign:["campaignId","payload"],
     deleteCampaign:["campaignId"],
     sendCampaignNow:["campaignId"],
+    sendCampaignTest:["campaignId"],
+    resetCampaignDelivery:["campaignId"],
     scheduleCampaign:["campaignId","scheduledFor"],
     submitJudgeScore:["compId","teamId","cells","items","totalScore","comment"],
     getLiveLeaderboard:["compId"],

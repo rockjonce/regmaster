@@ -817,8 +817,10 @@ async function resolveCheckinInput(input, fallbackCompId) {
  * - Validates _auth.username + _auth.token from the request
  * - Injects `authUser` (the full account doc data) into handler's second arg
  */
-function authCallable(roles, handler) {
-  return onCall({ cors: true }, async (request) => {
+// fnOpts：選配的 Cloud Function 選項（目前只用於 timeoutSeconds）。不給就沿用既有行為，
+// 對現有 200+ 個呼叫端零影響。
+function authCallable(roles, handler, fnOpts) {
+  return onCall(Object.assign({ cors: true }, fnOpts || {}), async (request) => {
     try {
       const data = request.data || {};
       const auth = data._auth;
@@ -892,9 +894,11 @@ async function memberRoleFor(username, orgOwner, compId) {
 //         compAuthCallable("checkin", handler)   → require a specific capability
 // Backward-compatible: with no orgMembers records, this is identical to the prior
 // owner-only check (owner/system pass; everyone else denied).
-function compAuthCallable(capabilityOrHandler, maybeHandler) {
-  const capability = (typeof capabilityOrHandler === "function") ? "manage" : (capabilityOrHandler || "manage");
-  const handler = (typeof capabilityOrHandler === "function") ? capabilityOrHandler : maybeHandler;
+function compAuthCallable(capabilityOrHandler, maybeHandler, maybeOpts) {
+  const byHandler = (typeof capabilityOrHandler === "function");
+  const capability = byHandler ? "manage" : (capabilityOrHandler || "manage");
+  const handler = byHandler ? capabilityOrHandler : maybeHandler;
+  const fnOpts = byHandler ? maybeHandler : maybeOpts;   // compAuthCallable(handler, opts) 也支援
   return authCallable(["system","competition"], async (data, request) => {
     request.memberRoleName = "system"; // default; refined below for competition role
     if (request.authUser.role === "competition") {
@@ -918,7 +922,7 @@ function compAuthCallable(capabilityOrHandler, maybeHandler) {
       }
     }
     return await handler(data, request);
-  });
+  }, fnOpts);
 }
 
 // 對「以 reqId 等非 comp/team 鍵為唯一輸入」的 compAuthCallable 補歸屬檢查。
@@ -9125,7 +9129,9 @@ exports.monthlyInvoiceReport = onSchedule({ schedule: "0 8 1 * *", timeZone: "As
 // ===================== 電子發票排程（結束）=====================
 
 // #4: every 15 min, send any campaign whose scheduledFor time has arrived.
-exports.processScheduledCampaigns = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1 }, async () => {
+// timeoutSeconds：v3 起 _deliverCampaign 改為逐隊寄送（多批次寫入），比照同檔其他
+// 排程器明寫逾時，不吃 60 秒預設值。
+exports.processScheduledCampaigns = onSchedule({ schedule: "*/15 * * * *", timeZone: "Asia/Taipei", maxInstances: 1, timeoutSeconds: 300 }, async () => {
   const now = Date.now();
   const snap = await db.collection("campaigns").where("status", "==", "scheduled").get();
   for (const d of snap.docs) {
@@ -9866,45 +9872,134 @@ exports.listCampaigns = compAuthCallable(async (data) => {
                   .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 });
 
-// Recipients for a given filter — team name + that team's recorded emails + the
-// total unique email count. Used by the EDM composer's 預計收件人 panel.
-exports.getCampaignRecipients = compAuthCallable(async (data) => {
-  const { compId, filter } = data;
-  const f = filter || "all";
-  const teamSnap = await db.collection("teams").where("compId", "==", compId).get();
-  const teamMap = {};
-  teamSnap.docs.forEach(d => {
-    const t = d.data();
-    if (t.status === "已取消") return;
-    if (f === "paid" && !(t.paymentStatus || "").includes("已確認")) return;
-    if (f === "unpaid" && (t.paymentStatus || "").includes("已確認")) return;
-    if (f === "waitlist" && !(t.status || "").startsWith("備取")) return;
-    teamMap[d.id] = { teamId: t.teamId || d.id, teamName: t.teamNameCN || t.teamNameEN || "(無隊名)", emails: [] };
-  });
-  const memSnap = await db.collection("members").where("compId", "==", compId).get();
-  const allEmails = new Set();
+// ===== EDM 收件人解析（單一資料來源）=====
+// 供 getCampaignRecipients（預覽面板／勾選視窗）、_deliverCampaign（實寄）、
+// sendCampaignTest 三處共用，杜絕「預覽看到的人數」與「實際寄出的人」口徑不一致。
+//
+// ⚠ fail-CLOSED：舊版是「三條 if 都沒命中就加入」，所以 recipientFilter 只要不是
+// paid/unpaid/waitlist（例如 'custom'）就會寄給全部人。此處改為白名單，未知值不寄。
+const CAMPAIGN_FILTERS = ['all', 'paid', 'unpaid', 'waitlist', 'custom'];
+const CAMPAIGN_ROLES = ['學生', '教練'];   // members.role 全檔僅此兩值（3148/3149、4373/4374、6658/6663）
+// 超過這個時間仍停在 'sending' 才視為「卡住」。必須大於函式逾時上限（300 秒）的兩倍，
+// 否則會在前一次執行還活著的時候放行退回，導致重寄。
+const CAMPAIGN_STALE_MS = 10 * 60 * 1000;
+function _normCampFilter(v) { return CAMPAIGN_FILTERS.indexOf(v) >= 0 ? v : null; }
+// 身分限制：空陣列或全選 = 不限制（寄給全隊）
+// 外審 #6：以「相異值個數」判斷全選，不能用陣列長度 —— ['學生','學生'] 的長度也是 2，
+// 會被誤判成全選而變成不限制（教練也收到），與使用者選的「僅報名者」相反。
+function _normCampRoles(v) {
+  if (!Array.isArray(v)) return [];
+  const out = [...new Set(v.filter(r => CAMPAIGN_ROLES.indexOf(r) >= 0))];
+  return out.length === CAMPAIGN_ROLES.length ? [] : out;
+}
+function _sanitizeRecipientIds(v) {
+  if (!Array.isArray(v)) return [];
+  return [...new Set(v.map(x => String(x == null ? "" : x).slice(0, 64)).filter(Boolean))].slice(0, 2000);
+}
+
+// 以「隊伍」為單位解析收件對象。teams 的文件 ID 即 teamId（兩條建立路徑 3105 / 6647
+// 都是 .doc(teamId).set({teamId,...})），此處一律用 d.id 當鍵，不混用 t.teamId。
+// 回傳 teams 含「無 email 的隊伍」（勾選視窗要顯示為不可選），呼叫端自行過濾。
+async function _resolveTeams(compId, camp) {
+  const f = _normCampFilter((camp && camp.recipientFilter) || 'all');
+  if (!f) return { ok: false, message: "未知的收件對象設定，未寄出" };
+  const roles = _normCampRoles(camp && camp.recipientRoles);
+  const idSet = f === 'custom' ? new Set(_sanitizeRecipientIds(camp && camp.recipientIds)) : null;
+  if (idSet && idSet.size === 0) return { ok: true, teams: [], teamsNoEmail: 0, cancelled: 0, missing: 0 };
+
+  const [teamSnap, memSnap] = await Promise.all([
+    db.collection("teams").where("compId", "==", compId).get(),
+    db.collection("members").where("compId", "==", compId).get()
+  ]);
+
+  const byTeam = {};
+  const namesByTeam = {};   // UAT-1：無隊名的隊改顯示報名者姓名（收全員，含無 email 者）
   memSnap.docs.forEach(d => {
     const m = d.data();
-    if (teamMap[m.teamId] && m.email) {
-      if (teamMap[m.teamId].emails.indexOf(m.email) === -1) teamMap[m.teamId].emails.push(m.email);
-      allEmails.add(m.email);
-    }
+    if (!m.teamId) return;
+    const nm = m.chineseName || m.englishName ||
+      [m.englishSurname, m.englishGivenName].filter(Boolean).join(' ');
+    if (nm) (namesByTeam[m.teamId] = namesByTeam[m.teamId] || [])
+      .push({ r: m.role === "學生" ? 0 : 1, seq: m.seq || 0, nm });
+    if (!m.email) return;
+    const b = byTeam[m.teamId] || (byTeam[m.teamId] = { "學生": [], "教練": [] });
+    const k = m.role === "學生" ? "學生" : "教練";
+    if (b[k].indexOf(m.email) < 0) b[k].push(m.email);
   });
-  const teams = Object.keys(teamMap).map(k => teamMap[k]).filter(t => t.emails.length > 0)
-                      .sort((a, b) => String(a.teamId).localeCompare(String(b.teamId)));
-  return { total: allEmails.size, teamCount: teams.length, teams };
+
+  const teams = [];
+  const seen = new Set();
+  let teamsNoEmail = 0, cancelled = 0;
+  teamSnap.docs.forEach(d => {
+    const t = d.data();
+    seen.add(d.id);
+    if (t.status === "已取消") { if (idSet && idSet.has(d.id)) cancelled++; return; }
+    if (f === 'paid' && !(t.paymentStatus || "").includes("已確認")) return;
+    if (f === 'unpaid' && (t.paymentStatus || "").includes("已確認")) return;
+    if (f === 'waitlist' && !(t.status || "").startsWith("備取")) return;
+    if (f === 'custom' && !idSet.has(d.id)) return;
+    const b = byTeam[d.id] || { "學生": [], "教練": [] };
+    const picked = roles.length ? roles.reduce((a, r) => a.concat(b[r]), []) : b["學生"].concat(b["教練"]);
+    const emails = [...new Set(picked)];
+    if (emails.length === 0) teamsNoEmail++;
+    teams.push({
+      teamId: d.id,
+      teamName: t.teamNameCN || t.teamNameEN || "(無隊名)",
+      teamNameCN: t.teamNameCN || "", teamNameEN: t.teamNameEN || "",
+      // 報名者姓名（學生先、教練後，各依 seq）——前端在中英隊名皆空時用它當顯示名
+      memberNames: (namesByTeam[d.id] || []).sort((a, b2) => a.r - b2.r || a.seq - b2.seq).map(x => x.nm),
+      group: t.group || "", status: t.status || "",
+      paid: (t.paymentStatus || "").includes("已確認"),
+      // 舊資料只有 selectedSession（單數）— 比照 3111 / 4805 的既有 fallback
+      sessions: Array.isArray(t.selectedSessions) ? t.selectedSessions : [t.selectedSession || 0],
+      emails, emailsByRole: { "學生": b["學生"].slice(), "教練": b["教練"].slice() }
+    });
+  });
+  teams.sort((a, b2) => String(a.teamId).localeCompare(String(b2.teamId)));
+  let missing = 0;
+  if (idSet) idSet.forEach(id => { if (!seen.has(id)) missing++; });   // 名單中的隊伍已被刪除
+  return { ok: true, teams, teamsNoEmail, cancelled, missing };
+}
+
+// Recipients for a given filter — team name + that team's recorded emails + the
+// total unique email count. Used by the EDM composer's 預計收件人 panel and the
+// custom-recipient picker (which needs the *unfiltered* team list, including
+// teams with no email so it can grey them out).
+exports.getCampaignRecipients = compAuthCallable(async (data) => {
+  const { compId, filter, recipientIds, recipientRoles } = data;
+  const r = await _resolveTeams(compId, {
+    recipientFilter: filter || "all", recipientIds, recipientRoles
+  });
+  if (!r.ok) return { total: 0, teamCount: 0, messages: 0, teams: [], error: r.message };
+  const allEmails = new Set();
+  r.teams.forEach(t => t.emails.forEach(e => allEmails.add(e)));
+  const withMail = r.teams.filter(t => t.emails.length > 0);
+  return {
+    total: allEmails.size,          // 去重後的唯一收件人數
+    teamCount: withMail.length,     // 實寄隊數
+    messages: withMail.length,      // 訊息封數（一隊一封）
+    teams: r.teams,
+    teamsNoEmail: r.teamsNoEmail || 0, cancelled: r.cancelled || 0, missing: r.missing || 0
+  };
 });
 
 exports.createCampaign = compAuthCallable(async (data, request) => {
   await requireCompFeature(request, "campaigns");
   const { compId, payload } = data;
   if (!payload || !payload.subject) return { success: false, message: "缺少標題" };
+  // 外審 #5：寫入端不可把無法辨識的值靜默降級成 'all'（＝寄給全部人）。讀取端雖已
+  // fail-closed，但降級會把「自訂 3 隊」在存檔當下就變成「全部人」，且無跡可循。
+  if (payload.recipientFilter !== undefined && !_normCampFilter(payload.recipientFilter)) {
+    return { success: false, message: "收件對象設定無效，請重新選擇" };
+  }
   const camp = {
     compId,
     subject: String(payload.subject).slice(0, 200),
     body: String(payload.body || "").slice(0, 20000),
     channels: Array.isArray(payload.channels) ? payload.channels.filter(c => ['email','sms','line'].includes(c)) : ['email'],
-    recipientFilter: payload.recipientFilter || 'all',
+    recipientFilter: payload.recipientFilter === undefined ? 'all' : _normCampFilter(payload.recipientFilter),
+    recipientIds: _sanitizeRecipientIds(payload.recipientIds),     // 自訂名單：teams 文件 ID
+    recipientRoles: _normCampRoles(payload.recipientRoles),        // 身分限制：[] = 不限制
     status: 'draft',
     createdAt: fmtNow(),
     createdBy: request.authUser.username,
@@ -9926,19 +10021,43 @@ exports.updateCampaign = compAuthCallable(async (data, request) => {
   if (!compDoc.exists || (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username)) {
     return { success: false, message: "權限不足" };
   }
+  // 外審 #5：同 createCampaign —— 無效值一律拒絕，不降級為 'all'
+  if (payload.recipientFilter !== undefined && !_normCampFilter(payload.recipientFilter)) {
+    return { success: false, message: "收件對象設定無效，請重新選擇" };
+  }
   const update = {};
   if (payload.subject !== undefined) update.subject = String(payload.subject).slice(0, 200);
   if (payload.body !== undefined) update.body = String(payload.body).slice(0, 20000);
   if (Array.isArray(payload.channels)) update.channels = payload.channels.filter(c => ['email','sms','line'].includes(c));
-  if (payload.recipientFilter !== undefined) update.recipientFilter = payload.recipientFilter;
+  if (payload.recipientFilter !== undefined) update.recipientFilter = _normCampFilter(payload.recipientFilter);
+  if (payload.recipientIds !== undefined) update.recipientIds = _sanitizeRecipientIds(payload.recipientIds);
+  if (payload.recipientRoles !== undefined) update.recipientRoles = _normCampRoles(payload.recipientRoles);
   if (payload.scheduledFor !== undefined) update.scheduledFor = payload.scheduledFor;
-  if (Object.keys(update).length) await doc.ref.update(update);
-  return { success: true };
+  if (!Object.keys(update).length) return { success: true };
+  // 四審 N2 + 五審 #2：已寄出／發送中的公告不得改寫 —— 否則主旨／內文被事後修改，
+  // stats 與追蹤紀錄卻留在原地，「當時到底寄了什麼」再也查不到。守門與寫入放同一
+  // 交易：read-check-write 會在「cron 剛認領成 sending」的瞬間讓改寫落在寄出之後，
+  // 文件內容 ≠ 實寄內容。前端雖已鎖按鈕，直接呼叫 callable 擋不住，守門必須在這裡。
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(doc.ref);
+    if (!snap.exists) return { success: false, message: "找不到 campaign" };
+    const _st = snap.data().status;
+    if (_st === 'sent') return { success: false, message: "此公告已發送，內容不可再修改" };
+    if (_st === 'sending') return { success: false, message: "此公告正在發送中，內容不可修改" };
+    tx.update(doc.ref, update);
+    return { success: true };
+  });
 });
 
 exports.deleteCampaign = compAuthCallable(async (data, request) => {
   const doc = await db.collection("campaigns").doc(data.campaignId).get();
   if (!doc.exists) return { success: false, message: "找不到" };
+  // 五審 #3：發送中不得刪除 —— 信照樣寄出、文件卻消失，最後的 status:'sent' 打在
+  // 已刪文件上，紀錄全失；主辦方看不到任何痕跡而重建重發＝全體收兩封。
+  // 卡住的（超過活性門檻）也一樣：先走「退回草稿」看清楚「部分已寄」的警示再說。
+  if (doc.data().status === 'sending') {
+    return { success: false, message: "此公告正在發送中（或前次發送未結束），請先於右側「退回草稿」後再刪除" };
+  }
   const compDoc = await db.collection("competitions").doc(doc.data().compId).get();
   if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
     return { success: false, message: "權限不足" };
@@ -9957,52 +10076,131 @@ function _injectCampaignTracking(bodyHtml, campaignId) {
   return html;
 }
 
+// 單封信件內容組裝：逐隊變數代換 → 注入追蹤 → 套 RegMaster 模板。
+// ⚠ 順序關鍵：必須「先代換、再注入追蹤」。反過來的話 {{變數}} 會被 _injectCampaignTracking
+//   包進 percent-encoded 的追蹤網址裡，之後永遠比對不到而留在信上。
+// ⚠ 主旨是純文字標頭，不做 HTML 逸出；只有 HTML 內文的代入值走 escMail。
+function _campaignMessage(camp, compName, t, campaignId) {
+  const vars = [
+    [/{{競賽名稱}}/g, compName || ''],
+    [/{{(隊伍編號|報名編號)}}/g, t.teamId || ''],
+    [/{{組別}}/g, t.group || ''],
+    [/{{中文隊名}}/g, t.teamNameCN || ''],
+    [/{{英文隊名}}/g, t.teamNameEN || '']
+  ];
+  // 以「函式取代」寫法，避免隊名裡的 $& / $1 被 String.replace 當成特殊樣式展開
+  const fill = (s, esc) => vars.reduce(
+    (a, v) => a.replace(v[0], () => (esc ? escMail(v[1]) : v[1])),
+    String(s == null ? '' : s));
+  const fSubj = fill(camp.subject || '活動公告', false);
+  const fText = fill(camp.body || '', false);
+  const inner = _injectCampaignTracking(fill(camp.body || '', true).replace(/\n/g, '<br>'), campaignId);
+  // 外審 #3：emailWrap 的標題是 `<h2>${title}</h2>` 原封插入（120-143），而代入的隊名
+  // 是報名者自填資料 —— 標題必須逸出。message.subject 是純文字信頭，維持不逸出。
+  return { subject: '[' + (compName || '活動') + '] ' + fSubj, html: emailWrap(escMail(fSubj), inner), text: fText };
+}
+
 // Core campaign delivery. No request-auth here — callers (sendCampaignNow manual,
 // processScheduledCampaigns cron) must authorise first.
+// v3：改為「一隊一封」——舊版把全活動所有 email 塞進單一 to 陣列，收件人彼此看得到
+// 完整信箱（CHD8XFK 實測 72 位），且介面承諾的 {{變數}} 從未被代換。結構沿用已上線
+// 驗證的 sendNotificationToAll:5220-5266（teamEmails 映射 → 逐隊代換 → 400 筆批次）。
 async function _deliverCampaign(campaignId, actorUsername) {
-  const doc = await db.collection("campaigns").doc(campaignId).get();
-  if (!doc.exists) return { success: false, message: "找不到 campaign" };
-  const camp = doc.data();
-  const compDoc = await db.collection("competitions").doc(camp.compId).get();
-  if (!compDoc.exists) return { success: false, message: "找不到活動" };
-  const cfg = compDoc.data().config || {};
-
-  const teamSnap = await db.collection("teams").where("compId", "==", camp.compId).get();
-  const teamIds = new Set();
-  teamSnap.docs.forEach(d => {
-    const t = d.data();
-    if (t.status === '已取消') return;
-    if (camp.recipientFilter === 'paid' && !(t.paymentStatus || '').includes('已確認')) return;
-    if (camp.recipientFilter === 'unpaid' && (t.paymentStatus || '').includes('已確認')) return;
-    if (camp.recipientFilter === 'waitlist' && !(t.status || '').startsWith('備取')) return;
-    teamIds.add(d.id);
-  });
-  const memSnap = teamIds.size > 0
-    ? await db.collection("members").where("compId", "==", camp.compId).get()
-    : { docs: [] };
-  const emails = new Set();
-  memSnap.docs.forEach(d => {
-    const m = d.data();
-    if (teamIds.has(m.teamId) && m.email) emails.add(m.email);
-  });
-
-  let sentCount = 0;
-  if ((camp.channels || []).includes('email') && emails.size > 0) {
-    const inner = _injectCampaignTracking((camp.body || '').replace(/\n/g, '<br>'), campaignId);
-    const html = emailWrap(camp.subject || '活動公告', inner);
-    await db.collection("mail").add({
-      to: Array.from(emails),
-      message: { subject: '[' + (cfg.competitionName || '活動') + '] ' + camp.subject, html, text: camp.body }
+  const doc = db.collection("campaigns").doc(campaignId);
+  // ── 寄送權「認領」：檢查 status 與寫入 'sending' 必須在同一個交易內 ──
+  // 二審 N1：舊寫法是「函式開頭讀 status → 中間做兩次全集合查詢 → 才寫 sending」，
+  // 中間隔著數百毫秒到數秒。排程到點時 cron 與主辦方手動按「立即發送」會雙雙通過
+  // 守門，各自寫出完整批次 → 全體收兩封。交易讓兩者只有一方能取得寄送權。
+  // 'sending' 代表前一次在「已寫入部分 mail」與「標記 sent」之間中斷 —— 一律不自動
+  // 重試：信不可撤回，寧可卡住等人工（見 resetCampaignDelivery），也不要整份重寄。
+  let claim;
+  try {
+    claim = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(doc);
+      if (!snap.exists) return { ok: false, message: "找不到 campaign" };
+      const st = snap.data().status;
+      if (st === 'sent') return { ok: false, message: "此公告已發送過" };
+      if (st === 'sending') {
+        return { ok: false, message: "前一次發送尚未完成（開始於 " + (snap.data().deliveryStartedAt || "?") +
+          "）。請先確認收件人是否已收到，再決定是否重送。" };
+      }
+      // deliveryStartedMs 是可比較的時間戳（fmtNow() 是 zh-TW 在地化字串，不可拿來算差）。
+      // resetCampaignDelivery 用它判斷「這份是真的卡住，還是此刻正在寄」。
+      tx.update(doc, { status: 'sending', deliveryStartedAt: fmtNow(), deliveryStartedMs: Date.now() });
+      // 六審 (a)：寄送內容快照必須取自「交易內讀到的這一份」。認領前另讀一次的話，
+      // updateCampaign 若恰好在兩讀之間 commit，就會寄出舊內容而文件已是新內容。
+      return { ok: true, prevStatus: st || 'draft', camp: snap.data() };
     });
-    sentCount += emails.size;
+  } catch (e) {
+    console.error("[deliverCampaign] claim", campaignId, e);
+    return { success: false, message: "取得發送權失敗，請稍後再試", sent: 0, channels: [] };
   }
+  if (!claim.ok) return { success: false, message: claim.message, sent: 0, channels: [] };
+  const camp = claim.camp;   // 六審 (a)：以認領交易內的快照為準，杜絕「寄舊內容」殘窗
+
+  // 認領之後任何提前結束都必須「歸還」——否則公告會卡在 sending。
+  // 三審 F4：歸還成什麼狀態要看失敗性質。
+  //   確定性失敗（收件人 0、未選通道、收件對象無效）→ draft：重試幾次都一樣，
+  //     留在 scheduled 只會讓 cron 每 15 分鐘白跑到天荒地老。
+  //   暫時性失敗（查詢丟例外、活動讀不到）→ 還原成 prevStatus：原本排好的時間不該
+  //     因為一次讀取失敗就被靜默取消，cron 下一輪會再試。
+  const _release = async (message, transient) => {
+    const back = transient ? claim.prevStatus : 'draft';
+    await doc.update({ status: back, lastDeliveryError: fmtNow() + "　" + message });
+    return { success: false, message, sent: 0, channels: camp.channels || [] };
+  };
+
+  // 五審 #1：認領之後的每一個 await 都必須在保護範圍內 —— 這個 get() 原本在 try 外，
+  // 一次暫時性讀取失敗就會讓公告卡在 'sending' 且一封都沒寄（要等 10 分鐘門檻才能人工退回）。
+  let compName;
+  let r, targets, skipped, mailDocs = [], uniq = new Set();
+  try {
+    const compDoc = await db.collection("competitions").doc(camp.compId).get();
+    if (!compDoc.exists) return await _release("找不到活動", true);   // 讀不到活動視為暫時性
+    const cfg = compDoc.data().config || {};
+    compName = cfg.competitionName || compDoc.data().name || '';
+    r = await _resolveTeams(camp.compId, camp);
+    if (!r.ok) {
+      await auditLog(actorUsername || 'system', "sendCampaign", campaignId, "已擋下：" + r.message);
+      return await _release(r.message);
+    }
+    targets = r.teams.filter(t => t.emails.length > 0);
+    skipped = (r.teamsNoEmail || 0) + (r.cancelled || 0) + (r.missing || 0);
+    // 收件人為 0 絕不可標記 'sent' —— 舊版無條件寫 status:'sent'，會變成「已發送 0 人」
+    // 且前端發送鈕從此 disabled，主辦方無法補寄。歸還時寫下原因，否則排程到期後公告
+    // 靜靜變回草稿、一封都沒寄，畫面上完全沒有線索。
+    if (!(camp.channels || []).includes('email')) return await _release("未選擇 Email 通道，未寄出");
+    if (targets.length === 0) {
+      return await _release("沒有符合條件的收件人，未寄出" + (skipped ? "（略過 " + skipped + " 隊）" : ""));
+    }
+    for (const t of targets) {
+      mailDocs.push({ to: t.emails.slice(), message: _campaignMessage(camp, compName, t, campaignId) });
+      t.emails.forEach(e => uniq.add(e));
+    }
+  } catch (e) {
+    // 尚未寫出任何一封信 → 安全歸還，不會卡在 sending
+    console.error("[deliverCampaign] prepare", campaignId, e);
+    return await _release("發送準備失敗：" + (e && e.message ? String(e.message).slice(0, 120) : "未知錯誤"), true);
+  }
+
+  // 這一行之後就可能有信真的寄出去了 —— 從此不再自動歸還 status，
+  // 中斷就停在 'sending' 等人工用 resetCampaignDelivery 處理。
+  for (let i = 0; i < mailDocs.length; i += 400) {
+    const batch = db.batch();
+    mailDocs.slice(i, i + 400).forEach(m => batch.set(db.collection("mail").doc(), m));
+    await batch.commit();
+  }
+
   const smsLineNote = ((camp.channels || []).includes('sms') ? 'SMS ' : '') + ((camp.channels || []).includes('line') ? 'LINE' : '');
-  await doc.ref.update({
-    status: 'sent', sentAt: fmtNow(),
-    'stats.recipients': emails.size, 'stats.sent': sentCount, 'stats.smsLineQueued': smsLineNote || ''
+  await doc.update({
+    status: 'sent', sentAt: fmtNow(), lastDeliveryError: '',
+    'stats.recipients': uniq.size, 'stats.sent': uniq.size,
+    'stats.teams': mailDocs.length, 'stats.skipped': skipped,
+    'stats.smsLineQueued': smsLineNote || ''
   });
-  await auditLog(actorUsername || 'system', "sendCampaign", campaignId, sentCount + " emails");
-  return { success: true, sent: sentCount, channels: camp.channels };
+  await auditLog(actorUsername || 'system', "sendCampaign", campaignId,
+    mailDocs.length + " 隊 / " + uniq.size + " 位收件人" + (skipped ? "（略過 " + skipped + " 隊）" : ""));
+  return { success: true, sent: uniq.size, teams: mailDocs.length, skipped, channels: camp.channels };
 }
 
 exports.sendCampaignNow = compAuthCallable(async (data, request) => {
@@ -10016,6 +10214,82 @@ exports.sendCampaignNow = compAuthCallable(async (data, request) => {
     return { success: false, message: "權限不足" };
   }
   return _deliverCampaign(campaignId, request.authUser.username);
+// 三審 F3：v3 起逐隊寄送（多批次寫入），60 秒預設值不夠。cron 那條已明寫 300 秒，
+// 人工觸發這條當時漏掉 —— 逾時＝程序被殺（catch 接不到）＝部分寄出且卡在 'sending'。
+// 兩條必須對齊，否則「哪條路徑會卡住」變成擲骰子。
+}, { timeoutSeconds: 300 });
+
+// 二審 N3：把卡在 'sending' 的公告退回草稿。系統刻意不自動重試（信不可撤回），
+// 在此之前主辦方唯一的出路是整份刪除，連同 stats 與追蹤紀錄一起消失。
+// 只接受 'sending'：其他狀態不得經由此路徑改動，避免變成繞過防重寄守門的後門。
+exports.resetCampaignDelivery = compAuthCallable("manage", async (data, request) => {
+  await requireCompFeature(request, "campaigns");
+  const { campaignId } = data;
+  const doc = await db.collection("campaigns").doc(campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到 campaign" };
+  const compDoc = await db.collection("competitions").doc(doc.data().compId).get();
+  if (!compDoc.exists) return { success: false, message: "找不到活動" };
+  if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
+    return { success: false, message: "權限不足" };
+  }
+  // 三審 F1 + 四審 N3a：狀態檢查、活性門檻、寫入必須在同一個交易內。
+  // read-check-write 的寫法有一個窄窗口：B 通過門檻的同時，A 已退回並重新發送
+  // （新的認領寫入新 deliveryStartedMs）→ B 的無條件 update 把 A 正在跑的鎖拆掉。
+  // 交易內重讀後，B 會看到年輕的 deliveryStartedMs 而被門檻擋下。
+  // 門檻 CAMPAIGN_STALE_MS（10 分鐘 > 2× 函式逾時上限 300 秒）：超過此時間仍停在
+  // 'sending' 才視為「前次中斷」，否則一律當「此刻正在寄」拒絕。
+  let out;
+  try {
+    out = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(doc.ref);
+      if (!snap.exists) return { success: false, message: "找不到 campaign" };
+      const camp = snap.data();
+      if (camp.status !== 'sending') return { success: false, message: "此公告不在「發送中」狀態，無需重設" };
+      const startedMs = Number(camp.deliveryStartedMs || 0);
+      const age = startedMs ? (Date.now() - startedMs) : Infinity;   // 舊資料無此欄位 → 視為已過期
+      if (age < CAMPAIGN_STALE_MS) {
+        return { success: false, message: "此公告正在發送中（已進行 " + Math.round(age / 1000) + " 秒），請於 " +
+          Math.ceil((CAMPAIGN_STALE_MS - age) / 60000) + " 分鐘後再確認是否需要退回" };
+      }
+      tx.update(doc.ref, {
+        status: 'draft',
+        lastDeliveryError: fmtNow() + "　由 " + request.authUser.username + " 手動退回草稿（前次發送中斷，部分收件人可能已收到）"
+      });
+      return { success: true, startedAt: camp.deliveryStartedAt || "" };
+    });
+  } catch (e) {
+    console.error("[resetCampaignDelivery]", campaignId, e);
+    return { success: false, message: "重設失敗，請稍後再試" };
+  }
+  if (out.success) await auditLog(request.authUser.username, "resetCampaignDelivery", campaignId, out.startedAt);
+  return out;
+});
+
+// 測試寄送：只寄一封給操作者本人，變數以目前名單的第一隊代入（名單空則用範例值）。
+// 不寫 stats、不改 status、不計入統計 —— 在此之前主辦方唯一的驗證方式是「真的寄給所有人」。
+exports.sendCampaignTest = compAuthCallable("manage", async (data, request) => {
+  await requireCompFeature(request, "campaigns");
+  const { campaignId } = data;
+  const to = String(request.authUser.email || "").trim();
+  if (!to) return { success: false, message: "你的帳號沒有設定 Email，無法測試寄送" };
+  const doc = await db.collection("campaigns").doc(campaignId).get();
+  if (!doc.exists) return { success: false, message: "找不到 campaign" };
+  const camp = doc.data();
+  const compDoc = await db.collection("competitions").doc(camp.compId).get();
+  if (!compDoc.exists) return { success: false, message: "找不到活動" };
+  if (request.authUser.role !== 'system' && compDoc.data().creator !== request.authUser.username) {
+    return { success: false, message: "權限不足" };
+  }
+  const cfg = compDoc.data().config || {};
+  const compName = cfg.competitionName || compDoc.data().name || '';
+  const r = await _resolveTeams(camp.compId, camp);
+  const sample = (r.ok && r.teams.length) ? r.teams[0]
+    : { teamId: (camp.compId || 'DEMO') + '-T000000', group: '（範例組別）', teamNameCN: '（範例隊名）', teamNameEN: '(Sample Team)' };
+  const msg = _campaignMessage(camp, compName, sample, campaignId);
+  msg.subject = '[測試] ' + msg.subject;
+  await db.collection("mail").add({ to: [to], message: msg });
+  await auditLog(request.authUser.username, "sendCampaignTest", campaignId, to);
+  return { success: true, to, sample: sample.teamId };
 });
 
 // #4: mark a campaign to auto-send at a future time (picked up by processScheduledCampaigns).
@@ -10031,7 +10305,19 @@ exports.scheduleCampaign = compAuthCallable(async (data, request) => {
   const when = new Date(scheduledFor).getTime();
   if (!when || isNaN(when)) return { success: false, message: "排程時間無效" };
   if (when < Date.now() - 60000) return { success: false, message: "排程時間需為未來" };
-  await doc.ref.update({ status: 'scheduled', scheduledFor: new Date(when).toISOString() });
+  // 外審 #2 + 四審 N4：已寄出／發送中的公告不得重新排程 —— 否則 status 被打回
+  // 'scheduled'，cron 會再撿一次而整份重寄。檢查與寫入放同一交易：read-check-write
+  // 的寫法會在「cron 剛認領成 sending」的瞬間把它抹回 scheduled，拆掉防重寄的鎖。
+  const gate = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(doc.ref);
+    if (!snap.exists) return { success: false, message: "找不到 campaign" };
+    const _st = snap.data().status;
+    if (_st === 'sent') return { success: false, message: "此公告已發送過，無法重新排程" };
+    if (_st === 'sending') return { success: false, message: "此公告正在發送中，請稍候" };
+    tx.update(doc.ref, { status: 'scheduled', scheduledFor: new Date(when).toISOString() });
+    return { success: true };
+  });
+  if (!gate.success) return gate;
   await auditLog(request.authUser.username, "scheduleCampaign", campaignId, new Date(when).toISOString());
   return { success: true, scheduledFor: new Date(when).toISOString() };
 });

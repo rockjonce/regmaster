@@ -32,6 +32,7 @@
 .camp .st.draft { background:var(--surface); color:var(--muted); }
 .camp .st.sent { background:color-mix(in srgb, var(--ok-500) 14%, transparent); color:var(--ok-700); }
 .camp .st.scheduled { background:color-mix(in srgb, var(--amber-500) 14%, transparent); color:var(--warn-700); }
+.camp .st.sending { background:color-mix(in srgb, var(--danger-500, #d94b4b) 16%, transparent); color:var(--danger-700, #a32b2b); }
 .camp .ch-icons { display:flex; gap:3px; margin-left:auto; font:600 10px/1 var(--f-mono); color:var(--muted); }
 .camp h4 { font:600 13.5px/1.3 var(--f-display); margin-bottom:4px; }
 .camp .meta { font:500 11px/1.4 var(--f-mono); color:var(--muted); }
@@ -134,6 +135,7 @@
           <div class="actions">
             <button class="btn btn-ghost btn-sm" id="previewBtn" data-i18n="aeAnnPreviewBtn">🔍 預覽</button>
             <button class="btn btn-ghost btn-sm" id="saveCampBtn" data-i18n="aeAnnSaveBtn">儲存草稿</button>
+            <button class="btn btn-ghost btn-sm" id="testSendBtn" data-i18n="aeAnnTestBtn">✉️ 測試寄送</button>
             <input type="datetime-local" id="schedAt" style="padding:6px 8px; font:500 12px/1 var(--f-tc); border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)">
             <button class="btn btn-ghost btn-sm" id="scheduleBtn" data-i18n="aeAnnScheduleBtn">排程發送</button>
             <button class="btn btn-primary btn-sm" id="sendNowBtn" data-i18n="aeAnnSendBtn">立即發送 →</button>
@@ -154,7 +156,21 @@
                 <option value="paid" data-i18n="aeAnnRecipPaid">已付款</option>
                 <option value="unpaid" data-i18n="aeAnnRecipUnpaid">未付款</option>
                 <option value="waitlist" data-i18n="aeAnnRecipWaitlist">候補</option>
+                <!-- 這個選項必須存在於靜態 markup：selectCamp() 會把 select.value 設成
+                     已存檔的 recipientFilter，若沒有對應 option，瀏覽器會讓 value 變成
+                     空字串，導致預覽顯示全部人數、且儲存時把自訂名單設定抹掉。 -->
+                <option value="custom" data-i18n="aeAnnRecipCustom">自訂（勾選隊伍）</option>
               </select>
+              <button class="btn btn-ghost btn-sm" id="pickTeamsBtn" style="margin-left:8px" data-i18n="aeAnnPickBtn">勾選隊伍…</button>
+              <span id="pickSummary" style="margin-left:8px; font:500 12px/1.5 var(--f-tc); color:var(--muted)"></span>
+            </div></div>
+            <div class="r"><div class="lbl" data-i18n="aeAnnLblRoles">寄送身分</div><div class="val">
+              <select id="recipRoles">
+                <option value="" data-i18n="aeAnnRoleAll">全隊成員</option>
+                <option value="學生" data-i18n="aeAnnRoleStudent">僅報名者</option>
+                <option value="教練" data-i18n="aeAnnRoleTeacher">僅指導者</option>
+              </select>
+              <span style="margin-left:8px; font:400 11.5px/1.5 var(--f-tc); color:var(--muted)" data-i18n="aeAnnRolesHint">以隊伍為單位發送，一隊一封，收件人為該隊符合身分的成員信箱</span>
             </div></div>
             <div class="r"><div class="lbl" data-i18n="aeAnnLblSubject">主旨</div><div class="val"><input id="subjectInput" placeholder="例：場地調整通知" data-i18n-placeholder="aeAnnSubjectPlaceholder"></div></div>
           </div>
@@ -170,6 +186,7 @@
         <div class="recipient-card">
           <div class="v" id="recipCount">—</div>
           <div class="l" data-i18n="aeAnnRecipCountLabel">符合條件的 Email 數</div>
+          <div class="l" id="recipSub" style="opacity:.8"></div>
         </div>
         <div id="recipList" style="margin-bottom:14px; max-height:320px; overflow-y:auto"></div>
         <h4 style="margin-top:18px" data-i18n="aeAnnRightStats">傳送統計</h4>
@@ -205,6 +222,13 @@
 
   var CAMPS = [], SELECTED = null, COMP_NAME = '';
   var CHANNELS = ['email'];
+  // v3 自訂收件人：只存 teams 的文件 ID（teamId）。teamId 由 compId+亂碼組成且是 teams
+  // 的文件 ID，報名者自助編輯走 updateRegistration 時是「就地更新」故不會變；相對地
+  // members 文件會被整批刪除重建，所以絕不可存 member 文件 ID。
+  var PICK_IDS = [];      // string[]  已勾選的 teamId
+  var PICK_ROLES = '';    // '' | '學生' | '教練'
+  var CFG = {};           // getRegistrationBundle 回傳的整份 config（含 sessions / groups）
+  var AUDIENCE = null;    // 勾選視窗用的完整隊伍清單（getCampaignRecipients filter=all）
 
   // ---- Item 4: Outlook-compatible HTML check for inline-HTML email bodies ----
   function looksLikeHtml(s) { return /<([a-z][a-z0-9]*)\b[^>]*>/i.test(s || ''); }
@@ -260,6 +284,7 @@
       CAMPS = r[0] || [];
       var bundle = r[1] || {};
       var cfg = bundle.config || {};
+      CFG = cfg;   // 梯次／組別清單直接沿用這份 config，勾選視窗不需要另開後端端點
       COMP_NAME = cfg.competitionName || '';
       document.getElementById('crumbHub').href = '/admin/events/' + encodeURIComponent(compId);
       document.getElementById('crumbHub').textContent = cfg.competitionName || compId;
@@ -306,8 +331,11 @@
     document.getElementById('bodyContent').disabled = true;
     document.getElementById('saveCampBtn').disabled = true;
     document.getElementById('sendNowBtn').disabled = true;
+    document.getElementById('scheduleBtn').disabled = true;
+    document.getElementById('testSendBtn').disabled = true;
     document.getElementById('previewBtn').disabled = true;
     document.getElementById('statsBox').textContent = window.L('aeAnnEmptyStats');
+    syncPickUi();   // 沒有選取範本時也要讓「勾選隊伍」鈕的顯示狀態正確
   }
 
   function renderList() {
@@ -316,7 +344,7 @@
     list.innerHTML = CAMPS.map(function (c) {
       var chIcons = c.channels.map(function (x) { return x === 'email' ? '📧' : x === 'sms' ? '📱' : '💬'; }).join('');
       return '<div class="camp" data-id="' + c.id + '">' +
-        '<div class="top"><span class="st ' + (c.status || 'draft') + '">' + (c.status === 'sent' ? escapeHtml(window.L('aeAnnStatusSent')) : c.status === 'scheduled' ? escapeHtml(window.L('aeAnnStatusScheduled')) : escapeHtml(window.L('aeAnnStatusDraft'))) + '</span><span class="ch-icons">' + chIcons + '</span><span class="camp-del" data-del="' + c.id + '" title="' + escapeHtml(window.L('aeAnnDelTitle')) + '">✕</span></div>' +
+        '<div class="top"><span class="st ' + (c.status || 'draft') + '">' + (c.status === 'sent' ? escapeHtml(window.L('aeAnnStatusSent')) : c.status === 'scheduled' ? escapeHtml(window.L('aeAnnStatusScheduled')) : c.status === 'sending' ? escapeHtml(window.L('aeAnnStatusSending')) : escapeHtml(window.L('aeAnnStatusDraft'))) + '</span><span class="ch-icons">' + chIcons + '</span><span class="camp-del" data-del="' + c.id + '" title="' + escapeHtml(window.L('aeAnnDelTitle')) + '">✕</span></div>' +
         '<h4>' + escapeHtml(c.subject || window.L('aeAnnNoSubject')) + '</h4>' +
         '<div class="meta">' + escapeHtml(c.createdAt || '') + escapeHtml(window.L('aeAnnMetaRecipPre')) + ((c.stats && c.stats.sent) || 0) + '</div>' +
       '</div>';
@@ -359,11 +387,20 @@
     document.getElementById('saveCampBtn').disabled = false;
     document.getElementById('previewBtn').disabled = false;
     document.getElementById('recipFilter').value = c.recipientFilter || 'all';
+    PICK_IDS = Array.isArray(c.recipientIds) ? c.recipientIds.slice() : [];
+    // 後端存的是陣列（[] = 不限制）；UI 是單選下拉，取第一個值即可
+    PICK_ROLES = (Array.isArray(c.recipientRoles) && c.recipientRoles.length === 1) ? c.recipientRoles[0] : '';
+    document.getElementById('recipRoles').value = PICK_ROLES;
+    syncPickUi();
     CHANNELS = (c.channels || ['email']).slice();
     document.querySelectorAll('.channel-pill').forEach(function (p) {
       p.classList.toggle('on', !p.classList.contains('disabled') && CHANNELS.includes(p.dataset.ch));
     });
     updateRecipCount();
+    // statsBox 在 markup :193 帶著 data-i18n，而 applyI18n 會直接覆寫它的 textContent。
+    // 這裡放的是動態內容（卡住時唯一的恢復按鈕就在裡面），必須拆掉標記才不會被切語言
+    // 洗掉——本 repo 反覆踩過的同一個陷阱；重繪改由 lang-changed 監聽負責。
+    document.getElementById('statsBox').removeAttribute('data-i18n');
     var stats = c.stats || {};
     if (c.status === 'sent') {
       document.getElementById('statsBox').innerHTML =
@@ -371,10 +408,45 @@
         '<br>' + window.L('aeAnnStatsOpened') + (stats.opened || 0) + ' · ' + window.L('aeAnnStatsClicked') + (stats.clicked || 0);
     } else if (c.status === 'scheduled') {
       document.getElementById('statsBox').innerHTML = window.L('aeAnnStatsScheduledPre') + escapeHtml((c.scheduledFor || '').replace('T', ' ').slice(0, 16));
+    } else if (c.status === 'sending') {
+      // 前一次寄送在「已寫入部分信件」與「標記完成」之間中斷。系統刻意不自動重試
+      // （信不可撤回），必須由主辦方確認後處理。
+      // 三審 F1：'sending' 分兩種。未達門檻＝此刻正在寄，只顯示中性的進行中訊息，
+      // 絕不能出現「退回草稿」鈕，也不能斷言「前一次發送未正常結束」—— 否則另一位
+      // 管理員會在第一次還在跑的時候按下退回、再按發送，造成全體重寄。
+      var stale = !c.deliveryStartedMs || (Date.now() - Number(c.deliveryStartedMs)) >= 10 * 60 * 1000;
+      document.getElementById('statsBox').innerHTML = stale
+        ? window.L('aeAnnStatsStuckPre') + escapeHtml(c.deliveryStartedAt || '') + window.L('aeAnnStatsStuckSuf') +
+          '<br><button class="btn btn-ghost btn-sm" id="resetSendBtn" style="margin-top:8px">' + escapeHtml(window.L('aeAnnResetBtn')) + '</button>'
+        : window.L('aeAnnStatsSendingPre') + escapeHtml(c.deliveryStartedAt || '') + window.L('aeAnnStatsSendingSuf');
     } else {
       document.getElementById('statsBox').innerHTML = window.L('aeAnnStatsNone');
     }
-    document.getElementById('sendNowBtn').disabled = (c.status === 'sent');
+    // 排程失敗（收件人 0、未選通道、收件對象設定無效）會把公告退回草稿，
+    // 若沒有這行提示，主辦方會以為排程成功、實際上一封都沒寄。
+    if (c.lastDeliveryError) {
+      document.getElementById('statsBox').innerHTML +=
+        '<br><span style="color:var(--warn,#a86b00)">⚠ ' + escapeHtml(c.lastDeliveryError) + '</span>';
+    }
+    // 外審 #2：已寄出／發送中時，「排程發送」也必須擋掉 —— 否則 status 被打回
+    // scheduled，cron 會繞過防重寄守門再寄一次。
+    var locked = (c.status === 'sent' || c.status === 'sending');
+    document.getElementById('sendNowBtn').disabled = locked;
+    document.getElementById('scheduleBtn').disabled = locked;
+    // 四審 N2：測試寄送走 saveThen（先 updateCampaign），對已寄出的公告按它等於
+    // 靜默改寫歷史紀錄 —— 一併鎖定。真正的守門在後端 updateCampaign。
+    document.getElementById('testSendBtn').disabled = locked;
+    // statsBox 是每次 selectCamp 重繪的動態內容，按鈕隨之重建，不會重複綁定。
+    var rs = document.getElementById('resetSendBtn');
+    if (rs) rs.addEventListener('click', function () {
+      uiConfirm(window.L('aeAnnResetConfirm'), { title: window.L('aeAnnResetBtn'), okText: window.L('aeAnnResetOk'), danger: true }).then(function (ok) {
+        if (!ok) return;
+        runFn('resetCampaignDelivery', SELECTED.id).then(function (res) {
+          if (res && res.success) { uiAlert(window.L('aeAnnResetDone')); refreshCampaigns(SELECTED && SELECTED.id); }
+          else uiAlert((res && res.message) || window.L('aeAnnResetFail'));
+        }).catch(function (err) { uiAlert((err && err.message) || window.L('aeAnnResetFail')); });
+      });
+    });
   }
 
   function createDraft() {
@@ -392,27 +464,204 @@
   }
   document.getElementById('newCampBtn').addEventListener('click', createDraft);
 
+  // 目前的收件人參數；save / sendNow / schedule / 預覽面板全部共用同一份，
+  // 避免任何一個送出點漏帶自訂名單而在後端退回 'all'（＝寄給全部人）。
+  function recipPayload() {
+    return {
+      recipientFilter: document.getElementById('recipFilter').value,
+      recipientIds: PICK_IDS.slice(),
+      recipientRoles: PICK_ROLES ? [PICK_ROLES] : []
+    };
+  }
+  // 目前預覽面板算出來的口徑（送出確認框沿用，不再讀 DOM 的 textContent）
+  var LAST_COUNT = { total: 0, teams: 0, ready: false };
+  // 四審 N1：請求世代守衛。lang-changed 會連發兩次 updateRecipCount（selectCamp 帶
+  // 伺服器舊值、handler 還原後帶使用者現值），若舊參數那發晚回，LAST_COUNT 會停在
+  // 錯的數字 —— 確認框顯示 3 隊、實寄 21 隊。只認最後一發。
+  var RECIP_GEN = 0;
+
+  function syncPickUi() {
+    var isCustom = document.getElementById('recipFilter').value === 'custom';
+    document.getElementById('pickTeamsBtn').style.display = isCustom ? '' : 'none';
+    var sum = document.getElementById('pickSummary');
+    sum.textContent = isCustom ? (window.L('aeAnnPickedPre') + PICK_IDS.length + window.L('aeAnnPickedSuf')) : '';
+  }
+
   function updateRecipCount() {
-    var filter = document.getElementById('recipFilter').value;
+    var p = recipPayload();
+    var gen = ++RECIP_GEN;
+    LAST_COUNT.ready = false;
     document.getElementById('recipCount').textContent = '⋯';
     document.getElementById('recipList').innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">' + escapeHtml(window.L('aeAnnRecipCalc')) + '</p>';
     google.script.run
       .withSuccessHandler(function (res) {
+        if (gen !== RECIP_GEN) return;   // 已有更新的一發在途或已回，這發作廢
         res = res || {};
+        LAST_COUNT = { total: res.total || 0, teams: res.teamCount || 0, ready: true };
         document.getElementById('recipCount').textContent = (res.total != null ? res.total : 0);
-        var teams = res.teams || [];
-        document.getElementById('recipList').innerHTML = teams.length
+        // 一隊一封：同一信箱若掛在不同隊會分別收到，故三個口徑要一起顯示
+        var sub = document.getElementById('recipSub');
+        if (sub) sub.textContent = (res.teamCount || 0) + window.L('aeAnnRecipTeamsSuf');
+        var notes = [];
+        if (res.teamsNoEmail) notes.push(res.teamsNoEmail + window.L('aeAnnRecipNoEmail'));
+        if (res.cancelled) notes.push(res.cancelled + window.L('aeAnnRecipCancelled'));
+        if (res.missing) notes.push(res.missing + window.L('aeAnnRecipMissing'));
+        var noteHtml = notes.length
+          ? '<p style="margin:0 0 8px; font:500 11.5px/1.6 var(--f-tc); color:var(--warn, #a86b00)">⚠ ' + escapeHtml(notes.join(window.L('aeAnnSep'))) + '</p>' : '';
+        // 面板只列真正會收到信的隊伍（無 email 的隊伍計入上方提示）
+        var teams = (res.teams || []).filter(function (t) { return t.emails && t.emails.length; });
+        document.getElementById('recipList').innerHTML = noteHtml + (teams.length
           ? teams.map(function (t) {
-              return '<div class="recip-team"><div class="tn">' + escapeHtml(t.teamName) +
+              return '<div class="recip-team"><div class="tn">' + escapeHtml(teamDisplayName(t)) +
                 '<span style="color:var(--muted); font-weight:400"> · ' + t.emails.length + escapeHtml(window.L('aeAnnRecipUnit')) + '</span></div>' +
                 '<div class="em">' + t.emails.map(escapeHtml).join(window.L('aeAnnEmailSep')) + '</div></div>';
             }).join('')
-          : '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">' + escapeHtml(window.L('aeAnnRecipNone')) + '</p>';
+          : '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:6px 0">' + escapeHtml(window.L('aeAnnRecipNone')) + '</p>');
       })
-      .withFailureHandler(function () { document.getElementById('recipCount').textContent = '?'; document.getElementById('recipList').innerHTML = ''; })
-      .getCampaignRecipients(compId, filter);
+      .withFailureHandler(function () { if (gen !== RECIP_GEN) return; document.getElementById('recipCount').textContent = '?'; document.getElementById('recipList').innerHTML = ''; })
+      .getCampaignRecipients(compId, p.recipientFilter, p.recipientIds, p.recipientRoles);
   }
-  document.getElementById('recipFilter').addEventListener('change', updateRecipCount);
+  document.getElementById('recipFilter').addEventListener('change', function () { syncPickUi(); updateRecipCount(); });
+  document.getElementById('recipRoles').addEventListener('change', function () { PICK_ROLES = this.value; updateRecipCount(); });
+  document.getElementById('pickTeamsBtn').addEventListener('click', openTeamPicker);
+
+  // ----- v3：自訂收件人勾選視窗（以隊伍為單位）-----
+  // 篩選條件全部讀 teams 文件上的直接欄位（梯次／組別／狀態／付款），不做任何衍生計算，
+  // 也不讀 members ── members 只用來收 email。梯次與組別清單來自頁面已載入的 CFG。
+  // UAT-1：隊伍顯示名 —— 中文介面優先中文隊名、英文介面優先英文隊名；
+  // 兩者皆空（單人報名活動的常態）改顯示全部報名者姓名；連姓名都沒有才落到「無隊名」。
+  function teamDisplayName(t) {
+    var en = (window.AppState && AppState.getLang && AppState.getLang() === 'en');
+    var n = en ? (t.teamNameEN || t.teamNameCN) : (t.teamNameCN || t.teamNameEN);
+    if (n) return n;
+    if (t.memberNames && t.memberNames.length) return t.memberNames.join(window.L('aeAnnSep'));
+    return t.teamName || window.L('aeAnnNoTeamName');
+  }
+  function sessionLabel(i) {
+    var s = (CFG.sessions || [])[i] || {};
+    // C3EJ62D 的梯次只有日期沒有 name — 沒有名稱時退回「第 N 梯（起日）」
+    return s.name || (window.L('aeAnnSessNoPre') + (i + 1) + window.L('aeAnnSessNoSuf') +
+      (s.startDate ? ' (' + String(s.startDate).slice(0, 10) + ')' : ''));
+  }
+  function teamMatches(t, f) {
+    if (f.sess !== '' && (t.sessions || []).indexOf(parseInt(f.sess, 10)) < 0) return false;
+    if (f.group !== '' && (t.group || '') !== f.group) return false;
+    if (f.status === 'accepted' && (t.status || '') !== '正取') return false;
+    if (f.status === 'waitlist' && String(t.status || '').indexOf('備取') !== 0) return false;
+    if (f.status === 'review' && (t.status || '') !== '審核中') return false;
+    if (f.pay === 'paid' && !t.paid) return false;
+    if (f.pay === 'unpaid' && t.paid) return false;
+    return true;
+  }
+
+  function openTeamPicker() {
+    var bg = document.createElement('div');
+    bg.className = 'pv-bg';
+    var sel = {}; PICK_IDS.forEach(function (id) { sel[id] = true; });
+    var sessOpts = (CFG.sessions || []).map(function (s, i) { return '<option value="' + i + '">' + escapeHtml(sessionLabel(i)) + '</option>'; }).join('');
+    var grpOpts = (CFG.groups || []).map(function (g) { return '<option value="' + escapeHtml(g) + '">' + escapeHtml(g) + '</option>'; }).join('');
+    var ctl = 'padding:6px 8px; font:500 12px/1 var(--f-tc); border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink)';
+    bg.innerHTML =
+      '<div style="background:var(--surface); border-radius:12px; width:min(940px,96vw); max-height:92vh; display:flex; flex-direction:column; overflow:hidden">' +
+        '<div style="padding:14px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap">' +
+          '<b style="font:800 15px/1.4 var(--f-tc); color:var(--ink)">' + escapeHtml(window.L('aeAnnPickTitle')) + '</b>' +
+          '<span style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)">' + escapeHtml(window.L('aeAnnPickHint')) + '</span>' +
+        '</div>' +
+        '<div style="padding:10px 18px; border-bottom:1px solid var(--line); display:flex; gap:8px; flex-wrap:wrap; align-items:center">' +
+          (sessOpts ? '<select id="pkSess" style="' + ctl + '"><option value="">' + escapeHtml(window.L('aeAnnPickAllSess')) + '</option>' + sessOpts + '</select>' : '') +
+          (grpOpts ? '<select id="pkGroup" style="' + ctl + '"><option value="">' + escapeHtml(window.L('aeAnnPickAllGroups')) + '</option>' + grpOpts + '</select>' : '') +
+          '<select id="pkStatus" style="' + ctl + '"><option value="">' + escapeHtml(window.L('aeAnnPickAllStatus')) + '</option>' +
+            '<option value="accepted">' + escapeHtml(window.L('aeAnnPickStAccepted')) + '</option>' +
+            '<option value="waitlist">' + escapeHtml(window.L('aeAnnPickStWaitlist')) + '</option>' +
+            '<option value="review">' + escapeHtml(window.L('aeAnnPickStReview')) + '</option></select>' +
+          '<select id="pkPay" style="' + ctl + '"><option value="">' + escapeHtml(window.L('aeAnnPickAllPay')) + '</option>' +
+            '<option value="paid">' + escapeHtml(window.L('aeAnnPickPaid')) + '</option>' +
+            '<option value="unpaid">' + escapeHtml(window.L('aeAnnPickUnpaid')) + '</option></select>' +
+          '<button class="btn btn-ghost btn-sm" id="pkSelAll">' + escapeHtml(window.L('aeAnnPickSelectShown')) + '</button>' +
+          '<button class="btn btn-ghost btn-sm" id="pkClear">' + escapeHtml(window.L('aeAnnPickClear')) + '</button>' +
+        '</div>' +
+        '<div id="pkList" style="flex:1; overflow:auto; padding:6px 8px"></div>' +
+        '<div style="padding:12px 18px; border-top:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap">' +
+          '<span id="pkCount" style="font:600 12.5px/1.5 var(--f-tc); color:var(--ink)"></span>' +
+          '<span id="pkNote" style="font:400 11.5px/1.5 var(--f-tc); color:var(--muted)"></span>' +
+          '<span style="flex:1"></span>' +
+          '<button class="btn btn-ghost btn-sm" id="pkCancel">' + escapeHtml(window.L('aeAnnPickCancel')) + '</button>' +
+          '<button class="btn btn-primary btn-sm" id="pkOk">' + escapeHtml(window.L('aeAnnPickOk')) + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(bg);
+
+    var listEl = bg.querySelector('#pkList');
+    function filters() {
+      return {
+        sess: (bg.querySelector('#pkSess') || { value: '' }).value,
+        group: (bg.querySelector('#pkGroup') || { value: '' }).value,
+        status: bg.querySelector('#pkStatus').value,
+        pay: bg.querySelector('#pkPay').value
+      };
+    }
+    function shown() { var f = filters(); return (AUDIENCE || []).filter(function (t) { return teamMatches(t, f); }); }
+    function refresh() {
+      var rows = shown();
+      listEl.innerHTML = rows.length ? rows.map(function (t) {
+        var no = !t.emails || !t.emails.length;
+        // 六審 (b)：無梯次的活動，後端 fallback 出 sessions:[0]，不濾掉會顯示不存在的「第 1 梯」
+        var sessTxt = (CFG.sessions || []).length ? (t.sessions || []).map(sessionLabel).join(window.L('aeAnnSep')) : '';
+        return '<label style="display:flex; gap:10px; align-items:flex-start; padding:8px 10px; border-bottom:1px solid var(--line); ' +
+          (no ? 'opacity:.45' : 'cursor:pointer') + '">' +
+          '<input type="checkbox" data-id="' + escapeHtml(t.teamId) + '"' + (no ? ' disabled' : '') + (sel[t.teamId] ? ' checked' : '') + ' style="margin-top:3px">' +
+          '<span style="flex:1; min-width:0">' +
+            '<b style="font:700 13px/1.5 var(--f-tc); color:var(--ink)">' + escapeHtml(teamDisplayName(t)) + '</b>' +
+            '<span style="font:400 11.5px/1.5 var(--f-mono); color:var(--muted)"> · ' + escapeHtml(t.teamId) + '</span>' +
+            '<br><span style="font:400 11.5px/1.6 var(--f-tc); color:var(--muted)">' +
+              [t.group, t.status, (t.paid ? window.L('aeAnnPickPaid') : window.L('aeAnnPickUnpaid')), sessTxt]
+                .filter(Boolean).map(escapeHtml).join(' · ') +
+              ' · ' + (no ? escapeHtml(window.L('aeAnnPickNoEmail')) : (t.emails.length + escapeHtml(window.L('aeAnnRecipUnit')))) +
+            '</span>' +
+          '</span></label>';
+      }).join('') : '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:14px">' + escapeHtml(window.L('aeAnnPickNoMatch')) + '</p>';
+      listEl.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          if (this.checked) sel[this.dataset.id] = true; else delete sel[this.dataset.id];
+          count();
+        });
+      });
+      count();
+    }
+    function count() {
+      var n = Object.keys(sel).length;
+      bg.querySelector('#pkCount').textContent = window.L('aeAnnPickedPre') + n + window.L('aeAnnPickedSuf');
+      var noMail = (AUDIENCE || []).filter(function (t) { return !t.emails || !t.emails.length; }).length;
+      bg.querySelector('#pkNote').textContent = noMail ? (noMail + window.L('aeAnnRecipNoEmail')) : '';
+    }
+    ['#pkSess', '#pkGroup', '#pkStatus', '#pkPay'].forEach(function (s) {
+      var el = bg.querySelector(s); if (el) el.addEventListener('change', refresh);
+    });
+    bg.querySelector('#pkSelAll').addEventListener('click', function () {
+      shown().forEach(function (t) { if (t.emails && t.emails.length) sel[t.teamId] = true; });
+      refresh();
+    });
+    bg.querySelector('#pkClear').addEventListener('click', function () {
+      Object.keys(sel).forEach(function (k) { delete sel[k]; });
+      refresh();
+    });
+    function close() { if (bg.parentNode) bg.parentNode.removeChild(bg); }
+    bg.querySelector('#pkCancel').addEventListener('click', close);
+    bg.addEventListener('click', function (e) { if (e.target === bg) close(); });
+    bg.querySelector('#pkOk').addEventListener('click', function () {
+      PICK_IDS = Object.keys(sel);
+      document.getElementById('recipFilter').value = 'custom';
+      close(); syncPickUi(); updateRecipCount();
+    });
+
+    // 名單一律以 filter='all' 取「全部未取消的隊伍」，勾選才是篩選結果；
+    // 身分傳目前選擇，讓 email 數與實寄口徑一致。
+    listEl.innerHTML = '<p style="color:var(--muted); font:400 12px/1.5 var(--f-tc); padding:14px">' + escapeHtml(window.L('aeAnnRecipCalc')) + '</p>';
+    google.script.run
+      .withSuccessHandler(function (res) { AUDIENCE = (res && res.teams) || []; refresh(); })
+      .withFailureHandler(function () { listEl.innerHTML = '<p style="color:var(--danger,#c00); padding:14px">' + escapeHtml(window.L('aeAnnPickLoadFail')) + '</p>'; })
+      .getCampaignRecipients(compId, 'all', [], PICK_ROLES ? [PICK_ROLES] : []);
+  }
 
   document.querySelectorAll('.channel-pill').forEach(function (p) {
     if (p.classList.contains('disabled')) return;
@@ -439,17 +688,65 @@
   document.getElementById('saveCampBtn').addEventListener('click', function () {
     if (!SELECTED) return alert(window.L('aeAnnSelectFirst'));
     if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;   // Outlook HTML gate
-    var payload = {
+    // 收件人參數一律走 recipPayload()：save / sendNow / schedule 三個送出點共用同一份，
+    // 任何一處漏帶 recipientIds，後端就會拿到空名單而把 custom 當成 0 人（或退回 all）。
+    var payload = Object.assign({
       subject: document.getElementById('subjectInput').value.trim(),
       body: document.getElementById('bodyContent').value,
-      channels: CHANNELS,
-      recipientFilter: document.getElementById('recipFilter').value
-    };
+      channels: CHANNELS
+    }, recipPayload());
     var btn = this; btn.disabled = true; btn.textContent = window.L('aeAnnSaving');
     google.script.run
-      .withSuccessHandler(function () { btn.disabled = false; btn.textContent = window.L('aeAnnSaved'); var sid = SELECTED && SELECTED.id; refreshCampaigns(sid).then(function(){ setTimeout(function(){ var sb=document.getElementById('saveCampBtn'); if(sb) sb.textContent=window.L('aeAnnSaveBtn'); }, 1000); }); })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSaveBtn'); alert(window.L('aeAnnFailPre') + (err && err.message)); })
+      // 二審 N2：後端會以 {success:false} 拒絕（例如收件對象設定無效）。原本這裡連 res
+      // 都沒接，一律顯示「已儲存」再 refresh 把畫面刷回伺服器舊值 —— 使用者看到「已儲存」
+      // 但編輯內容原地消失，且永遠不知道為什麼。
+      .withSuccessHandler(function (res) {
+        btn.disabled = false; btn.textContent = window.L('aeAnnSaveBtn');
+        if (!res || !res.success) { uiAlert((res && res.message) || window.L('aeAnnSaveFail')); return; }
+        btn.textContent = window.L('aeAnnSaved');
+        var sid = SELECTED && SELECTED.id;
+        refreshCampaigns(sid).then(function(){ setTimeout(function(){ var sb=document.getElementById('saveCampBtn'); if(sb) sb.textContent=window.L('aeAnnSaveBtn'); }, 1000); });
+      })
+      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnSaveBtn'); uiAlert(window.L('aeAnnFailPre') + (err && err.message)); })
       .updateCampaign(SELECTED.id, payload);
+  });
+
+  // 二審 N2：runFn 只在 transport 失敗時 reject，{success:false} 一律 resolve。
+  // 存檔被後端拒絕卻繼續往下寄，寄出的會是伺服器上的舊主旨／舊內文／舊收件對象。
+  // 三審 F2：campaignId 必須在「送出當下」固定，不能在 next() 裡重讀 SELECTED。
+  // updateCampaign 要跑 5-15 秒，這期間左側清單是可以點的（withLoadingUI 只 disable
+  // 按鈕、sticky toast 是 pointer-events:none），使用者換選另一份公告就會變成
+  // 「存 A、寄 B」——把還沒寫完的草稿 B 寄給它的收件名單。
+  function saveThen(payload, next) {
+    var cid = SELECTED.id;
+    return runFn('updateCampaign', cid, payload).then(function (r) {
+      if (!r || !r.success) throw new Error((r && r.message) || window.L('aeAnnSaveFail'));
+      return next(cid);
+    });
+  }
+
+  // 測試寄送：先存草稿（讓後端拿到目前的主旨／內容／名單），再寄一封給自己。
+  // 在此之前主辦方唯一的驗證方式是「真的寄給所有人」。
+  document.getElementById('testSendBtn').addEventListener('click', function () {
+    if (!SELECTED) return alert(window.L('aeAnnSelectFirst'));
+    var btn = this;
+    if (!CAN_SEND) {
+      uiAlert(window.L('aeAnnGateMsg'), { title: window.L('aeAnnGateTitle'), okText: window.L('aeAnnGateOk') }).then(function () { location.href = '/admin/license.html'; });
+      return;
+    }
+    if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;
+    var payload = Object.assign({
+      subject: document.getElementById('subjectInput').value.trim(),
+      body: document.getElementById('bodyContent').value,
+      channels: CHANNELS
+    }, recipPayload());
+    withLoadingUI(btn, function () {
+      return saveThen(payload, function (cid) { return runFn('sendCampaignTest', cid); });
+    }, { busyText: window.L('aeAnnTestSending'), errorTitle: window.L('aeAnnTestBtn') })
+      .then(function (res) {
+        if (res && res.success) uiAlert(window.L('aeAnnTestOkPre') + (res.to || '') + window.L('aeAnnTestOkSuf'));
+        else uiAlert((res && res.message) || window.L('aeAnnTestFail'));
+      }).catch(function () {});
   });
 
   document.getElementById('sendNowBtn').addEventListener('click', function () {
@@ -460,17 +757,23 @@
       return;
     }
     if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;   // Outlook HTML gate
-    uiConfirm(window.L('aeAnnSendConfirmPre') + document.getElementById('recipCount').textContent + window.L('aeAnnSendConfirmSuf'), { title: window.L('aeAnnSendTitle'), okText: window.L('aeAnnSendOk') }).then(function (ok) {
+    // 一隊一封 → 三個口徑一起講清楚（隊數／封數／去重後收件人數）。
+    // 不再讀 recipCount 的 textContent：它在計算中會是「⋯」或「?」。
+    if (!LAST_COUNT.ready) { uiAlert(window.L('aeAnnCountBusy')); return; }
+    if (!LAST_COUNT.teams) { uiAlert(window.L('aeAnnNoRecipients')); return; }
+    uiConfirm(window.L('aeAnnSendConfirmPre') + LAST_COUNT.teams + window.L('aeAnnSendConfirmMid') + LAST_COUNT.total + window.L('aeAnnSendConfirmSuf'),
+      { title: window.L('aeAnnSendTitle'), okText: window.L('aeAnnSendOk') }).then(function (ok) {
     if (!ok) return;
-    var payload = {
+    // 收件人參數一律走 recipPayload()：save / sendNow / schedule 三個送出點共用同一份，
+    // 任何一處漏帶 recipientIds，後端就會拿到空名單而把 custom 當成 0 人（或退回 all）。
+    var payload = Object.assign({
       subject: document.getElementById('subjectInput').value.trim(),
       body: document.getElementById('bodyContent').value,
-      channels: CHANNELS,
-      recipientFilter: document.getElementById('recipFilter').value
-    };
+      channels: CHANNELS
+    }, recipPayload());
     // Save the draft first, then send — both callables share one busy state (5-15s).
     withLoadingUI(btn, function () {
-      return runFn('updateCampaign', SELECTED.id, payload).then(function () { return runFn('sendCampaignNow', SELECTED.id); });
+      return saveThen(payload, function (cid) { return runFn('sendCampaignNow', cid); });
     }, {
       busyText: window.L('aeAnnSending'), toastMsg: window.L('uiBusySendingCampaign'), toastId: 'sendCampaign',
       blockUnload: true, errorTitle: window.L('aeAnnSendTitle')
@@ -495,26 +798,25 @@
     if (!when) { uiAlert(window.L('aeAnnSchedNeedTime')); return; }
     if (new Date(when).getTime() <= Date.now()) { uiAlert(window.L('aeAnnSchedFuture')); return; }
     if (!htmlCheckPasses(document.getElementById('bodyContent').value)) return;
-    var payload = {
+    // 收件人參數一律走 recipPayload()：save / sendNow / schedule 三個送出點共用同一份，
+    // 任何一處漏帶 recipientIds，後端就會拿到空名單而把 custom 當成 0 人（或退回 all）。
+    var payload = Object.assign({
       subject: document.getElementById('subjectInput').value.trim(),
       body: document.getElementById('bodyContent').value,
-      channels: CHANNELS,
-      recipientFilter: document.getElementById('recipFilter').value
-    };
+      channels: CHANNELS
+    }, recipPayload());
+    // 二審 N2：存檔被後端拒絕時必須中止，不能繼續用伺服器上的舊內容排程。
     btn.disabled = true; btn.textContent = window.L('aeAnnScheduling');
-    google.script.run
-      .withSuccessHandler(function () {
-        google.script.run
-          .withSuccessHandler(function (res) {
-            btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn');
-            if (res && res.success) { uiAlert(window.L('aeAnnSchedOk')); refreshCampaigns(SELECTED && SELECTED.id); }
-            else { uiAlert((res && res.message) || window.L('aeAnnSchedFail')); }
-          })
-          .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn'); uiAlert((err && err.message) || window.L('aeAnnSchedFail')); })
-          .scheduleCampaign(SELECTED.id, new Date(when).toISOString());
+    saveThen(payload, function (cid) { return runFn('scheduleCampaign', cid, new Date(when).toISOString()); })
+      .then(function (res) {
+        btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn');
+        if (res && res.success) { uiAlert(window.L('aeAnnSchedOk')); refreshCampaigns(SELECTED && SELECTED.id); }
+        else { uiAlert((res && res.message) || window.L('aeAnnSchedFail')); }
       })
-      .withFailureHandler(function (err) { btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn'); uiAlert(window.L('aeAnnSaveFailPre') + (err && err.message)); })
-      .updateCampaign(SELECTED.id, payload);
+      .catch(function (err) {
+        btn.disabled = false; btn.textContent = window.L('aeAnnScheduleBtn');
+        uiAlert((err && err.message) || window.L('aeAnnSchedFail'));
+      });
   });
 
   // ----- Item 12: email preview (internal modal, RegMaster template) -----
@@ -555,10 +857,40 @@
   // Re-render dynamic (JS-built) sections when the language switches, so list
   // items / recipient list / stats picked the active language. Static [data-i18n]
   // nodes are handled automatically by the engine's own 'lang-changed' hook.
-  window.addEventListener('lang-changed', function () {
+  // 三審 F5／N5：本頁原本用 window.addEventListener('lang-changed')，但 app-state.js:60
+  // 的 emit() 只呼叫 AppState.on() 註冊的 callback，全站沒有任何 dispatchEvent ——
+  // 換句話說這個重繪從上線以來一次都沒跑過（本頁是全站唯一寫錯的檔案）。
+  // 改用 AppState.on 對齊 i18n.js:538 等其他頁面的既有作法。
+  AppState.on('lang-changed', function () {
     if (document.getElementById('content').style.display === 'none') return;
     renderList();
+    // selectCamp() 會從 SELECTED（伺服器上的副本）重讀收件人設定，若使用者已改了
+    // 但尚未儲存，切語言就會靜默沖掉。三個值都要快照 —— 外審 #1：只還原 PICK_IDS
+    // 而漏掉 recipFilter，會讓「自訂 3 隊」被打回 'all' 而寄給全部人。
+    // 二審 N5：selectCamp() 也會覆寫主旨與內文（:379-396）。只救收件人欄位的話，
+    // 主辦方打了三千字尚未存檔，順手切個語言就整段被伺服器上的空草稿蓋掉且無法復原。
+    var keep = {
+      filter: document.getElementById('recipFilter').value,
+      ids: PICK_IDS.slice(), roles: PICK_ROLES,
+      subject: document.getElementById('subjectInput').value,
+      body: document.getElementById('bodyContent').value,
+      channels: CHANNELS.slice()
+    };
     if (SELECTED) { var s = SELECTED; selectCamp(s); } else { showEmptyEditor(); }
+    document.getElementById('recipFilter').value = keep.filter;
+    PICK_IDS = keep.ids; PICK_ROLES = keep.roles;
+    document.getElementById('recipRoles').value = PICK_ROLES;
+    if (SELECTED) {
+      document.getElementById('campTitle').value = keep.subject;
+      document.getElementById('subjectInput').value = keep.subject;
+      document.getElementById('bodyTitleInput').value = keep.subject;
+      document.getElementById('bodyContent').value = keep.body;
+      CHANNELS = keep.channels;
+      document.querySelectorAll('.channel-pill').forEach(function (p) {
+        p.classList.toggle('on', !p.classList.contains('disabled') && CHANNELS.includes(p.dataset.ch));
+      });
+    }
+    syncPickUi();
     updateRecipCount();
   });
 
