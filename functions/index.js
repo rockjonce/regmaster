@@ -6084,11 +6084,55 @@ async function buildOrgStatsContext(username, role, compId) {
   return c;
 }
 
+// ---- 主辦後台 AI 助理（/admin/ai.html）----
+// 2026-09-02 修訂（PLAN_2026-09-02_admin-ai-fixes.md §3 / §5-2 / §5-5）：
+//   1. thinkingConfig.thinkingBudget —— 2.5 Flash 的 thinking token 會吃 maxOutputTokens（同檔 2705 行的教訓）。
+//      原本沒設，推估型長回答就在中途被 MAX_TOKENS 截斷；而且從不檢查 finishReason，斷的回答還被存進歷史。
+//   2. 對話記憶：前端把最近幾則訊息用 history 送來，這裡組成 user/model 交替的多輪 contents；
+//      系統脈絡（手冊 RAG／功能總覽／活動設定／即時統計）改放 systemInstruction，每輪重新注入。
+//      history 為選填：舊前端不送＝單輪；注入脈絡相同，但下方回覆規則 5/6/7 已改（答案變短、不複述資料），見 PLAN §8-2。
+//   3. 失敗一律回 { error }，不再偽裝成 { answer }，前端才能不把錯誤存進對話歷史。
+//   回傳：{ answer, truncated } 或 { error }。
+const ADMIN_AI_HISTORY_MAX_TURNS = 10;
+const ADMIN_AI_HISTORY_MAX_CHARS_EACH = 2000;
+const ADMIN_AI_HISTORY_MAX_CHARS_TOTAL = 8000;
+const ADMIN_AI_QUESTION_MAX = 10000;   // 與 appendMessage 的 cleanContent = slice(0, 10000) 一致；前端 QUESTION_MAX 同值
+// 把 client 送來的 history（[{role:'user'|'ai', content}]）整理成 Gemini 的 contents：
+// role 白名單、逐則截長、總量截長（丟最舊）、同 role 相鄰合併（API 要求 user/model 交替）、
+// 開頭必須是 user；最後接上本次問題。任何形狀不對的東西都靜默略過，不會讓請求失敗。
+function _buildAdminAiTurns(history, question) {
+  const turns = [];
+  const hist = Array.isArray(history) ? history.slice(-ADMIN_AI_HISTORY_MAX_TURNS) : [];
+  let total = 0;
+  for (const h of hist) {
+    if (!h || typeof h !== "object") continue;
+    const role = h.role === "ai" ? "model" : (h.role === "user" ? "user" : null);
+    if (!role) continue;
+    const text = String(h.content || "").slice(0, ADMIN_AI_HISTORY_MAX_CHARS_EACH).trim();
+    if (!text) continue;
+    if (turns.length && turns[turns.length - 1].role === role) turns[turns.length - 1].parts[0].text += "\n\n" + text;
+    else turns.push({ role, parts: [{ text }] });
+    total += text.length;
+  }
+  while (total > ADMIN_AI_HISTORY_MAX_CHARS_TOTAL && turns.length) { total -= turns[0].parts[0].text.length; turns.shift(); }
+  while (turns.length && turns[0].role !== "user") turns.shift();
+  // 結尾若停在 user（例如前一題沒得到回覆），併入本次問題，維持交替
+  let q = question;
+  if (turns.length && turns[turns.length - 1].role === "user") { q = turns.pop().parts[0].text + "\n\n" + q; }
+  turns.push({ role: "user", parts: [{ text: q }] });
+  return turns;
+}
+
 exports.askAdminAI = compAuthCallable(async (data, request) => {
   await requireCompFeature(request, "ai");
-  const { question, compId } = data;
+  // 外審 M5：不可靜默截斷（模型沒看到的字仍會被 appendMessage 落盤，紀錄與實際不一致）。
+  // 上限與 appendMessage 的 10000 對齊，超過就明確拒絕；errorCode 供前端本地化（外審 L3）。
+  const question = String((data && data.question) || "").trim();
+  const compId = (data && data.compId) || "";
+  if (!question) return { error: "請輸入問題", errorCode: "EMPTY" };
+  if (question.length > ADMIN_AI_QUESTION_MAX) return { error: "問題過長（上限 " + ADMIN_AI_QUESTION_MAX + " 字），請縮短後再送出", errorCode: "TOO_LONG" };
   const keyInfo = await getNextGeminiKey();
-  if (!keyInfo) return { answer: "AI 未設定" };
+  if (!keyInfo) return { error: "AI 未設定", errorCode: "NO_KEY" };
 
   // Prefer semantic (vector) retrieval; fall back to keyword search if the KB
   // hasn't been built yet or embedding is unavailable.
@@ -6100,10 +6144,13 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
 
   let ctx = "你是 RegMaster 線上報名平台的系統設定 AI 助理。\n";
   ctx += "回覆規則：\n";
-  ctx += "1. 可使用簡單的 Markdown（粗體 **、清單 - 或 1.、小標題 #）讓回答清楚易讀\n";
+  ctx += "1. 可使用簡單的 Markdown（粗體 **、清單 - 或 1.、小標題 #）讓回答清楚易讀\n";   // 不邀請 ---：線上舊前端沒有 hr 分支，會以字面顯示並落盤
   ctx += "2. 回答簡潔明瞭，具系統化結構；段落之間用空行分隔\n";
   ctx += "3. 依照問題的語言回答\n";
-  ctx += "4. 你可參考下方「報名資料與統計」回答報名轉換率、付款狀況等數據問題，並據此提供具體、可執行的提升報名／轉換建議\n\n";
+  ctx += "4. 你可參考下方「報名資料與統計」回答報名轉換率、付款狀況等數據問題，並據此提供具體、可執行的提升報名／轉換建議\n";
+  ctx += "5. 回答以 600 字為目標、最多 1,000 字；數據分析或推估類問題最多 1,500 字。內容過多時先給結論與關鍵數字，再給精簡步驟\n";
+  ctx += "6. 不要複述使用者已提供或下方已注入的原始資料（活動名稱、日期、統計數字只在推論需要時引用）\n";
+  ctx += "7. 若問題延續先前對話，請以先前對話為脈絡回答；但數據一律以下方「報名資料與統計」的最新值為準\n\n";
 
   ctx += "=== 操作手冊參考內容 ===\n" + ragContext + "\n\n";
 
@@ -6132,6 +6179,8 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
   if (compId) {
     try {
       const compDoc = await db.collection("competitions").doc(compId).get();
+      // 四審 A：system 角色不會被 compAuthCallable 的 not-found 擋下，在這裡明確回報，前端據此標記活動已刪除（不再對不存在的活動作答並落盤）
+      if (!compDoc.exists) return { error: "活動不存在", errorCode: "NOT_FOUND" };
       if (compDoc.exists) {
         const comp = compDoc.data();
         const cfg = comp.config || {};
@@ -6153,21 +6202,45 @@ exports.askAdminAI = compAuthCallable(async (data, request) => {
   // Live registration data + statistics (scoped to the caller's own activities).
   try { ctx += await buildOrgStatsContext(request.authUser.username, request.authUser.role, compId); } catch (e) {}
 
+  const turns = _buildAdminAiTurns(data && data.history, question);
   try {
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + keyInfo.key, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: ctx + "\n管理員問題：" + question }] }],
-        generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
+        systemInstruction: { parts: [{ text: ctx }] },
+        contents: turns,
+        // thinkingBudget 1024：保留推估題的推理品質，又不讓思考吃掉回答額度（0 = 完全不思考）
+        generationConfig: { maxOutputTokens: 8192, temperature: 0.3, thinkingConfig: { thinkingBudget: 1024 } }
       })
     });
     const json = await res.json();
+    const cand = json && Array.isArray(json.candidates) ? json.candidates[0] : null;
     let answer = "";
-    try { json.candidates[0].content.parts.forEach(p => { if (p.text) answer += p.text; }); } catch(e) { answer = "AI 無法回答"; }
-    return { answer };
+    try { ((cand && cand.content && cand.content.parts) || []).forEach(p => { if (p && p.text) answer += p.text; }); } catch (e) { answer = ""; }
+    const finish = (cand && cand.finishReason) || (json && json.error ? "API_ERROR" : "NO_CANDIDATE");
+    const usage = (json && json.usageMetadata) || {};
+    // 之後查「有沒有被截斷」直接看這行：只有狀態與 token 數，不含問題內容或個資
+    console.log("[askAdminAI] " + JSON.stringify({
+      finish, promptTokens: usage.promptTokenCount, outTokens: usage.candidatesTokenCount,
+      thinkTokens: usage.thoughtsTokenCount, histTurns: turns.length - 1, comp: compId || ""
+    }));
+    if (!answer) {
+      if (json && json.error) {
+        const st = String(json.error.status || json.error.code || "API_ERROR");
+        // 外審 L2：配額耗盡／金鑰無效是「這把 key 壞了」→ 輪換；INVALID_ARGUMENT 之類是請求本身壞 → 不輪換，免得把指標從好 key 上走掉。
+        // 二審：金鑰被撤銷時 Google 回的是 400 INVALID_ARGUMENT，訊號藏在 details[].reason === "API_KEY_INVALID"，必須另外判。
+        const reasons = (Array.isArray(json.error.details) ? json.error.details : []).map(d => d && d.reason).filter(Boolean);
+        const keyDead = st === "RESOURCE_EXHAUSTED" || st === "PERMISSION_DENIED" || st === "UNAUTHENTICATED" ||
+          reasons.indexOf("API_KEY_INVALID") >= 0 || /API key not valid/i.test(String(json.error.message || ""));
+        if (keyDead) { try { await rotateGeminiKey(); } catch (e) {} }
+        return { error: "AI 暫時無法使用（" + st + "）", errorCode: "API_ERROR", detail: st };
+      }
+      return { error: "AI 無法回答" + (finish && finish !== "STOP" ? "（" + finish + "）" : ""), errorCode: "NO_ANSWER", detail: finish && finish !== "STOP" ? finish : "" };
+    }
+    return { answer, truncated: finish === "MAX_TOKENS" };
   } catch(e) {
     await rotateGeminiKey();
-    return { answer: "AI 暫時無法使用：" + e.message };
+    return { error: "AI 暫時無法使用：" + e.message, errorCode: "EXCEPTION", detail: String(e.message || "").slice(0, 120) };
   }
 });
 
@@ -6177,7 +6250,9 @@ exports.getCompKbStatus = compAuthCallable(async (data) => {
   const compId = data.compId;
   if (!compId) return {};
   const compDoc = await db.collection("competitions").doc(compId).get();
-  if (!compDoc.exists) return {};
+  // 四審 A：compAuthCallable 只對 competition 角色檢查活動存在；system 角色會走到這裡。
+  // 回空物件會讓前端畫「尚未設定知識庫」的假訊息，改成與 compAuthCallable 同樣的 not-found，前端以此標記活動已刪除。
+  if (!compDoc.exists) throw new HttpsError("not-found", "活動不存在");
   const comp = compDoc.data();
   const cfg = comp.config || {};
   const hasRules = !!((comp.rulesText && comp.rulesText.trim()) || comp.rulesPdfId);

@@ -73,7 +73,35 @@
     adAiConfirmDelTitle: '刪除對話',
     adAiConfirmDelOk: '刪除',
     adAiDelFail: '刪除失敗，請稍後再試。',
-    adAiCreateFail: '建立對話失敗，請稍後再試。'
+    adAiCreateFail: '建立對話失敗，請稍後再試。',
+    // ----- 2026-09-02：載入狀態／範圍切換確認／截斷提示／mobile 抽屜 -----
+    adAiLoadingConv: '載入對話中⋯',
+    adAiLoadFail: '載入對話失敗，請稍後再試。',
+    adAiCompDeleted: '（此活動已刪除）',
+    adAiTruncated: '回答過長已被截斷，請縮小問題範圍或分段詢問。',
+    adAiScopeSwitchTitle: '切換查詢範圍',
+    adAiScopeSwitchMsg: '切換範圍會離開目前對話並開始新對話。原對話不會被刪除，切回原範圍即可在歷史清單找到。要繼續嗎？',
+    adAiScopeSwitchOk: '開始新對話',
+    adAiBusy: 'AI 回覆中，請稍候。',
+    adAiHistoryBtn: '歷史',
+    adAiScopeBtn: '範圍',
+    adAiScopeChipPick: '未選擇活動',
+    // ----- 後端錯誤碼對應文案（外審 L3）-----
+    adAiErrEmpty: '請輸入問題。',
+    adAiErrTooLong: '問題過長，請縮短後再送出（上限 10,000 字）。',
+    adAiErrNoKey: 'AI 尚未設定，請聯絡系統管理員。',
+    adAiErrApi: 'AI 暫時無法使用，請稍後再試。',
+    adAiErrNoAnswer: 'AI 無法回答這個問題，請換個問法。',
+    adAiErrNotFound: '找不到此活動（可能已被刪除）。',
+    adAiErrAuth: '登入已失效，請重新登入。',
+    adAiErrDenied: '權限不足或目前方案未包含此功能。',
+    adAiErrTimeout: 'AI 回應逾時，請縮小問題範圍後再試。',
+    // ----- 已刪除活動（孤兒對話）-----
+    adAiCompGone: '此對話所屬的活動已被刪除，無法繼續提問；請切換範圍或開始新對話。',
+    adAiKbCompGone: '此活動已被刪除，知識庫與報名資料已不存在。',
+    adAiKbStatusFail: '知識庫狀態載入失敗，請稍後再試。',
+    adAiScopeChipLoading: '活動載入中⋯',
+    adAiCreatingWait: '新對話建立中，請稍候。'
   };
 
   var E = {
@@ -141,7 +169,35 @@
     adAiConfirmDelTitle: 'Delete Conversation',
     adAiConfirmDelOk: 'Delete',
     adAiDelFail: 'Delete failed, please try again later.',
-    adAiCreateFail: 'Failed to create the conversation, please try again later.'
+    adAiCreateFail: 'Failed to create the conversation, please try again later.',
+    // ----- 2026-09-02: loading state / scope-switch confirm / truncation notice / mobile drawers -----
+    adAiLoadingConv: 'Loading conversation…',
+    adAiLoadFail: 'Failed to load the conversation, please try again later.',
+    adAiCompDeleted: '(this event has been deleted)',
+    adAiTruncated: 'The answer was too long and got cut off — please narrow the question or ask in parts.',
+    adAiScopeSwitchTitle: 'Switch scope',
+    adAiScopeSwitchMsg: 'Switching scope will leave this conversation and start a new one. The current conversation is not deleted — switch back to its scope to find it in the history list. Continue?',
+    adAiScopeSwitchOk: 'Start new chat',
+    adAiBusy: 'The AI is still replying, please wait.',
+    adAiHistoryBtn: 'History',
+    adAiScopeBtn: 'Scope',
+    adAiScopeChipPick: 'No event selected',
+    // ----- backend error codes → copy (review L3) -----
+    adAiErrEmpty: 'Please enter a question.',
+    adAiErrTooLong: 'The question is too long, please shorten it (limit 10,000 characters).',
+    adAiErrNoKey: 'The AI is not configured yet, please contact the system administrator.',
+    adAiErrApi: 'The AI is temporarily unavailable, please try again later.',
+    adAiErrNoAnswer: 'The AI could not answer this question, please rephrase it.',
+    adAiErrNotFound: 'This event could not be found (it may have been deleted).',
+    adAiErrAuth: 'Your session has expired, please sign in again.',
+    adAiErrDenied: 'Permission denied, or this feature is not included in your current plan.',
+    adAiErrTimeout: 'The AI timed out — please narrow the question and try again.',
+    // ----- deleted event (orphan conversation) -----
+    adAiCompGone: 'The event this conversation belongs to has been deleted, so you can no longer ask questions here. Switch scope or start a new chat.',
+    adAiKbCompGone: 'This event has been deleted; its knowledge base and registration data no longer exist.',
+    adAiKbStatusFail: 'Failed to load the knowledge-base status, please try again later.',
+    adAiScopeChipLoading: 'Loading events…',
+    adAiCreatingWait: 'Creating the conversation, please wait.'
   };
 
   Object.keys(Z).forEach(function (k) { window.I18N.zh[k] = Z[k]; });

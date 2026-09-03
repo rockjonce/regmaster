@@ -13,45 +13,74 @@
 <script src="/shared/firebase-bridge.js"></script>
 <script src="/shared/ui-dialog.js"></script>
 <style>
-.body-3 { display:grid; grid-template-columns:300px 1fr 320px; min-height:calc(100vh - 60px); }
-.left-c { background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
+/* ── 版面鎖高（2026-09-02 §1）──
+   main 變成「視窗高的直向 flex」，所有捲動都發生在三欄內部，整頁不再捲動，
+   輸入框永遠貼在視窗底。只在本頁生效；admin-layout.css 的 .admin > main 只有 min-width:0。
+   100dvh 覆蓋 100vh：iOS Safari 的 100vh 是工具列收起時的「大視口」，網址列展開時會多出一條可捲空白；
+   dvh 跟著工具列變化（不跟軟體鍵盤——鍵盤需 visualViewport，另案）。
+   grid item 預設 min-height:auto，三欄必須明確歸零，.conv-list / .messages 的 overflow-y 才會生效。 */
+.admin { min-height:0; height:100vh; height:100dvh; }   /* 外審 M：共用檔的 min-height:100vh 在 iOS 會比 main 的 100dvh 高出一條可捲空白 */
+.side { height:100vh; height:100dvh; }                  /* 二審：共用 .side{height:100vh} 同樣會撐出可捲空白（>768 橫向手機／平板） */
+@media (max-width:768px){ .side { height:auto; } }      /* 二審：≤768 的 .side 是 top:0;bottom:0 抽屜，寫死 100vh 會讓底部的登出鈕落在 dvh 外點不到 */
+.admin > main { height:100vh; height:100dvh; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.body-3 { flex:1 1 auto; min-height:0; display:grid; grid-template-columns:300px minmax(0,1fr) 320px; }
+.left-c, .center-c, .right-c { min-height:0; }
+.center-c { overflow:hidden; min-width:0; }
+
+.left-c { background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; }
 .lh { padding:18px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; }
 .lh h3 { font:700 15px/1.2 var(--f-display); flex:1; }
 .new-conv-btn { padding:8px 12px; background:var(--ink); color:var(--surface); border-radius:7px; font:600 12px/1 var(--f-tc); cursor:pointer; }
+.new-conv-btn:disabled { opacity:.45; cursor:not-allowed; }
 .conv-list { flex:1; overflow-y:auto; padding:8px 0; }
 .conv { padding:12px 16px; border-bottom:1px solid var(--line-2); cursor:pointer; transition:.12s; position:relative; }
 .conv:hover { background:var(--surface-2); }
 .conv.on { background:color-mix(in srgb, var(--acc) 6%, var(--surface)); }
 .conv.on::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--ink); }
+.conv.loading { opacity:.7; }
 .conv .nm { font:600 13px/1.3 var(--f-display); margin-bottom:4px; display:flex; align-items:center; gap:6px; }
-.conv .nm .pill-c { padding:1px 6px; background:color-mix(in srgb, #8B5CF6 14%, transparent); color:#8B5CF6; border-radius:3px; font:600 10px/1.4 var(--f-mono); }
+.conv .nm .pill-c { padding:1px 6px; background:color-mix(in srgb, #8B5CF6 14%, transparent); color:#8B5CF6; border-radius:3px; font:600 10px/1.4 var(--f-mono); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0; }
 .conv .preview { font:400 11.5px/1.5 var(--f-tc); color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .conv .time { font:500 10.5px/1 var(--f-mono); color:var(--muted); margin-top:4px; }
 .conv .del-btn { position:absolute; top:10px; right:10px; opacity:0; padding:3px; cursor:pointer; color:var(--muted); transition:.15s; }
 .conv:hover .del-btn { opacity:1; }
 .conv .del-btn:hover { color:var(--err-700); }
 
-.center-c { display:flex; flex-direction:column; min-height:0; background:var(--bg); }
+.center-c { display:flex; flex-direction:column; background:var(--bg); }
 .chat-h { padding:14px 22px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; }
-.chat-h .av-h { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:#fbcd5b; display:grid; place-items:center; }
+.chat-h .av-h { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg, var(--ink), #1a2e52); color:#fbcd5b; display:grid; place-items:center; flex-shrink:0; }
 .chat-h .av-h svg { width:18px; height:18px; }
-.chat-h h4 { font:700 15px/1.2 var(--f-display); margin-bottom:3px; }
-.chat-h p { font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin:0; }
+.chat-h .chat-title { flex:1 1 auto; min-width:0; }   /* basis 用 auto：flex:1 的 basis=0 會在 1101–1152px 讓標題被壓成 0 寬 */
+/* 外審 H3：標題必須單行截斷，否則中欄一窄就一字一行、header 撐高把輸入框頂出視窗 */
+.chat-h h4 { font:700 15px/1.2 var(--f-display); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-h p { font:400 11.5px/1.4 var(--f-tc); color:var(--muted); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* 範圍小標：桌機與手機都顯示，讓「點歷史對話會自動切範圍」有肉眼可見的回饋 */
+.scope-chip { flex-shrink:1; min-width:60px; max-width:220px; padding:5px 11px; border-radius:100px; background:var(--surface-2); border:1px solid var(--line); font:600 11.5px/1 var(--f-mono); color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 文字色與 --ink 混色：淺色主題偏深紫、深色主題偏淺紫，兩邊都有對比（外審 L6：寫死 #6d3fd8 在深色只有 2.5:1） */
+.scope-chip.comp { background:color-mix(in srgb, #8B5CF6 12%, var(--surface)); border-color:color-mix(in srgb, #8B5CF6 35%, var(--line)); color:color-mix(in srgb, #8B5CF6 65%, var(--ink)); }
+/* mobile 抽屜按鈕：桌機隱藏 */
+.chat-h .mb-btn { display:none; align-items:center; gap:5px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink-2); font:600 12px/1 var(--f-tc); cursor:pointer; flex-shrink:0; }
+.chat-h .mb-btn svg { width:15px; height:15px; }
+.chat-h .mb-btn:hover { background:var(--surface-2); color:var(--ink); }
 
 .messages { flex:1; overflow-y:auto; padding:24px 32px; display:flex; flex-direction:column; gap:18px; }
 .msg { max-width:680px; display:flex; gap:12px; }
 .msg.user { margin-left:auto; flex-direction:row-reverse; }
+.msg > div:not(.av-m) { min-width:0; }        /* 外審 L5：泡泡外層要能縮，pre 的 overflow-x:auto 才會生效，不然長字串撐出橫向捲軸 */
 .msg .av-m { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; flex-shrink:0; color:white; font:700 12px/1 var(--f-display); }
 .msg .av-m.ai { background:linear-gradient(135deg, var(--ink), #1a2e52); color:#fbcd5b; }
 .msg .av-m.user { background:linear-gradient(135deg, var(--acc), #1F3FB8); }
-.msg .bubble { padding:12px 16px; border-radius:14px; font:400 14px/1.65 var(--f-tc); white-space:pre-wrap; }
+.msg .bubble { padding:12px 16px; border-radius:14px; font:400 14px/1.65 var(--f-tc); white-space:pre-wrap; overflow-wrap:anywhere; }
+.msg.ai .bubble .trunc-note { margin-top:8px; padding-top:6px; border-top:1px dashed var(--line); font:500 12px/1.5 var(--f-tc); color:var(--muted); }
 .msg.user .bubble { background:var(--ink); color:var(--surface); border-bottom-right-radius:4px; }
 .msg.ai .bubble { background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; color:var(--ink); }
+.msg.ai .bubble.err { background:color-mix(in srgb, var(--err-700) 7%, var(--surface)); border-color:color-mix(in srgb, var(--err-700) 35%, var(--line)); }
 .msg .ts { font:500 10px/1 var(--f-mono); color:var(--muted); margin-top:5px; }
 
-.input-area { padding:18px 28px; background:var(--surface); border-top:1px solid var(--line); }
+.input-area { padding:18px 28px; background:var(--surface); border-top:1px solid var(--line); flex-shrink:0; }
 .input-wrap { display:flex; gap:10px; align-items:end; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:8px 12px; }
 .input-wrap textarea { flex:1; border:0; outline:0; background:transparent; padding:8px; font:400 14px/1.55 var(--f-tc); color:var(--ink); resize:none; max-height:160px; min-height:24px; }
+.input-wrap textarea:disabled { opacity:.5; }
 .input-wrap .send-btn { width:36px; height:36px; border-radius:50%; background:var(--ink); color:var(--surface); display:grid; place-items:center; cursor:pointer; }
 .input-wrap .send-btn:disabled { opacity:.4; cursor:not-allowed; }
 .input-wrap .send-btn svg { width:14px; height:14px; }
@@ -76,14 +105,21 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
 .typing span:nth-child(3){ animation-delay:.36s; }
 @keyframes typingBlink { 0%,80%,100%{ opacity:.25; transform:translateY(0); } 40%{ opacity:1; transform:translateY(-3px); } }
 
+/* 載入對話中（點歷史對話後、資料回來前） */
+.loading-chat { text-align:center; padding:60px 24px; color:var(--muted); }
+.loading-chat .typing { justify-content:center; }
+.loading-chat p { margin:12px 0 0; font:500 13px/1.5 var(--f-tc); }
+
 /* Rendered markdown inside AI bubbles */
 .msg.ai .bubble { white-space:normal; }
 .msg.ai .bubble p { margin:0 0 8px; }
 .msg.ai .bubble p:last-child { margin-bottom:0; }
 .msg.ai .bubble ul, .msg.ai .bubble ol { margin:6px 0 10px; padding-left:22px; }
 .msg.ai .bubble li { margin:3px 0; }
+.msg.ai .bubble li ul { margin:4px 0 2px; padding-left:18px; }
 .msg.ai .bubble .md-h { font-weight:700; margin:10px 0 4px; }
 .msg.ai .bubble .md-h:first-child { margin-top:0; }
+.msg.ai .bubble hr.md-hr { border:0; border-top:1px solid var(--line); margin:10px 0; }
 .msg.ai .bubble strong { font-weight:700; }
 .msg.ai .bubble em { font-style:italic; }
 .msg.ai .bubble a { color:var(--acc); text-decoration:underline; word-break:break-all; }
@@ -99,8 +135,43 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
 .empty-chat .suggestions { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:480px; margin:24px auto 0; }
 .empty-chat .sg { padding:12px 14px; background:var(--surface); border:1px solid var(--line); border-radius:10px; cursor:pointer; text-align:left; font:500 12.5px/1.4 var(--f-tc); color:var(--ink-2); }
 .empty-chat .sg:hover { border-color:var(--ink); background:var(--surface-2); }
-@media (max-width:768px){
-  .body-3 { grid-template-columns:1fr; min-height:0; }
+
+.ai-backdrop { display:none; }
+
+/* ── 響應式（2026-09-02 §7 ＋ 外審 H2）──
+   三欄 300+1fr+320 加主側欄 240 至少要 ~900px 才站得住；外審實測 769–859px 時中欄被壓成 0px
+   且因 main{overflow:hidden} 連捲都捲不到。所以分兩段收：
+     ≤1100px：右欄（範圍／知識庫）先變抽屜，左欄縮到 240
+     ≤900px ：左欄也變抽屜，只剩對話欄
+   抽屜手法沿用 admin-layout.css 的 .side（position:fixed + translateX），但用自己的 body class
+   與 z-index（105/106，低於主側欄的 110/120），不碰共用檔。id 選擇器蓋過 .chat-h .mb-btn 的 display:none。 */
+@media (max-width:1100px){
+  .body-3 { grid-template-columns:240px minmax(0,1fr); }
+  .right-c {
+    position:fixed; top:0; bottom:0; right:0; width:320px; max-width:86vw; z-index:106;
+    transform:translateX(100%); transition:transform .22s ease; box-shadow:0 8px 40px rgba(10,20,40,.28);
+  }
+  body.ai-right-open .right-c { transform:none; }
+  .ai-backdrop { display:block; position:fixed; inset:0; background:rgba(10,20,40,.45); z-index:105; opacity:0; pointer-events:none; transition:opacity .2s; }
+  body.ai-left-open .ai-backdrop, body.ai-right-open .ai-backdrop { opacity:1; pointer-events:auto; }
+  #scopeBtn.mb-btn { display:inline-flex; }
+}
+@media (max-width:900px){
+  .body-3 { grid-template-columns:minmax(0,1fr); }
+  .left-c {
+    position:fixed; top:0; bottom:0; left:0; width:300px; max-width:86vw; z-index:106;
+    transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 8px 40px rgba(10,20,40,.28);
+  }
+  body.ai-left-open .left-c { transform:none; }
+  #histBtn.mb-btn { display:inline-flex; }
+  .chat-h { padding:10px 12px; gap:8px; }
+  .chat-h .av-h, .chat-h p { display:none; }
+  .chat-h h4 { margin-bottom:0; font-size:14px; }
+  .scope-chip { max-width:130px; }
+  .messages { padding:16px 12px; gap:14px; }
+  .msg { max-width:100%; }
+  .input-area { padding:10px 12px; }
+  .empty-chat { padding:36px 16px; }
   .empty-chat .suggestions { grid-template-columns:1fr; }
 }
 </style>
@@ -131,14 +202,17 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       <aside class="left-c">
         <div class="lh">
           <h3 data-i18n="adAiHistory">對話歷史</h3>
-          <button class="new-conv-btn" id="newConvBtn" data-i18n="adAiNewConv">＋ 新對話</button>
+          <button class="new-conv-btn" id="newConvBtn" type="button" data-i18n="adAiNewConv">＋ 新對話</button>
         </div>
         <div class="conv-list" id="convList"></div>
       </aside>
       <section class="center-c">
         <header class="chat-h">
+          <button class="mb-btn" id="histBtn" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="adAiHistoryBtn">歷史</span></button>
           <div class="av-h"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg></div>
-          <div><h4 data-i18n="adAiChatTitle">RegMaster AI 助理</h4><p data-i18n="adAiChatSub">由 Gemini 驅動 · 可協助活動規劃 / 報名問題 / 數據分析</p></div>
+          <div class="chat-title"><h4 data-i18n="adAiChatTitle">RegMaster AI 助理</h4><p data-i18n="adAiChatSub">由 Gemini 驅動 · 可協助活動規劃 / 報名問題 / 數據分析</p></div>
+          <span class="scope-chip" id="scopeChip"></span>
+          <button class="mb-btn" id="scopeBtn" type="button"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span data-i18n="adAiScopeBtn">範圍</span></button>
         </header>
         <div class="messages" id="messages">
           <div class="empty-chat">
@@ -146,25 +220,26 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
             <h3 data-i18n="adAiEmptyTitle">有什麼可以幫你的？</h3>
             <p data-i18n="adAiEmptyDesc">新建對話或從左側選擇歷史對話開始。</p>
             <div class="suggestions">
-              <div class="sg" data-sg="如何提升報名轉換率？" data-i18n="adAiSg1">如何提升報名轉換率？</div>
-              <div class="sg" data-sg="幫我擬一封報名提醒信" data-i18n="adAiSg2">幫我擬一封報名提醒信</div>
-              <div class="sg" data-sg="哪些功能可以提升活動體驗？" data-i18n="adAiSg3">哪些功能可以提升活動體驗？</div>
-              <div class="sg" data-sg="分析我目前的活動表現" data-i18n="adAiSg4">分析我目前的活動表現</div>
+              <!-- 外審 M2：不放 data-sg（寫死中文），點擊時取 textContent，才會跟著語系走；init 也會立刻用 renderMessages() 重繪 -->
+              <div class="sg" data-i18n="adAiSg1">如何提升報名轉換率？</div>
+              <div class="sg" data-i18n="adAiSg2">幫我擬一封報名提醒信</div>
+              <div class="sg" data-i18n="adAiSg3">哪些功能可以提升活動體驗？</div>
+              <div class="sg" data-i18n="adAiSg4">分析我目前的活動表現</div>
             </div>
           </div>
         </div>
         <div class="input-area">
           <div class="input-wrap">
             <textarea id="msgInput" placeholder="輸入問題⋯ (Enter 送出，Shift+Enter 換行)" data-i18n-placeholder="adAiInputPlaceholder" rows="1"></textarea>
-            <button class="send-btn" id="sendBtn" disabled><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+            <button class="send-btn" id="sendBtn" type="button" disabled><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
           </div>
         </div>
       </section>
       <aside class="right-c">
         <h4 data-i18n="adAiScopeTitle">查詢範圍</h4>
         <div class="scope-picker" id="scopePicker">
-          <button class="on" data-scope="admin" data-i18n="adAiScopeAdmin">主辦後台</button>
-          <button data-scope="comp" data-i18n="adAiScopeComp">特定活動</button>
+          <button class="on" type="button" data-scope="admin" data-i18n="adAiScopeAdmin">主辦後台</button>
+          <button type="button" data-scope="comp" data-i18n="adAiScopeComp">特定活動</button>
         </div>
         <select id="compSelect" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:7px; margin-bottom:14px; display:none">
           <option value="" data-i18n="adAiSelectComp">選擇活動⋯</option>
@@ -172,6 +247,7 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
         <h4 id="kbTitle" data-i18n="adAiKbTitle">知識庫</h4>
         <div id="kbPanel"></div>
       </aside>
+      <div class="ai-backdrop" id="aiBackdrop"></div>
     </div>
   </main>
 </div>
@@ -195,6 +271,10 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     return t;
   }
+  var OL_RE = /^\s*(\d+)[.、)]\s+(.+)$/;
+  var UL_RE = /^\s*[-*•]\s+(.+)$/;
+  var SUB_UL_RE = /^\s{2,}[-*•]\s+(.+)$/;      // 編號項底下縮排的子彈點
+  var HR_RE = /^\s*([-*_])\1{2,}\s*$/;          // --- *** ___
   function mdToHtml(src) {
     var s = escapeHtml(src || '');
     var fences = [];
@@ -205,17 +285,35 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       var ln = lines[i];
       var f = ln.match(/^RMFENCE(\d+)END$/);
       if (f) { flushPara(); html += '<pre class="md-pre"><code>' + fences[+f[1]] + '</code></pre>'; i++; continue; }
+      if (HR_RE.test(ln)) { flushPara(); html += '<hr class="md-hr">'; i++; continue; }
       var h = ln.match(/^\s{0,3}#{1,6}\s+(.+)$/);
       if (h) { flushPara(); html += '<div class="md-h">' + mdInline(h[1]) + '</div>'; i++; continue; }
-      var mu = ln.match(/^\s*[-*•]\s+(.+)$/);
-      if (mu) { flushPara(); html += '<ul class="md-ul">'; while (i < lines.length && (mu = lines[i].match(/^\s*[-*•]\s+(.+)$/))) { html += '<li>' + mdInline(mu[1]) + '</li>'; i++; } html += '</ul>'; continue; }
-      var mo = ln.match(/^\s*\d+[.、)]\s+(.+)$/);
-      if (mo) { flushPara(); html += '<ol class="md-ol">'; while (i < lines.length && (mo = lines[i].match(/^\s*\d+[.、)]\s+(.+)$/))) { html += '<li>' + mdInline(mo[1]) + '</li>'; i++; } html += '</ol>'; continue; }
+      var mo = ln.match(OL_RE);
+      if (mo) {
+        // start=N：模型輸出 1. 2. 3. 但中間夾了子彈點或空行時，原本會被切成三個各自從 1 起算的 <ol>
+        flushPara(); html += '<ol class="md-ol" start="' + (parseInt(mo[1], 10) || 1) + '">';
+        while (i < lines.length && (mo = lines[i].match(OL_RE))) {
+          var li = mdInline(mo[2]); i++;
+          var sub = '', su;
+          while (i < lines.length && (su = lines[i].match(SUB_UL_RE))) { sub += '<li>' + mdInline(su[1]) + '</li>'; i++; }
+          html += '<li>' + li + (sub ? '<ul>' + sub + '</ul>' : '') + '</li>';
+        }
+        html += '</ol>'; continue;
+      }
+      var mu = ln.match(UL_RE);
+      if (mu) { flushPara(); html += '<ul class="md-ul">'; while (i < lines.length && (mu = lines[i].match(UL_RE))) { html += '<li>' + mdInline(mu[1]) + '</li>'; i++; } html += '</ul>'; continue; }
       if (ln.trim() === '') { flushPara(); i++; continue; }
       para.push(ln); i++;
     }
     flushPara();
     return html;
+  }
+  // createdAt 是 ISO（UTC）；原本 slice(11,19) 直接把 UTC 時分秒印出來，與左側列表（台北時間）差 8 小時
+  function fmtTs(iso) {
+    var d = new Date(iso || '');
+    if (isNaN(d.getTime())) return String(iso || '').slice(11, 19);
+    try { return d.toLocaleTimeString('zh-TW', { hourCycle: 'h23', timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    catch (e) { return d.toTimeString().slice(0, 8); }
   }
   document.getElementById('orgAv').textContent = (me.displayName || me.username).charAt(0).toUpperCase();
   document.getElementById('orgName').textContent = me.displayName || me.username;
@@ -223,24 +321,69 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
   document.getElementById('meName').textContent = me.displayName || me.username;
 
   var CONVS = [];
-  var SELECTED = null;
+  var SELECTED = null;        // { id, compId, ... }；新對話建立中為 { id:null, _creating:true, compId }
   var MESSAGES = [];
   var SCOPE = 'admin';
   var SELECTED_COMP = '';
+  var LOADING_ID = null;      // 正在載入的對話 id：防連點、丟棄過期回應、鎖輸入
+  var BUSY = false;           // AI 回覆中：鎖送出／鎖切範圍／鎖新對話
+  var CREATING = false;       // 「＋ 新對話」建立中
+  var inp = document.getElementById('msgInput');
+  var sendBtn = document.getElementById('sendBtn');
+  var newConvBtn = document.getElementById('newConvBtn');
+  var compSel = document.getElementById('compSelect');
 
-  // Load competitions for the comp scope
+  // 忙碌提示文案依「畫面上實際顯示的指示器」決定（六審）：建立中⋯ / 思考中⋯ / 載入對話中⋯
+  // 七審：載入骨架會蓋掉 typing 泡泡，所以 LOADING 要排在 BUSY 之前（回覆中切對話時畫面上只剩「載入對話中⋯」）
+  function busyKey() { return CREATING ? 'adAiCreatingWait' : (LOADING_ID !== null ? 'adAiLoadingConv' : 'adAiBusy'); }
+  function updateControls() {
+    sendBtn.disabled = BUSY || LOADING_ID !== null || !inp.value.trim();
+    inp.disabled = LOADING_ID !== null;
+    newConvBtn.disabled = BUSY || LOADING_ID !== null || CREATING || !!(SELECTED && SELECTED._creating);
+  }
+  function findCompOption(compId) {
+    for (var i = 0; i < compSel.options.length; i++) if (compSel.options[i].value === compId) return compSel.options[i];
+    return null;
+  }
+  function compNameOf(compId) {
+    if (!compId) return '';
+    for (var i = 0; i < compSel.options.length; i++) if (compSel.options[i].value === compId) return compSel.options[i].textContent;
+    return '';
+  }
+  // 三審 R2-①：後端的確定訊號（callable 丟 functions/not-found = 活動不存在）→ 直接標記為已刪除，
+  // 不再單靠 listCompetitions 成功與否（它只呼叫一次、失敗不重試，失敗時整套守門原本會失效）。
+  function markCompDeleted(compId) {
+    if (!compId) return;
+    var o = findCompOption(compId);
+    if (!o) { o = document.createElement('option'); o.value = compId; compSel.appendChild(o); }
+    o.disabled = true; o.textContent = L('adAiCompDeleted');
+    if (SCOPE === 'comp' && SELECTED_COMP === compId) { COMP_DELETED = true; o.selected = true; renderKbPanel(); renderScopeChip(); }
+    renderConvs();
+  }
+
+  // Load competitions for the comp scope.
+  // 外審 M1：清單是非同步來的，「還沒回來／失敗」不能當成「活動已刪除」——只有 'ok' 才允許貼「已刪除」標籤。
+  var COMPS_STATE = 'loading';   // 'loading' | 'ok' | 'failed'
+  var COMP_DELETED = false;      // 目前範圍指向的活動已被刪除（孤兒對話）：任何 comp 呼叫後端都會 throw not-found，前端一律擋下
   google.script.run.withSuccessHandler(function (list) {
-    var sel = document.getElementById('compSelect');
     (list || []).forEach(function (c) {
       var opt = document.createElement('option');
-      opt.value = c.compId; opt.textContent = c.name;
-      sel.appendChild(opt);
+      opt.value = c.compId; opt.textContent = c.name || c.compId;   // 四審 C-4：活動名為空時不能是空字串，否則會被當成「已刪除」
+      compSel.appendChild(opt);
     });
-  }).withFailureHandler(function () {}).listCompetitions();
+    COMPS_STATE = 'ok';
+    if (SCOPE === 'comp' && SELECTED_COMP) setScopeUI('comp', SELECTED_COMP);   // 重新對齊下拉（含真的已刪除 → 此時才貼標）
+    renderScopeChip(); renderConvs();   // pill 與小標需要活動名稱
+  }).withFailureHandler(function () {
+    COMPS_STATE = 'failed';
+    renderScopeChip(); renderConvs();
+  }).listCompetitions();
 
   function loadConvs() {
+    var reqScope = SCOPE, reqComp = SELECTED_COMP;
     google.script.run
       .withSuccessHandler(function (res) {
+        if (reqScope !== SCOPE || reqComp !== SELECTED_COMP) return;   // 範圍已變，丟棄舊清單
         CONVS = (res && res.conversations) || [];
         renderConvs();
       })
@@ -254,10 +397,13 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       list.innerHTML = '<p style="text-align:center; color:var(--muted); padding:24px 16px; font:500 12px/1.5 var(--f-tc)">' + L('adAiNoConv') + '</p>';
       return;
     }
+    var curId = (SELECTED && SELECTED.id) || null;
     list.innerHTML = CONVS.map(function (c) {
-      return '<div class="conv" data-id="' + c.id + '">' +
-        '<div class="del-btn" data-del="' + c.id + '" title="' + escapeHtml(L('adAiDelTitle')) + '">×</div>' +
-        '<div class="nm">' + escapeHtml(c.title || L('adAiConvDefaultTitle')) + (c.compId ? ' <span class="pill-c">' + escapeHtml(L('adAiConvActivity')) + '</span>' : '') + '</div>' +
+      var on = c.id === curId || c.id === LOADING_ID;   // 重繪時保留高亮（原本每次 AI 回完重載清單就消失）
+      var pill = c.compId ? ' <span class="pill-c" title="' + escapeHtml(compNameOf(c.compId) || L('adAiConvActivity')) + '">' + escapeHtml(compNameOf(c.compId) || L('adAiConvActivity')) + '</span>' : '';
+      return '<div class="conv' + (on ? ' on' : '') + (c.id === LOADING_ID ? ' loading' : '') + '" data-id="' + escapeHtml(c.id) + '">' +
+        '<div class="del-btn" data-del="' + escapeHtml(c.id) + '" title="' + escapeHtml(L('adAiDelTitle')) + '">×</div>' +
+        '<div class="nm">' + escapeHtml(c.title || L('adAiConvDefaultTitle')) + pill + '</div>' +
         '<div class="preview">' + escapeHtml(c.lastSnippet || L('adAiConvNoSnippet')) + '</div>' +
         '<div class="time">' + escapeHtml(c.updatedAt || '') + ' · ' + (c.messageCount || 0) + ' ' + escapeHtml(L('adAiConvUnit')) + '</div>' +
       '</div>';
@@ -277,28 +423,53 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
           if (row) { row.style.opacity = '.45'; row.style.pointerEvents = 'none'; }
           b.innerHTML = '⋯';
           google.script.run
-            .withSuccessHandler(function () { if (SELECTED && SELECTED.id === b.dataset.del) { SELECTED = null; renderMessages(); } loadConvs(); })
+            .withSuccessHandler(function () { if (SELECTED && SELECTED.id === b.dataset.del) { SELECTED = null; MESSAGES = []; renderMessages(); updateControls(); } loadConvs(); })
             .withFailureHandler(function () { if (row) { row.style.opacity = ''; row.style.pointerEvents = ''; } b.innerHTML = '×'; uiAlert(L('adAiDelFail')); })
             .deleteConversation(b.dataset.del);
         });
       });
     });
   }
+  function markSelected(id) {
+    document.querySelectorAll('#convList .conv').forEach(function (x) {
+      x.classList.toggle('on', !!id && x.dataset.id === id);
+      x.classList.toggle('loading', !!id && x.dataset.id === id && LOADING_ID === id);
+    });
+  }
+  function renderLoadingState() {
+    document.getElementById('messages').innerHTML =
+      '<div class="loading-chat"><div class="typing"><span></span><span></span><span></span></div><p>' + escapeHtml(L('adAiLoadingConv')) + '</p></div>';
+  }
 
+  // 點歷史對話：立刻高亮＋載入畫面＋鎖輸入；回應回來時若使用者已點別的（LOADING_ID 變了）就丟棄。
   function selectConv(id) {
+    if (!id || LOADING_ID === id) return;
+    if (SELECTED && SELECTED.id === id && LOADING_ID === null) { closeDrawers(); return; }   // 已是目前對話（放在建立中守門前：重點目前對話只關抽屜、不跳提示）
+    if (CREATING || (SELECTED && SELECTED._creating)) { uiAlert(L(busyKey())); return; }   // 二審 H1／四審 B：兩條建立路徑進行中都不可切對話
+    LOADING_ID = id;
+    markSelected(id); renderLoadingState(); updateControls(); closeDrawers();
+    function fail(msg) {
+      if (LOADING_ID !== id) return;
+      LOADING_ID = null;
+      uiAlert(msg || L('adAiLoadFail'));
+      markSelected(SELECTED && SELECTED.id); renderMessages(); updateControls();
+    }
     google.script.run
       .withSuccessHandler(function (res) {
-        if (res && res.success) {
-          SELECTED = res.conversation;
-          MESSAGES = res.messages || [];
-          renderMessages();
-          document.querySelectorAll('.conv').forEach(function (x) { x.classList.toggle('on', x.dataset.id === id); });
-        }
+        if (LOADING_ID !== id) return;
+        if (!res || !res.success) { fail(); return; }   // 三審：res.message 是後端寫死中文（找不到對話／權限不足），一律用本地化文案
+        LOADING_ID = null;
+        SELECTED = res.conversation;
+        MESSAGES = res.messages || [];
+        applyScopeFromConv(SELECTED);        // §4：還原這段對話當時的查詢範圍
+        renderMessages(); markSelected(id); updateControls();
       })
+      .withFailureHandler(function () { fail(); })
       .getConversation(id);
   }
 
   function renderMessages() {
+    if (LOADING_ID !== null) { renderLoadingState(); return; }
     var box = document.getElementById('messages');
     if (!SELECTED || MESSAGES.length === 0) {
       box.innerHTML = '<div class="empty-chat">' +
@@ -319,8 +490,10 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
       if (m._typing) {
         inner = '<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
       } else {
-        var body = m.role === 'ai' ? mdToHtml(m.content) : escapeHtml(m.content);
-        inner = '<div class="bubble">' + body + '</div><div class="ts">' + escapeHtml((m.createdAt || '').slice(11, 19)) + '</div>';
+        var text = m._err ? localizeErr(m._err) : m.content;   // 錯誤泡泡在繪製當下本地化
+        var body = m.role === 'ai' ? mdToHtml(text) : escapeHtml(text);
+        if (m._truncated) body += '<div class="trunc-note">⚠️ ' + escapeHtml(L('adAiTruncated')) + '</div>';
+        inner = '<div class="bubble' + (m._transient ? ' err' : '') + '">' + body + '</div><div class="ts">' + escapeHtml(fmtTs(m.createdAt)) + '</div>';
       }
       return '<div class="msg ' + escapeHtml(m.role) + '">' +
         '<div class="av-m ' + escapeHtml(m.role) + '">' + escapeHtml(avLabel) + '</div>' +
@@ -333,12 +506,9 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
   // ---- Knowledge-base panel: reflect the ACTUAL sources the AI reads per scope ----
   var OPEN_IC = '<svg class="open-ic" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9M5 5h6M5 5v14h14v-6"/></svg>';
   function hintBox(t) { return '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--acc-soft); border-radius:9px; margin-top:14px">💡 ' + t + '</p>'; }
+  function kbNote(t) { return '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">' + escapeHtml(t) + '</p>'; }
   var KB_CACHE = {};
-  function currentCompName() {
-    var sel = document.getElementById('compSelect');
-    return (sel && sel.selectedIndex >= 0) ? sel.options[sel.selectedIndex].textContent : '';
-  }
-  function paintCompKb(st, compName) {
+  function paintCompKb(st) {
     var panel = document.getElementById('kbPanel');
     if (SCOPE !== 'comp') return;
     var items = '';
@@ -357,16 +527,19 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     var title = document.getElementById('kbTitle');
     if (SCOPE === 'comp') {
       title.textContent = L('adAiKbTitleComp');
-      if (!SELECTED_COMP) {
-        panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px; background:var(--surface-2); border:1px solid var(--line-2); border-radius:9px">' + escapeHtml(L('adAiKbPickComp')) + '</p>';
-        return;
-      }
-      if (KB_CACHE[SELECTED_COMP]) { paintCompKb(KB_CACHE[SELECTED_COMP], currentCompName()); return; }
+      if (!SELECTED_COMP) { panel.innerHTML = kbNote(L('adAiKbPickComp')); return; }
+      if (COMP_DELETED) { panel.innerHTML = kbNote(L('adAiKbCompGone')); return; }   // 二審 ①：不再去問後端（必 throw），也不畫樂觀預設
+      if (KB_CACHE[SELECTED_COMP]) { paintCompKb(KB_CACHE[SELECTED_COMP]); return; }
       panel.innerHTML = '<p style="font:400 11.5px/1.55 var(--f-tc); color:var(--muted); padding:14px">' + escapeHtml(L('adAiKbLoadingComp')) + '</p>';
       var reqComp = SELECTED_COMP;
       google.script.run
-        .withSuccessHandler(function (st) { KB_CACHE[reqComp] = st || {}; if (SCOPE === 'comp' && SELECTED_COMP === reqComp) paintCompKb(KB_CACHE[reqComp], currentCompName()); })
-        .withFailureHandler(function () { if (SCOPE === 'comp' && SELECTED_COMP === reqComp) paintCompKb({ hasRules: true, hasDescription: true, hasOrgInfo: true, hasRegData: false }, currentCompName()); })
+        // !COMP_DELETED：請求在飛行中若已被標成已刪除，回應不可蓋掉「活動已刪除」提示（三審）
+        .withSuccessHandler(function (st) { KB_CACHE[reqComp] = st || {}; if (SCOPE === 'comp' && SELECTED_COMP === reqComp && !COMP_DELETED) paintCompKb(KB_CACHE[reqComp]); })
+        // 失敗就說失敗；原本畫「有規章／說明／主辦資訊」的樂觀預設會對不存在的來源撒謊
+        .withFailureHandler(function (e) {
+          if (e && e.code === 'functions/not-found') { markCompDeleted(reqComp); return; }
+          if (SCOPE === 'comp' && SELECTED_COMP === reqComp) panel.innerHTML = kbNote(L('adAiKbStatusFail'));
+        })
         .getCompKbStatus(reqComp);
     } else {
       title.textContent = L('adAiKbTitle');
@@ -377,123 +550,286 @@ a.kb-item h6 .open-ic { margin-left:auto; width:13px; height:13px; color:var(--m
     }
   }
 
-  // Scope picker
+  // ---- 查詢範圍（§4）----
+  // 範圍是「對話的屬性」：載入對話時從 conv.compId 還原；手動切換＝重啟一個對話，切之前要確認。
+  function renderScopeChip() {
+    var chip = document.getElementById('scopeChip');
+    var txt;
+    if (SCOPE !== 'comp') txt = L('adAiScopeAdmin');
+    else if (!SELECTED_COMP) txt = L('adAiScopeChipPick');
+    else {
+      // 三審 C：有 compId 但查不到名字時不能謊稱「未選擇活動」——依活動清單狀態分三態
+      txt = compNameOf(SELECTED_COMP) ||
+        ((COMP_DELETED || COMPS_STATE === 'ok') ? L('adAiCompDeleted') : (COMPS_STATE === 'loading' ? L('adAiScopeChipLoading') : SELECTED_COMP));
+    }
+    chip.textContent = txt; chip.title = txt;
+    chip.classList.toggle('comp', SCOPE === 'comp');
+  }
+  function setScopeUI(scope, compId) {
+    SCOPE = scope;
+    COMP_DELETED = false;
+    if (scope === 'comp') {
+      SELECTED_COMP = compId || '';
+      var existing = SELECTED_COMP ? findCompOption(SELECTED_COMP) : null;
+      if (SELECTED_COMP && COMPS_STATE === 'ok' && !existing) {
+        // 對話所屬的活動已被刪除（活動清單已載入才能這樣判定）：加一個不可選的選項把狀態顯示出來，而不是默默退回主辦後台
+        var o = document.createElement('option');
+        o.value = SELECTED_COMP; o.disabled = true; o.textContent = L('adAiCompDeleted');
+        compSel.appendChild(o);
+        COMP_DELETED = true;
+      } else if (existing && existing.disabled) {
+        COMP_DELETED = true;
+      }
+    }
+    document.querySelectorAll('#scopePicker button').forEach(function (b) { b.classList.toggle('on', b.dataset.scope === scope); });
+    compSel.style.display = scope === 'comp' ? '' : 'none';
+    if (scope === 'comp') {
+      compSel.value = SELECTED_COMP;
+      for (var i = 0; i < compSel.options.length; i++) compSel.options[i].selected = (compSel.options[i].value === SELECTED_COMP);
+    }
+    renderKbPanel(); renderScopeChip();
+  }
+  function applyScopeFromConv(conv) {
+    var want = conv.compId ? 'comp' : 'admin';
+    var changed = want !== SCOPE || (want === 'comp' && (conv.compId || '') !== SELECTED_COMP);
+    setScopeUI(want, conv.compId || '');
+    if (changed) loadConvs();            // 清單依新範圍重載；renderConvs 會用 SELECTED.id 保留高亮
+  }
+  // 手動切範圍：有選中對話 → 先確認；確定＝離開目前對話回到空白新對話；取消＝revert() 還原控制項。
+  function requestScopeChange(nextScope, nextComp, revert) {
+    if (BUSY || LOADING_ID !== null || CREATING || (SELECTED && SELECTED._creating)) { revert(); uiAlert(L(busyKey())); return; }
+    function apply() { setScopeUI(nextScope, nextComp); loadConvs(); }
+    if (!SELECTED) { apply(); return; }
+    uiConfirm(L('adAiScopeSwitchMsg'), { title: L('adAiScopeSwitchTitle'), okText: L('adAiScopeSwitchOk') }).then(function (ok) {
+      if (!ok) { revert(); return; }
+      SELECTED = null; MESSAGES = [];
+      apply(); renderMessages(); updateControls();
+    });
+  }
   document.querySelectorAll('#scopePicker button').forEach(function (b) {
     b.addEventListener('click', function () {
-      document.querySelectorAll('#scopePicker button').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      SCOPE = b.dataset.scope;
-      document.getElementById('compSelect').style.display = SCOPE === 'comp' ? '' : 'none';
-      renderKbPanel();
-      loadConvs();
+      var next = b.dataset.scope;
+      if (next === SCOPE) return;
+      requestScopeChange(next, SELECTED_COMP, function () {});   // 按鈕的 .on 尚未改，不需還原
     });
   });
-  document.getElementById('compSelect').addEventListener('change', function (e) {
-    SELECTED_COMP = e.target.value;
-    renderKbPanel();
-    loadConvs();
+  compSel.addEventListener('change', function (e) {
+    var next = e.target.value, prev = SELECTED_COMP;
+    if (next === prev) return;
+    requestScopeChange('comp', next, function () { compSel.value = prev; });
   });
 
-  document.getElementById('newConvBtn').addEventListener('click', function () {
-    var btn = this;
-    if (btn.disabled) return;
-    var orig = btn.textContent;
-    btn.disabled = true; btn.textContent = L('adAiCreating');
-    function done() { btn.disabled = false; btn.textContent = orig; }
+  // ---- 新對話 ----
+  newConvBtn.addEventListener('click', function () {
+    if (newConvBtn.disabled) return;
+    if (BUSY || LOADING_ID !== null) { uiAlert(L('adAiBusy')); return; }
+    if (COMP_DELETED) { uiAlert(L('adAiCompGone')); return; }                            // 二審 ①：已刪除活動不可再建對話
+    if (SCOPE === 'comp' && !SELECTED_COMP) { uiAlert(L('adAiKbPickComp')); return; }   // 外審 M4：選了「特定活動」卻沒挑活動
+    CREATING = true; newConvBtn.textContent = L('adAiCreating'); updateControls();
+    // 還原時重新取當前語系的文案，不快取點擊當下的字串（外審 L4：中途切語言會被舊字串蓋回）
+    function done() { CREATING = false; newConvBtn.textContent = L('adAiNewConv'); updateControls(); }
+    var compId = SCOPE === 'comp' ? SELECTED_COMP : '';
+    closeDrawers();
     google.script.run
       .withSuccessHandler(function (res) {
         done();
-        if (res && res.success) { loadConvs(); setTimeout(function () { selectConv(res.id); }, 200); }
+        if (res && res.success) { loadConvs(); selectConv(res.id); }
+        else uiAlert(L('adAiCreateFail'));
       })
       .withFailureHandler(function () { done(); uiAlert(L('adAiCreateFail')); })
-      .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', L('adAiConvDefaultTitle') + ' ' + new Date().toLocaleString());
+      .createConversation(compId, L('adAiConvDefaultTitle') + ' ' + new Date().toLocaleString());
   });
 
-  // Send message
-  var inp = document.getElementById('msgInput');
+  // ---- 送訊息 ----
   inp.addEventListener('input', function () {
-    document.getElementById('sendBtn').disabled = !inp.value.trim();
+    updateControls();
     inp.style.height = 'auto';
     inp.style.height = Math.min(160, inp.scrollHeight) + 'px';
   });
   inp.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!document.getElementById('sendBtn').disabled) document.getElementById('sendBtn').click();
+      if (!sendBtn.disabled) sendBtn.click();
     }
   });
-  document.getElementById('sendBtn').addEventListener('click', function () {
-    // E-5: if a brand-new conversation is mid-creation, ignore re-entrant sends so a fast
-    // second message can't spawn a 2nd empty conversation and lose the first message.
-    if (SELECTED && SELECTED._creating) return;
+  // 對話記憶（§5-2）：最近 10 則、每則 ≤2000 字、總量 ≤8000 字（從最舊丟）。
+  // 排除：打字中泡泡、暫時性錯誤泡泡、以及剛 push 進去的這次問題。
+  function buildHistory() {
+    var items = MESSAGES.filter(function (m) { return !m._typing && !m._transient && (m.role === 'user' || m.role === 'ai'); });
+    if (items.length && items[items.length - 1].role === 'user') items = items.slice(0, -1);
+    items = items.slice(-10).map(function (m) { return { role: m.role, content: String(m.content || '').slice(0, 2000) }; });
+    var total = 0; items.forEach(function (m) { total += m.content.length; });
+    while (total > 8000 && items.length) { total -= items[0].content.length; items.shift(); }
+    return items;
+  }
+  var QUESTION_MAX = 10000;   // 與後端 askAdminAI / appendMessage 的上限對齊（外審 M5：不可靜默截斷）
+  sendBtn.addEventListener('click', function () {
+    if (BUSY || LOADING_ID !== null) return;
+    if (SELECTED && SELECTED._creating) return;   // 新對話建立中，忽略再送（避免生出第 2 個空對話）
+    if (CREATING) { uiAlert(L('adAiCreatingWait')); return; }   // 「＋ 新對話」建立中（三審：先打字再按＋新對話再按 Enter）
     var text = inp.value.trim();
     if (!text) return;
+    // 守門都放在清空輸入框之前，被擋下時文字還在
+    if (COMP_DELETED) { uiAlert(L('adAiCompGone')); return; }   // 二審 ①：孤兒對話／已刪除活動，後端 compAuthCallable 必 throw not-found
+    if (!SELECTED && SCOPE === 'comp' && !SELECTED_COMP) { uiAlert(L('adAiKbPickComp')); return; }   // 外審 M4
+    if (text.length > QUESTION_MAX) { uiAlert(L('adAiErrTooLong') + '（' + text.length + ' / ' + QUESTION_MAX + '）'); return; }
     inp.value = ''; inp.style.height = 'auto';
-    this.disabled = true;
-    // OPTIMISTIC: show the user's message + typing indicator IMMEDIATELY (works for both an
-    // existing conversation and a brand-new one) so the send always feels instant.
+    BUSY = true; updateControls();
+    // 六審：新對話要先放佔位 SELECTED 再 render——renderMessages 在 !SELECTED 時走空白分支，
+    // 原本（含改版前）第一則訊息的樂觀泡泡與「思考中」根本畫不出來，看起來像沒反應。
+    var isNew = !SELECTED;
+    var compId = SCOPE === 'comp' ? SELECTED_COMP : '';
+    if (isNew) SELECTED = { id: null, _creating: true, compId: compId };
+    // OPTIMISTIC: show the user's message + typing indicator IMMEDIATELY.
     MESSAGES.push({ role: 'user', content: text, createdAt: new Date().toISOString() });
     MESSAGES.push({ role: 'ai', content: L('adAiThinking'), createdAt: new Date().toISOString(), _typing: true });
     renderMessages();
-    if (!SELECTED) {
-      // New conversation — create it, then run AI (UI already shows the message + dots).
-      // Claim creation synchronously so a re-entrant send is gated by the guard above.
-      SELECTED = { id: null, _creating: true };
+    var hist = buildHistory();   // 在任何非同步之前算好：等回呼時 MESSAGES 可能已是別的對話
+    if (isNew) {
       google.script.run
         .withSuccessHandler(function (res) {
-          if (res && res.success) { SELECTED = { id: res.id }; loadConvs(); runAI(res.id, text); }
-          else { SELECTED = null; stopTyping(L('adAiCreateFail')); }
+          if (res && res.success) {
+            // 使用者可能在建立期間點了別的對話（SELECTED 已被換掉）→ 不覆蓋畫面，但回覆仍寫進新對話
+            if (SELECTED && SELECTED._creating) SELECTED = { id: res.id, compId: compId };
+            loadConvs(); runAI(res.id, text, compId, hist);
+          } else creationFailed(text);
         })
-        .withFailureHandler(function () { SELECTED = null; stopTyping(L('adAiCreateFail')); })
-        .createConversation(SCOPE === 'comp' ? SELECTED_COMP : '', text.slice(0, 50));
+        .withFailureHandler(function () { creationFailed(text); })
+        .createConversation(compId, text.slice(0, 50));
     } else {
-      runAI(SELECTED.id, text);
+      runAI(SELECTED.id, text, SELECTED.compId || '', hist);
     }
   });
-  // Remove the typing indicator and optionally show an error bubble.
-  function stopTyping(errMsg) {
-    MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });
-    if (errMsg) MESSAGES.push({ role: 'ai', content: errMsg, createdAt: new Date().toISOString() });
-    renderMessages();
+  // 外審 H1：建立對話失敗時，SELECTED 一清空 renderMessages 就會走空白分支，錯誤泡泡永遠畫不出來、
+  // 使用者打的字也跟著消失。改成：把原文塞回輸入框、清掉樂觀訊息、明確 uiAlert。
+  function creationFailed(text) {
+    BUSY = false;
+    if (SELECTED && SELECTED._creating) { SELECTED = null; MESSAGES = []; renderMessages(); }
+    // 二審 H1：不論畫面是否還停在新對話，原文一律救回；輸入框若已有新內容就接在後面，不覆蓋
+    var cur = inp.value.trim();
+    inp.value = cur ? (inp.value + '\n\n' + (text || '')) : (text || '');
+    inp.dispatchEvent(new Event('input'));
+    uiAlert(L('adAiCreateFail'));
+    updateControls();
   }
-  // Persist the user message (background) + call the AI, then swap the dots for the reply.
-  function runAI(convId, text) {
+  // Persist the user message (background) + call the AI with the conversation's own scope.
+  function runAI(convId, text, compId, hist) {
     google.script.run.withSuccessHandler(function () {}).withFailureHandler(function () {}).appendMessage(convId, 'user', text);
-    var aiCall = SCOPE === 'comp' && SELECTED_COMP
-      ? function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, SELECTED_COMP); }
-      : function (cb) { google.script.run.withSuccessHandler(cb).withFailureHandler(function (e) { cb({ error: e.message }); }).askAdminAI(text, ''); };
-    aiCall(function (aiRes) {
+    google.script.run
+      .withSuccessHandler(function (aiRes) {
+        if (aiRes && aiRes.errorCode === 'NOT_FOUND' && compId) markCompDeleted(compId);   // 四審 A：system 角色不會被 compAuthCallable 擋，後端改在 handler 內回 NOT_FOUND
+        onAiReply(convId, aiRes);
+      })
+      .withFailureHandler(function (e) {
+        if (e && e.code === 'functions/not-found' && compId) markCompDeleted(compId);   // 後端確定訊號：活動已不存在（competition 角色）
+        onAiReply(convId, errFromThrown(e));
+      })
+      .askAdminAI(text, compId || '', hist);
+  }
+  // 回覆到了：只有畫面仍停在同一段對話才畫出來（§5-6）；錯誤只顯示不落盤（§5-5）。
+  // 後端錯誤碼 → 本地化文案（外審 L3）；沒有對應碼時才退回後端的原始字串
+  var ERR_KEYS = {
+    EMPTY: 'adAiErrEmpty', TOO_LONG: 'adAiErrTooLong', NO_KEY: 'adAiErrNoKey', API_ERROR: 'adAiErrApi', EXCEPTION: 'adAiErrApi',
+    NO_ANSWER: 'adAiErrNoAnswer', NOT_FOUND: 'adAiErrNotFound', AUTH: 'adAiErrAuth', DENIED: 'adAiErrDenied', TIMEOUT: 'adAiErrTimeout', CALL_FAILED: 'adAiErrApi'
+  };
+  // callable 在 handler 之前就 throw（compAuthCallable 的 not-found、requireCompFeature 的方案守門、內部錯誤）時沒有 errorCode，
+  // 用 Firebase error.code 對應（二審 L3-B）。方案守門的訊息本身就是要給使用者看的（哪個方案才有），保留成 detail。
+  var FB_CODES = { 'functions/not-found': 'NOT_FOUND', 'functions/unauthenticated': 'AUTH', 'functions/permission-denied': 'DENIED', 'functions/deadline-exceeded': 'TIMEOUT', 'functions/internal': 'API_ERROR', 'functions/unavailable': 'API_ERROR' };
+  function errFromThrown(e) {
+    var code = FB_CODES[(e && e.code) || ''] || 'CALL_FAILED';
+    return { error: (e && e.message) || '', errorCode: code, detail: code === 'DENIED' ? ((e && e.message) || '') : '' };
+  }
+  // 錯誤以結構（{error, errorCode, detail}）存在訊息上、繪製時才本地化，切語言會跟著換（二審 ③）
+  function localizeErr(er) {
+    if (!er) return L('adAiNoReply');
+    if (!er.error && !er.errorCode) return '';
+    var key = ERR_KEYS[er.errorCode];
+    var base = key ? L(key) : (er.error ? String(er.error) : L('adAiNoReply'));
+    return base + (key && er.detail ? '（' + String(er.detail) + '）' : '');
+  }
+  function onAiReply(convId, aiRes) {
+    BUSY = false; updateControls();
+    var errObj = !aiRes ? { error: '', errorCode: 'CALL_FAILED', detail: '' }
+      : ((aiRes.error || aiRes.errorCode) ? { error: aiRes.error || '', errorCode: aiRes.errorCode || '', detail: aiRes.detail || '' } : null);
+    var answer = errObj ? '' : String(aiRes.answer || aiRes.reply || '');
+    if (!errObj && !answer) errObj = { error: '', errorCode: 'NO_ANSWER', detail: '' };
+    if (SELECTED && SELECTED.id === convId) {
       MESSAGES = MESSAGES.filter(function (m) { return !m._typing; });
-      var reply = (aiRes && (aiRes.answer || aiRes.reply)) || (aiRes && aiRes.error) || L('adAiNoReply');
-      MESSAGES.push({ role: 'ai', content: reply, createdAt: new Date().toISOString() });
+      // 截斷警語只留在記憶體旗標，由 renderMessages 繪製並隨語系切換；不落盤、不進下一輪 history（外審 L1）
+      // 二審 ⑤：answer 超過 appendMessage 的 10000 字上限會被後端靜默截掉再落盤 → 同樣視為截斷提示使用者
+      MESSAGES.push({
+        role: 'ai', content: errObj ? '' : answer, createdAt: new Date().toISOString(),
+        _transient: !!errObj, _err: errObj, _truncated: !errObj && (!!aiRes.truncated || answer.length > QUESTION_MAX)
+      });
       renderMessages();
-      google.script.run.withSuccessHandler(function () { loadConvs(); }).appendMessage(convId, 'ai', reply);
-    });
+    }
+    if (!errObj) google.script.run.withSuccessHandler(function () { loadConvs(); }).withFailureHandler(function () {}).appendMessage(convId, 'ai', answer);
   }
 
   // Suggestion cards → fill the input and send (auto-creates a conversation if none).
-  // Delegated on #messages so it works for the static empty-state cards AND re-rendered ones.
   function submitSuggestion(text) {
     if (!text) return;
+    // 四審 C-2：忙碌中不要覆寫輸入框（覆寫了又送不出去）
+    if (BUSY || LOADING_ID !== null || CREATING || (SELECTED && SELECTED._creating)) { uiAlert(L(busyKey())); return; }
+    // 五審：sendBtn 裡會擋的條件這裡先擋，否則草稿被覆寫後才被拒送（建議卡本身很短，不需 QUESTION_MAX）
+    if (COMP_DELETED) { uiAlert(L('adAiCompGone')); return; }
+    if (!SELECTED && SCOPE === 'comp' && !SELECTED_COMP) { uiAlert(L('adAiKbPickComp')); return; }
+    var draft = inp.value;
     inp.value = text;
     inp.dispatchEvent(new Event('input'));            // enable send button + autosize
-    document.getElementById('sendBtn').click();        // sendBtn handler auto-creates a conv when none
+    sendBtn.click();                                   // sendBtn handler auto-creates a conv when none
+    // 若原本有草稿：送出後把草稿放回輸入框（sendBtn 成功時會清空輸入框）
+    if (draft.trim() && !inp.value.trim()) { inp.value = draft; inp.dispatchEvent(new Event('input')); }
   }
   document.getElementById('messages').addEventListener('click', function (e) {
     var sg = e.target.closest ? e.target.closest('.sg') : null;
     if (sg) submitSuggestion(sg.getAttribute('data-sg') || sg.textContent.trim());
   });
 
-  renderKbPanel();
-  loadConvs();
+  // ---- Mobile 抽屜（§7）----
+  function closeDrawers() { document.body.classList.remove('ai-left-open'); document.body.classList.remove('ai-right-open'); }
+  function openDrawer(side) {
+    closeDrawers();
+    document.body.classList.remove('side-open');       // 主側欄抽屜若開著就先關，避免兩層疊在一起
+    document.body.classList.add(side === 'left' ? 'ai-left-open' : 'ai-right-open');
+  }
+  document.getElementById('histBtn').addEventListener('click', function () {
+    if (document.body.classList.contains('ai-left-open')) closeDrawers(); else openDrawer('left');
+  });
+  document.getElementById('scopeBtn').addEventListener('click', function () {
+    if (document.body.classList.contains('ai-right-open')) closeDrawers(); else openDrawer('right');
+  });
+  document.getElementById('aiBackdrop').addEventListener('click', closeDrawers);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawers(); });
+  // 二審 ②：抽屜 body class 會跨斷點殘留（平板直轉橫：黑幕還在、抽屜已回到版面、按鈕已隱藏）→ 斷點一變就全關
+  ['(max-width:900px)', '(max-width:1100px)'].forEach(function (q) {
+    var mq = window.matchMedia(q);
+    var onChange = function () { closeDrawers(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange); else if (mq.addListener) mq.addListener(onChange);
+  });
 
-  // Re-render JS-injected content (conversation list, messages, KB panel) when the
-  // language changes; static [data-i18n*] nodes are handled by the shared engine.
+  // 外審 M3：#kbTitle 由 renderKbPanel 決定文字（活動範圍時是「知識庫 · 此活動」），拿掉 data-i18n
+  // 否則 lang-changed 尾端的 applyI18n() 會把它洗回通用版（專案已知的 data-i18n 動態內容互洗陷阱）
+  document.getElementById('kbTitle').removeAttribute('data-i18n');
+  newConvBtn.removeAttribute('data-i18n');   // 二審 ④：建立中若切語言，applyI18n 會把「建立中⋯」洗回「＋ 新對話」；改由 lang-changed handler 自己更新
+  newConvBtn.textContent = L('adAiNewConv'); // 三審 A：拔掉 data-i18n 後 boot 必須自己補字，否則英文介面首載永遠是 HTML 裡的中文
+  renderKbPanel();
+  renderScopeChip();
+  renderMessages();      // 外審 M2：立刻用目前語系重繪空白狀態，取代 HTML 裡寫死中文的靜態建議卡
+  loadConvs();
+  updateControls();
+
+  // Re-render JS-injected content when the language changes; static [data-i18n*] nodes
+  // are handled by the shared engine. renderMessages() 會自行保留「載入中」畫面。
   if (window.AppState && typeof window.AppState.on === 'function') {
     window.AppState.on('lang-changed', function () {
+      // 「（此活動已刪除）」占位選項是 JS 生成的，沒有 data-i18n，要先換字——chip 與 pill 都以它的 textContent 為唯一來源（三審 B）
+      for (var i = 0; i < compSel.options.length; i++) if (compSel.options[i].disabled && compSel.options[i].value) compSel.options[i].textContent = L('adAiCompDeleted');
       renderConvs();
       renderMessages();
       renderKbPanel();
+      renderScopeChip();
+      newConvBtn.textContent = L(CREATING ? 'adAiCreating' : 'adAiNewConv');
       if (typeof window.applyI18n === 'function') window.applyI18n();
     });
   }

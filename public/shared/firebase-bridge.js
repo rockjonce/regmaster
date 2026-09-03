@@ -199,7 +199,7 @@
     saveScore:["compId","teamId","item","score","rank","comment","user"],
     getScores:["compId"],
     askCompetitionAI:["compId","question"],
-    askAdminAI:["question","compId"],
+    askAdminAI:["question","compId","history"],   // history 選填（2026-09-02 對話記憶）；舊呼叫端只傳兩個 → undefined 會被 JSON 序列化丟掉
     getCompKbStatus:["compId"],
     uploadRulesPdf:["compId","base64Data","fileName"],
     uploadTeamFile:["compId","teamId","base64Data","fileName"],
