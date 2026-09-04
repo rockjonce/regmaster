@@ -1,0 +1,7 @@
+{
+  "_comment": "備份資料夾是 functions/index.js 的影子副本（_backup_20260903 逐位元組相同），進圖會讓每個後端符號出現 2-3 份重複節點，污染 callers/impact 分析且行號是舊的。排除之。",
+  "exclude": [
+    "_backup_*/",
+    "V1_backup/"
+  ]
+}
