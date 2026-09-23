@@ -2412,7 +2412,8 @@ exports.saveCompetitionConfig = compAuthCallable(async (data, request) => {
     "competitionDate", "competitionStartTime", "competitionEndTime", "openImmediate",
     "sessions", "sessionSelectMode", "allowWaitlist", "acceptanceMode", "groupAgeRules", "autoEmailNotification", "enableAI", "paymentNote",
     "payuniEnabled", "payuniMerID", "payuniHashKey", "payuniHashIV", "payuniMode", "registrationFee", "registrationFeeLabel",
-    "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts", "refundPolicy"];
+    "feeItems", "bankTransferEnabled", "dateMode", "discountCodes", "groupDiscounts", "refundPolicy",
+    "discountCodeEnabled"];   // 2026-09-23：折扣碼功能開關（活動層級）。未列入此白名單的欄位會靜默不儲存。
 
   // DATA-LOSS FIX: `ref.update({config: jc})` REPLACES the whole config object, so jc must
   // be SEEDED from the existing config — otherwise every Settings-page save wipes fields that

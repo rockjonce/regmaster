@@ -454,6 +454,10 @@
               <div class="ic"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01"/></svg></div>
               <div><h3 data-i18n="aeEditSecDiscCodeH">折扣碼</h3><p data-i18n="aeEditSecDiscCodeP">產生折扣代碼供報名者結帳時輸入；可設折抵金額或百分比、使用上限與有效期限（也可作團報或推薦獎勵碼）</p></div>
             </div>
+            <div class="toggle-row" style="border-top:0; padding-top:0">
+              <div class="body"><h6 data-i18n="aeEditDcEnabledH">啟用折扣碼</h6><p data-i18n="aeEditDcEnabledP">開啟後，報名者在報名與付款頁才會看到折扣碼輸入欄；關閉時既有折扣碼保留但不對外開放</p></div>
+              <div class="tg-sw" id="discountCodeEnabled" data-dirty></div>
+            </div>
             <div class="list-grp" id="discCodeList"><div class="dc-empty" data-i18n="aeEditDcLoading">載入中⋯</div></div>
             <div class="dc-form">
               <div class="row3">
@@ -871,6 +875,7 @@
 
     setToggle('requireTeamNameCN', !!CFG.requireTeamNameCN);
     setToggle('requireTeamNameEN', !!CFG.requireTeamNameEN);
+    setToggle('discountCodeEnabled', !!CFG.discountCodeEnabled);   // 未設定＝關閉（2026-09-23 決策：無既有活動使用折扣碼）
     setToggle('autoEmail', CFG.autoEmailNotification !== false);
     setToggle('isVisible', !!COMP.config.isVisible || !!CFG.isVisible);
     setToggle('isOpen', !!COMP.isOpen);
@@ -1913,6 +1918,7 @@
       feeItems: readFeeItems(),
       groupDiscounts: readGroupDisc(),
       refundPolicy: collectRefundPolicy(),
+      discountCodeEnabled: document.getElementById('discountCodeEnabled').classList.contains('on'),
       payuniEnabled: document.getElementById('payuniEnabled').classList.contains('on'),
       bankEnabled: document.getElementById('bankEnabled').classList.contains('on'),
       bankInfo: (function () {
@@ -2020,6 +2026,7 @@
       feeItems: data.feeItems,
       groupDiscounts: data.groupDiscounts,
       registrationFee: feeSum,
+      discountCodeEnabled: data.discountCodeEnabled,            // 2026-09-23：折扣碼功能開關（活動層級）
       payuniEnabled: data.payuniEnabled,
       // Item 12: bank transfer gated by explicit enable flag
       bankTransferEnabled: data.bankEnabled,

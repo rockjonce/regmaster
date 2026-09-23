@@ -193,6 +193,8 @@
     // ----- PAYMENT: 折扣碼 -----
     aeEditSecDiscCodeH: '折扣碼',
     aeEditSecDiscCodeP: '產生折扣代碼供報名者結帳時輸入；可設折抵金額或百分比、使用上限與有效期限（也可作團報或推薦獎勵碼）',
+    aeEditDcEnabledH: '啟用折扣碼',
+    aeEditDcEnabledP: '開啟後，報名者在報名與付款頁才會看到折扣碼輸入欄；關閉時既有折扣碼保留但不對外開放',
     aeEditFldDcCode: '折扣碼',
     aeEditDcCodePlaceholder: '如 EARLYBIRD',
     aeEditFldDcType: '類型',
@@ -702,6 +704,8 @@
     // ----- PAYMENT: 折扣碼 -----
     aeEditSecDiscCodeH: 'Discount Codes',
     aeEditSecDiscCodeP: 'Generate discount codes for registrants to enter at checkout; set a flat amount or percentage, a usage cap and an expiry date (also usable as group or referral reward codes)',
+    aeEditDcEnabledH: 'Enable discount codes',
+    aeEditDcEnabledP: 'When on, registrants see a discount-code field on the registration and payment pages. When off, existing codes are kept but not offered to registrants.',
     aeEditFldDcCode: 'Discount Code',
     aeEditDcCodePlaceholder: 'e.g. EARLYBIRD',
     aeEditFldDcType: 'Type',

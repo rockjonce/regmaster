@@ -172,7 +172,7 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         <div class="li" id="groupDiscLi" style="display:none"><span class="lbl" id="groupDiscLbl" data-i18n="pmLblGroupDisc">團報優惠</span><span class="v" id="groupDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
         <div class="li" id="codeDiscLi" style="display:none"><span class="lbl" data-i18n="pmLblCodeDisc">折扣碼</span><span class="v" id="codeDiscAmt" style="color:var(--ok-700)">- NT$ 0</span></div>
         <div class="li total"><span class="lbl" data-i18n="pmLblTotal">合計</span><span class="v" id="totalAmt">NT$ 0</span></div>
-        <div style="margin:14px 0 4px">
+        <div id="discountBlock" style="margin:14px 0 4px; display:none">
           <div style="display:flex; gap:6px">
             <input id="discCodeInput" placeholder="輸入折扣碼" data-i18n-placeholder="pmDiscPlaceholder" style="flex:1; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:500 13px/1 var(--f-mono); text-transform:uppercase">
             <button class="btn btn-ghost btn-sm" id="applyCodeBtn" type="button" data-i18n="pmApplyBtn">套用</button>
@@ -296,6 +296,9 @@ h1.page-title { font:700 32px/1.15 var(--f-display); letter-spacing:-.018em; mar
         });
       }
     }
+
+    // 2026-09-23：折扣碼區塊僅在主辦方於活動設定開啟時顯示（未設定＝關閉），與報名頁同一個開關
+    if (CFG.discountCodeEnabled === true) document.getElementById('discountBlock').style.display = 'block';
 
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('content').style.display = 'block';

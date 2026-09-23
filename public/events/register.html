@@ -321,6 +321,20 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
             <h5 style="border-bottom-color:var(--acc-soft)" data-i18n="rgPaySelect">選擇付款方式</h5>
             <div id="payMethodCards" style="display:flex; flex-direction:column; gap:10px"></div>
 
+            <!-- 2026-09-23：折扣碼（僅主辦方於活動設定開啟 cfg.discountCodeEnabled 時顯示）。
+                 此處只做「預覽報價」，不消耗額度；實際套用在送出後由 createRegistrationPayment
+                 （PayUNI）或 confirmManualPayment（銀行轉帳）完成。 -->
+            <div id="discountBlock" style="display:none; margin-top:16px; padding-top:14px; border-top:1px solid var(--line)">
+              <h3 style="font:700 14px/1.4 var(--f-display); margin-bottom:8px" data-i18n="rgDiscTitle">折扣碼</h3>
+              <div style="display:flex; gap:8px; align-items:center">
+                <input id="discCodeInput" placeholder="輸入折扣碼" data-i18n-placeholder="rgDiscPlaceholder"
+                       style="flex:1; padding:9px 11px; border:1px solid var(--line); border-radius:8px; font:500 13px/1.2 var(--f-mono); text-transform:uppercase">
+                <button type="button" class="btn btn-ghost" id="discApplyBtn" data-i18n="rgDiscApply">套用</button>
+              </div>
+              <div id="discMsg" style="margin-top:6px; font:500 12px/1.5 var(--f-tc); min-height:18px"></div>
+              <div id="discBreakdown" style="display:none; margin-top:8px; padding:10px 12px; background:var(--surface); border:1px solid var(--line-2); border-radius:8px; font:400 12.5px/1.8 var(--f-tc)"></div>
+            </div>
+
             <!-- Phase 3：標準發票區塊（主辦啟用發票輔助/自動開立時顯示；Q11-A 固定顯示、開給付款人） -->
             <div id="invoiceSection" style="display:none; margin-top:18px; padding-top:16px; border-top:1px solid var(--line)">
               <h3 style="font:700 14px/1.4 var(--f-display); margin-bottom:10px" data-i18n="rgInvTitle">發票開立資訊（開給付款人）</h3>
@@ -570,7 +584,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
     students: [],
     teachers: [],
     customAnswers: {},
-    payMethod: ''
+    payMethod: '',
+    discountCode: ''      // 2026-09-23：已通過預覽驗證的折扣碼；送出時帶給後端實際套用
   };
   // Edit mode (?edit=<報名編號>): prefill + save via updateRegistration, skip payment.
   var IS_EDIT = false, EDIT = null;
@@ -590,6 +605,72 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
   function firstStep() { return STEP1_NEEDED ? 1 : 2; }
   function lastStep()  { return NEEDS_PAYMENT ? 4 : 3; }
   function activeStepCount() { return lastStep() - firstStep() + 1; }
+  // ── 2026-09-23：報名頁折扣碼 ──────────────────────────────────────────────
+  // 設計要點：
+  //  1. 此處只呼叫 validateDiscountCode（純預覽，後端不寫入、不消耗 usedCount）。
+  //  2. 報名尚未建立，沒有 teamId；人數由前端算好傳 peopleCount，讓團報優惠預覽正確。
+  //  3. 真正的套用與消耗發生在送出之後：PayUNI 走 createRegistrationPayment，
+  //     銀行轉帳走 confirmManualPayment。兩者都以 team.codeConsumed 防重複扣。
+  function peopleCountNow() {
+    return Math.max(1, (STATE.students || []).length + (STATE.teachers || []).length);
+  }
+  function wireDiscountCode() {
+    var input = document.getElementById('discCodeInput');
+    var btn = document.getElementById('discApplyBtn');
+    var msg = document.getElementById('discMsg');
+    var box = document.getElementById('discBreakdown');
+    if (!input || !btn) return;
+    function applyCode() {
+      var code = String(input.value || '').trim().toUpperCase();
+      if (!code) {
+        STATE.discountCode = '';
+        msg.textContent = ''; box.style.display = 'none';
+        return;
+      }
+      btn.disabled = true;
+      var origLabel = btn.textContent;
+      btn.removeAttribute('data-i18n');
+      btn.textContent = window.L('rgDiscChecking');
+      google.script.run
+        .withSuccessHandler(function (q) {
+          btn.disabled = false; btn.setAttribute('data-i18n', 'rgDiscApply'); btn.textContent = origLabel;
+          if (!q || !q.ok) { msg.style.color = 'var(--err-700)'; msg.textContent = window.L('rgDiscFail'); box.style.display = 'none'; STATE.discountCode = ''; return; }
+          if (q.codeValid) {
+            STATE.discountCode = q.code;
+            msg.style.color = 'var(--ok-700)';
+            msg.textContent = q.codeMsg || window.L('rgDiscOk');
+            var rows = '';
+            rows += '<div style="display:flex; justify-content:space-between"><span>' + escapeHtml(window.L('rgDiscBase')) + '</span><span>NT$ ' + (q.base || 0).toLocaleString() + '</span></div>';
+            if (q.groupDiscount > 0) rows += '<div style="display:flex; justify-content:space-between; color:var(--ok-700)"><span>' + escapeHtml(q.groupLabel || window.L('rgDiscGroup')) + '</span><span>- NT$ ' + q.groupDiscount.toLocaleString() + '</span></div>';
+            rows += '<div style="display:flex; justify-content:space-between; color:var(--ok-700)"><span>' + escapeHtml(window.L('rgDiscCode')) + '</span><span>- NT$ ' + (q.codeDiscount || 0).toLocaleString() + '</span></div>';
+            rows += '<div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px solid var(--line-2); margin-top:5px; padding-top:5px"><span>' + escapeHtml(window.L('rgSumTotal')) + '</span><span>NT$ ' + (q.total || 0).toLocaleString() + '</span></div>';
+            box.innerHTML = rows; box.style.display = 'block';
+          } else {
+            STATE.discountCode = '';
+            msg.style.color = 'var(--err-700)';
+            msg.textContent = q.codeMsg || window.L('rgDiscInvalid');
+            box.style.display = 'none';
+          }
+        })
+        .withFailureHandler(function () {
+          btn.disabled = false; btn.setAttribute('data-i18n', 'rgDiscApply'); btn.textContent = origLabel;
+          STATE.discountCode = '';
+          msg.style.color = 'var(--err-700)'; msg.textContent = window.L('rgErrNetwork');
+          box.style.display = 'none';
+        })
+        // 位置參數：compId, teamId(此時尚無→空字串), code, peopleCount
+        .validateDiscountCode(compId, '', code, peopleCountNow());
+    }
+    btn.addEventListener('click', applyCode);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); applyCode(); } });
+    // 改動內容即視為未套用，避免「畫面顯示舊折扣、實際送出別的碼」
+    input.addEventListener('input', function () {
+      if (STATE.discountCode && String(input.value || '').trim().toUpperCase() !== STATE.discountCode) {
+        STATE.discountCode = ''; msg.textContent = ''; box.style.display = 'none';
+      }
+    });
+  }
+
   function updateSubmitButtonLabel() {
     var btn = document.getElementById('submitBtn');
     if (!btn) return;
@@ -862,6 +943,8 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
       document.getElementById('payMethodCards').innerHTML = cardsHtml;
       window.applyI18n(document.getElementById('payMethodCards'));
       document.getElementById('paymentBlock').style.display = 'block';
+      // 2026-09-23：折扣碼區塊僅在主辦方開啟時顯示（未設定＝關閉）
+      if (CFG.discountCodeEnabled === true) document.getElementById('discountBlock').style.display = 'block';
       // Populate bank dropdown
       var bankSel = document.getElementById('payBank');
       TW_BANKS.forEach(function (b) {
@@ -882,6 +965,9 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
           updateSubmitButtonLabel();
         });
       });
+      // 2026-09-23：折扣碼「套用」＝只向後端要報價預覽，不消耗額度。
+      // 通過驗證才把碼存進 STATE.discountCode；送出後才由後端實際套用與消耗。
+      if (CFG.discountCodeEnabled === true) wireDiscountCode();
       // Auto-select if only one method available
       if (methods.length === 1) {
         var only = document.querySelector('.method-card');
@@ -2275,10 +2361,19 @@ h1.page-title { font:700 28px/1.15 var(--f-display); letter-spacing:-.018em; mar
                   window.L('rgPayuniAlertB') + res.teamId + window.L('rgPayuniConnAlertB'));
                 showErr(window.L('rgPayuniConnErrA') + ((err && err.message) || window.L('rgPayuniRetry')) + window.L('rgPayuniErrB') + res.teamId);
               })
-              .createRegistrationPayment(compId, res.teamId, '');
+              // 2026-09-23：帶入已通過預覽驗證的折扣碼。未輸入時為空字串＝與改版前行為完全相同。
+              .createRegistrationPayment(compId, res.teamId, STATE.discountCode || '');
             return;
           }
-          // No payment OR ATM transfer → straight to success page
+          // No payment OR ATM transfer → straight to success page.
+          // 2026-09-23：銀行轉帳若有折扣碼，補呼叫 confirmManualPayment 落地折後應付金額
+          // （與付款頁同一支端點、同一套 codeConsumed 防重複扣）。best-effort：
+          // 失敗只影響應付金額顯示，絕不阻斷已經成立的報名。
+          if (STATE.payMethod === 'atm' && STATE.discountCode) {
+            google.script.run
+              .withSuccessHandler(function () {}).withFailureHandler(function () {})
+              .confirmManualPayment(compId, res.teamId, STATE.discountCode);
+          }
           showSuccess(res);
         } else {
           btn.disabled = false; updateSubmitButtonLabel();

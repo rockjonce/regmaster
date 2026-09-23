@@ -131,7 +131,7 @@
     createPayuniOrder:["items","couponCode","username"],
     getOrderStatus:["orderId"],
     createRegistrationPayment:["compId","teamId","discountCode"],
-    validateDiscountCode:["compId","teamId","code"],
+    validateDiscountCode:["compId","teamId","code","peopleCount"],   // peopleCount 為 2026-09-23 尾端追加：報名頁尚無 teamId，需自行帶人數才能正確預覽團報優惠；舊呼叫端只傳 3 個 → undefined 被 JSON 丟棄，後端 fallback 為 1，行為不變
     createDiscountCode:["compId","code","type","value","maxUses","expiresAt","note"],
     listDiscountCodes:["compId"],
     deleteDiscountCode:["compId","code"],
