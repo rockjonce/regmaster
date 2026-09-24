@@ -2111,6 +2111,9 @@ exports.listCompetitions = authCallable(["system","competition"], async (data, r
     const { r, memberRole } = found[id];
     return {
       compId: id, name: r.name || "", createdAt: r.createdAt || "", isOpen: r.isOpen === true,
+      // 2026-09-24：openDate 存在 config（非頂層）。未回傳時後台列表的「即將開放」分類
+      // 永遠判不出來（分支成為死碼），已啟用但未到開放時間的活動會被誤標為「進行中」。
+      openDate: (r.config || {}).openDate || "",
       deadline: r.deadline || "", maxTeams: r.maxTeams || 0, creator: r.creator || "",
       teamCount: r.teamCount || 0, viewCount: r.viewCount || 0, hasRules: !!r.rulesPdfId, themeColors: r.themeColors || "",
       maxCapacityLimit: r.maxCapacityLimit !== undefined ? r.maxCapacityLimit : 300,

@@ -280,13 +280,24 @@
   // 第5項(A案)：filter 延後至資料載入後決定（URL → 上次選擇 → 有進行中預設live、否則all）
   var STATE = { filter: null, q: '' };
 
+  // 2026-09-24：判斷順序必須與後端權威閘門一致（functions/index.js 的 regStatus：
+  // isOpen → openDate → deadline，見 getRegistrationBundle）。
+  // 舊版先判 isOpen 就 return 'live'，使「已啟用但未到開放時間」被誤標為進行中；
+  // 且 listCompetitions 當時未回傳 openDate，'upcoming' 分支形同死碼。
   function classifyComp(c) {
     var now = Date.now();
     var dl = parseDate(c.deadline);
     var od = parseDate(c.openDate);
-    if (c.isOpen) return 'live';
-    if (od && now < od.getTime()) return 'upcoming';
+    if (c.isOpen) {
+      // 已啟用：順序完全對齊後端 regStatus（openDate → deadline → open）
+      if (od && now < od.getTime()) return 'upcoming';   // 已啟用但還沒到開放時間
+      if (dl && now > dl.getTime()) return 'ended';
+      return 'live';
+    }
+    // 未啟用：已過截止＝結束；尚未到開放時間＝即將開放
+    //（dailyJobs 的 _runCheckDeadlines 會在開放時間到達時自動把 isOpen 翻成 true）
     if (dl && now > dl.getTime()) return 'ended';
+    if (od && now < od.getTime()) return 'upcoming';
     return 'draft';
   }
 

@@ -418,7 +418,12 @@
 
     // Status pills + meta
     var topHtml = '';
-    if (COMP.isOpen) topHtml += '<span class="pill live"><span class="dot-c"></span>' + window.L('aeHubPillLive') + '</span>';
+    // 2026-09-24：改用後端算好的 COMP.regStatus（getRegistrationBundle 的單一事實來源，
+    // 與 submitRegistration 的閘門完全一致）。舊版只看 COMP.isOpen，使「已啟用但還沒到
+    // 開放時間」的活動被顯示成報名中，與報名者實際看到的「報名尚未開始」矛盾。
+    var RS = COMP.regStatus || (COMP.isOpen ? 'open' : 'not_open');
+    if (RS === 'open') topHtml += '<span class="pill live"><span class="dot-c"></span>' + window.L('aeHubPillLive') + '</span>';
+    else if (RS === 'not_yet_open') topHtml += '<span class="pill">' + window.L('aeHubPillNotYet') + '</span>';
     else topHtml += '<span class="pill">' + window.L('aeHubPillClosed') + '</span>';
     if (cfg.category) topHtml += '<span class="pill">' + escapeHtml(cfg.category) + '</span>';
     document.getElementById('heroTop').innerHTML = topHtml;
@@ -510,7 +515,13 @@
     info.push({ k: window.L('aeHubInfoFee'), v: fee > 0 ? 'NT$ ' + fee.toLocaleString() : window.L('aeHubInfoFeeFree') });
     if ((cfg.groups || []).length) info.push({ k: window.L('aeHubInfoGroups'), v: cfg.groups.map(function (g) { return escapeHtml(typeof g === 'string' ? g : (g.name || g.label || '?')); }).join('、') });
     if ((cfg.sessions || []).length) info.push({ k: window.L('aeHubInfoSessions'), v: cfg.sessions.length + window.L('aeHubInfoSessionsUnit') });
-    info.push({ k: window.L('aeHubInfoRegStatus'), v: COMP.isOpen ? '<span style="color:var(--ok-700); font-weight:600">' + window.L('aeHubInfoOpenNow') + '</span>' : '<span style="color:var(--muted)">' + window.L('aeHubInfoClosedNow') + '</span>' });
+    // 2026-09-24：三態顯示（開放中／尚未開始／已關閉），以後端 regStatus 為準
+    var _rsInfo = (COMP.regStatus === 'open')
+      ? '<span style="color:var(--ok-700); font-weight:600">' + window.L('aeHubInfoOpenNow') + '</span>'
+      : (COMP.regStatus === 'not_yet_open')
+        ? '<span style="color:var(--amber-600); font-weight:600">' + window.L('aeHubInfoNotYet') + '</span>'
+        : '<span style="color:var(--muted)">' + window.L('aeHubInfoClosedNow') + '</span>';
+    info.push({ k: window.L('aeHubInfoRegStatus'), v: _rsInfo });
     document.getElementById('infoTable').innerHTML = '<table style="width:100%; border-collapse:collapse">' +
       info.map(function (r) { return '<tr><td style="padding:6px 12px 6px 0; color:var(--muted); font:500 12.5px/1.5 var(--f-tc); width:120px; vertical-align:top">' + escapeHtml(r.k) + '</td><td style="padding:6px 0; font:400 13.5px/1.5 var(--f-tc); color:var(--ink-2)">' + r.v + '</td></tr>'; }).join('') +
       '</table>';
@@ -547,8 +558,11 @@
 
     // Status sidebar
     var statusLines = [];
-    if (COMP.isOpen) statusLines.push(window.L('aeHubStatusOpen'));
-    else statusLines.push(window.L('aeHubStatusClosed'));
+    // 2026-09-24：同上，以 regStatus 為準；尚未開始時一併顯示開放時間
+    if (COMP.regStatus === 'open') statusLines.push(window.L('aeHubStatusOpen'));
+    else if (COMP.regStatus === 'not_yet_open') {
+      statusLines.push(window.L('aeHubStatusNotYet') + ((cfg.openDate || '').replace('T', ' ')));
+    } else statusLines.push(window.L('aeHubStatusClosed'));
     var dl = parseDate(cfg.deadline);
     if (dl) {
       var d = Math.ceil((dl - Date.now()) / 86400000);
